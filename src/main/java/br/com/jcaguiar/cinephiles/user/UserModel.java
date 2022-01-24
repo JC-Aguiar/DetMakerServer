@@ -9,12 +9,10 @@ import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.time.LocalDateTime;
 import java.util.Collection;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -32,6 +30,9 @@ public class UserModel extends DatedEntity implements UserDetails {
     String token;
     LocalDateTime lastLogin;
     LocalDateTime expirationTokenDate;
+
+    @OneToMany(mappedBy = "user")
+    List<AuthModel> authorities;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
