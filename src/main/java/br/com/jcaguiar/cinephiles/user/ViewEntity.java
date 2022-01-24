@@ -1,5 +1,6 @@
 package br.com.jcaguiar.cinephiles.user;
 
+import br.com.jcaguiar.cinephiles.movie.MovieEntity;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Data;
@@ -7,18 +8,23 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import javax.persistence.*;
+import java.time.Duration;
 
 @Data
+@Builder(toBuilder = true)
 @NoArgsConstructor
-@Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Entity(name = "authority")
-public class AuthModel {
+@Entity(name = "watchpoint")
+final public class ViewEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    String role;
+    Duration watchedTime;
 
     @ManyToOne
-    UserModel user;
+    UserEntity user;
+
+    @ManyToOne
+    MovieEntity movie;
 }

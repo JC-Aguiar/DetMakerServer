@@ -14,11 +14,11 @@ public class MovieService {
     @Autowired
     private MovieRepository dao;
 
-    public List<MovieModel> getMoviesByGenre(GenreEnum genre) {
+    public List<MovieEntity> getMoviesByGenre(GenreEnum genre) {
         return dao.findAllByGenre(genre);
     }
 
-    public List<MovieModel> getMoviesByExample(Example<MovieModel> movieEx) {
+    public List<MovieEntity> getMoviesByExample(Example<MovieEntity> movieEx) {
         return dao.findAll(movieEx);
     }
 }

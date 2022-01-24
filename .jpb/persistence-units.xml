@@ -7,6 +7,11 @@
           <package value="br.com.jcaguiar.cinephiles" />
         </packages>
       </persistence-unit>
+      <persistence-unit name="Default">
+        <packages>
+          <package value="br.com.jcaguiar.cinephiles" />
+        </packages>
+      </persistence-unit>
     </persistence-units>
   </component>
 </project>

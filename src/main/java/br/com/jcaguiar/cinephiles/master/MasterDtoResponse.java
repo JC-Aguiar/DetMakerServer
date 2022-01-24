@@ -1,4 +1,3 @@
 package br.com.jcaguiar.cinephiles.master;
 
-public record MasterGet() {
-}
+public interface MasterDtoResponse { }

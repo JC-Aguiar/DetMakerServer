@@ -6,8 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface MovieRepository extends JpaRepository<MovieModel, Integer> {
+public interface MovieRepository extends JpaRepository<MovieEntity, Integer> {
 
-    public List<MovieModel> findAllByGenre(GenreEnum genre);
+    public List<MovieEntity> findAllByGenre(GenreEnum genre);
 
 }
