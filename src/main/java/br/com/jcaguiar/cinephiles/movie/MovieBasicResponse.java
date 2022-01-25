@@ -1,6 +1,6 @@
 package br.com.jcaguiar.cinephiles.movie;
 
-import br.com.jcaguiar.cinephiles.master.MasterDtoRequest;
+import br.com.jcaguiar.cinephiles.master.MasterDtoResponse;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.Value;
@@ -10,5 +10,5 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Builder(toBuilder = true)
 @SuperBuilder
-public final class MoviePostRequest extends MovieModel implements MasterDtoRequest {
+public class MovieBasicResponse extends MovieModel implements MasterDtoResponse {
 }

@@ -1,15 +1,18 @@
 package br.com.jcaguiar.cinephiles.movie;
 
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
-import lombok.NoArgsConstructor;
+import br.com.jcaguiar.cinephiles.master.MasterPagination;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -21,6 +24,11 @@ public class MovieController {
 
     @Autowired
     private ModelMapper modelMapper;
+
+    private final static ExampleMatcher MATCHER_ALL = ExampleMatcher
+            .matchingAll()
+            .withIgnoreNullValues()
+            .withIgnoreCase();
 
     {
         System.out.println(this.getClass());
@@ -34,15 +42,18 @@ public class MovieController {
     }
 
     @GetMapping(name = "/{example}")
-    public List<ResponseEntity<?>> getExampleOf
+    public ResponseEntity<Pageable> getExampleOf
     (@RequestParam(name = "example") @Valid MoviePostRequest movie) {
         MovieEntity movieEntity = modelMapper.map(movie, MovieEntity.class);
-        ExampleMatcher matcher = ExampleMatcher.matchingAll()
-            .withIgnoreNullValues()
-            .withIgnoreCase();
-        Example<MovieEntity> movieEx = Example.of(movieEntity, matcher);
-        service.getMoviesByExample(movieEx);
-        return null;
+        Example<MovieEntity> movieEx = Example.of(movieEntity, MATCHER_ALL);
+        List<MovieEntity> moviesEntities = service.getMoviesByExample(movieEx);
+        List<MovieBasicResponse> moviesResponse = new ArrayList<>();
+        moviesEntities.forEach(m -> {
+            moviesResponse.add(modelMapper.map(m, MovieBasicResponse.class));
+        });
+        return new ResponseEntity<Pageable>(
+                (Pageable) MasterPagination.pageResult(moviesResponse),
+                HttpStatus.OK);
     }
 
     @GetMapping(name = "/{text}")
