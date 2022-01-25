@@ -35,15 +35,13 @@ public class MovieController {
     }
 
     @GetMapping(name = "/{genre}")
-    public ResponseEntity<?> getGenre
-    (@RequestParam(name = "genre") @Valid GenreEnum genre) {
+    public ResponseEntity<?> getGenre (@RequestParam(name = "genre") @Valid GenreEnum genre) {
         service.getMoviesByGenre(genre);
         return null;
     }
 
     @GetMapping(name = "/{example}")
-    public ResponseEntity<Pageable> getExampleOf
-    (@RequestParam(name = "example") @Valid MoviePostRequest movie) {
+    public ResponseEntity<Pageable> getExampleOf (@RequestParam(name = "example") @Valid MoviePostRequest movie) {
         MovieEntity movieEntity = modelMapper.map(movie, MovieEntity.class);
         Example<MovieEntity> movieEx = Example.of(movieEntity, MATCHER_ALL);
         List<MovieEntity> moviesEntities = service.getMoviesByExample(movieEx);
