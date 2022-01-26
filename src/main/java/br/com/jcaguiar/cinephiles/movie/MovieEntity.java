@@ -23,7 +23,6 @@ final public class MovieEntity extends MovieModel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
 
-
     Integer views;
     Integer votes;
     Short score;
