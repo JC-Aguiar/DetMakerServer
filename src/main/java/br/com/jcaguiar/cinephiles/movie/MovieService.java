@@ -4,6 +4,7 @@ import br.com.jcaguiar.cinephiles.enums.GenreEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -23,8 +24,8 @@ public class MovieService {
         return dao.findByGenre(genre);
     }
 
-    public Page<MovieEntity> getMoviesByExample(Example<MovieEntity> movieEx) {
-        return dao.findByMovieEntityLike(movieEx);
+    public Page<MovieEntity> getMoviesByExample(Example<MovieEntity> movieEx, Pageable pageable) {
+        return dao.findByMovieEntityLike(movieEx, pageable);
     }
 
     public List<MovieEntity> getMoviesByTitle(String title) {
