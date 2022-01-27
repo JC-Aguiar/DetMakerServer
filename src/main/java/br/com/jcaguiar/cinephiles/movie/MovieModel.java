@@ -5,6 +5,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.SuperBuilder;
 
 import javax.persistence.MappedSuperclass;
 import java.time.Duration;
@@ -13,7 +14,7 @@ import java.util.Date;
 import java.util.List;
 
 @NoArgsConstructor
-@Builder(toBuilder = true)
+@SuperBuilder(toBuilder = true)
 @FieldDefaults(level = AccessLevel.PROTECTED)
 @MappedSuperclass
 public class MovieModel {
