@@ -34,7 +34,7 @@ public class MovieController {
             put("director", MovieController.class.getMethod("byDirector", String.class, int.class, int.class));
             put("actor", MovieController.class.getMethod("byActor", String.class, int.class, int.class));
             put("producer", MovieController.class.getMethod("byProducer", String.class, int.class, int.class));
-            put("text", MovieController.class.getMethod("byText", String.class, int.class, int.class);
+            put("text", MovieController.class.getMethod("byText", String.class, int.class, int.class));
         } catch (NoSuchMethodException e) {
             e.printStackTrace();
         }
