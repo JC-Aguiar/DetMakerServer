@@ -16,6 +16,7 @@ import java.util.List;
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter implements WebMvcConfigurer {
 
     private static final AuthenticationService AUTH_SERVICE = new AuthenticationService();
+    private static final AuthenticationProviderJWT PROVIDER_JWT = new AuthenticationProviderJWT();
 
     //SERVER SECURITY CONFIGURATION
     @Override
@@ -25,6 +26,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter implements W
         final AuthenticationJWT jwtAuthFilter = new AuthenticationJWT();
         http.authorizeRequests().mvcMatchers("/adm/**").hasAnyAuthority("ADMIN").and()
             .authorizeRequests().mvcMatchers("/profile/**").hasAnyAuthority("USER").and()
+            .authorizeRequests().anyRequest().authenticated().and()
             .csrf().disable().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
             .addFilterBefore(jwtAuthFilter, basicAuthFiler);
         http.exceptionHandling().accessDeniedPage("/error/denied").and()
@@ -36,7 +38,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter implements W
     public void configure(AuthenticationManagerBuilder auth) throws Exception
     {
         final BCryptPasswordEncoder crypt = new BCryptPasswordEncoder();
-        auth.userDetailsService(AUTH_SERVICE).passwordEncoder(crypt);
+        auth.userDetailsService(AUTH_SERVICE).passwordEncoder(crypt).and().authenticationProvider(PROVIDER_JWT);
     }
 
     //CROSS-ORIGIN-RESOURCE-SHARING
