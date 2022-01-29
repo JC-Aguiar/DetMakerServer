@@ -24,9 +24,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         final String cryptPassword = userService.getUserByEmail(auth.getCredentials().toString()).getPassword();
         final boolean login = crypt.matches(userPassword, cryptPassword);
         if(!login) throw new AuthenticationServiceException("Invalid email or password");
-        return new UsernamePasswordAuthenticationToken(
-                auth.getName(),
-                auth.getCredentials().toString());
+        return new UsernamePasswordAuthenticationToken(auth.getName(), userPassword);
     }
 
     @Override

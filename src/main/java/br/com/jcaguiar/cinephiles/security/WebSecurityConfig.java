@@ -28,8 +28,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter implements W
     private static UserService userService;
 
     @Autowired
-    private static JwtAuthenticationService jwtService;
-    final static JwtAuthenticationFilter jwtAuthFilter = new JwtAuthenticationFilter(userService, jwtService);
+    private static JwtAuthenticationService jwtAuthService;
+    final static JwtAuthenticationFilter jwtAuthFilter = new JwtAuthenticationFilter(userService, jwtAuthService);
     final static Class<? extends Filter> basicAuthFiler = UsernamePasswordAuthenticationFilter.class;
 
     //SERVER SECURITY CONFIGURATION

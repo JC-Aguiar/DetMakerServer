@@ -54,7 +54,7 @@ public class MovieController {
     {
         itens = itens == 0 ? 12 : itens;
         var = var.toLowerCase(Locale.ROOT);
-        final Method methodCall = Optional.ofNullable(ENDPOINTS_GET.get(var)).orElseThrow();
+        final Method methodCall = Optional.of(ENDPOINTS_GET.get(var)).orElseThrow();
         final Object[] params = new Object[] { var, page, itens };
         return (ResponseEntity<?>) methodCall.invoke(this, params);
 //        try {
@@ -82,8 +82,8 @@ public class MovieController {
                 .findFirst().orElseThrow();
         final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesByGenre(genreEnum, pageResult);
-        final Page<MovieBasicResponse> moviesResponse = Page.empty();
-        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieBasicResponse.class)));
+        final Page<MovieDtoResponse> moviesResponse = Page.empty();
+        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
@@ -95,8 +95,8 @@ public class MovieController {
     {
         final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesByTitle(title, pageResult);
-        final Page<MovieBasicResponse> moviesResponse = Page.empty();
-        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieBasicResponse.class)));
+        final Page<MovieDtoResponse> moviesResponse = Page.empty();
+        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
@@ -108,8 +108,8 @@ public class MovieController {
     {
         final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesBySynopsis(synopsis, pageResult);
-        final Page<MovieBasicResponse> moviesResponse = Page.empty();
-        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieBasicResponse.class)));
+        final Page<MovieDtoResponse> moviesResponse = Page.empty();
+        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
@@ -120,8 +120,8 @@ public class MovieController {
                                            @RequestParam(required = false, defaultValue = "12") int itens) {
         final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesByDirector(director, pageResult);
-        final Page<MovieBasicResponse> moviesResponse = Page.empty();
-        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieBasicResponse.class)));
+        final Page<MovieDtoResponse> moviesResponse = Page.empty();
+        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
@@ -133,8 +133,8 @@ public class MovieController {
     {
         final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesByActor(actor, pageResult);
-        final Page<MovieBasicResponse> moviesResponse = Page.empty();
-        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieBasicResponse.class)));
+        final Page<MovieDtoResponse> moviesResponse = Page.empty();
+        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
@@ -146,8 +146,8 @@ public class MovieController {
     {
         final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesByProducer(producer, pageResult);
-        final Page<MovieBasicResponse> moviesResponse = Page.empty();
-        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieBasicResponse.class)));
+        final Page<MovieDtoResponse> moviesResponse = Page.empty();
+        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
@@ -165,8 +165,8 @@ public class MovieController {
         movieTemplate.addDirector(text).addActor(text).addProctor(text);
         final Example<MovieEntity> movieEx = Example.of(movieTemplate, MATCHER_ANY);
         final Page<MovieEntity> moviesEntities = service.getMoviesByExample(movieEx, pageResult);
-        final Page<MovieBasicResponse> moviesResponse = Page.empty();
-        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieBasicResponse.class)));
+        final Page<MovieDtoResponse> moviesResponse = Page.empty();
+        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
@@ -180,8 +180,8 @@ public class MovieController {
         final MovieEntity movieEntity = modelMapper.map(movie, MovieEntity.class);
         final Example<MovieEntity> movieEx = Example.of(movieEntity, MATCHER_ALL);
         final Page<MovieEntity> moviesEntities = service.getMoviesByExample(movieEx, pageResult);
-        final Page<MovieBasicResponse> moviesResponse = Page.empty();
-        moviesEntities.forEach(m -> moviesResponse.toList().add(modelMapper.map(m, MovieBasicResponse.class)));
+        final Page<MovieDtoResponse> moviesResponse = Page.empty();
+        moviesEntities.forEach(m -> moviesResponse.toList().add(modelMapper.map(m, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 }

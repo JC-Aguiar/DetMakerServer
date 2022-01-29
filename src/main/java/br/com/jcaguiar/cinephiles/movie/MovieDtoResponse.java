@@ -10,5 +10,5 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @Builder(toBuilder = true)
 @SuperBuilder
-public class MovieBasicResponse extends MovieModel implements MasterDtoResponse {
+public class MovieDtoResponse extends MovieModel implements MasterDtoResponse {
 }
