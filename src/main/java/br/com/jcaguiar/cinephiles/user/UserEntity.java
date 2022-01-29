@@ -29,11 +29,11 @@ final public class UserEntity extends UserModel implements UserDetails {
     LocalDateTime tokenExpiration;
     LocalDateTime lastLogin;
 
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     final List<AccessEntity> acesses = new ArrayList<>();
 
-
-    @OneToMany(mappedBy = "user")
-    List<RoleModel> authorities;
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    final List<RoleModel> authorities = new ArrayList<>();
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

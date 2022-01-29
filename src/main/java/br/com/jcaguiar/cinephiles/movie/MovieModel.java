@@ -6,8 +6,11 @@ import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.validator.constraints.URL;
 
+import javax.persistence.Column;
 import javax.persistence.MappedSuperclass;
+import javax.validation.constraints.NotBlank;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Date;
@@ -19,6 +22,9 @@ import java.util.List;
 @MappedSuperclass
 public class MovieModel {
 
+
+    @Column(unique = true)
+    @NotBlank(message = "'Title' cant be empty")
     String title;
     String synopsis;
     final List<GenreEnum> genre = new ArrayList<>();
@@ -36,6 +42,6 @@ public class MovieModel {
     ScriptEnum script;
     final List<DesignEnum> design = new ArrayList<>();
     Duration duration;
-    String media;
+    @URL String media;
 
 }

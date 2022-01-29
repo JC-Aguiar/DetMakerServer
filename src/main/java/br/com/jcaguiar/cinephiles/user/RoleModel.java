@@ -20,9 +20,11 @@ public class RoleModel {
     Integer id;
     String role;
 
-    @ManyToOne
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "user_id", nullable = false)
     UserEntity user;
 
     @Embedded
     MasterRecord data;
+
 }
