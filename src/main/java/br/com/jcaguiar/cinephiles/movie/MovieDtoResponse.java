@@ -8,7 +8,6 @@ import lombok.experimental.SuperBuilder;
 
 @Value
 @NoArgsConstructor
-@Builder(toBuilder = true)
-@SuperBuilder
+@SuperBuilder(toBuilder = true)
 public class MovieDtoResponse extends MovieModel implements MasterDtoResponse {
 }

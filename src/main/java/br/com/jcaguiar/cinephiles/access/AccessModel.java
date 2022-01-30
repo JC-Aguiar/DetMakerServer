@@ -4,12 +4,13 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.SuperBuilder;
 
 import javax.persistence.MappedSuperclass;
 import javax.validation.constraints.NotBlank;
 
 @NoArgsConstructor
-@Builder(toBuilder = true)
+@SuperBuilder
 @FieldDefaults(level = AccessLevel.PROTECTED)
 @MappedSuperclass
 public class AccessModel {
