@@ -14,7 +14,7 @@
 	<name>cinephiles</name>
 	<description>back-end for beta movie and series show with Java Spring-Boot</description>
 	<properties>
-		<java.version>17</java.version>
+		<java.version>16</java.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -83,8 +83,6 @@
             <artifactId>modelmapper</artifactId>
             <version>3.0.0</version>
         </dependency>
-
-
     </dependencies>
 
 	<build>

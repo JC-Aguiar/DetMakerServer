@@ -9,8 +9,7 @@ import javax.persistence.MappedSuperclass;
 import java.time.LocalDateTime;
 
 @NoArgsConstructor
-@Builder(toBuilder = true)
-@SuperBuilder
+@SuperBuilder(toBuilder = true)
 @Embeddable
 @FieldDefaults(level = AccessLevel.PRIVATE)
 final public class MasterRecord {

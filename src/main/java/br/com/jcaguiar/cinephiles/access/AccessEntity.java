@@ -12,7 +12,6 @@ import javax.persistence.*;
 
 @Data
 @NoArgsConstructor
-@Builder(toBuilder = true)
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "access")
