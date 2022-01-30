@@ -14,7 +14,7 @@ public interface MovieRepository extends JpaRepository<MovieEntity, Integer> {
 
     Page<MovieEntity> findByTitle(String title, Pageable pageable);
 
-    Page<MovieEntity> findAllLike(Example<MovieEntity> movieEx, Pageable pageable);
+//    Page<MovieEntity> findAllLike(Example<MovieEntity> movieEx, Pageable pageable);
 
     Page<MovieEntity> findBySynopsis(String synopsis, Pageable pageable);
 

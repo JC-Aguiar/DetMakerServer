@@ -24,7 +24,7 @@ public class MovieService {
     }
 
     public Page<MovieEntity> getMoviesByExample(Example<MovieEntity> movieEx, Pageable pageable) {
-        return dao.findAllLike(movieEx, pageable);
+        return dao.findAll(movieEx, pageable);
     }
 
     public Page<MovieEntity> getMoviesByTitle(String title, Pageable pageable) {
