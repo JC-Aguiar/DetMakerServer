@@ -8,13 +8,18 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class MasterController<ID, MODEL, POST, GET> {
+public abstract class MasterController<ID, MODEL, POST, GET> {
 
-    @Autowired
-    protected MasterService<ID, MODEL, POST, GET> service;
+    protected final MasterService<ID, MODEL, POST, GET> service;
+
+    MasterController(MasterService<ID, MODEL, POST, GET> service)
+    {
+        this.service = service;
+    }
 
     @GetMapping(name = "{id}")
-    protected ResponseEntity<?> getOne(@RequestParam(name = "id") String  id) {
+    protected ResponseEntity<?> getOne(@RequestParam(name = "id") String  id)
+    {
         return null;
     }
 

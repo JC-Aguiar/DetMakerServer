@@ -5,9 +5,13 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 
 @Service
-public class MasterService<ID, MODEL, POST, GET> {
+public abstract class MasterService<ID, MODEL, POST, GET> {
 
-    @Autowired
-    protected JpaRepository<MODEL, ID> dao;
+    protected final JpaRepository<MODEL, ID> dao;
+
+    MasterService(JpaRepository<MODEL, ID> dao)
+    {
+        this.dao = dao;
+    }
 
 }
