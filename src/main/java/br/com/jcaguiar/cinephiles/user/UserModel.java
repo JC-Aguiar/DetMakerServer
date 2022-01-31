@@ -19,10 +19,13 @@ public class UserModel {
     @NotBlank(message = "Insert valid email")
     @Email(message = "Insert valid email")
     String email;
+
     @NotBlank(message = "'First Name' cant be empty")
     String firstName;
+
     @NotBlank(message = "'Last Name' cant be empty")
     String lastName;
+
     @NotBlank(message = "'Password' cant be empty")
     String password;
     String avatar;
