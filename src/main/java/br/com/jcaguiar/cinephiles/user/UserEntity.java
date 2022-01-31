@@ -1,6 +1,7 @@
 package br.com.jcaguiar.cinephiles.user;
 
 import br.com.jcaguiar.cinephiles.access.AccessEntity;
+import br.com.jcaguiar.cinephiles.master.MasterRecord;
 import br.com.jcaguiar.cinephiles.movie.MovieEntity;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -21,34 +22,30 @@ import java.util.List;
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "user")
+@Table(name = "user")
 final public class UserEntity extends UserModel implements UserDetails {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     Integer id;
     String token;
     LocalDateTime tokenExpiration;
     LocalDateTime lastLogin;
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "acesses_id")
     final List<AccessEntity> acesses = new ArrayList<>();
 
-    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "authorities_id")
     final List<RoleModel> authorities = new ArrayList<>();
 
-    @ManyToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinTable( name = "watchpoints",
-                joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"),
-                inverseJoinColumns = @JoinColumn(name = "movie_id", referencedColumnName = "id"))
-    private List<MovieEntity> moviesWatchpoints = new ArrayList<>();
+    @OneToMany(fetch = FetchType.LAZY,cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "watchpoints_id")
+    final List<MovieEntity> moviesWatchpoints = new ArrayList<>();
 
-    public List<MovieEntity> getMoviesWatchpoints() {
-        return moviesWatchpoints;
-    }
-
-    public void setMoviesWatchpoints(List<MovieEntity> moviesWatchpoints) {
-        this.moviesWatchpoints = moviesWatchpoints;
-    }
+    @Embedded
+    MasterRecord data;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

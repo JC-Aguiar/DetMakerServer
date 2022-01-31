@@ -15,13 +15,15 @@ import javax.persistence.*;
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "access")
+@Table(name = "access")
 final public class AccessEntity extends AccessModel {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     Integer id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "user_id")
     UserEntity user;
 
 }

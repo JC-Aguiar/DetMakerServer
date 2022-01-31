@@ -9,7 +9,6 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
 import javax.persistence.*;
-import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,17 +17,19 @@ import java.util.List;
 @SuperBuilder(toBuilder = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "movie")
+@Table(name = "movie")
 final public class MovieEntity extends MovieModel {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     Integer id;
 
     Integer views;
     Integer votes;
     Short score;
 
-    @ManyToMany(mappedBy = "moviesWatchpoints")
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "users_id")
     final List<UserEntity> users = new ArrayList<>();
 
     @Embedded

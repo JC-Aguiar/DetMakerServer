@@ -17,8 +17,10 @@ public class AccessModel {
 
     @NotBlank(message = "'IP' cant be empty")
     String ip;
+
     @NotBlank(message = "'O.S' cant be empty")
     String os;
+
     @NotBlank(message = "'Device' cant be empty")
     String device;
 
