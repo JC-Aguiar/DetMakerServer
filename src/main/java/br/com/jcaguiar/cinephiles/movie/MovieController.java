@@ -15,7 +15,7 @@ import java.lang.reflect.Method;
 import java.util.*;
 
 @RestController
-@RequestMapping("*/movie")
+@RequestMapping("/movie")
 public class MovieController {
     //ATTRIBUTES
     @Autowired
@@ -46,30 +46,30 @@ public class MovieController {
     }
 
     //GET - MAP REQUEST PATH
-    @GetMapping(name = "/{var}", params = {"page", "itens"})
-    public ResponseEntity<?> get(@PathVariable String var,
-                                 @RequestParam(required = false) int page,
-                                 @RequestParam(required = false) int itens)
-    throws InvocationTargetException, IllegalAccessException
-    {
-        itens = itens == 0 ? 12 : itens;
-        var = var.toLowerCase(Locale.ROOT);
-        final Method methodCall = Optional.of(ENDPOINTS_GET.get(var)).orElseThrow();
-        final Object[] params = new Object[] { var, page, itens };
-        return (ResponseEntity<?>) methodCall.invoke(this, params);
-//        try {
-//            Optional.of(ENDPOINTS.get(var)).ifPresentOrElse(
-//                    method -> {
-//                        List<Class<?>> classes = Arrays.asList(method.getParameterTypes());
-//                        return (ResponseEntity<Page>) method.invoke(new MovieController(), classes);
-//                    }, () -> {
-//                        throw new RuntimeException("endereço de requisição não encontrado");
-//                    });
-//        } catch (IllegalAccessException | InvocationTargetException e) {
-//                e.printStackTrace();
-//                throw new RuntimeException("erro no decorrer do processo");
-//        }
-    }
+//    @GetMapping(name = "/get/{var}", params = {"page", "itens"})
+//    public ResponseEntity<?> get(@PathVariable String var,
+//                                 @RequestParam(required = false) int page,
+//                                 @RequestParam(required = false) int itens)
+//    throws InvocationTargetException, IllegalAccessException
+//    {
+//        itens = itens == 0 ? 12 : itens;
+//        var = var.toLowerCase(Locale.ROOT);
+//        final Method methodCall = Optional.of(ENDPOINTS_GET.get(var)).orElseThrow();
+//        final Object[] params = new Object[] { var, page, itens };
+//        return (ResponseEntity<?>) methodCall.invoke(this, params);
+////        try {
+////            Optional.of(ENDPOINTS.get(var)).ifPresentOrElse(
+////                    method -> {
+////                        List<Class<?>> classes = Arrays.asList(method.getParameterTypes());
+////                        return (ResponseEntity<Page>) method.invoke(new MovieController(), classes);
+////                    }, () -> {
+////                        throw new RuntimeException("endereço de requisição não encontrado");
+////                    });
+////        } catch (IllegalAccessException | InvocationTargetException e) {
+////                e.printStackTrace();
+////                throw new RuntimeException("erro no decorrer do processo");
+////        }
+//    }
 
     //GET - FIND MOVIES BY GENRE
 //    @GetMapping(name = "/genre/{genre}", params = {"page", "itens"})
@@ -88,11 +88,16 @@ public class MovieController {
     }
 
     //GET - BY TITLE
-//    @GetMapping(name = "/title/{title}", params = {"page", "itens"})
-    public ResponseEntity<Page> byTitle(@PathVariable @NotBlank String title,
-                                        @RequestParam(required = false) int page,
-                                        @RequestParam(required = false, defaultValue = "12") int itens)
+    @GetMapping
+    public ResponseEntity<Page> byTitle()
     {
+//        @PathVariable(name = "title") @NotBlank String title,
+//        @RequestParam(required = false) int page,
+//        @RequestParam(required = false, defaultValue = "12") int itens
+        final String title = "";
+        final int page = 0;
+        final int itens = 12;
+        System.out.println("[MOVIE] GET: byTitle");
         final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesByTitle(title, pageResult);
         final Page<MovieDtoResponse> moviesResponse = Page.empty();
