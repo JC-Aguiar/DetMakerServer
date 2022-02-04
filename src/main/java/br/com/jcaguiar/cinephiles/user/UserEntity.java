@@ -21,8 +21,8 @@ import java.util.List;
 @NoArgsConstructor
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Entity(name = "user")
-@Table(name = "user")
+@Entity(name = "users")
+@Table(name = "users")
 final public class UserEntity extends UserModel implements UserDetails {
 
     @Id

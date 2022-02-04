@@ -14,10 +14,11 @@ import javax.persistence.*;
 @NoArgsConstructor
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Entity(name = "role")
+@Entity(name = "roles")
+@Table(name = "roles")
 public class RoleModel {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @GeneratedValue(strategy = GenerationType.AUTO)
     Integer id;
     String role;
 
