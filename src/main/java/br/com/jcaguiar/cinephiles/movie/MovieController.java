@@ -90,15 +90,9 @@ public class MovieController {
     //GET - BY TITLE
     @GetMapping(path = "/title/{title}")
     public ResponseEntity<Page> byTitle(@PathVariable @NotBlank String title,
-                                        @RequestParam(required = false) int page,
+                                        @RequestParam(required = false, defaultValue = "0") int page,
                                         @RequestParam(required = false, defaultValue = "12") int itens)
     {
-//        @PathVariable(name = "title") @NotBlank String title,
-//        @RequestParam(required = false) int page,
-//        @RequestParam(required = false, defaultValue = "12") int itens
-//        final String title = "";
-//        final int page = 0;
-//        final int itens = 12;
         System.out.println("[MOVIE] GET: byTitle");
         final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesByTitle(title, pageResult);
