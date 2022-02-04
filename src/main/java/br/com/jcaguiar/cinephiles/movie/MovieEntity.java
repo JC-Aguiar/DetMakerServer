@@ -16,8 +16,8 @@ import java.util.List;
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Entity(name = "movie")
-@Table(name = "movie")
+@Entity(name = "movies")
+@Table(name = "movies")
 final public class MovieEntity extends MovieModel {
 
     @Id
