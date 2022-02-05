@@ -41,9 +41,9 @@ public class JwtAuthenticationService {
 
     //DECRYPTING JWT-TOKEN (REQUEST)
     public UserEntity decodeToken(String jwtToken) {
-        final String userStringId = Optional.of(
+        final String userStringId = Optional.ofNullable(
             Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJwt(jwtToken).getBody().getSubject()
-        ).orElseThrow(() -> { throw new JwtException(""); });
+        ).orElseThrow(() -> new JwtException(""));
         final int userId = Integer.parseInt(userStringId);
         return userService.getUserById(userId);
     }

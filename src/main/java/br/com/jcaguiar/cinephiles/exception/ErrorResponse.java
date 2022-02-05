@@ -1,9 +1,9 @@
 package br.com.jcaguiar.cinephiles.exception;
 
 import br.com.jcaguiar.cinephiles.master.MasterDtoResponse;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.experimental.FieldDefaults;
-import lombok.experimental.SuperBuilder;
 import org.springframework.http.HttpStatus;
 
 import javax.servlet.http.HttpServletRequest;
@@ -12,7 +12,6 @@ import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Getter
-@SuperBuilder
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
 public class ErrorResponse extends Throwable implements MasterDtoResponse {
 
