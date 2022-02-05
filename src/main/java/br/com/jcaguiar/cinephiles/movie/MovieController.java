@@ -20,12 +20,16 @@ public class MovieController {
     //ATTRIBUTES
     @Autowired
     private MovieService service;
+
     @Autowired
     private ModelMapper modelMapper;
+
     private final static ExampleMatcher MATCHER_ALL = ExampleMatcher
             .matchingAll().withIgnoreNullValues().withIgnoreCase();
+
     private final static ExampleMatcher MATCHER_ANY = ExampleMatcher
             .matchingAny().withIgnoreNullValues().withIgnoreCase();
+
     private static final Map<String, Method> ENDPOINTS_GET = new HashMap<>() {{
         try {
             put("genre", MovieController.class.getMethod("byGenre", String.class, int.class, int.class));
@@ -40,132 +44,105 @@ public class MovieController {
         }
     }};
 
-    //CLASS INIT
+    //GET - ALL MOVIES
+    @GetMapping
+    public ResponseEntity<?> all(@RequestParam(name = "page", defaultValue = "0") int page,
+                                 @RequestParam(name = "itens", defaultValue = "12") int itens)
     {
-        System.out.println(this.getClass().toString().toUpperCase());
+        final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
+        final Page<MovieEntity> moviesEntities = service.getAll(pageConfig);
+        final Page<MovieDtoResponse> moviesResponse = Page.empty();
+        moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
+        return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
     //GET - MAP REQUEST PATH
-//    @GetMapping(name = "/get/{var}", params = {"page", "itens"})
-//    public ResponseEntity<?> get(@PathVariable String var,
-//                                 @RequestParam(required = false) int page,
-//                                 @RequestParam(required = false) int itens)
-//    throws InvocationTargetException, IllegalAccessException
-//    {
-//        itens = itens == 0 ? 12 : itens;
-//        var = var.toLowerCase(Locale.ROOT);
-//        final Method methodCall = Optional.of(ENDPOINTS_GET.get(var)).orElseThrow();
-//        final Object[] params = new Object[] { var, page, itens };
-//        return (ResponseEntity<?>) methodCall.invoke(this, params);
-////        try {
-////            Optional.of(ENDPOINTS.get(var)).ifPresentOrElse(
-////                    method -> {
-////                        List<Class<?>> classes = Arrays.asList(method.getParameterTypes());
-////                        return (ResponseEntity<Page>) method.invoke(new MovieController(), classes);
-////                    }, () -> {
-////                        throw new RuntimeException("endereço de requisição não encontrado");
-////                    });
-////        } catch (IllegalAccessException | InvocationTargetException e) {
-////                e.printStackTrace();
-////                throw new RuntimeException("erro no decorrer do processo");
-////        }
-//    }
+    @GetMapping(path = "/{var}")
+    public ResponseEntity<?> get(@PathVariable @NotBlank String var,
+                                 @RequestParam(name = "page", defaultValue = "0") int page,
+                                 @RequestParam(name = "itens", defaultValue = "12") int itens)
+    throws InvocationTargetException, IllegalAccessException
+    {
+        var = var.toLowerCase(Locale.ROOT);
+        System.out.println(String.format("[MOVIE] GET - page[%d] itens[%d]",page, itens));
+        final Method methodCall = Optional.ofNullable(ENDPOINTS_GET.get(var)).orElseThrow();
+        final Object[] params = new Object[] { var, page, itens };
+        return (ResponseEntity<?>) methodCall.invoke(this, params);
+    }
 
     //GET - FIND MOVIES BY GENRE
-//    @GetMapping(name = "/genre/{genre}", params = {"page", "itens"})
-    public ResponseEntity<?> byGenre(@PathVariable @NotBlank String genre,
-                                     @RequestParam(required = false) int page,
-                                     @RequestParam(required = false, defaultValue = "12") int itens)
+    public ResponseEntity<?> byGenre(@NotBlank String genre, int page, int itens)
     {
         GenreEnum genreEnum = Arrays.stream(GenreEnum.values()).filter(
                 en -> genre.equalsIgnoreCase(en.toString()))
                 .findFirst().orElseThrow();
-        final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
-        final Page<MovieEntity> moviesEntities = service.getMoviesByGenre(genreEnum, pageResult);
+        final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
+        final Page<MovieEntity> moviesEntities = service.getMoviesByGenre(genreEnum, pageConfig);
         final Page<MovieDtoResponse> moviesResponse = Page.empty();
         moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
     //GET - BY TITLE
-    @GetMapping(path = "/title/{title}")
-    public ResponseEntity<Page> byTitle(@PathVariable @NotBlank String title,
-                                        @RequestParam(required = false, defaultValue = "0") int page,
-                                        @RequestParam(required = false, defaultValue = "12") int itens)
+    public ResponseEntity<Page> byTitle(@NotBlank String title, int page, int itens)
     {
-        System.out.println("[MOVIE] GET: byTitle");
-        final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
-        final Page<MovieEntity> moviesEntities = service.getMoviesByTitle(title, pageResult);
+        final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
+        final Page<MovieEntity> moviesEntities = service.getMoviesByTitle(title, pageConfig);
         final Page<MovieDtoResponse> moviesResponse = Page.empty();
         moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
     //GET - BY SYNOPSIS
-//    @GetMapping(name = "/synopsis/{synopsis}", params = {"page", "itens"})
-    public ResponseEntity<Page> bySynopsis(@PathVariable @NotBlank String synopsis,
-                                           @RequestParam(required = false) int page,
-                                           @RequestParam(required = false, defaultValue = "12") int itens)
+    public ResponseEntity<Page> bySynopsis(@NotBlank String synopsis, int page, int itens)
     {
-        final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
-        final Page<MovieEntity> moviesEntities = service.getMoviesBySynopsis(synopsis, pageResult);
+        final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
+        final Page<MovieEntity> moviesEntities = service.getMoviesBySynopsis(synopsis, pageConfig);
         final Page<MovieDtoResponse> moviesResponse = Page.empty();
         moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
     //GET - BY DIRECTOR
-//    @GetMapping(name = "/director/{director}", params = {"page", "itens"})
-    public ResponseEntity<Page> byDirector(@PathVariable @NotBlank String director,
-                                           @RequestParam(required = false) int page,
-                                           @RequestParam(required = false, defaultValue = "12") int itens) {
-        final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
-        final Page<MovieEntity> moviesEntities = service.getMoviesByDirector(director, pageResult);
+    public ResponseEntity<Page> byDirector(@NotBlank String director, int page, int itens) {
+        final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
+        final Page<MovieEntity> moviesEntities = service.getMoviesByDirector(director, pageConfig);
         final Page<MovieDtoResponse> moviesResponse = Page.empty();
         moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
     //GET - BY ACTOR
-//    @GetMapping(name = "/actor/{actor}", params = {"page", "itens"})
-    public ResponseEntity<Page> byActor(@PathVariable @NotBlank String actor,
-                                        @RequestParam(required = false) int page,
-                                        @RequestParam(required = false, defaultValue = "12") int itens)
+    public ResponseEntity<Page> byActor(@NotBlank String actor, int page, int itens)
     {
-        final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
-        final Page<MovieEntity> moviesEntities = service.getMoviesByActor(actor, pageResult);
+        final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
+        final Page<MovieEntity> moviesEntities = service.getMoviesByActor(actor, pageConfig);
         final Page<MovieDtoResponse> moviesResponse = Page.empty();
         moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
     //GET - BY PRODUCER
-//    @GetMapping(name = "/producer/{producer}", params = {"page", "itens"})
-    public ResponseEntity<Page> byProducer(@PathVariable @NotBlank String producer,
-                                           @RequestParam(required = false) int page,
-                                           @RequestParam(required = false, defaultValue = "12") int itens)
+    public ResponseEntity<Page> byProducer(@NotBlank String producer, int page, int itens)
     {
-        final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
-        final Page<MovieEntity> moviesEntities = service.getMoviesByProducer(producer, pageResult);
+        final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
+        final Page<MovieEntity> moviesEntities = service.getMoviesByProducer(producer, pageConfig);
         final Page<MovieDtoResponse> moviesResponse = Page.empty();
         moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
     //GET - BY TITLE, SYNOPSIS, DIRECTOR, ACTOR, PRODUCER
-//    @GetMapping(name = "/text/{text}", params = {"page", "itens"})
-    public ResponseEntity<?> byText(@PathVariable @NotBlank String text,
-                                    @RequestParam(required = false) int page,
-                                    @RequestParam(required = false, defaultValue = "12") int itens)
+    public ResponseEntity<?> byText(@NotBlank String text, int page, int itens)
     {
-        final PageRequest pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
+        final PageRequest pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
         final MovieEntity movieTemplate = MovieEntity.builder()
                 .title(text)
                 .synopsis(text)
                 .build();
         movieTemplate.addDirector(text).addActor(text).addProctor(text);
         final Example<MovieEntity> movieEx = Example.of(movieTemplate, MATCHER_ANY);
-        final Page<MovieEntity> moviesEntities = service.getMoviesByExample(movieEx, pageResult);
+        final Page<MovieEntity> moviesEntities = service.getMoviesByExample(movieEx, pageConfig);
         final Page<MovieDtoResponse> moviesResponse = Page.empty();
         moviesEntities.forEach(movie -> moviesResponse.toList().add(modelMapper.map(movie, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
@@ -173,14 +150,12 @@ public class MovieController {
 
     //POST - BY ADVANCED SEARCH
     @PostMapping(name = "/example/{example}", params = {"page", "itens"})
-    public ResponseEntity<Page> byExampleOf(@PathVariable @Valid MoviePostRequest movie,
-                                            @RequestParam(required = false) int page,
-                                            @RequestParam(required = false, defaultValue = "12") int itens   )
+    public ResponseEntity<Page> byExampleOf(@Valid MoviePostRequest movie, int page, int itens)
     {
-        final Pageable pageResult = PageRequest.of(page, itens, Sort.by("title").ascending());
+        final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
         final MovieEntity movieEntity = modelMapper.map(movie, MovieEntity.class);
         final Example<MovieEntity> movieEx = Example.of(movieEntity, MATCHER_ALL);
-        final Page<MovieEntity> moviesEntities = service.getMoviesByExample(movieEx, pageResult);
+        final Page<MovieEntity> moviesEntities = service.getMoviesByExample(movieEx, pageConfig);
         final Page<MovieDtoResponse> moviesResponse = Page.empty();
         moviesEntities.forEach(m -> moviesResponse.toList().add(modelMapper.map(m, MovieDtoResponse.class)));
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);

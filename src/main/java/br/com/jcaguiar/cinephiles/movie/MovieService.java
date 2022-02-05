@@ -19,6 +19,10 @@ public class MovieService {
         return Optional.ofNullable(dao.getById(id)).orElseThrow();
     }
 
+    public Page<MovieEntity> getAll(Pageable pageable) {
+        return dao.findAll(pageable);
+    }
+
     public Page<MovieEntity> getMoviesByGenre(GenreEnum genre, Pageable pageable) {
         return dao.findByGenre(genre, pageable);
     }
