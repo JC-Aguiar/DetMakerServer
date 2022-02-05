@@ -1,7 +1,11 @@
 package br.com.jcaguiar.cinephiles.security;
 
+import br.com.jcaguiar.cinephiles.exception.AuthorizationHeaderException;
+import br.com.jcaguiar.cinephiles.exception.BearerTokenException;
 import br.com.jcaguiar.cinephiles.user.UserEntity;
 import br.com.jcaguiar.cinephiles.user.UserService;
+import lombok.SneakyThrows;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.servlet.FilterChain;
@@ -22,30 +26,31 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.jwtService = jwtService;
     }
 
+    @SneakyThrows
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-    throws ServletException, IOException
-    {
-        try {
+    throws ServletException, IOException {
             final String bearerToken = getBearerToken(request);
             final String userEmail = "";
             final UserEntity user = userService.getUserByEmail(userEmail);
-        } catch (NoSuchElementException e) {
-            System.out.println("Request header doesn't provide 'Authorization' attribute");
-        }  catch (NullPointerException e) {
-            System.out.println("Request header doesn't provide Bearer token");
-        } catch (Exception e) {
-            System.out.println("Unexpected error while getting 'Authorization' header from the request");
-            e.printStackTrace();
-        }
+//        try {
+//        } catch (NoSuchElementException e) {
+//            System.out.println("Request header doesn't provide 'Authorization' attribute");
+//        }  catch (NullPointerException e) {
+//            System.out.println("Request header doesn't provide Bearer token");
+//        } catch (Exception e) {
+//            System.out.println("Unexpected error while getting 'Authorization' header from the request");
+//            e.printStackTrace();
+//        }
     }
 
     private String getBearerToken (HttpServletRequest request)
-    {
-        final String header = Optional.ofNullable(request.getHeader("Authorization")).orElseThrow();
+    throws BearerTokenException, AuthorizationHeaderException {
+        final String header = Optional.ofNullable(request.getHeader("Authorization"))
+            .orElseThrow(() -> new AuthorizationHeaderException(HttpStatus.UNAUTHORIZED, request));
         if(header.startsWith("Bearer")) {
             return header.split("Bearer")[0].trim();
         }
-        return null;
+        throw new BearerTokenException(HttpStatus.UNAUTHORIZED, request);
     }
 }

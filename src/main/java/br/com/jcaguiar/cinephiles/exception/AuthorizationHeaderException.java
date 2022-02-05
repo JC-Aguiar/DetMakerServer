@@ -6,13 +6,13 @@ import javax.servlet.http.HttpServletRequest;
 
 final public class AuthorizationHeaderException extends ErrorResponse {
 
-    private final static String MESSAGE = "Request without 'Authorization' header";
+    private final static String MESSAGE = "Request without 'authorization' header";
 
-    AuthorizationHeaderException(HttpStatus status, String path) {
+    public AuthorizationHeaderException(HttpStatus status, String path) {
         super(status, MESSAGE, path);
     }
 
-    AuthorizationHeaderException(HttpStatus status, HttpServletRequest request) {
+    public AuthorizationHeaderException(HttpStatus status, HttpServletRequest request) {
         super(status, MESSAGE, request);
     }
 }
