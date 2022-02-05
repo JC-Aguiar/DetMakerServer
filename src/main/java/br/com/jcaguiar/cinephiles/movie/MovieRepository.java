@@ -1,7 +1,6 @@
 package br.com.jcaguiar.cinephiles.movie;
 
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
-import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
