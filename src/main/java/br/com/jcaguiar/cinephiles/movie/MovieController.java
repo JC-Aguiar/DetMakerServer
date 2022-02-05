@@ -1,6 +1,7 @@
 package br.com.jcaguiar.cinephiles.movie;
 
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
+import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
@@ -45,7 +46,8 @@ public class MovieController {
         }
     }};
 
-    //GET - ALL MOVIES
+    //GET: ALL MOVIES
+    @ConsoleLog
     @GetMapping
     public ResponseEntity<?> all(@RequestParam(name = "page", defaultValue = "0") int page,
                                  @RequestParam(name = "itens", defaultValue = "12") int itens)
@@ -57,7 +59,8 @@ public class MovieController {
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
-    //GET - MAP REQUEST PATH
+    //GET: MAP REQUEST PATH
+    @ConsoleLog
     @GetMapping(path = "/{var}")
     public ResponseEntity<?> get(@PathVariable @NotBlank String var,
                                  @RequestParam(name = "page", defaultValue = "0") int page,
@@ -65,14 +68,15 @@ public class MovieController {
     throws InvocationTargetException, IllegalAccessException
     {
         var = var.toLowerCase(Locale.ROOT);
-        System.out.println(String.format("[MOVIE] GET - page[%d] itens[%d]",page, itens));
+        System.out.println(String.format("[MOVIE] GET: page[%d] itens[%d]",page, itens));
         final Method methodCall = Optional.ofNullable(ENDPOINTS_GET.get(var))
             .orElseThrow(() -> new HttpClientErrorException(HttpStatus.NOT_FOUND, "Incorrect path to '/movies' URL"));
         final Object[] params = new Object[] { var, page, itens };
         return (ResponseEntity<?>) methodCall.invoke(this, params);
     }
 
-    //GET - FIND MOVIES BY GENRE
+    //GET: by GENRE
+    @ConsoleLog
     public ResponseEntity<?> byGenre(@NotBlank String genre, int page, int itens)
     {
         GenreEnum genreEnum = Arrays.stream(GenreEnum.values()).filter(
@@ -85,7 +89,8 @@ public class MovieController {
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
-    //GET - BY TITLE
+    //GET: by TITLE
+    @ConsoleLog
     public ResponseEntity<Page> byTitle(@NotBlank String title, int page, int itens)
     {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
@@ -95,7 +100,8 @@ public class MovieController {
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
-    //GET - BY SYNOPSIS
+    //GET: by SYNOPSIS
+    @ConsoleLog
     public ResponseEntity<Page> bySynopsis(@NotBlank String synopsis, int page, int itens)
     {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
@@ -105,7 +111,8 @@ public class MovieController {
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
-    //GET - BY DIRECTOR
+    //GET: by DIRECTOR
+    @ConsoleLog
     public ResponseEntity<Page> byDirector(@NotBlank String director, int page, int itens) {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesByDirector(director, pageConfig);
@@ -114,7 +121,8 @@ public class MovieController {
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
-    //GET - BY ACTOR
+    //GET: by ACTOR
+    @ConsoleLog
     public ResponseEntity<Page> byActor(@NotBlank String actor, int page, int itens)
     {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
@@ -124,7 +132,8 @@ public class MovieController {
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
-    //GET - BY PRODUCER
+    //GET: by PRODUCER
+    @ConsoleLog
     public ResponseEntity<Page> byProducer(@NotBlank String producer, int page, int itens)
     {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
@@ -134,7 +143,8 @@ public class MovieController {
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
-    //GET - BY TITLE, SYNOPSIS, DIRECTOR, ACTOR, PRODUCER
+    //GET: BY TITLE, SYNOPSIS, DIRECTOR, ACTOR or PRODUCER
+    @ConsoleLog
     public ResponseEntity<?> byText(@NotBlank String text, int page, int itens)
     {
         final PageRequest pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
@@ -150,7 +160,8 @@ public class MovieController {
         return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
     }
 
-    //POST - BY ADVANCED SEARCH
+    //POST: ADVANCED SEARCH
+    @ConsoleLog
     @PostMapping(name = "/example/{example}", params = {"page", "itens"})
     public ResponseEntity<Page> byExampleOf(@Valid MoviePostRequest movie, int page, int itens)
     {
