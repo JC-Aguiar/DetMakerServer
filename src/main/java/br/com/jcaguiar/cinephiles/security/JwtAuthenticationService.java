@@ -10,7 +10,6 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 
-import javax.naming.AuthenticationException;
 import java.util.Date;
 import java.util.Optional;
 
@@ -25,7 +24,6 @@ public class JwtAuthenticationService {
     //BUILDING JWT TOKEN (RESPONSE)
     public JwtTokenResponse createToken(Authentication auth) {
         final UserEntity user = userService.getUserByEmail(auth.getName());
-        final String signature = "Elleirbag17";
         final Date tokenCreationDate = new Date();
         final Date tokenExpirationDate = new Date(tokenCreationDate.getTime() + TOKEN_VALID_TIME);
         final String jwtToken = Jwts.builder()
@@ -40,10 +38,10 @@ public class JwtAuthenticationService {
     }
 
     //DECRYPTING JWT-TOKEN (REQUEST)
-    public UserEntity decodeToken(String jwtToken) {
+    public UserEntity decodeToken(String bearerToken) {
         final String userStringId = Optional.ofNullable(
-            Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJwt(jwtToken).getBody().getSubject()
-        ).orElseThrow(() -> new JwtException(""));
+            Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJwt(bearerToken).getBody().getSubject()
+        ).orElseThrow(() -> new JwtException("Invalid or expired JWT"));
         final int userId = Integer.parseInt(userStringId);
         return userService.getUserById(userId);
     }
