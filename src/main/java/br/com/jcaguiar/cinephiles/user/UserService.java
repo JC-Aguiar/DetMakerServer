@@ -1,10 +1,10 @@
 package br.com.jcaguiar.cinephiles.user;
 
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 import java.util.Optional;
 
@@ -15,8 +15,8 @@ public class UserService {
     @Autowired
     private UserRepository dao;
 
-    public UserEntity getUserById(@Positive int id) {
-        return Optional.of(dao.getById(id)).orElseThrow();
+    public UserEntity getUserById(@Positive @NotNull int id) {
+        return Optional.ofNullable(dao.getById(id)).orElseThrow();
     }
 
     public UserEntity getUserByEmail(@NotBlank String email) {
