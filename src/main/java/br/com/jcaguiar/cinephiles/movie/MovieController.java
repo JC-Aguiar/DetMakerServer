@@ -68,7 +68,6 @@ public class MovieController {
     throws InvocationTargetException, IllegalAccessException
     {
         var = var.toLowerCase(Locale.ROOT);
-        System.out.println(String.format("[MOVIE] GET: page[%d] itens[%d]",page, itens));
         final Method methodCall = Optional.ofNullable(ENDPOINTS_GET.get(var))
             .orElseThrow(() -> new HttpClientErrorException(HttpStatus.NOT_FOUND, "Incorrect path to '/movies' URL"));
         final Object[] params = new Object[] { var, page, itens };
