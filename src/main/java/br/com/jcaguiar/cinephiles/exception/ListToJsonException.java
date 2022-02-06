@@ -7,8 +7,8 @@ public class ListToJsonException extends ResponseStatusException {
 
     private static final String MESSAGE = "Unexpected error while parsing List<String> to Json";
 
-    public ListToJsonException(HttpStatus status) {
-        super(status, MESSAGE);
+    public ListToJsonException() {
+        super(HttpStatus.INTERNAL_SERVER_ERROR, MESSAGE);
     }
 
 }
