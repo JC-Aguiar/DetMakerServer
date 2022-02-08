@@ -1,5 +1,6 @@
 package br.com.jcaguiar.cinephiles.user;
 
+import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -15,10 +16,17 @@ public class UserService {
     @Autowired
     private UserRepository dao;
 
+    @ConsoleLog
+    public UserEntity addUser(@NotNull UserEntity user) {
+        return dao.save(user);
+    }
+
+    @ConsoleLog
     public UserEntity getUserById(@Positive @NotNull int id) {
         return Optional.ofNullable(dao.getById(id)).orElseThrow();
     }
 
+    @ConsoleLog
     public UserEntity getUserByEmail(@NotBlank String email) {
         return dao.findByEmail(email).orElseThrow();
     }
