@@ -2,6 +2,7 @@ package br.com.jcaguiar.cinephiles.security;
 
 import br.com.jcaguiar.cinephiles.user.UserEntity;
 import br.com.jcaguiar.cinephiles.user.UserService;
+import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import lombok.SneakyThrows;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;

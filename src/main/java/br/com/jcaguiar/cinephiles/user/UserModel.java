@@ -9,9 +9,10 @@ import javax.persistence.MappedSuperclass;
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 
+@Data
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
-@FieldDefaults(level = AccessLevel.PROTECTED)
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @MappedSuperclass
 public class UserModel {
 

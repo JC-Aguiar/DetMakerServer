@@ -3,6 +3,7 @@ package br.com.jcaguiar.cinephiles.movie;
 import br.com.jcaguiar.cinephiles.enums.*;
 import br.com.jcaguiar.cinephiles.util.ListConverter;
 import lombok.AccessLevel;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
@@ -17,9 +18,10 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+@Data
 @NoArgsConstructor
 @SuperBuilder(toBuilder = true)
-@FieldDefaults(level = AccessLevel.PROTECTED)
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @MappedSuperclass
 public class MovieModel {
 

@@ -36,17 +36,17 @@ final public class MovieEntity extends MovieModel {
     MasterRecord data;
 
     public MovieEntity addDirector(String director) {
-        directors.add(director);
+        getDirectors().add(director);
         return this;
     }
 
     public MovieEntity addActor(String actor) {
-        actors.add(actor);
+        getActors().add(actor);
         return this;
     }
 
     public MovieEntity addProctor(String producer) {
-        producers.add(producer);
+        getProducers().add(producer);
         return this;
     }
 }
