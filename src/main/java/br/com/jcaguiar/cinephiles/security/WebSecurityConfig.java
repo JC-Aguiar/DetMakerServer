@@ -48,7 +48,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
             .mvcMatchers("/profile/**").hasAnyAuthority("USER")
             .anyRequest().permitAll()
             .and()
-            .csrf().and().cors().disable()
+            .csrf().disable().cors().disable()
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             .and()
             .addFilterBefore(jwtAuthFilter, basicAuthFiler);

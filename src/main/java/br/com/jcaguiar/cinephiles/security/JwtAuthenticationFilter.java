@@ -34,11 +34,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
     throws ServletException, IOException
     {
-        final String bearerToken = getBearerToken(request);
-        final UserEntity user = jwtService.decodeToken(bearerToken);
-        final Authentication auth = new UsernamePasswordAuthenticationToken(user, null);
-        SecurityContextHolder.getContext().setAuthentication(auth);
-        filterChain.doFilter(request, response);
+        try {
+            final String bearerToken = getBearerToken(request);
+            final UserEntity user = jwtService.decodeToken(bearerToken);
+            final Authentication auth = new UsernamePasswordAuthenticationToken(user, null);
+            SecurityContextHolder.getContext().setAuthentication(auth);
+        } catch (Exception e) {
+            System.out.println(e.getLocalizedMessage());
+        } finally {
+            filterChain.doFilter(request, response);
+        }
         //try {
         //} catch (NoSuchElementException e) {
         //    System.out.println("Request header doesn't provide 'Authorization' attribute");
