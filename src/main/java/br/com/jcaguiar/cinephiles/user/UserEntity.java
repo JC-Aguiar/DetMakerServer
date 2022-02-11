@@ -6,6 +6,7 @@ import br.com.jcaguiar.cinephiles.movie.MovieEntity;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.GrantedAuthority;
@@ -23,6 +24,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "users")
 @Table(name = "users")
+@ToString(callSuper = true)
 final public class UserEntity extends UserModel implements UserDetails {
 
     @Id
@@ -34,14 +36,17 @@ final public class UserEntity extends UserModel implements UserDetails {
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "acesses_id")
+    @ToString.Exclude
     final List<AccessEntity> acesses = new ArrayList<>();
 
     @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "authorities_id")
+    @ToString.Exclude
     final List<RoleModel> authorities = new ArrayList<>();
 
-    @OneToMany(fetch = FetchType.LAZY,cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "watchpoints_id")
+    @ToString.Exclude
     final List<MovieEntity> moviesWatchpoints = new ArrayList<>();
 
     @Embedded
