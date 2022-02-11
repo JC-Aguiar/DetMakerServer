@@ -30,7 +30,6 @@ public class UserController {
     @ConsoleLog
     @PostMapping("/test")
     public ResponseEntity<?> test2() {
-        System.out.println("TESTE");
         return new ResponseEntity<>(null, HttpStatus.OK);
     }
 
@@ -38,7 +37,6 @@ public class UserController {
     @Transactional
     @PostMapping("/add")
     public ResponseEntity<?> add(@Valid @RequestBody UserDtoRequest userRequest) {
-        System.out.println("TESTE");
         final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
         userRequest.setPassword( encoder.encode(userRequest.getPassword()) );
         final UserEntity user = modelMapper.map(userRequest, UserEntity.class);
