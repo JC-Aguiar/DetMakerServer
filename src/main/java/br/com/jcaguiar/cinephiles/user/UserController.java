@@ -32,12 +32,14 @@ public class UserController {
     public ResponseEntity<?> getAll() {
         final Pageable pageConfig = PageRequest.of(0, 12, Sort.by("id").ascending());
         final Page<UserEntity> usersEntities = userService.findAll(pageConfig);
-        usersEntities.forEach(e -> System.out.println("elemento: " + e));
-        usersEntities.stream().filter(Objects::nonNull).findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "No registers in database"));
+        usersEntities.stream().filter(Objects::nonNull).findFirst().orElseThrow();
         final Page<UserDtoResponse> usersResponse = usersEntities.map(
                 user -> modelMapper.map(user, UserDtoResponse.class));
         return new ResponseEntity<>(usersResponse, HttpStatus.OK);
+
+        //TODO: Create handler controller for NoSuchElementException
+        // -> ResponseStatusException(HttpStatus.NOT_FOUND, "No registers in database")
+
     }
 
     @ConsoleLog
