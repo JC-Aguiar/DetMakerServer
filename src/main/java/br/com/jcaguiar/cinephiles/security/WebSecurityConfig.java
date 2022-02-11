@@ -44,14 +44,17 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         final Class<? extends Filter> basicAuthFiler = UsernamePasswordAuthenticationFilter.class;
         //Defining rules for authorities, csrf + rest configuration and custom login filter (JWT)
         http.authorizeRequests()
-            .mvcMatchers("/adm/**").hasAnyAuthority("ADMIN")
-            .mvcMatchers("/profile/**").hasAnyAuthority("USER")
-            .anyRequest().permitAll()
-            .and()
-            .csrf().disable().cors().disable()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            .and()
-            .addFilterBefore(jwtAuthFilter, basicAuthFiler);
+                .mvcMatchers("/adm/**").hasAnyAuthority("ADMIN")
+                .mvcMatchers("/profile/**").hasAnyAuthority("USER")
+                .anyRequest().permitAll()
+                .and()
+                .formLogin(login -> {
+                    login.usernameParameter("email").passwordParameter("password").successForwardUrl("/login");
+                })
+                .csrf().disable().cors().disable()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .addFilterBefore(jwtAuthFilter, basicAuthFiler);
         //Defining defaults: unauthorised page + change password page
         http.exceptionHandling().accessDeniedPage("/error/denied").and()
             .passwordManagement(manager -> manager.changePasswordPage("/password"));

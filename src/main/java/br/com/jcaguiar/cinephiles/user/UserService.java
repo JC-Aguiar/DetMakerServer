@@ -2,6 +2,8 @@ package br.com.jcaguiar.cinephiles.user;
 
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import javax.validation.constraints.NotBlank;
@@ -31,4 +33,7 @@ public class UserService {
         return dao.findByEmail(email).orElseThrow();
     }
 
+    public Page<UserEntity> findAll(@NotNull Pageable pageable) {
+        return dao.findAll(pageable);
+    }
 }
