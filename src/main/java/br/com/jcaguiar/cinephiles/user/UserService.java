@@ -35,8 +35,7 @@ public class UserService {
     }
 
     public Page<UserEntity> findAll(@NotNull Pageable pageable) {
-        final Page<UserEntity> usersEntities = dao.findAll(pageable)
-                .stream().filter(Objects::nonNull).
+        final Page<UserEntity> usersEntities = dao.findAll(pageable);
         usersEntities.stream().filter(Objects::nonNull).findFirst().orElseThrow();
         return usersEntities;
     }

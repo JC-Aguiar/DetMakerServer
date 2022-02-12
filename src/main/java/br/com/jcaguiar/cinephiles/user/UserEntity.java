@@ -2,7 +2,8 @@ package br.com.jcaguiar.cinephiles.user;
 
 import br.com.jcaguiar.cinephiles.access.AccessEntity;
 import br.com.jcaguiar.cinephiles.master.MasterRecord;
-import br.com.jcaguiar.cinephiles.movie.MovieEntity;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,9 +23,9 @@ import java.util.List;
 @NoArgsConstructor
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@ToString(callSuper = true)
 @Entity(name = "users")
 @Table(name = "users")
-@ToString(callSuper = true)
 final public class UserEntity extends UserModel implements UserDetails {
 
     @Id
@@ -34,20 +35,23 @@ final public class UserEntity extends UserModel implements UserDetails {
     LocalDateTime tokenExpiration;
     LocalDateTime lastLogin;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "acesses_id")
     @ToString.Exclude
+    @JsonBackReference
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "id")
+    @Column(name = "access_id")
     final List<AccessEntity> acesses = new ArrayList<>();
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "authorities_id")
     @ToString.Exclude
-    final List<RoleModel> authorities = new ArrayList<>();
+    @JsonManagedReference
+    @OneToMany( fetch = FetchType.LAZY,cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "id")
+    @Column(name = "roles_id")
+    final List<RoleEntity> authorities = new ArrayList<>();
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "watchpoints_id")
     @ToString.Exclude
-    final List<MovieEntity> moviesWatchpoints = new ArrayList<>();
+    @JsonBackReference
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "id")
+    @Column(name = "watchpoints_id")
+    final List<WatchpointsEntity> moviesWatchpoints = new ArrayList<>();
 
     @Embedded
     MasterRecord data;

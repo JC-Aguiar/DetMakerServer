@@ -56,6 +56,8 @@ public class MovieModel {
     @Convert(converter = ListConverter.class)
     final List<DesignEnum> design = new ArrayList<>();
     Duration duration;
-    @URL String media;
+
+    @URL
+    String media;
 
 }
