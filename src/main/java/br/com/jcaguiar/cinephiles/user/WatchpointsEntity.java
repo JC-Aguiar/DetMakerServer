@@ -1,5 +1,6 @@
 package br.com.jcaguiar.cinephiles.user;
 
+import br.com.jcaguiar.cinephiles.master.MasterEntity;
 import br.com.jcaguiar.cinephiles.master.MasterRecord;
 import br.com.jcaguiar.cinephiles.movie.MovieEntity;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -15,7 +16,7 @@ import javax.persistence.*;
 @SuperBuilder
 @Entity(name = "watchpoints")
 @Table(name = "watchpoints")
-public class WatchpointsEntity {
+public class WatchpointsEntity implements MasterEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

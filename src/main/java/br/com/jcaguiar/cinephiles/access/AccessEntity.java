@@ -1,7 +1,7 @@
 package br.com.jcaguiar.cinephiles.access;
 
+import br.com.jcaguiar.cinephiles.master.MasterEntity;
 import br.com.jcaguiar.cinephiles.user.UserEntity;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -19,7 +19,7 @@ import javax.persistence.*;
 @ToString(callSuper = true)
 @Entity(name = "access")
 @Table(name = "access")
-final public class AccessEntity extends AccessModel {
+final public class AccessEntity extends AccessModel implements MasterEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

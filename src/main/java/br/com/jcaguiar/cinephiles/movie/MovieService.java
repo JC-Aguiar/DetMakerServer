@@ -1,6 +1,7 @@
 package br.com.jcaguiar.cinephiles.movie;
 
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
+import br.com.jcaguiar.cinephiles.master.MasterService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
@@ -10,16 +11,20 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 @Service
-public class MovieService {
+public class MovieService extends MasterService<Integer, MovieEntity> {
 
     @Autowired
     private MovieRepository dao;
+
+    public MovieService(MovieRepository dao) {
+        super(dao);
+    }
 
     public MovieEntity getMovieById(Integer id) {
         return Optional.ofNullable(dao.getById(id)).orElseThrow();
     }
 
-    public Page<MovieEntity> getAll(Pageable pageable) {
+    public Page<MovieEntity> findAll(Pageable pageable) {
         return dao.findAll(pageable);
     }
 
