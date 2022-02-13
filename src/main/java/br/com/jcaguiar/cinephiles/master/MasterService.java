@@ -19,7 +19,7 @@ public abstract class MasterService<ID, ENTITY> {
         this.dao = dao;
     }
 
-    private Page<?> pageCheck(@NotNull Page<?> page) {
+    public Page<?> pageCheck(@NotNull Page<?> page) {
         page.stream().map(Objects::nonNull).findFirst().orElseThrow();
         return page;
     }
