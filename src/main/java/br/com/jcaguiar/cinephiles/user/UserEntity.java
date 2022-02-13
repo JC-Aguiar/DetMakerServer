@@ -1,6 +1,7 @@
 package br.com.jcaguiar.cinephiles.user;
 
 import br.com.jcaguiar.cinephiles.access.AccessEntity;
+import br.com.jcaguiar.cinephiles.master.MasterEntity;
 import br.com.jcaguiar.cinephiles.master.MasterRecord;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -26,7 +27,7 @@ import java.util.List;
 @ToString(callSuper = true)
 @Entity(name = "users")
 @Table(name = "users")
-final public class UserEntity extends UserModel implements UserDetails {
+final public class UserEntity extends UserModel implements UserDetails, MasterEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

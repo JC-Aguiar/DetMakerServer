@@ -1,5 +1,6 @@
 package br.com.jcaguiar.cinephiles.movie;
 
+import br.com.jcaguiar.cinephiles.master.MasterEntity;
 import br.com.jcaguiar.cinephiles.master.MasterRecord;
 import br.com.jcaguiar.cinephiles.user.WatchpointsEntity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -21,7 +22,7 @@ import java.util.List;
 @ToString(callSuper = true)
 @Entity(name = "movies")
 @Table(name = "movies")
-final public class MovieEntity extends MovieModel {
+final public class MovieEntity extends MovieModel implements MasterEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)

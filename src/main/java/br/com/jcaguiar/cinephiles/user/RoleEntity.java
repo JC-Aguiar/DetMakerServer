@@ -1,5 +1,6 @@
 package br.com.jcaguiar.cinephiles.user;
 
+import br.com.jcaguiar.cinephiles.master.MasterEntity;
 import br.com.jcaguiar.cinephiles.master.MasterRecord;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import lombok.AccessLevel;
@@ -17,7 +18,7 @@ import javax.persistence.*;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "roles")
 @Table(name = "roles")
-public class RoleEntity {
+public class RoleEntity  implements MasterEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.AUTO)
     Integer id;
