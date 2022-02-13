@@ -1,12 +1,13 @@
 package br.com.jcaguiar.cinephiles.util;
 
+import br.com.jcaguiar.cinephiles.exception.JsonToListException;
+import br.com.jcaguiar.cinephiles.exception.ListToJsonException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 
 import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
-import java.io.InvalidObjectException;
 import java.util.List;
 
 @Converter
@@ -19,7 +20,7 @@ public class ListConverter implements AttributeConverter<List<?>, String> {
         try {
             return new ObjectMapper().writeValueAsString(attribute) ;
         } catch (JsonProcessingException e) {
-            throw new InvalidObjectException("Unexpected error while converting Entity to JSON");
+            throw new ListToJsonException();
         }
     }
 
@@ -30,7 +31,7 @@ public class ListConverter implements AttributeConverter<List<?>, String> {
         try {
             return new ObjectMapper().readValue(dbData, List.class);
         } catch (JsonProcessingException e) {
-            throw new InvalidObjectException("Unexpected error while converting JSON to Entity");
+            throw new JsonToListException();
         }
     }
 }

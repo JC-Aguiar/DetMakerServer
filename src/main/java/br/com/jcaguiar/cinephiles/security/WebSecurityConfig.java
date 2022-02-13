@@ -3,46 +3,66 @@ package br.com.jcaguiar.cinephiles.security;
 
 import br.com.jcaguiar.cinephiles.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.servlet.config.annotation.CorsRegistry;
-import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import javax.servlet.Filter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class WebSecurityConfig extends WebSecurityConfigurerAdapter implements WebMvcConfigurer {
+@Configuration
+@EnableWebSecurity
+public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+    // implements WebMvcConfigurer
+    @Autowired
+    private AuthenticationService authService;
 
     @Autowired
-    private static AuthenticationService authService;
+    private CustomAuthenticationProvider authProvider;
 
     @Autowired
-    private static CustomAuthenticationProvider authProvider;
+    private UserService userService;
 
     @Autowired
-    private static UserService userService;
+    private JwtAuthenticationService jwtAuthService;
 
-    @Autowired
-    private static JwtAuthenticationService jwtAuthService;
-    final static JwtAuthenticationFilter jwtAuthFilter = new JwtAuthenticationFilter(userService, jwtAuthService);
-    final static Class<? extends Filter> basicAuthFiler = UsernamePasswordAuthenticationFilter.class;
+    private final Map<String, String> urlMatchers = new HashMap<>(){{
+        put("admins", "/adm/**");
+        put("users", "/profile/**");
+    }};
+
+    private static final List<String> SUPPORTED_ORIGINS = new ArrayList<>() {{
+        add("http://localhost:8100/**");
+    }};
 
     //SERVER SECURITY CONFIGURATION
     @Override
     protected void configure(HttpSecurity http) throws Exception
     {
+        final JwtAuthenticationFilter jwtAuthFilter = new JwtAuthenticationFilter(
+            userService, jwtAuthService, urlMatchers);
+        final Class<? extends Filter> basicAuthFiler = UsernamePasswordAuthenticationFilter.class;
         //Defining rules for authorities, csrf + rest configuration and custom login filter (JWT)
-        http.authorizeRequests().mvcMatchers("/adm/**").hasAnyAuthority("ADMIN").and()
-            .authorizeRequests().mvcMatchers("/profile/**").hasAnyAuthority("USER").and()
-            .authorizeRequests().anyRequest().authenticated().and()
-            .csrf().disable().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
-            .addFilterBefore(jwtAuthFilter, basicAuthFiler);
-
+        http.authorizeRequests()
+                .mvcMatchers(urlMatchers.get("admins")).hasAnyAuthority("ADMIN")
+                .mvcMatchers(urlMatchers.get("users")).hasAnyAuthority("USER")
+                .anyRequest().permitAll()
+                .and()
+                .formLogin(login -> {
+                    login.usernameParameter("email").passwordParameter("password").successForwardUrl("/login");
+                })
+                .csrf().disable().cors().disable()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .addFilterBefore(jwtAuthFilter, basicAuthFiler);
         //Defining defaults: unauthorised page + change password page
         http.exceptionHandling().accessDeniedPage("/error/denied").and()
             .passwordManagement(manager -> manager.changePasswordPage("/password"));
@@ -57,11 +77,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter implements W
     }
 
     //CROSS-ORIGIN-RESOURCE-SHARING
-    @Override
-    public void addCorsMappings(CorsRegistry registry)
-    {
-        List<String> supportedOrigins = new ArrayList<>();
-        supportedOrigins.add("http://localhost:8100/**");
-        supportedOrigins.forEach(registry::addMapping);
-    }
+//    @Override
+//    public void addCorsMappings(CorsRegistry registry)
+//    {
+//        SUPPORTED_ORIGINS.forEach(registry::addMapping);
+//    }
 }
