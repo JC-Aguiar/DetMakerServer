@@ -20,14 +20,6 @@ public class MovieService extends MasterService<Integer, MovieEntity> {
         super(dao);
     }
 
-    public MovieEntity getMovieById(Integer id) {
-        return Optional.ofNullable(dao.getById(id)).orElseThrow();
-    }
-
-    public Page<MovieEntity> findAll(Pageable pageable) {
-        return dao.findAll(pageable);
-    }
-
     public Page<MovieEntity> getMoviesByGenre(GenreEnum genre, Pageable pageable) {
         return dao.findByGenre(genre, pageable);
     }

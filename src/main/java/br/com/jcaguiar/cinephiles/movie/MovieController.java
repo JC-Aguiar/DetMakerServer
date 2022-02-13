@@ -3,6 +3,7 @@ package br.com.jcaguiar.cinephiles.movie;
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
 import br.com.jcaguiar.cinephiles.master.MasterController;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +18,7 @@ import java.util.Arrays;
 @RequestMapping("/movie")
 public class MovieController extends MasterController<Integer, MovieEntity, MovieDtoRequest, MovieDtoResponse> {
 
+    @Autowired
     private MovieService service;
 
     public MovieController(MovieService service) {
