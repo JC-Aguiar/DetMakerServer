@@ -19,20 +19,6 @@ public class MovieController extends MasterController<Integer, MovieEntity, Movi
 
     private MovieService service;
 
-//    private final Map<String, Method> endpointsGet = new HashMap<>() {{
-//        try {
-//            put("genre", MovieController.class.getMethod("byGenre", String.class, int.class, int.class));
-//            put("title", MovieController.class.getMethod("byTitle", String.class, int.class, int.class));
-//            put("synopsis", MovieController.class.getMethod("bySynopsis", String.class, int.class, int.class));
-//            put("director", MovieController.class.getMethod("byDirector", String.class, int.class, int.class));
-//            put("actor", MovieController.class.getMethod("byActor", String.class, int.class, int.class));
-//            put("producer", MovieController.class.getMethod("byProducer", String.class, int.class, int.class));
-//            put("text", MovieController.class.getMethod("byText", String.class, int.class, int.class));
-//        } catch (NoSuchMethodException e) {
-//            e.printStackTrace();
-//        }
-//    }};
-
     public MovieController(MovieService service) {
         super(MovieController.class, service);
         try {
@@ -48,33 +34,6 @@ public class MovieController extends MasterController<Integer, MovieEntity, Movi
         }
         printInfo();
     }
-
-    //GET: ALL MOVIES
-//    @ConsoleLog
-//    @GetMapping
-//    public ResponseEntity<?> all(@RequestParam(name = "page", defaultValue = "0") int page,
-//                                 @RequestParam(name = "itens", defaultValue = "12") int itens)
-//    {
-//        final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
-//        final Page<MovieEntity> moviesEntities = service.findAll(pageConfig);
-//        final Page<MovieDtoResponse> moviesResponse = moviesEntities.map(this::parseToResponseDto);
-//        return new ResponseEntity<>(moviesResponse, HttpStatus.OK);
-//    }
-
-    //GET: MAP REQUEST PATH
-//    @ConsoleLog
-//    @GetMapping(path = "/{var}")
-//    public ResponseEntity<?> get(@PathVariable @NotBlank String var,
-//                                 @RequestParam(name = "page", defaultValue = "0") int page,
-//                                 @RequestParam(name = "itens", defaultValue = "12") int itens)
-//    throws InvocationTargetException, IllegalAccessException
-//    {
-//        var = var.toLowerCase(Locale.ROOT);
-//        final Method methodCall = Optional.ofNullable(ENDPOINTS_GET.get(var))
-//            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Incorrect path to '/movies' URL"));
-//        final Object[] params = new Object[] { var, page, itens };
-//        return (ResponseEntity<?>) methodCall.invoke(this, params);
-//    }
 
     //GET: by GENRE
     @ConsoleLog
