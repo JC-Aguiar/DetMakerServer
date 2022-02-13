@@ -89,7 +89,7 @@ public abstract class MasterController
                                  @RequestParam(name = "itens", defaultValue = "12") int itens)
     {
         if(id.isPresent()) { return getOne(id.get()); }
-        return getAll(page, page);
+        return getAll(page, itens);
     }
 
     //GET: by ID
