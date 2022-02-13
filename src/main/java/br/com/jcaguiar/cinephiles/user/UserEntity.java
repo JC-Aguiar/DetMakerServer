@@ -1,11 +1,14 @@
 package br.com.jcaguiar.cinephiles.user;
 
 import br.com.jcaguiar.cinephiles.access.AccessEntity;
+import br.com.jcaguiar.cinephiles.master.MasterEntity;
 import br.com.jcaguiar.cinephiles.master.MasterRecord;
-import br.com.jcaguiar.cinephiles.movie.MovieEntity;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.GrantedAuthority;
@@ -21,9 +24,10 @@ import java.util.List;
 @NoArgsConstructor
 @SuperBuilder
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@ToString(callSuper = true)
 @Entity(name = "users")
 @Table(name = "users")
-final public class UserEntity extends UserModel implements UserDetails {
+final public class UserEntity extends UserModel implements UserDetails, MasterEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -32,17 +36,23 @@ final public class UserEntity extends UserModel implements UserDetails {
     LocalDateTime tokenExpiration;
     LocalDateTime lastLogin;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "acesses_id")
+    @ToString.Exclude
+    @JsonBackReference
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "id")
+    @Column(name = "access_id")
     final List<AccessEntity> acesses = new ArrayList<>();
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "authorities_id")
-    final List<RoleModel> authorities = new ArrayList<>();
+    @ToString.Exclude
+    @JsonManagedReference
+    @OneToMany( fetch = FetchType.LAZY,cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "id")
+    @Column(name = "roles_id")
+    final List<RoleEntity> authorities = new ArrayList<>();
 
-    @OneToMany(fetch = FetchType.LAZY,cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "watchpoints_id")
-    final List<MovieEntity> moviesWatchpoints = new ArrayList<>();
+    @ToString.Exclude
+    @JsonBackReference
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "id")
+    @Column(name = "watchpoints_id")
+    final List<WatchpointsEntity> moviesWatchpoints = new ArrayList<>();
 
     @Embedded
     MasterRecord data;

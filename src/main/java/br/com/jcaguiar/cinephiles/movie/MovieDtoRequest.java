@@ -12,7 +12,7 @@ import java.time.Duration;
 @Value
 @RequiredArgsConstructor
 @SuperBuilder(toBuilder = true)
-public final class MoviePostRequest extends MovieModel implements MasterDtoRequest {
+public final class MovieDtoRequest extends MovieModel implements MasterDtoRequest {
 
     @Transient
     @JsonIgnore
