@@ -15,17 +15,22 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Map;
 import java.util.Optional;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final UserService userService;
     private final JwtAuthenticationService jwtService;
+    private final Map<String, String> urlMatchers;
 
-    public JwtAuthenticationFilter(UserService userService, JwtAuthenticationService jwtService)
+    public JwtAuthenticationFilter(UserService userService,
+                                   JwtAuthenticationService jwtService,
+                                   Map<String, String> urlMatchers)
     {
         this.userService = userService;
         this.jwtService = jwtService;
+        this.urlMatchers = urlMatchers;
     }
 
     @SneakyThrows
@@ -33,6 +38,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
     throws ServletException, IOException
     {
+        final String uri = request.getRequestURI();
+        System.out.println("URI: " + uri);
+        final boolean restrictedAccess = urlMatchers.containsKey(uri);
+        if (!restrictedAccess) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         try {
             final String bearerToken = getBearerToken(request);
             final UserEntity user = jwtService.decodeToken(bearerToken);

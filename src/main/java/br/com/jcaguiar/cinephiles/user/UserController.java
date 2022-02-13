@@ -47,8 +47,8 @@ public class UserController {
     @PostMapping("/add")
     public ResponseEntity<?> add(@Valid @RequestBody UserDtoRequest userRequest) {
         final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        userRequest.setPassword( encoder.encode(userRequest.getPassword()) );
         final UserEntity user = modelMapper.map(userRequest, UserEntity.class);
+        user.setPassword( encoder.encode(userRequest.getPassword()) );
         userService.addUser(user);
         final UserDtoResponse userResponse = modelMapper.map(user, UserDtoResponse.class);
         return new ResponseEntity<>(userResponse, HttpStatus.OK);

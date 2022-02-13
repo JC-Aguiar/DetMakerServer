@@ -14,7 +14,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 import javax.servlet.Filter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
@@ -32,6 +34,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private JwtAuthenticationService jwtAuthService;
 
+    private final Map<String, String> urlMatchers = new HashMap<>(){{
+        put("admins", "/adm/**");
+        put("users", "/profile/**");
+    }};
+
     private static final List<String> SUPPORTED_ORIGINS = new ArrayList<>() {{
         add("http://localhost:8100/**");
     }};
@@ -40,12 +47,13 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception
     {
-        final JwtAuthenticationFilter jwtAuthFilter = new JwtAuthenticationFilter(userService, jwtAuthService);
+        final JwtAuthenticationFilter jwtAuthFilter = new JwtAuthenticationFilter(
+            userService, jwtAuthService, urlMatchers);
         final Class<? extends Filter> basicAuthFiler = UsernamePasswordAuthenticationFilter.class;
         //Defining rules for authorities, csrf + rest configuration and custom login filter (JWT)
         http.authorizeRequests()
-                .mvcMatchers("/adm/**").hasAnyAuthority("ADMIN")
-                .mvcMatchers("/profile/**").hasAnyAuthority("USER")
+                .mvcMatchers(urlMatchers.get("admins")).hasAnyAuthority("ADMIN")
+                .mvcMatchers(urlMatchers.get("users")).hasAnyAuthority("USER")
                 .anyRequest().permitAll()
                 .and()
                 .formLogin(login -> {
