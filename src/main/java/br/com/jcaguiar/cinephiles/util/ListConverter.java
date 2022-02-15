@@ -11,12 +11,13 @@ import javax.persistence.Converter;
 import java.util.List;
 
 @Converter
-public class ListConverter implements AttributeConverter<List<?>, String> {
+public class ListConverter implements AttributeConverter<List<String>, String> {
 
     @SneakyThrows
     @Override
-    public String convertToDatabaseColumn(List<?> attribute)
+    public String convertToDatabaseColumn(List<String> attribute)
     {
+        System.out.printf("Converting List %s to String\n", attribute.getClass().getSimpleName());
         try {
             return new ObjectMapper().writeValueAsString(attribute) ;
         } catch (JsonProcessingException e) {
@@ -26,10 +27,12 @@ public class ListConverter implements AttributeConverter<List<?>, String> {
 
     @SneakyThrows
     @Override
-    public List<?> convertToEntityAttribute(String dbData)
+    public List<String> convertToEntityAttribute(String dbData)
     {
+        System.out.printf("Converting String %s to List\n", dbData);
+        System.out.println();
         try {
-            return new ObjectMapper().readValue(dbData, List.class);
+            return (List<String>) new ObjectMapper().readValue(dbData, List.class);
         } catch (JsonProcessingException e) {
             throw new JsonToListException();
         }

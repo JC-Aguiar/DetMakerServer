@@ -6,6 +6,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface MovieRepository extends JpaRepository<MovieEntity, Integer> {
 
@@ -17,7 +19,7 @@ public interface MovieRepository extends JpaRepository<MovieEntity, Integer> {
 
     Page<MovieEntity> findBySynopsis(String synopsis, Pageable pageable);
 
-    Page<MovieEntity> findByActorsLike(String actor, Pageable pageable);
+    Page<MovieEntity> findByActorsIn(List<String> actors, Pageable pageable);
 
     Page<MovieEntity> findByDirectorsLike(String director, Pageable pageable);
 
