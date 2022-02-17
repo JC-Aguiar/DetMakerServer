@@ -1,9 +1,10 @@
 package br.com.jcaguiar.cinephiles.company;
 
-import br.com.jcaguiar.cinephiles.master.NameableEntity;
+import br.com.jcaguiar.cinephiles.master.NameableModel;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
@@ -15,7 +16,8 @@ import java.util.Arrays;
 @SuperBuilder(toBuilder = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @MappedSuperclass
-public class CompanyModel implements NameableEntity {
+@ToString(callSuper = true)
+public class CompanyModel implements NameableModel {
 
     String name;
 
@@ -29,7 +31,7 @@ public class CompanyModel implements NameableEntity {
         final boolean compositeName = name.contains(" ");
         return compositeName ?
                 Arrays.stream(name.split(" ")).map(i -> i.charAt(0)).toString()
-                : NameableEntity.findInitialsInSoloName(name);
+                : NameableModel.findInitialsInSoloName(name);
 
     }
 }

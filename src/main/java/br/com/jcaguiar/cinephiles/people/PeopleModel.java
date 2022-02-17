@@ -1,9 +1,10 @@
 package br.com.jcaguiar.cinephiles.people;
 
-import br.com.jcaguiar.cinephiles.master.NameableEntity;
+import br.com.jcaguiar.cinephiles.master.NameableModel;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
@@ -15,7 +16,8 @@ import javax.validation.constraints.NotBlank;
 @SuperBuilder(toBuilder = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @MappedSuperclass
-public class PeopleModel implements NameableEntity {
+@ToString(callSuper = true)
+public class PeopleModel implements NameableModel {
 
     @NotBlank(message = "'First Name' cant be empty")
     String firstName;
@@ -31,8 +33,8 @@ public class PeopleModel implements NameableEntity {
     @Override
     public String getInitialsName() {
         return String.format("%S",
-                NameableEntity.findInitials(firstName) +
-                NameableEntity.findInitials(lastName));
+                NameableModel.findInitials(firstName) +
+                NameableModel.findInitials(lastName));
     }
 
 

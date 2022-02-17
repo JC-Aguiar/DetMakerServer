@@ -2,12 +2,10 @@ package br.com.jcaguiar.cinephiles.master;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Stream;
 
-public interface NameableEntity {
+public interface NameableModel {
 
     public String getFullName();
 
@@ -19,7 +17,7 @@ public interface NameableEntity {
     };
 
     public static String findInitials(@NotNull List<String> names) {
-        return names.stream().map(NameableEntity::findInitials).toString();
+        return names.stream().map(NameableModel::findInitials).toString();
     };
 
     public static String findInitialsInSoloName(@NotBlank String name) {

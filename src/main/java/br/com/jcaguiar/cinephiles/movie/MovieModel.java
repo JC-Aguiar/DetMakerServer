@@ -9,9 +9,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 import org.hibernate.validator.constraints.URL;
 
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.MappedSuperclass;
+import javax.persistence.*;
 import javax.validation.constraints.NotBlank;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -30,17 +28,17 @@ public class MovieModel {
     String title;
     String synopsis;
 
-    @Convert(converter = ListConverter.class)
-    final List<GenreEnum> genre = new ArrayList<>();
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JoinTable( name = "movies_genre",
+                joinColumns = @JoinColumn(name = "movies_id"),
+                inverseJoinColumns = @JoinColumn(name = "genre_id") )
+    final List<GenreEntity> genre = new ArrayList<>();
     Date premiereDate;
 
-    @Convert(converter = ListConverter.class)
     final List<String> directors = new ArrayList<>();
 
-    @Convert(converter = ListConverter.class)
     final List<String> producers = new ArrayList<>();
 
-    @Convert(converter = ListConverter.class)
     final List<String> actors = new ArrayList<>();
     PegiEnum ageRange;
     String logo;
