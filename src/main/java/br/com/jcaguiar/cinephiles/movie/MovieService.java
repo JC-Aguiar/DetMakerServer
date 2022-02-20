@@ -8,8 +8,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
 @Service
 public class MovieService extends MasterService<Integer, MovieEntity> {
 
@@ -21,20 +19,30 @@ public class MovieService extends MasterService<Integer, MovieEntity> {
         super(dao);
     }
 
-    public Page<MovieEntity> getMoviesByGenre(GenreEnum genre, Pageable pageable) {
-        return (Page<MovieEntity>) pageCheck(dao.findByGenre(genre, pageable));
+    public Page<MovieEntity> getMoviesByGenre(GenreEnum genre, Pageable pageable)
+    {
+        return pageCheck(dao.findByGenres(genre, pageable));
     }
 
-    public Page<MovieEntity> getMoviesByExample(Example<MovieEntity> movieEx, Pageable pageable) {
-        return (Page<MovieEntity>) pageCheck(dao.findAll(movieEx, pageable));
+    public Page<MovieEntity> getMoviesByExample(Example<MovieEntity> movieEx, Pageable pageable)
+    {
+        return pageCheck(dao.findAll(movieEx, pageable));
     }
 
-    public Page<MovieEntity> getMoviesByTitle(String title, Pageable pageable) {
-        return (Page<MovieEntity>) pageCheck(dao.findByTitle(title, pageable));
+    public Page<MovieEntity> getMoviesByTitle(String title, Pageable pageable)
+    {
+        return pageCheck(dao.findByTitle(title, pageable));
     }
 
-    public Page<MovieEntity> getMoviesBySynopsis(String Synopsis, Pageable pageable) {
-        return (Page<MovieEntity>) pageCheck(dao.findBySynopsis(Synopsis, pageable));
+    public Page<MovieEntity> getMoviesBySynopsis(String synopsis, Pageable pageable)
+    {
+        return pageCheck(dao.findBySynopsis(synopsis, pageable));
+    }
+
+    public Page<MovieEntity> getMoviesByTextLike(String text, Pageable pageable)
+    {
+        return pageCheck(dao.findByActorsLikeOrDirectorsLikeOrProducersLikeOrTitleLike(
+            text, text, text, text, pageable));
     }
 
     public Page<MovieEntity> getMoviesByActor(String actor, Pageable pageable) {

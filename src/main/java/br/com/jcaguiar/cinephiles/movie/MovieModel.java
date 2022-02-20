@@ -5,6 +5,7 @@ import br.com.jcaguiar.cinephiles.people.ActorEntity;
 import br.com.jcaguiar.cinephiles.people.DirectorEntity;
 import br.com.jcaguiar.cinephiles.people.ProducerEntity;
 import br.com.jcaguiar.cinephiles.util.ListConverter;
+import br.com.jcaguiar.cinephiles.util.PegiEnumConvert;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -41,20 +42,28 @@ public class MovieModel {
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable( name = "movies_directors",
                 joinColumns = @JoinColumn(name = "movies_id"),
-                inverseJoinColumns = @JoinColumn(name = "directors_id") )
+                inverseJoinColumns = {
+                    @JoinColumn(name = "directors_first_name", referencedColumnName = "first_name"),
+                    @JoinColumn(name = "directors_last_name", referencedColumnName = "last_name") })
     final List<DirectorEntity> directors = new ArrayList<>();
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable( name = "movies_producers",
                 joinColumns = @JoinColumn(name = "movies_id"),
-                inverseJoinColumns = @JoinColumn(name = "producers_id") )
+                inverseJoinColumns = {
+                    @JoinColumn(name = "producers_first_name", referencedColumnName = "first_name"),
+                    @JoinColumn(name = "producers_last_name", referencedColumnName = "last_name") })
     final List<ProducerEntity> producers = new ArrayList<>();
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable( name = "movies_actors",
                 joinColumns = @JoinColumn(name = "movies_id"),
-                inverseJoinColumns = @JoinColumn(name = "actors_id") )
+                inverseJoinColumns = {
+                    @JoinColumn(name = "actors_first_name", referencedColumnName = "first_name"),
+                    @JoinColumn(name = "actors_last_name", referencedColumnName = "last_name") })
     final List<ActorEntity> actors = new ArrayList<>();
+
+    @Convert(converter = PegiEnumConvert.class)
     PegiEnum ageRange;
     String logo;
     String posters;

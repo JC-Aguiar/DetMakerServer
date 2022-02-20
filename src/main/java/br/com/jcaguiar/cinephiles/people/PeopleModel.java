@@ -8,6 +8,7 @@ import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
+import javax.persistence.Column;
 import javax.persistence.MappedSuperclass;
 import javax.validation.constraints.NotBlank;
 
@@ -20,9 +21,11 @@ import javax.validation.constraints.NotBlank;
 public class PeopleModel implements NameableModel {
 
     @NotBlank(message = "'First Name' cant be empty")
+    @Column(name = "first_name")
     String firstName;
 
     @NotBlank(message = "'Last Name' cant be empty")
+    @Column(name = "last_name")
     String lastName;
 
     @Override
