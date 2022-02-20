@@ -8,8 +8,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Optional;
 
 @Service
 public class MovieService extends MasterService<Integer, MovieEntity> {
@@ -23,37 +22,30 @@ public class MovieService extends MasterService<Integer, MovieEntity> {
     }
 
     public Page<MovieEntity> getMoviesByGenre(GenreEnum genre, Pageable pageable) {
-        return pageCheck(dao.findByGenre(genre, pageable));
+        return (Page<MovieEntity>) pageCheck(dao.findByGenre(genre, pageable));
     }
 
     public Page<MovieEntity> getMoviesByExample(Example<MovieEntity> movieEx, Pageable pageable) {
-        return pageCheck(dao.findAll(movieEx, pageable));
+        return (Page<MovieEntity>) pageCheck(dao.findAll(movieEx, pageable));
     }
 
     public Page<MovieEntity> getMoviesByTitle(String title, Pageable pageable) {
-        return pageCheck(dao.findByTitle(title, pageable));
+        return (Page<MovieEntity>) pageCheck(dao.findByTitle(title, pageable));
     }
 
-    public Page<MovieEntity> getMoviesBySynopsis(String synopsis, Pageable pageable) {
-        return pageCheck(dao.findBySynopsis(synopsis, pageable));
+    public Page<MovieEntity> getMoviesBySynopsis(String Synopsis, Pageable pageable) {
+        return (Page<MovieEntity>) pageCheck(dao.findBySynopsis(Synopsis, pageable));
     }
 
     public Page<MovieEntity> getMoviesByActor(String actor, Pageable pageable) {
-        final List<String> teste = new ArrayList<>();
-        teste.add(actor);
-        return pageCheck(dao.findByActorsIn(teste, pageable));
+        return (Page<MovieEntity>) pageCheck(dao.findByActorsLike(actor, pageable));
     }
-//
-//    public Page<MovieEntity> getMoviesByActor(List<String> actors, Pageable pageable) {
-//        System.out.println(actors.getClass().getName().toString());
-//        return pageCheck(dao.getByActorsIn(actors, pageable));
-//    }
 
     public Page<MovieEntity> getMoviesByDirector(String director, Pageable pageable) {
-        return pageCheck(dao.findByDirectorsLike(director, pageable));
+        return (Page<MovieEntity>) pageCheck(dao.findByDirectorsLike(director, pageable));
     }
 
     public Page<MovieEntity> getMoviesByProducer(String producer, Pageable pageable) {
-        return pageCheck(dao.findByProducersLike(producer, pageable));
+        return (Page<MovieEntity>) pageCheck(dao.findByProducersLike(producer, pageable));
     }
 }

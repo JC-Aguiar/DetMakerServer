@@ -1,5 +1,6 @@
 package br.com.jcaguiar.cinephiles.util;
 
+import br.com.jcaguiar.cinephiles.enums.PegiEnum;
 import br.com.jcaguiar.cinephiles.exception.ConverterToFieldException;
 import br.com.jcaguiar.cinephiles.exception.ConverterToJsonException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -9,31 +10,30 @@ import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import java.util.List;
 
 @Converter
-public class ListConverter implements AttributeConverter<List<String>, String> {
+public class PegiEnumConvert implements AttributeConverter<PegiEnum, String> {
 
     @Override
-    public String convertToDatabaseColumn(@NotNull List<String> attribute)
+    public String convertToDatabaseColumn(@NotNull PegiEnum attribute)
     {
-        System.out.printf("Converting List %s to String\n", attribute.getClass().getSimpleName());
+        System.out.printf("Converting PegiEnum to String\n");
         try {
-            return new ObjectMapper().writeValueAsString(attribute) ;
+            return new ObjectMapper().writeValueAsString(attribute);
         } catch (JsonProcessingException e) {
             throw new ConverterToJsonException();
         }
     }
 
     @Override
-    public List<String> convertToEntityAttribute(@NotBlank String dbData)
+    public PegiEnum convertToEntityAttribute(@NotBlank String dbData)
     {
-        System.out.printf("Converting String %s to List\n", dbData);
-        System.out.println();
+        System.out.printf("Converting String to PegiEnum\n", dbData);
         try {
-            return (List<String>) new ObjectMapper().readValue(dbData, List.class);
+            return new ObjectMapper().readValue(dbData, PegiEnum.class);
         } catch (JsonProcessingException e) {
             throw new ConverterToFieldException();
         }
     }
+
 }

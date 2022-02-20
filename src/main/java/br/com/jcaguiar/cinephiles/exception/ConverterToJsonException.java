@@ -3,11 +3,11 @@ package br.com.jcaguiar.cinephiles.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
-public class ListToJsonException extends ResponseStatusException {
+public class ConverterToJsonException extends ResponseStatusException {
 
-    private static final String MESSAGE = "Unexpected error while parsing List<String> to Json";
+    private static final String MESSAGE = "Unexpected error while converting Field to Json";
 
-    public ListToJsonException() {
+    public ConverterToJsonException() {
         super(HttpStatus.INTERNAL_SERVER_ERROR, MESSAGE);
     }
 
