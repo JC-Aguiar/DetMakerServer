@@ -41,8 +41,7 @@ public class MovieService extends MasterService<Integer, MovieEntity> {
 
     public Page<MovieEntity> getMoviesByTextLike(String text, Pageable pageable)
     {
-        return pageCheck(dao.findByActorsLikeOrDirectorsLikeOrProducersLikeOrTitleLike(
-            text, text, text, text, pageable));
+        return pageCheck(dao.findByKeyword(text, pageable));
     }
 
     public Page<MovieEntity> getMoviesByActor(String actor, Pageable pageable) {
