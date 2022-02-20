@@ -2,6 +2,9 @@ package br.com.jcaguiar.cinephiles.movie;
 
 import br.com.jcaguiar.cinephiles.master.MasterEntity;
 import br.com.jcaguiar.cinephiles.master.MasterRecord;
+import br.com.jcaguiar.cinephiles.people.ActorEntity;
+import br.com.jcaguiar.cinephiles.people.DirectorEntity;
+import br.com.jcaguiar.cinephiles.people.ProducerEntity;
 import br.com.jcaguiar.cinephiles.user.WatchpointsEntity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import lombok.AccessLevel;
@@ -40,17 +43,17 @@ final public class MovieEntity extends MovieModel implements MasterEntity {
     @Embedded
     MasterRecord data;
 
-    public MovieEntity addDirector(String director) {
+    public MovieEntity addDirector(DirectorEntity director) {
         getDirectors().add(director);
         return this;
     }
 
-    public MovieEntity addActor(String actor) {
+    public MovieEntity addActor(ActorEntity actor) {
         getActors().add(actor);
         return this;
     }
 
-    public MovieEntity addProctor(String producer) {
+    public MovieEntity addProctor(ProducerEntity producer) {
         getProducers().add(producer);
         return this;
     }

@@ -2,6 +2,7 @@ package br.com.jcaguiar.cinephiles.movie;
 
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
 import br.com.jcaguiar.cinephiles.master.MasterController;
+import br.com.jcaguiar.cinephiles.people.DirectorEntity;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
@@ -100,11 +101,11 @@ public class MovieController extends MasterController<Integer, MovieEntity, Movi
     public ResponseEntity<?> byText(@NotBlank String text, int page, int itens)
     {
         final PageRequest pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
-        final MovieEntity movieTemplate = MovieEntity.builder()
-                .title(text).synopsis(text).build();
-        movieTemplate.addDirector(text).addActor(text).addProctor(text);
-        final Example<MovieEntity> movieEx = Example.of(movieTemplate, MATCHER_ANY);
-        final Page<MovieEntity> moviesEntities = service.getMoviesByExample(movieEx, pageConfig);
+//        final MovieEntity movieTemplate = MovieEntity.builder()
+//                .title(text).synopsis(text).build();
+//        movieTemplate.addDirector(text).addActor(text).addProctor(text);
+//        final Example<MovieEntity> movieEx = Example.of(movieTemplate, MATCHER_ANY);
+        final Page<MovieEntity> moviesEntities = service.getMoviesByTextLike(text, pageConfig);
         return craftResponsePage(moviesEntities);
     }
 
