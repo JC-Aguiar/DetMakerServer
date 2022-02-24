@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
+import org.springframework.security.core.GrantedAuthority;
 
 import javax.persistence.*;
 
@@ -18,7 +19,7 @@ import javax.persistence.*;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "roles")
 @Table(name = "roles")
-public class RoleEntity  implements MasterEntity {
+public class RoleEntity implements MasterEntity, GrantedAuthority {
 
     @Id @GeneratedValue(strategy = GenerationType.AUTO)
     Integer id;
@@ -33,4 +34,8 @@ public class RoleEntity  implements MasterEntity {
     @Embedded
     MasterRecord data;
 
+    @Override
+    public String getAuthority() {
+        return role;
+    }
 }

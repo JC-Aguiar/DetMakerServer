@@ -22,15 +22,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final UserService userService;
     private final JwtAuthenticationService jwtService;
-    private final Map<String, String> urlMatchers;
+    private final Map<String, String> domains;
 
     public JwtAuthenticationFilter(UserService userService,
                                    JwtAuthenticationService jwtService,
-                                   Map<String, String> urlMatchers)
+                                   Map<String, String> domains)
     {
         this.userService = userService;
         this.jwtService = jwtService;
-        this.urlMatchers = urlMatchers;
+        this.domains = domains;
     }
 
     @SneakyThrows
@@ -39,29 +39,39 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     throws ServletException, IOException
     {
         final String uri = request.getRequestURI();
+        final String uriString = uri.replace("/", "");
         System.out.println("URI: " + uri);
-        final boolean restrictedAccess = urlMatchers.containsKey(uri);
-        if (!restrictedAccess) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+        System.out.println("DOMAINS: ");
+        domains.keySet().forEach(System.out::println);
+        final boolean restrictedAccess = domains.containsKey(uriString);
+//        if (!restrictedAccess) {
+//            System.out.println("ACCESS: free");
+//        }
+//        else {
+//            System.out.println("ACCESS: restricted");
+            authenticateToken(request);
+//        }
+        filterChain.doFilter(request, response);
+    }
+
+    private void authenticateToken(HttpServletRequest request)
+    {
         try {
             final String bearerToken = getBearerToken(request);
             final UserEntity user = jwtService.decodeToken(bearerToken);
             final Authentication auth = new UsernamePasswordAuthenticationToken(user, null);
             SecurityContextHolder.getContext().setAuthentication(auth);
         } catch (Exception e) {
-            System.out.println(e.getLocalizedMessage());
-        } finally {
-            filterChain.doFilter(request, response);
+            e.printStackTrace();
         }
     }
 
     private String getBearerToken(HttpServletRequest request)
     {
-        final String header = Optional.ofNullable(request.getHeader("Authorization"))
+        final String header = Optional.ofNullable(
+            request.getHeader("Authorization"))
             .orElseThrow(AuthorizationHeaderException::new);
-        if (header.startsWith("Bearer")){
+        if (header.startsWith("Bearer")) {
             return header.split("Bearer")[0].trim();
         }
         throw new BearerTokenException();

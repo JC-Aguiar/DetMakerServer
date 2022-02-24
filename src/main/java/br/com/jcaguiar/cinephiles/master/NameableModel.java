@@ -16,6 +16,8 @@ public interface NameableModel {
                 .map(n -> n.charAt(0)).toString();
     };
 
+    //TODO: ajustar 'initialsName', que está retornando errado no JSON de resposta
+
     public static String findInitials(@NotNull List<String> names) {
         return names.stream().map(NameableModel::findInitials).toString();
     };

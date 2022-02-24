@@ -17,6 +17,7 @@ public class AuthenticationService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException
     {
+        System.out.println("loadUserByUsername");
         try { return userService.getUserByEmail(email); }
         catch (Exception e) {throw new AuthenticationServiceException("Invalid email or password"); }
     }
