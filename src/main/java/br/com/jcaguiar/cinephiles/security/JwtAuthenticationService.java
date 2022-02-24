@@ -40,6 +40,7 @@ public class JwtAuthenticationService {
 
     //BUILDING JWT TOKEN
     private String craftJwt(@NotNull UserEntity user) {
+        System.out.println("CraftToken");
         final Date tokenCreationDate = new Date();
         final Date tokenExpirationDate = new Date(tokenCreationDate.getTime() + TOKEN_VALID_TIME);
         return Jwts.builder()
@@ -53,6 +54,7 @@ public class JwtAuthenticationService {
 
     //CREATE RESPONSE WITH JWT TOKEN
     private JwtTokenResponse craftDtoResponse(@NotBlank String jwtToken, @NotNull UserEntity user) {
+        System.out.println("CraftDtoResponse");
         final UserDtoResponse userResponse = new ModelMapper().map(user, UserDtoResponse.class);
         return new JwtTokenResponse("Bearer", jwtToken, userResponse);
     }
