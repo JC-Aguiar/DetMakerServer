@@ -9,8 +9,11 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 import java.util.Date;
 import java.util.Optional;
 
@@ -23,24 +26,39 @@ public class JwtAuthenticationService {
     private static final Integer TOKEN_VALID_TIME = 86400000; //validation for 1 day
     private static final String ISSUER_NAME = "Cinephilos Server";
 
-    //BUILDING JWT TOKEN (RESPONSE)
-    public JwtTokenResponse createToken(Authentication auth) {
-        final UserEntity user = userService.getUserByEmail(auth.getName());
+    //BUILD JWT TOKEN
+    public JwtTokenResponse createToken(@NotNull Authentication auth) {
+        return createToken((UserDetails) auth.getPrincipal());
+    }
+
+    //BUILD JWT TOKEN
+    public JwtTokenResponse createToken(@NotNull UserDetails userDetails) {
+        final UserEntity user = (UserEntity) userDetails;
+        final String jwtToken = craftJwt(user);
+        return craftDtoResponse(jwtToken, user);
+    }
+
+    //BUILDING JWT TOKEN
+    private String craftJwt(@NotNull UserEntity user) {
         final Date tokenCreationDate = new Date();
         final Date tokenExpirationDate = new Date(tokenCreationDate.getTime() + TOKEN_VALID_TIME);
-        final String jwtToken = Jwts.builder()
+        return Jwts.builder()
             .setIssuer(ISSUER_NAME)
             .setIssuedAt(tokenCreationDate)
             .setExpiration(tokenExpirationDate)
             .setSubject(user.getId().toString())
             .signWith(SignatureAlgorithm.HS384, SECRET_KEY)
             .compact();
+    }
+
+    //CREATE RESPONSE WITH JWT TOKEN
+    private JwtTokenResponse craftDtoResponse(@NotBlank String jwtToken, @NotNull UserEntity user) {
         final UserDtoResponse userResponse = new ModelMapper().map(user, UserDtoResponse.class);
         return new JwtTokenResponse("Bearer", jwtToken, userResponse);
     }
 
-    //DECRYPTING JWT-TOKEN (REQUEST)
-    public UserEntity decodeToken(String bearerToken) {
+    //DECRYPTING JWT TOKEN
+    public UserEntity decodeToken(@NotBlank String bearerToken) {
         final String userStringId = Optional.ofNullable(
             Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJwt(bearerToken).getBody().getSubject()
         ).orElseThrow(() -> new JwtException("Invalid or expired JWT"));

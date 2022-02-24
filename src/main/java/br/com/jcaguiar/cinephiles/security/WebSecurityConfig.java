@@ -3,7 +3,10 @@ package br.com.jcaguiar.cinephiles.security;
 
 import br.com.jcaguiar.cinephiles.user.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -34,9 +37,10 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private JwtAuthenticationService jwtAuthService;
 
-    private final Map<String, String> urlMatchers = new HashMap<>(){{
-        put("admins", "/adm/**");
-        put("users", "/profile/**");
+    private final Map<String, String> domains = new HashMap<>(){{
+        put("adm", "/adm/**");
+        put("profile", "/profile/**");
+//        put("login", "/login/**");
     }};
 
     private static final List<String> SUPPORTED_ORIGINS = new ArrayList<>() {{
@@ -48,21 +52,22 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception
     {
         final JwtAuthenticationFilter jwtAuthFilter = new JwtAuthenticationFilter(
-            userService, jwtAuthService, urlMatchers);
-        final Class<? extends Filter> basicAuthFiler = UsernamePasswordAuthenticationFilter.class;
+            userService, jwtAuthService, domains);
+        final Class<UsernamePasswordAuthenticationFilter> basicAuthFiler =
+            UsernamePasswordAuthenticationFilter.class;
+
         //Defining rules for authorities, csrf + rest configuration and custom login filter (JWT)
         http.authorizeRequests()
-                .mvcMatchers(urlMatchers.get("admins")).hasAnyAuthority("ADMIN")
-                .mvcMatchers(urlMatchers.get("users")).hasAnyAuthority("USER")
-                .anyRequest().permitAll()
-                .and()
-                .formLogin(login -> {
-                    login.usernameParameter("email").passwordParameter("password").successForwardUrl("/login");
-                })
-                .csrf().disable().cors().disable()
-                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                .and()
-                .addFilterBefore(jwtAuthFilter, basicAuthFiler);
+            .mvcMatchers(domains.get("admins")).hasAnyAuthority("ADMIN")
+            .mvcMatchers(domains.get("users")).hasAnyAuthority("USER")
+            .mvcMatchers( HttpMethod.POST, "/login").permitAll()
+            .anyRequest().permitAll()
+            .and()
+            .csrf().disable().cors().disable()
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            .and()
+            .addFilterBefore(jwtAuthFilter, basicAuthFiler);
+
         //Defining defaults: unauthorised page + change password page
         http.exceptionHandling().accessDeniedPage("/error/denied").and()
             .passwordManagement(manager -> manager.changePasswordPage("/password"));
@@ -73,7 +78,15 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     public void configure(AuthenticationManagerBuilder auth) throws Exception
     {
         final BCryptPasswordEncoder crypt = new BCryptPasswordEncoder();
-        auth.userDetailsService(authService).passwordEncoder(crypt).and().authenticationProvider(authProvider);
+        auth.userDetailsService(authService).passwordEncoder(crypt)
+            .and().authenticationProvider(authProvider);
+    }
+
+    @Override
+    @Bean
+    protected AuthenticationManager authenticationManager() throws Exception
+    {
+        return super.authenticationManager();
     }
 
     //CROSS-ORIGIN-RESOURCE-SHARING

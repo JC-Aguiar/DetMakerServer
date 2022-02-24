@@ -59,17 +59,12 @@ final public class UserEntity extends UserModel implements UserDetails, MasterEn
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return null;
-    }
-
-    @Override
-    public String getPassword() {
-        return null;
+        return authorities;
     }
 
     @Override
     public String getUsername() {
-        return null;
+        return getEmail();
     }
 
     @Override
@@ -84,11 +79,11 @@ final public class UserEntity extends UserModel implements UserDetails, MasterEn
 
     @Override
     public boolean isCredentialsNonExpired() {
-        return false;
+        return true;
     }
 
     @Override
     public boolean isEnabled() {
-        return false;
+        return true;
     }
 }
