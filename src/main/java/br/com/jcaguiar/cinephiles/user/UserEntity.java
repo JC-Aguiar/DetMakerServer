@@ -44,7 +44,7 @@ final public class UserEntity extends UserModel implements UserDetails, MasterEn
 
     @ToString.Exclude
     @JsonManagedReference
-    @OneToMany( fetch = FetchType.LAZY,cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "id")
+    @OneToMany( fetch = FetchType.EAGER,cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "id")
     @Column(name = "roles_id")
     final List<RoleEntity> authorities = new ArrayList<>();
 
