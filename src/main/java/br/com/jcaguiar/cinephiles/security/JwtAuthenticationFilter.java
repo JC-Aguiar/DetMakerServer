@@ -59,8 +59,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         System.out.println("authenticateToken");
         try {
             final String bearerToken = getBearerToken(request);
-            final UserEntity user = jwtService.decodeToken(bearerToken);
-            final Authentication auth = new UsernamePasswordAuthenticationToken(user, null);
+            System.out.println("\t header token:" + bearerToken);
+            final Authentication auth = jwtService.decodeToken(bearerToken);
+            System.out.println("Setting authentication...");
             SecurityContextHolder.getContext().setAuthentication(auth);
         } catch (Exception e) {
             e.printStackTrace();
@@ -74,8 +75,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String header = Optional.ofNullable(
             request.getHeader(HttpHeaders.AUTHORIZATION))
             .orElseThrow(AuthorizationHeaderException::new);
+        System.out.println("\t header:" + header);
         if (header.startsWith("Bearer")) {
-            return header.split("Bearer")[0].trim();
+            return header.replace("Bearer", "").trim();
         }
         throw new BearerTokenException();
     }
