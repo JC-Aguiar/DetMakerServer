@@ -2,7 +2,6 @@ package br.com.jcaguiar.cinephiles.master;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
-import java.util.Arrays;
 import java.util.List;
 
 public interface NameableModel {
@@ -12,14 +11,12 @@ public interface NameableModel {
     public String getInitialsName();
 
     public static String findInitials(@NotBlank String name) {
-        return Arrays.stream(name.split(" "))
-                .map(n -> n.charAt(0)).toString();
+        final String[] words = name.split(" ");
+        return "" + words[0].charAt(0) + words[words.length-1].charAt(0);
     };
 
-    //TODO: ajustar 'initialsName', que está retornando errado no JSON de resposta
-
-    public static String findInitials(@NotNull List<String> names) {
-        return names.stream().map(NameableModel::findInitials).toString();
+    public static List<String> findInitials(@NotNull List<String> names) {
+        return names.stream().map(NameableModel::findInitials).toList();
     };
 
     public static String findInitialsInSoloName(@NotBlank String name) {

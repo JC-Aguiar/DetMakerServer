@@ -29,11 +29,11 @@ public class LoginController {
     private JwtAuthenticationService jwtAuthenticationService;
 
     @Autowired
-    private AuthenticationManager authenticationManager;
+    private CustomAuthenticationProvider authenticationManager;
 
     @ConsoleLog
     @PostMapping
-    public ResponseEntity<?> login(@RequestBody LoginDtoRequest requestedLogin)
+    public ResponseEntity<?> login(@RequestBody @Valid UserDtoRequest requestedLogin)
     {
         System.out.println("LOGIN CONTROLLER");
         final UsernamePasswordAuthenticationToken springToken = new UsernamePasswordAuthenticationToken(

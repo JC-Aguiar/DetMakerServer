@@ -28,6 +28,7 @@ public class JwtAuthenticationService {
 
     //BUILD JWT TOKEN
     public JwtTokenResponse createToken(@NotNull Authentication auth) {
+        System.out.println("createToken: getPrincipal = " + auth.getPrincipal());
         return createToken((UserDetails) auth.getPrincipal());
     }
 
@@ -35,6 +36,7 @@ public class JwtAuthenticationService {
     public JwtTokenResponse createToken(@NotNull UserDetails userDetails) {
         final UserEntity user = (UserEntity) userDetails;
         final String jwtToken = craftJwt(user);
+        System.out.println(jwtToken);
         return craftDtoResponse(jwtToken, user);
     }
 
@@ -45,10 +47,10 @@ public class JwtAuthenticationService {
         final Date tokenExpirationDate = new Date(tokenCreationDate.getTime() + TOKEN_VALID_TIME);
         return Jwts.builder()
             .setIssuer(ISSUER_NAME)
+            .setSubject(user.getId().toString())
             .setIssuedAt(tokenCreationDate)
             .setExpiration(tokenExpirationDate)
-            .setSubject(user.getId().toString())
-            .signWith(SignatureAlgorithm.HS384, SECRET_KEY)
+            .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
             .compact();
     }
 
@@ -62,8 +64,9 @@ public class JwtAuthenticationService {
     //DECRYPTING JWT TOKEN
     public UserEntity decodeToken(@NotBlank String bearerToken) {
         final String userStringId = Optional.ofNullable(
-            Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJwt(bearerToken).getBody().getSubject()
-        ).orElseThrow(() -> new JwtException("Invalid or expired JWT"));
+            Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJwt(bearerToken).getBody().getSubject())
+            .orElseThrow(() -> new JwtException("Invalid or expired JWT"));
+        System.out.println("userStringId = " + userStringId);
         final int userId = Integer.parseInt(userStringId);
         return userService.getUserById(userId);
     }

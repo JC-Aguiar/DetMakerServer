@@ -37,7 +37,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     {
         System.out.println("JwtAuthenticationFilter");
         final String uri = request.getRequestURI();
-        final String endpoint = (String) Arrays.stream(uri.split("/")).filter(s -> !s.isBlank()).toArray()[0];
+        final String endpoint = (String) Arrays.stream(uri.split("/"))
+            .filter(s -> !s.isBlank())
+            .toArray()[0];
         System.out.println("URI PATH: " + uri);
         System.out.println("END-POINT: " + endpoint);
         final boolean restrictedAccess = WebSecurityConfig.DOMAINS.containsKey(endpoint);
