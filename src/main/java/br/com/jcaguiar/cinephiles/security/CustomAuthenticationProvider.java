@@ -28,7 +28,7 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
         final UserDetails user = authenticationService.loadUserByUsername(requestUserEmail);
         final Collection<? extends GrantedAuthority> userRoles = user.getAuthorities();
         final String cryptPassword = user.getPassword();
-        System.out.println("GET-PRINCIPAL: " + requestUserEmail);
+        System.out.println("getName: " + requestUserEmail);
         final BCryptPasswordEncoder crypt = new BCryptPasswordEncoder();
         final boolean login = crypt.matches(requestUserPassword, cryptPassword);
         if(!login) throw new AuthenticationServiceException("Invalid email or password");

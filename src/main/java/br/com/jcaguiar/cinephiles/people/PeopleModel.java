@@ -35,9 +35,7 @@ public class PeopleModel implements NameableModel {
 
     @Override
     public String getInitialsName() {
-        return String.format("%S",
-                NameableModel.findInitials(firstName) +
-                NameableModel.findInitials(lastName));
+        return String.format("%S", NameableModel.findInitials(getFullName()));
     }
 
 
