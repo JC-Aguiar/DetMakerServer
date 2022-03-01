@@ -2,18 +2,13 @@ package br.com.jcaguiar.cinephiles.security;
 
 import br.com.jcaguiar.cinephiles.exception.AuthorizationHeaderException;
 import br.com.jcaguiar.cinephiles.exception.BearerTokenException;
-import br.com.jcaguiar.cinephiles.user.UserEntity;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import io.jsonwebtoken.JwtException;
 import lombok.SneakyThrows;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.server.ResponseStatusException;
 
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
@@ -63,6 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String bearerToken = getBearerToken(request);
         final Authentication auth = jwtService.decodeToken(bearerToken);
         SecurityContextHolder.getContext().setAuthentication(auth);
+        System.out.println("User authenticated!");
     }
 
     @ConsoleLog
@@ -72,7 +68,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String header = Optional.ofNullable(
             request.getHeader(HttpHeaders.AUTHORIZATION))
             .orElseThrow(AuthorizationHeaderException::new);
-        System.out.println("\t header:" + header);
+        System.out.println("header:" + header);
         if (header.startsWith("Bearer")) {
             return header.replace("Bearer", "").trim();
         }
