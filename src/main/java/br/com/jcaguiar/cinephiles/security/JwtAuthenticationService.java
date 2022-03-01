@@ -8,6 +8,7 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -62,12 +63,14 @@ public class JwtAuthenticationService {
     }
 
     //DECRYPTING JWT TOKEN
-    public UserEntity decodeToken(@NotBlank String bearerToken) {
+    public Authentication decodeToken(@NotBlank String bearerToken) {
+        System.out.println("bearerToken:" + bearerToken);
         final String userStringId = Optional.ofNullable(
-            Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJwt(bearerToken).getBody().getSubject())
+            Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(bearerToken).getBody().getSubject())
             .orElseThrow(() -> new JwtException("Invalid or expired JWT"));
         System.out.println("userStringId = " + userStringId);
         final int userId = Integer.parseInt(userStringId);
-        return userService.getUserById(userId);
+        final UserEntity user = userService.getUserById(userId);
+        return new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
     }
 }
