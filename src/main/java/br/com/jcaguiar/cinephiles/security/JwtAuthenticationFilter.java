@@ -61,8 +61,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     {
         System.out.println("authenticateToken");
         final String bearerToken = getBearerToken(request);
-        final UserEntity user = jwtService.decodeToken(bearerToken);
-        final Authentication auth = new UsernamePasswordAuthenticationToken(user, null);
+        final Authentication auth = jwtService.decodeToken(bearerToken);
         SecurityContextHolder.getContext().setAuthentication(auth);
     }
 
@@ -73,8 +72,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String header = Optional.ofNullable(
             request.getHeader(HttpHeaders.AUTHORIZATION))
             .orElseThrow(AuthorizationHeaderException::new);
+        System.out.println("\t header:" + header);
         if (header.startsWith("Bearer")) {
-            return header.split("Bearer")[0].trim();
+            return header.replace("Bearer", "").trim();
         }
         throw new BearerTokenException();
     }
