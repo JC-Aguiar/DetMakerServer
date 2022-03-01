@@ -2,6 +2,7 @@ package br.com.jcaguiar.cinephiles.master;
 
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import org.modelmapper.ModelMapper;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
@@ -52,12 +53,18 @@ public abstract class MasterController
         this.responseClass = types[3];
     }
 
-    public void printInfo() {
+    public void printInfo()
+    {
         System.out.println(getClass().getSimpleName());
         System.out.printf("Entity: %s \nRequest DTO: %s \nResponse DTO: %s \n",
             this.entityClass, this.requestClass, this.responseClass);
         System.out.println("Endpoints(GET):");
         ENDPOINTS_GET.values().forEach(System.out::println);
+    }
+
+    private static final MasterController PROXY()
+    {
+        return (MasterController) AopContext.currentProxy();
     }
 
     public RESPONSE parseToResponseDto(ENTITY entity)
@@ -88,8 +95,8 @@ public abstract class MasterController
                                  @RequestParam(name = "page", defaultValue = "0") int page,
                                  @RequestParam(name = "itens", defaultValue = "12") int itens)
     {
-        if(id.isPresent()) { return getOne(id.get()); }
-        return getAll(page, itens);
+        if(id.isPresent()) return PROXY().getOne(id.get());
+        return PROXY().getAll(page, itens);
     }
 
     //GET: by ID
