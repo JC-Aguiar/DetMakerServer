@@ -57,4 +57,6 @@ final public class MovieEntity extends MovieModel implements MasterEntity {
         getProducers().add(producer);
         return this;
     }
+
+
 }
