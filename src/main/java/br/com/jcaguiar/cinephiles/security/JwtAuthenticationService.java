@@ -64,11 +64,11 @@ public class JwtAuthenticationService {
 
     //DECRYPTING JWT TOKEN
     public Authentication decodeToken(@NotBlank String bearerToken) {
-        System.out.println("bearerToken:" + bearerToken);
+        System.out.println("decodeToken");
         final String userStringId = Optional.ofNullable(
             Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(bearerToken).getBody().getSubject())
             .orElseThrow(() -> new JwtException("Invalid or expired JWT"));
-        System.out.println("userStringId = " + userStringId);
+        System.out.println("BEARER TOKEN:" + bearerToken);
         final int userId = Integer.parseInt(userStringId);
         final UserEntity user = userService.getUserById(userId);
         return new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
