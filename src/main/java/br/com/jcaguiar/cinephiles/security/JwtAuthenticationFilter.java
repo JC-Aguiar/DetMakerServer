@@ -43,10 +43,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final boolean restrictedAccess = WebSecurityConfig.DOMAINS.containsKey(endpoint);
         System.out.printf("ACCESS: %s \n", restrictedAccess ? "restricted" : "free");
         try { authenticateToken(request); }
-        catch (AuthorizationHeaderException | JwtException e) {
+        catch (AuthorizationHeaderException | JwtException | IllegalArgumentException e) {
             if(restrictedAccess) { throw e; }
-            else { e.printStackTrace(); }
+            else { System.out.println(e.getLocalizedMessage()); }
         }
+        catch (Exception e) { throw e; }
         finally { filterChain.doFilter(request, response); }
     }
 
@@ -68,7 +69,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final String header = Optional.ofNullable(
             request.getHeader(HttpHeaders.AUTHORIZATION))
             .orElseThrow(AuthorizationHeaderException::new);
-        System.out.println("header:" + header);
+        System.out.println("AUTHORIZATION HEADER: " + header);
         if (header.startsWith("Bearer")) {
             return header.replace("Bearer", "").trim();
         }
