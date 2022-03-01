@@ -70,7 +70,7 @@ public class JwtAuthenticationService {
             .orElseThrow(() -> new JwtException("Invalid or expired JWT"));
         System.out.println("BEARER TOKEN:" + bearerToken);
         final int userId = Integer.parseInt(userStringId);
-        final UserEntity user = userService.getUserById(userId);
+        final UserEntity user = userService.findById(userId);
         return new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
     }
 }

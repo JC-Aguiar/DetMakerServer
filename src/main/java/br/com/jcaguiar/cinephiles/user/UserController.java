@@ -31,7 +31,7 @@ public class UserController {
     @GetMapping
     public ResponseEntity<?> getAll() {
         final Pageable pageConfig = PageRequest.of(0, 12, Sort.by("id").ascending());
-        final Page<UserEntity> usersEntities = userService.findAll(pageConfig);
+        final Page<UserEntity> usersEntities = (Page<UserEntity>) userService.findAll(pageConfig);
         usersEntities.stream().filter(Objects::nonNull).findFirst().orElseThrow();
         final Page<UserDtoResponse> usersResponse = usersEntities.map(
                 user -> modelMapper.map(user, UserDtoResponse.class));
