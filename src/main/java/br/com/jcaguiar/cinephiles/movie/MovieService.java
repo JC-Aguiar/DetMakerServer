@@ -14,45 +14,44 @@ public class MovieService extends MasterService<Integer, MovieEntity> {
     @Autowired
     private MovieRepository dao;
 
-    public MovieService(MovieRepository dao)
-    {
+    public MovieService(MovieRepository dao) {
         super(dao);
     }
 
-    public Page<MovieEntity> getMoviesByGenre(GenreEnum genre, Pageable pageable)
-    {
-        return pageCheck(dao.findByGenres(genre, pageable));
+    public Page<MovieEntity> getMoviesByGenre(GenreEnum genre, Pageable pageable) {
+        return PROXY().pageCheck(dao.findByGenres(genre, pageable));
     }
 
-    public Page<MovieEntity> getMoviesByExample(Example<MovieEntity> movieEx, Pageable pageable)
-    {
-        return pageCheck(dao.findAll(movieEx, pageable));
+    public Page<MovieEntity> getMoviesByExample(Example<MovieEntity> movieEx, Pageable pageable) {
+        return PROXY().pageCheck(dao.findAll(movieEx, pageable));
     }
 
-    public Page<MovieEntity> getMoviesByTitle(String title, Pageable pageable)
-    {
-        return pageCheck(dao.findByTitle(title, pageable));
+    public Page<MovieEntity> getMoviesByTitle(String title, Pageable pageable) {
+        return PROXY().pageCheck(dao.findByTitle(title, pageable));
     }
 
-    public Page<MovieEntity> getMoviesBySynopsis(String synopsis, Pageable pageable)
-    {
-        return pageCheck(dao.findBySynopsis(synopsis, pageable));
+    public Page<MovieEntity> getMoviesBySynopsis(String synopsis, Pageable pageable) {
+        return PROXY().pageCheck(dao.findBySynopsis(synopsis, pageable));
     }
 
-    public Page<MovieEntity> getMoviesByTextLike(String text, Pageable pageable)
-    {
-        return pageCheck(dao.findByKeyword(text, pageable));
+    public Page<MovieEntity> getMoviesByTextLike(String text, Pageable pageable) {
+        return PROXY().pageCheck(dao.findByKeyword(text, pageable));
     }
 
     public Page<MovieEntity> getMoviesByActor(String actor, Pageable pageable) {
-        return (Page<MovieEntity>) pageCheck(dao.findByActorsLike(actor, pageable));
+        return PROXY().pageCheck(dao.findByActorsLike(actor, pageable));
     }
 
     public Page<MovieEntity> getMoviesByDirector(String director, Pageable pageable) {
-        return (Page<MovieEntity>) pageCheck(dao.findByDirectorsLike(director, pageable));
+        return PROXY().pageCheck(dao.findByDirectorsLike(director, pageable));
     }
 
     public Page<MovieEntity> getMoviesByProducer(String producer, Pageable pageable) {
-        return (Page<MovieEntity>) pageCheck(dao.findByProducersLike(producer, pageable));
+        return PROXY().pageCheck(dao.findByProducersLike(producer, pageable));
+    }
+
+    public MovieEntity addOne(MovieModel model) {
+        final MovieEntity movie = (MovieEntity) model;
+        return dao.save(movie);
     }
 }
