@@ -28,12 +28,24 @@ public class JwtAuthenticationService {
     private static final String ISSUER_NAME = "Cinephilos Server";
 
     //BUILD JWT TOKEN
+    /**
+     * Create a JWT token from the user's username and password
+     *
+     * @param auth The authentication object that contains the details of the user.
+     * @return A JWT token.
+     */
     public JwtTokenResponse createToken(@NotNull Authentication auth) {
         System.out.println("createToken: getPrincipal = " + auth.getPrincipal());
         return createToken((UserDetails) auth.getPrincipal());
     }
 
     //BUILD JWT TOKEN
+    /**
+     * Create a JWT token for the user and return it in a JwtTokenResponse
+     *
+     * @param userDetails The user details object that is returned by the UserDetailsService.
+     * @return A JwtTokenResponse object.
+     */
     public JwtTokenResponse createToken(@NotNull UserDetails userDetails) {
         final UserEntity user = (UserEntity) userDetails;
         final String jwtToken = craftJwt(user);
@@ -42,6 +54,12 @@ public class JwtAuthenticationService {
     }
 
     //BUILDING JWT TOKEN
+    /**
+     * Craft a JWT token for the user
+     *
+     * @param user The user to create the token for.
+     * @return A JWT token.
+     */
     private String craftJwt(@NotNull UserEntity user) {
         System.out.println("CraftToken");
         final Date tokenCreationDate = new Date();
@@ -56,6 +74,13 @@ public class JwtAuthenticationService {
     }
 
     //CREATE RESPONSE WITH JWT TOKEN
+    /**
+     * Craft a DTO response from a JWT token and a user entity
+     *
+     * @param jwtToken The JWT token that will be returned to the user.
+     * @param user The user that was authenticated.
+     * @return A JwtTokenResponse
+     */
     private JwtTokenResponse craftDtoResponse(@NotBlank String jwtToken, @NotNull UserEntity user) {
         System.out.println("CraftDtoResponse");
         final UserDtoResponse userResponse = new ModelMapper().map(user, UserDtoResponse.class);
@@ -63,6 +88,12 @@ public class JwtAuthenticationService {
     }
 
     //DECRYPTING JWT TOKEN
+    /**
+     * Decode the token and return the user's id
+     *
+     * @param bearerToken The token that was passed in the request.
+     * @return An Authentication object.
+     */
     public Authentication decodeToken(@NotBlank String bearerToken) {
         System.out.println("decodeToken");
         final String userStringId = Optional.ofNullable(
