@@ -6,6 +6,7 @@ import org.aspectj.lang.annotation.AfterThrowing;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -15,7 +16,6 @@ import java.util.stream.Collectors;
 @Component
 public class ConsoleLogAspect {
 
-//    @Before(value = "@annotation(br.com.jcaguiar.cinephiles.util.ConsoleLog)")
     @Around("@annotation(br.com.jcaguiar.cinephiles.util.ConsoleLog)")
     public Object printConsoleLogBefore(ProceedingJoinPoint joinPoint) throws Throwable {
         final MethodSignature signature = (MethodSignature) joinPoint.getSignature();

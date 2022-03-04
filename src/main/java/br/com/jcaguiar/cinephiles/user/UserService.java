@@ -16,21 +16,19 @@ public class UserService extends MasterService<Integer, UserEntity> {
     @Autowired
     private UserRepository dao;
 
-    public UserService(JpaRepository<UserEntity, Integer> dao)
-    {
+    public UserService(JpaRepository<UserEntity, Integer> dao) {
         super(dao);
     }
 
     @ConsoleLog
-    public UserEntity addUser(@NotNull UserEntity user)
-    {
+    public UserEntity addUser(@NotNull UserEntity user) {
         return dao.save(user);
     }
 
     @ConsoleLog
-    public UserEntity getUserByEmail(@NotBlank String email)
-    {
-        return dao.findByEmail(email).orElseThrow();
+    public UserEntity getUserByEmail(@NotBlank String email) {
+        return dao.findByEmail(email)
+                  .orElseThrow();
     }
 
 }
