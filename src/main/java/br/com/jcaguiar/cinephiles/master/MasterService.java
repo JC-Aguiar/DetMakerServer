@@ -14,6 +14,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Service
+//TODO: add 1 more generics in order to make PROXY method funcional to subclasses
 public abstract class MasterService<ID, ENTITY> {
 
     @Autowired

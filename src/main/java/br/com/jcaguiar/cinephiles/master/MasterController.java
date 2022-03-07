@@ -26,7 +26,9 @@ import java.util.Map;
 import java.util.Optional;
 
 @RestController
-public abstract class MasterController<ID, ENTITY extends MasterEntity, REQUEST extends MasterDtoRequest, RESPONSE extends MasterDtoResponse> {
+public abstract class MasterController<
+    ID, ENTITY extends MasterEntity, REQUEST extends MasterDtoRequest,
+    RESPONSE extends MasterDtoResponse, CTRL extends MasterController> {
 
     @Autowired
     private ModelMapper modelMapper;
@@ -42,8 +44,7 @@ public abstract class MasterController<ID, ENTITY extends MasterEntity, REQUEST 
         ExampleMatcher.matchingAny().withIgnoreNullValues().withIgnoreCase();
 
     // A constructor that will initialize the fields of the class.
-    public MasterController(
-        Class<? extends MasterController<ID, ENTITY, REQUEST, RESPONSE>> subClass, MasterService<ID, ENTITY> service) {
+    public MasterController(MasterService<ID, ENTITY> service) {
         this.service = service;
         final Type[] types = ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments();
         this.entityClass = types[1];
@@ -67,8 +68,8 @@ public abstract class MasterController<ID, ENTITY extends MasterEntity, REQUEST 
      *
      * @return The MasterController object.
      */
-    protected static MasterController proxy() {
-        return (MasterController) AopContext.currentProxy();
+    protected final CTRL proxy() {
+        return (CTRL) AopContext.currentProxy();
     }
 
     /**
