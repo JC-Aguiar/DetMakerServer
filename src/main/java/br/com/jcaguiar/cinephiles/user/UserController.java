@@ -17,7 +17,8 @@ import javax.validation.Valid;
 
 @RestController
 @RequestMapping("/user")
-public class UserController extends MasterController<Integer, UserEntity, UserDtoRequest, UserDtoResponse> {
+public class UserController extends MasterController
+    <Integer, UserEntity, UserDtoRequest, UserDtoResponse, UserController> {
 
     private final UserService userService;
 
@@ -25,7 +26,7 @@ public class UserController extends MasterController<Integer, UserEntity, UserDt
     private ModelMapper modelMapper;
 
     public UserController(UserService service) {
-        super(UserController.class, service);
+        super(service);
         this.userService = service;
         printInfo();
     }

@@ -4,7 +4,6 @@ import br.com.jcaguiar.cinephiles.enums.GenreEnum;
 import br.com.jcaguiar.cinephiles.master.MasterController;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.aop.framework.AopContext;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +18,8 @@ import java.util.*;
 
 @RestController
 @RequestMapping("movie")
-public class MovieController extends MasterController<Integer, MovieEntity, MovieDtoRequest, MovieDtoResponse> {
+public class MovieController extends MasterController
+    <Integer, MovieEntity, MovieDtoRequest, MovieDtoResponse, MovieController> {
 
     private final MovieService service;
     private final static List<String> KEYS = new ArrayList<String>(){{
@@ -36,7 +36,7 @@ public class MovieController extends MasterController<Integer, MovieEntity, Movi
     }};
 
     public MovieController(MovieService service) {
-        super(MovieController.class, service);
+        super(service);
         this.service = service;
         try {
             endpointsGet.put("genre", getClass().getMethod("byGenre", String.class, int.class, int.class));
@@ -50,10 +50,6 @@ public class MovieController extends MasterController<Integer, MovieEntity, Movi
             e.printStackTrace();
         }
         printInfo();
-    }
-
-    protected static MovieController proxy() {
-        return (MovieController) AopContext.currentProxy();
     }
 
     //GET: by GENRE
@@ -164,4 +160,5 @@ public class MovieController extends MasterController<Integer, MovieEntity, Movi
         //TODO: falta ajustar ainda
         return proxy().addOne(jsonMap);
     }
+
 }
