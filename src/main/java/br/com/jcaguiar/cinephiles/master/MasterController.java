@@ -28,12 +28,12 @@ import java.util.Optional;
 @RestController
 public abstract class MasterController<
     ID, ENTITY extends MasterEntity, REQUEST extends MasterDtoRequest,
-    RESPONSE extends MasterDtoResponse, CTRL extends MasterController> {
+    RESPONSE extends MasterDtoResponse, THIS extends MasterController> {
 
     @Autowired
     private ModelMapper modelMapper;
     @Getter
-    private final MasterService<ID, ENTITY> service;
+    private final MasterService service;
     private final Type entityClass;
     private final Type requestClass;
     private final Type responseClass;
@@ -44,7 +44,7 @@ public abstract class MasterController<
         ExampleMatcher.matchingAny().withIgnoreNullValues().withIgnoreCase();
 
     // A constructor that will initialize the fields of the class.
-    public MasterController(MasterService<ID, ENTITY> service) {
+    public MasterController(MasterService service) {
         this.service = service;
         final Type[] types = ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments();
         this.entityClass = types[1];
@@ -68,8 +68,8 @@ public abstract class MasterController<
      *
      * @return The MasterController object.
      */
-    protected final CTRL proxy() {
-        return (CTRL) AopContext.currentProxy();
+    protected final THIS proxy() {
+        return (THIS) AopContext.currentProxy();
     }
 
     /**
@@ -129,7 +129,7 @@ public abstract class MasterController<
     // A method that returns a specific entity by a given ID.
     @ConsoleLog
     protected ResponseEntity<?> getOne(@NotNull ID id) {
-        final ENTITY entity = service.findById(id);
+        final ENTITY entity = (ENTITY) service.findById(id);
         final RESPONSE dto = modelMapper.map(entity, (Type) responseClass);
         return new ResponseEntity<>(dto, HttpStatus.OK);
     }
