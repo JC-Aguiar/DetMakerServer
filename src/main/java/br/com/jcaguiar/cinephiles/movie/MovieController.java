@@ -3,7 +3,6 @@ package br.com.jcaguiar.cinephiles.movie;
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
 import br.com.jcaguiar.cinephiles.master.MasterController;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,9 +11,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("movie")
@@ -22,18 +22,6 @@ public class MovieController extends MasterController
     <Integer, MovieEntity, MovieDtoRequest, MovieDtoResponse, MovieController> {
 
     private final MovieService service;
-    private final static List<String> KEYS = new ArrayList<String>(){{
-        add("backdrop_path");
-        add("genres");
-        add("original_title");
-        add("overview");
-        add("poster_path");
-        add("production_companies");
-        add("release_date");
-        add("runtime");
-        add("tagline");
-        add("title");
-    }};
 
     public MovieController(MovieService service) {
         super(service);
@@ -135,30 +123,24 @@ public class MovieController extends MasterController
         return proxy().craftResponsePage(moviesEntities);
     }
 
-    //POST: INSERT ONE
+    //POST: INSERT ONE FILE
     @ConsoleLog
-    @PostMapping(value = "add/one/tmdb", consumes = "application/json")
+    @PostMapping(value = "add/one/tmdb", consumes = {"application/json", "text/plain"})
     public ResponseEntity<?> addOne(final @RequestBody Map<String, Object> file) {
-        final List<Object> values = KEYS.stream().map(file::remove).toList();
-        final Map<String, Object> moviesJson = new HashMap<>();
-        KEYS.forEach(k -> moviesJson.put(
-            k, values.get(KEYS.indexOf(k))));
-        moviesJson.forEach((k, v) -> System.out.println(k + ": " + v));
-        return new ResponseEntity(null, HttpStatus.OK);
+        return new ResponseEntity(
+            service.craftMovieJson(file), HttpStatus.OK);
     }
 
-    //POST: INSERT ONE
+    //POST: INSERT MANY FILES
     @ConsoleLog
-    @PostMapping(value = "add/more/tmdb", consumes = "multipart/form-data")
-    public ResponseEntity<?> addAll(@RequestParam("files") List<MultipartFile> files)
-    throws IOException {
-        final Map jsonMap = new HashMap();
-        for (MultipartFile file : files) {
-            final String jsonString =  new String(file.getBytes(), StandardCharsets.UTF_8);
-            jsonMap.putAll(new ObjectMapper().readValue(
-                jsonString, Map.class)); }
-        //TODO: falta ajustar ainda
-        return proxy().addOne(jsonMap);
+    @PostMapping(value = "add/many/tmdb", consumes = "multipart/form-data")
+    public ResponseEntity<?> addAll(@RequestParam("files") List<MultipartFile> files) {
+        final List<Map> jsonMovies = new ArrayList<>();
+        files.forEach(file -> jsonMovies.add(
+            service.parseFileToMap(file)));
+        return new ResponseEntity(jsonMovies, HttpStatus.OK);
     }
+
+
 
 }
