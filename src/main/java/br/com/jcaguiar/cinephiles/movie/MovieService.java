@@ -8,7 +8,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 @Service
-public class MovieService extends MasterService<Integer, MovieEntity> {
+public class MovieService extends MasterService<Integer, MovieEntity, MovieService> {
 
     private final MovieRepository dao;
 
@@ -18,35 +18,35 @@ public class MovieService extends MasterService<Integer, MovieEntity> {
     }
 
     public Page<MovieEntity> getMoviesByGenre(GenreEnum genre, Pageable pageable) {
-        return PROXY().pageCheck(dao.findByGenres(genre, pageable));
+        return proxy().pageCheck(dao.findByGenres(genre, pageable));
     }
 
     public Page<MovieEntity> getMoviesByExample(Example<MovieEntity> movieEx, Pageable pageable) {
-        return PROXY().pageCheck(dao.findAll(movieEx, pageable));
+        return proxy().pageCheck(dao.findAll(movieEx, pageable));
     }
 
     public Page<MovieEntity> getMoviesByTitle(String title, Pageable pageable) {
-        return PROXY().pageCheck(dao.findByTitle(title, pageable));
+        return proxy().pageCheck(dao.findByTitle(title, pageable));
     }
 
     public Page<MovieEntity> getMoviesBySynopsis(String synopsis, Pageable pageable) {
-        return PROXY().pageCheck(dao.findBySynopsis(synopsis, pageable));
+        return proxy().pageCheck(dao.findBySynopsis(synopsis, pageable));
     }
 
     public Page<MovieEntity> getMoviesByTextLike(String text, Pageable pageable) {
-        return PROXY().pageCheck(dao.findByKeyword(text, pageable));
+        return proxy().pageCheck(dao.findByKeyword(text, pageable));
     }
 
     public Page<MovieEntity> getMoviesByActor(String actor, Pageable pageable) {
-        return PROXY().pageCheck(dao.findByActorsLike(actor, pageable));
+        return proxy().pageCheck(dao.findByActorsLike(actor, pageable));
     }
 
     public Page<MovieEntity> getMoviesByDirector(String director, Pageable pageable) {
-        return PROXY().pageCheck(dao.findByDirectorsLike(director, pageable));
+        return proxy().pageCheck(dao.findByDirectorsLike(director, pageable));
     }
 
     public Page<MovieEntity> getMoviesByProducer(String producer, Pageable pageable) {
-        return PROXY().pageCheck(dao.findByProducersLike(producer, pageable));
+        return proxy().pageCheck(dao.findByProducersLike(producer, pageable));
     }
 
     public MovieEntity addOne(MovieModel model) {

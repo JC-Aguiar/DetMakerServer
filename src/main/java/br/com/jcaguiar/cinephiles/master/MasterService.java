@@ -14,14 +14,14 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Service
-//TODO: add 1 more generics in order to make PROXY method funcional to subclasses
-public abstract class MasterService<ID, ENTITY> {
+public abstract class MasterService<
+    ID, ENTITY, THIS extends  MasterService> {
 
     @Autowired
     private final JpaRepository<ENTITY, ID> dao;
 
     // A constructor that injects the `dao` object.
-    public MasterService(JpaRepository<ENTITY, ID> dao) {
+    public MasterService(JpaRepository dao) {
         this.dao = dao;
     }
 
@@ -30,8 +30,8 @@ public abstract class MasterService<ID, ENTITY> {
      *
      * @return The proxy object.
      */
-    protected static final MasterService PROXY() {
-        return (MasterService) AopContext.currentProxy();
+    protected final THIS proxy() {
+        return (THIS) AopContext.currentProxy();
     }
 
     // A method that validates the page.
@@ -51,6 +51,6 @@ public abstract class MasterService<ID, ENTITY> {
     // A proxy method that calls `pageCheck` method.
     @ConsoleLog
     public Page<?> findAll(@NotNull Pageable pageable) {
-        return PROXY().pageCheck(dao.findAll(pageable));
+        return proxy().pageCheck(dao.findAll(pageable));
     }
 }

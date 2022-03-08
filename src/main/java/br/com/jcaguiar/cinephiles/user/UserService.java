@@ -8,7 +8,7 @@ import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 @Service
-public class UserService extends MasterService<Integer, UserEntity> {
+public class UserService extends MasterService<Integer, UserEntity, UserService> {
 
     private final UserRepository dao;
 
