@@ -16,9 +16,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -128,6 +130,9 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
             final URL posterUrl = new URL(postersString);
             final File posterFile = FileUtils.toFile(posterUrl);
             final byte[] poster = FileUtils.readFileToByteArray(posterFile);
+            final Path path = Paths.get("/temp");
+            Files.write(path, poster);
+            System.out.println("File saved in path: " + path);
             // Poster
             final PostersEntity postersEntity = posterRepository.saveAndFlush(
                 PostersEntity.builder()

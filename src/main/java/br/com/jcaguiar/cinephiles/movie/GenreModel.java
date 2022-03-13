@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.MappedSuperclass;
 import javax.validation.constraints.NotBlank;
 
@@ -18,6 +20,7 @@ import javax.validation.constraints.NotBlank;
 public class GenreModel {
 
     @NotBlank(message = "Insert a valid genre type")
+    @Enumerated(EnumType.STRING)
     GenreEnum genre;
 
 }

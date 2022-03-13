@@ -1,19 +1,28 @@
 package br.com.jcaguiar.cinephiles.enums;
 
 public enum AgeEnum {
-    PREHISTORY,
-    OLD_AGE,
-    MEDIEVAL,
-    FEUDAL,
-    RENAISSANCE,
-    YEAR_40,
-    YEAR_50,
-    YEAR_60,
-    YEAR_70,
-    YEAR_80,
-    YEAR_90,
-    YEAR_2000,
-    YEAR_2010,
-    MODERN,
-    FUTURISTIC,
+    PREHISTORY("Prehistory"),
+    OLD_AGE("Old Age"),
+    MEDIEVAL("Medieval"),
+    RENAISSANCE("Renaissance"),
+    MODERN("Modern"),
+    SEX_XIX("Sec XIX"),
+    SEX_XX("Sec XX"),
+    YEAR_40("Years 40s"),
+    YEAR_50("Years 50s"),
+    YEAR_60("Years 60s"),
+    YEAR_70("Years 70s"),
+    YEAR_80("Years 80s"),
+    YEAR_90("Years 90s"),
+    YEAR_2000("Years 2000s"),
+    YEAR_2010("Years 2010s"),
+    YEAR_2020("Years 2020s"),
+    FUTURISTIC("Futuristic");
+
+    String age;
+
+
+    AgeEnum(String age) {
+        this.age = age;
+    }
 }
