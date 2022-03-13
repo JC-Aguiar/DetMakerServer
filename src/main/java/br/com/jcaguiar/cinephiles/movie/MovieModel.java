@@ -7,8 +7,6 @@ import br.com.jcaguiar.cinephiles.enums.PegiEnum;
 import br.com.jcaguiar.cinephiles.enums.ScriptEnum;
 import br.com.jcaguiar.cinephiles.people.ActorEntity;
 import br.com.jcaguiar.cinephiles.people.DirectorEntity;
-import br.com.jcaguiar.cinephiles.util.ListConverter;
-import br.com.jcaguiar.cinephiles.util.PegiEnumConvert;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -69,7 +67,7 @@ public class MovieModel {
             @JoinColumn(name = "actors_last_name", referencedColumnName = "last_name") })
     final List<ActorEntity> actors = new ArrayList<>();
 
-    @Convert(converter = PegiEnumConvert.class)
+    @Enumerated(EnumType.STRING)
     PegiEnum ageRange;
 
     String logo;
@@ -84,12 +82,15 @@ public class MovieModel {
 
     String fit;
 
-    @Convert(converter = ListConverter.class)
+    @Enumerated(EnumType.STRING)
     final List<AgeEnum> age = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
     ScriptEnum script;
 
-    @Convert(converter = ListConverter.class)
+    @Enumerated(EnumType.STRING)
     final List<DesignEnum> design = new ArrayList<>();
+
     Duration duration;
 
     @URL

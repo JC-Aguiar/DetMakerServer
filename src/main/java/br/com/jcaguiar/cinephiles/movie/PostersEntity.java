@@ -26,7 +26,7 @@ public class PostersEntity extends PostersModel {
     @ToString.Exclude
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "movie_id")
-    MovieModel movie;
+    MovieEntity movie;
 
     public PostersEntity addMovie(MovieEntity movie) {
         movie.addPosters(this);

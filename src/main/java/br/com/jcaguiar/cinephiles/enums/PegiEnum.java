@@ -1,10 +1,16 @@
 package br.com.jcaguiar.cinephiles.enums;
 
 public enum PegiEnum {
-    ALL,
-    AGE_10,
-    AGE_12,
-    AGE_14,
-    AGE_16,
-    AGE_18,
+    ALL("All"),
+    AGE_10("10+"),
+    AGE_12("12+"),
+    AGE_14("14+"),
+    AGE_16("16+"),
+    AGE_18("18+");
+
+    String age;
+
+    PegiEnum(String age) {
+        this.age = age;
+    }
 }
