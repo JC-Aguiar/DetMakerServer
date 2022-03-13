@@ -1,12 +1,12 @@
 package br.com.jcaguiar.cinephiles.movie;
 
+import br.com.jcaguiar.cinephiles.company.CompanyEntity;
 import br.com.jcaguiar.cinephiles.enums.AgeEnum;
 import br.com.jcaguiar.cinephiles.enums.DesignEnum;
 import br.com.jcaguiar.cinephiles.enums.PegiEnum;
 import br.com.jcaguiar.cinephiles.enums.ScriptEnum;
 import br.com.jcaguiar.cinephiles.people.ActorEntity;
 import br.com.jcaguiar.cinephiles.people.DirectorEntity;
-import br.com.jcaguiar.cinephiles.people.ProducerEntity;
 import br.com.jcaguiar.cinephiles.util.ListConverter;
 import br.com.jcaguiar.cinephiles.util.PegiEnumConvert;
 import lombok.AccessLevel;
@@ -33,41 +33,55 @@ public class MovieModel {
     @Column(unique = true)
     @NotBlank(message = "'Title' cant be empty")
     String title;
+
     String synopsis;
+
+    String tagline;
+
     Date premiereDate;
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinTable(name = "movies_genres", joinColumns = @JoinColumn(name = "movies_id"),
-               inverseJoinColumns = @JoinColumn(name = "genre_id"))
+    @JoinTable(
+        name = "movies_genres", joinColumns = @JoinColumn(name = "movies_id"),
+        inverseJoinColumns = @JoinColumn(name = "genre_id"))
     final List<GenreEntity> genres = new ArrayList<>();
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinTable( name = "movies_directors", joinColumns = @JoinColumn(name = "movies_id"),
-                inverseJoinColumns = {
-                    @JoinColumn(name = "directors_first_name", referencedColumnName = "first_name"),
-                    @JoinColumn(name = "directors_last_name", referencedColumnName = "last_name") })
+    @JoinTable(
+        name = "movies_directors", joinColumns = @JoinColumn(name = "movies_id"),
+        inverseJoinColumns = {
+            @JoinColumn(name = "directors_first_name", referencedColumnName = "first_name"),
+            @JoinColumn(name = "directors_last_name", referencedColumnName = "last_name") })
     final List<DirectorEntity> directors = new ArrayList<>();
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinTable(name = "movies_producers", joinColumns = @JoinColumn(name = "movies_id"),
-               inverseJoinColumns = {
-                    @JoinColumn(name = "producers_first_name", referencedColumnName = "first_name"),
-                    @JoinColumn(name = "producers_last_name", referencedColumnName = "last_name") })
-    final List<ProducerEntity> producers = new ArrayList<>();
+    @JoinTable(
+        name = "movies_producers", joinColumns = @JoinColumn(name = "movies_id"),
+        inverseJoinColumns = @JoinColumn(
+            name = "companies_name", referencedColumnName = "name"))
+    final List<CompanyEntity> producers = new ArrayList<>();
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JoinTable( name = "movies_actors", joinColumns = @JoinColumn(name = "movies_id"),
-                inverseJoinColumns = {
-                    @JoinColumn(name = "actors_first_name", referencedColumnName = "first_name"),
-                    @JoinColumn(name = "actors_last_name", referencedColumnName = "last_name") })
+    @JoinTable(
+        name = "movies_actors", joinColumns = @JoinColumn(name = "movies_id"),
+        inverseJoinColumns = {
+            @JoinColumn(name = "actors_first_name", referencedColumnName = "first_name"),
+            @JoinColumn(name = "actors_last_name", referencedColumnName = "last_name") })
     final List<ActorEntity> actors = new ArrayList<>();
 
     @Convert(converter = PegiEnumConvert.class)
     PegiEnum ageRange;
+
     String logo;
-    String posters;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Column(name = "posters_id")
+    final List<PostersEntity> posters = new ArrayList<>();
+
     String font;
+
     String position;
+
     String fit;
 
     @Convert(converter = ListConverter.class)

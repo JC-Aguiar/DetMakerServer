@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 @Repository
 public interface MovieRepository extends JpaRepository<MovieEntity, Integer> {
 
@@ -39,4 +41,5 @@ public interface MovieRepository extends JpaRepository<MovieEntity, Integer> {
     @Query( "SELECT m FROM movies m INNER JOIN m.producers p " +
             "WHERE p.id.firstName LIKE ?1 OR p.id.lastName LIKE ?1")
     Page<MovieEntity> findByProducersLike(String producer, Pageable pageable);
+
 }

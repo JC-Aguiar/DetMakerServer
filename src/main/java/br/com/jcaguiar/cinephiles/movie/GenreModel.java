@@ -8,6 +8,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
 import javax.persistence.MappedSuperclass;
+import javax.validation.constraints.NotBlank;
 
 @Data
 @NoArgsConstructor
@@ -16,6 +17,7 @@ import javax.persistence.MappedSuperclass;
 @MappedSuperclass
 public class GenreModel {
 
+    @NotBlank(message = "Insert a valid genre type")
     GenreEnum genre;
 
 }

@@ -1,20 +1,27 @@
 package br.com.jcaguiar.cinephiles.enums;
 
 public enum GenreEnum {
-    DRAMA,
-    TRAGEDY,
-    HUMOR,
-    COMEDY,
-    REAL_FACTS,
-    DOCUMENTARY,
-    ACTION,
-    THRILLER,
-    FICTION,
-    FANTASY,
-    BIBLIC,
-    MUSICAL,
-    HORROR,
-    CLASSIC,
-    ROMANCE,
-    CULT,
+    DRAMA("Drama"),
+    MYSTERY("Mistério"),
+    HUMOR("Comédia"),
+    PARODY("Paródia"),
+    REAL_FACTS("Fatos Reais"),
+    DOCUMENTARY("Documentário"),
+    ACTION("Ação"),
+    ADVENTURE("Aventura"),
+    THRILLER("Thriller"),
+    FICTION("Ficção científica"),
+    FANTASY("Fantasia"),
+    BIBLICAL("Bíblico"),
+    MUSICAL("Musical"),
+    HORROR("Terror"),
+    CLASSIC("Clássico"),
+    ROMANCE("Romance"),
+    CULT("Cult");
+
+    final String name;
+
+    GenreEnum(String name) {
+        this.name = name;
+    }
 }
