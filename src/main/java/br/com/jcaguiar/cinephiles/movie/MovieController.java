@@ -127,20 +127,22 @@ public class MovieController extends MasterController
     @ConsoleLog
     @PostMapping(value = "add/one/tmdb", consumes = {"application/json", "text/plain"})
     public ResponseEntity<?> addOne(final @RequestBody Map<String, Object> file) {
-        return new ResponseEntity(
-            service.craftMovieJson(file), HttpStatus.OK);
+        final Map<String, Object> json = service.filterJsonTMDB(file);
+        return new ResponseEntity<>(service.persistJsonTMDB(json), HttpStatus.OK);
     }
 
     //POST: INSERT MANY FILES
     @ConsoleLog
     @PostMapping(value = "add/many/tmdb", consumes = "multipart/form-data")
     public ResponseEntity<?> addAll(@RequestParam("files") List<MultipartFile> files) {
-        final List<Map> jsonMovies = new ArrayList<>();
-        files.forEach(file -> jsonMovies.add(
+        final List<Map> jsonFile = new ArrayList<>();
+        files.forEach(file -> jsonFile.add(
             service.parseFileToMap(file)));
-        return new ResponseEntity(jsonMovies, HttpStatus.OK);
+        final List<MovieEntity> moviesEntities = jsonFile.stream()
+            .map(service::filterJsonTMDB)
+            .map(service::persistJsonTMDB)
+            .toList();
+        return new ResponseEntity<>(moviesEntities, HttpStatus.OK);
     }
-
-
 
 }
