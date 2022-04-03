@@ -160,8 +160,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
                 .duration(duration)
                 .build();
             movie.addGenres(genres).addProducers(producers).addPosters(posters); //todo: uncomment
-            final var teste01 = new Gson().toJson(movie);
-            System.out.println(new Gson().fromJson(teste01, JsonObject.class).toString());
+            System.out.println(movie);
             return dao.saveAndFlush(movie);  //todo: uncomment
         } catch (ParseException | NumberFormatException | IOException e) {
             e.printStackTrace();
