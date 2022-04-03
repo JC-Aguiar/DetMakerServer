@@ -32,6 +32,7 @@ public class MovieModel {
     @NotBlank(message = "'Title' cant be empty")
     String title;
 
+    @Column(length = 999)
     String synopsis;
 
     String tagline;
@@ -84,13 +85,15 @@ public class MovieModel {
 
     @Enumerated(EnumType.STRING)
     @ElementCollection(targetClass = AgeEnum.class, fetch = FetchType.LAZY)
-    final List<AgeEnum> age = new ArrayList<>();
+    @CollectionTable(name = "movies_age", joinColumns = @JoinColumn(name = "movies_id"))
+    final List<AgeEnum> movieAge = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     ScriptEnum script;
 
     @Enumerated(EnumType.STRING)
     @ElementCollection(targetClass = DesignEnum.class, fetch = FetchType.LAZY)
+    @CollectionTable(name = "movies_design", joinColumns = @JoinColumn(name = "movies_id"))
     final List<DesignEnum> design = new ArrayList<>();
 
     Duration duration;
