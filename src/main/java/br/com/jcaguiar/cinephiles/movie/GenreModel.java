@@ -11,6 +11,7 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.MappedSuperclass;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 @Data
 @NoArgsConstructor
@@ -19,7 +20,7 @@ import javax.validation.constraints.NotBlank;
 @MappedSuperclass
 public class GenreModel {
 
-    @NotBlank(message = "Insert a valid genre type")
+    @NotNull(message = "Genre can't be empty")
     @Enumerated(EnumType.STRING)
     GenreEnum genre;
 

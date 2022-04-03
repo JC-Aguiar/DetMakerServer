@@ -3,6 +3,7 @@ package br.com.jcaguiar.cinephiles.movie;
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
 import br.com.jcaguiar.cinephiles.master.MasterController;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
+import com.google.gson.Gson;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +12,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -127,22 +127,35 @@ public class MovieController extends MasterController
     @ConsoleLog
     @PostMapping(value = "add/one/tmdb", consumes = {"application/json", "text/plain"})
     public ResponseEntity<?> addOne(final @RequestBody Map<String, Object> file) {
-        final Map<String, Object> json = service.filterJsonTMDB(file);
-        return new ResponseEntity<>(service.persistJsonTMDB(json), HttpStatus.OK);
+        final Gson gson =  new Gson();
+        final String stringFile = gson.toJson(file);
+        final MovieDtoTMDB dtoTMDB = gson.fromJson(stringFile, MovieDtoTMDB.class);
+        return new ResponseEntity<>(service.persistJsonTMDB(dtoTMDB), HttpStatus.OK);
     }
 
     //POST: INSERT MANY FILES
     @ConsoleLog
-    @PostMapping(value = "add/many/tmdb", consumes = "multipart/form-data")
+    @PostMapping(value = "add/many/tmdb", consumes = {"application/json", "text/plain", "multipart/form-data"})
     public ResponseEntity<?> addAll(@RequestParam("files") List<MultipartFile> files) {
-        final List<Map> jsonFile = new ArrayList<>();
-        files.forEach(file -> jsonFile.add(
-            service.parseFileToMap(file)));
-        final List<MovieEntity> moviesEntities = jsonFile.stream()
-            .map(service::filterJsonTMDB)
+        //TODO: criar um DTP para o arquivo TMDB com todos os campos
+        // utilizar método do service para converter MultipartFile em Map/String
+        // e depois usar método Gson para converter o Map/String no objeto DTO
+        final Gson gson = new Gson();
+        final List<MovieEntity> movies = files.stream()
+            .map(service::parseFileToJson)
+            .map(file -> gson.fromJson(file, MovieDtoTMDB.class))
             .map(service::persistJsonTMDB)
             .toList();
-        return new ResponseEntity<>(moviesEntities, HttpStatus.OK);
+        return new ResponseEntity<>(movies, HttpStatus.OK);
+    }
+
+    //todo: remove this in production
+    //DELETE: ALL FILES
+    @ConsoleLog
+    @DeleteMapping("del/all")
+    public ResponseEntity<?> deleteAll() {
+        service.deleteAll();
+        return new ResponseEntity<>(null, HttpStatus.OK);
     }
 
 }

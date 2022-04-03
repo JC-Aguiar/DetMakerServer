@@ -5,8 +5,9 @@ import br.com.jcaguiar.cinephiles.company.CompanyService;
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
 import br.com.jcaguiar.cinephiles.master.MasterService;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.io.FileUtils;
+import br.com.jcaguiar.cinephiles.util.Download;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
@@ -14,13 +15,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
+import javax.validation.constraints.NotNull;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -114,25 +111,25 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         return moviesJson;
     }
 
-    public MovieEntity persistJsonTMDB(Map<String, Object> moviesJson) {
+    public MovieEntity persistJsonTMDB(@NotNull MovieDtoTMDB movieJson) {
         try {
             // Single attributes
-            final String title = moviesJson.get("title").toString();
-            final String synopsis = moviesJson.get("overview").toString();
-            final String tagline = moviesJson.get("tagline").toString();
+            final String title = movieJson.getTitle();
+            final String synopsis = movieJson.getOverview();
+            final String tagline = movieJson.getTagline();
             final Date premier = new SimpleDateFormat("yyyy-MM-dd")
-                .parse(moviesJson.get("release_date").toString());
-            final long runTime = Long.parseLong(moviesJson.get("runtime").toString());
+                .parse(movieJson.getRelease_date());
+            final long runTime = Long.parseLong(movieJson.getRuntime());
             final Duration duration = Duration.ofMinutes(runTime);
             // Poster imagem from origin (URL + File)
-            final String postersString = "https://image.tmdb.org/t/p/w600_and_h900_bestv2"
-                + moviesJson.get("poster_path").toString();
-            final URL posterUrl = new URL(postersString);
-            final File posterFile = FileUtils.toFile(posterUrl);
-            final byte[] poster = FileUtils.readFileToByteArray(posterFile);
-            final Path path = Paths.get("/temp");
-            Files.write(path, poster);
-            System.out.println("File saved in path: " + path);
+            final String postersString =
+                "https://image.tmdb.org/t/p/w600_and_h900_bestv2"
+                + movieJson.getPoster_path();
+            //            final var connection = posterUrl.openConnection();
+            //            final Object posterFile = connection.getContent();
+            //            final var byteStream = new ByteArrayOutputStream();
+            //            final var objectStream = new ObjectOutputStream(byteStream);
+            final byte[] poster = Download.from(postersString);
             // Poster
             final PostersEntity postersEntity = posterRepository.saveAndFlush(
                 PostersEntity.builder()
@@ -140,16 +137,21 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
                     .image(poster)
                     .build());
             // Genres
-            final List<String> possibleGenres = MapToStringTMDB(moviesJson, "genres");
-            possibleGenres.removeIf(e -> e.contains("id"));
-            final List<GenreEntity> genres = possibleGenres.stream()
-                .map(genreService::loadOrSave).toList();
+            final List<String> possibleGenres = movieJson.getGenres()
+                .stream()
+                .map(MovieDtoTMDBGenre::getName)
+                .toList();
+            final List<GenreEntity> genres = possibleGenres.stream()  //todo: uncomment
+                .map(genreService::loadOrSave).toList();  //todo: uncomment
             // Producers
-            final List<String> possibleProducers = MapToStringTMDB(moviesJson, "production_companies");
-            possibleGenres.removeIf(e -> !e.contains("name"));
-            final List<CompanyEntity> producers = possibleProducers.stream()
-                .map(companyService::loadOrSave).toList();
+            final List<String> possibleProducers = movieJson.getProduction_companies()
+                .stream()
+                .map(MovieDtoTMDBProductors::getName)
+                .toList();
+            final List<CompanyEntity> producers = possibleProducers.stream()  //todo: uncomment
+                .map(companyService::loadOrSave).toList();  //todo: uncomment
             final List<PostersEntity> posters = new ArrayList<>();
+            posters.add(postersEntity);
             final MovieEntity movie = MovieEntity.builder()
                 .title(title)
                 .synopsis(synopsis)
@@ -157,35 +159,32 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
                 .premiereDate(premier)
                 .duration(duration)
                 .build();
-            movie.addGenres(genres).addProducers(producers).addPosters(posters);
-            return dao.saveAndFlush(movie);
+            movie.addGenres(genres).addProducers(producers).addPosters(posters); //todo: uncomment
+            final var teste01 = new Gson().toJson(movie);
+            System.out.println(new Gson().fromJson(teste01, JsonObject.class).toString());
+            return dao.saveAndFlush(movie);  //todo: uncomment
         } catch (ParseException | NumberFormatException | IOException e) {
             e.printStackTrace();
             return null;
         }
     }
-    // final HttpURLConnection connection = (HttpURLConnection) posterUrl.openConnection();
-    // connection.setRequestMethod("GET");
-    // connection.setConnectTimeout(5000);
-    // connection.setReadTimeout(5000);
-    // connection.connect();
 
     @ConsoleLog
-    public Map parseFileToMap(MultipartFile file) {
+    public JsonObject parseFileToJson(@NotNull MultipartFile file) {
         try {
             final String jsonString = new String(
                 file.getBytes(), StandardCharsets.UTF_8);
-            return new ObjectMapper().readValue(jsonString, Map.class);
-        } catch (IOException ignored) { }
-        return new HashMap();
+            return new Gson().fromJson(jsonString, JsonObject.class);
+        } catch (IOException e) {
+            System.out.println("MultipartFile parse to JsonElement error: " + e.getLocalizedMessage());
+        }
+        return new Gson().fromJson(" ", JsonObject.class);
     }
 
-    private List<String> MapToStringTMDB(Map json, String key) {
-        return Arrays.asList(json.get(key).toString()
-                      .replace("{", "").replace("}", "")
-                      .replace("[", "").replace("]", "")
-                      .split(","));
+    //todo: remove this in production
+    @ConsoleLog
+    public void deleteAll() {
+        dao.deleteAll();
     }
-
 
 }
