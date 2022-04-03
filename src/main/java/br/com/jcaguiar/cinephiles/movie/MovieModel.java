@@ -83,12 +83,14 @@ public class MovieModel {
     String fit;
 
     @Enumerated(EnumType.STRING)
+    @ElementCollection(targetClass = AgeEnum.class, fetch = FetchType.LAZY)
     final List<AgeEnum> age = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     ScriptEnum script;
 
     @Enumerated(EnumType.STRING)
+    @ElementCollection(targetClass = DesignEnum.class, fetch = FetchType.LAZY)
     final List<DesignEnum> design = new ArrayList<>();
 
     Duration duration;

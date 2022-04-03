@@ -1,5 +1,9 @@
 package br.com.jcaguiar.cinephiles.enums;
 
+import lombok.Getter;
+
+import javax.validation.constraints.NotBlank;
+
 public enum GenreEnum {
     DRAMA("Drama"),
     MYSTERY("Mistério"),
@@ -19,9 +23,13 @@ public enum GenreEnum {
     ROMANCE("Romance"),
     CULT("Cult");
 
+    @Getter
     final String name;
 
-    GenreEnum(String name) {
+    GenreEnum(@NotBlank String name) {
         this.name = name;
     }
+
+
+
 }
