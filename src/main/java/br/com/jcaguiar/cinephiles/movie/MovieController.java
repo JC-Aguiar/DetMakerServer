@@ -137,13 +137,10 @@ public class MovieController extends MasterController
     @ConsoleLog
     @PostMapping(value = "add/many/tmdb", consumes = {"application/json", "text/plain", "multipart/form-data"})
     public ResponseEntity<?> addAll(@RequestParam("files") List<MultipartFile> files) {
-        //TODO: criar um DTP para o arquivo TMDB com todos os campos
-        // utilizar método do service para converter MultipartFile em Map/String
-        // e depois usar método Gson para converter o Map/String no objeto DTO
         final Gson gson = new Gson();
         final List<MovieEntity> movies = files.stream()
             .map(service::parseFileToJson)
-            .map(file -> gson.fromJson(file, MovieDtoTMDB.class))
+            .map(service::parseJsonToDto)
             .map(service::persistJsonTMDB)
             .toList();
         return new ResponseEntity<>(movies, HttpStatus.OK);
