@@ -7,7 +7,11 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.MappedSuperclass;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 @Data
 @NoArgsConstructor
@@ -16,6 +20,8 @@ import javax.persistence.MappedSuperclass;
 @MappedSuperclass
 public class GenreModel {
 
+    @NotNull(message = "Genre can't be empty")
+    @Enumerated(EnumType.STRING)
     GenreEnum genre;
 
 }
