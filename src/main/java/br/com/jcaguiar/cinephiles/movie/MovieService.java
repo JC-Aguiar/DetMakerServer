@@ -8,6 +8,7 @@ import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import br.com.jcaguiar.cinephiles.util.Download;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
@@ -32,6 +33,8 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
     private CompanyService companyService;
     @Autowired
     private PostersRepository posterRepository;
+    @Autowired
+    private Gson gson;
     private final MovieRepository dao;
     private final static List<String> TMDB_KEYS = new ArrayList<String>(){{
         add("title");                       //-> title
@@ -160,11 +163,11 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
                 .duration(duration)
                 .build();
             movie.addGenres(genres).addProducers(producers).addPosters(posters); //todo: uncomment
-            final var teste01 = new Gson().toJson(movie);
-            System.out.println(new Gson().fromJson(teste01, JsonObject.class).toString());
+            final var teste01 = gson.toJson(movie);
+            System.out.println(gson.fromJson(teste01, JsonObject.class).toString());
             return dao.saveAndFlush(movie);  //todo: uncomment
         } catch (ParseException | NumberFormatException | IOException e) {
-            e.printStackTrace();
+            System.out.println("Persist TMDB dto error: " + e.getLocalizedMessage());
             return null;
         }
     }
@@ -174,11 +177,21 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         try {
             final String jsonString = new String(
                 file.getBytes(), StandardCharsets.UTF_8);
-            return new Gson().fromJson(jsonString, JsonObject.class);
+            return gson.fromJson(jsonString, JsonObject.class);
         } catch (IOException e) {
-            System.out.println("MultipartFile parse to JsonElement error: " + e.getLocalizedMessage());
+            System.out.println("Parse MultipartFile to Json error: " + e.getLocalizedMessage());
+            return gson.fromJson(" ", JsonObject.class);
         }
-        return new Gson().fromJson(" ", JsonObject.class);
+    }
+
+    @ConsoleLog
+    public MovieDtoTMDB parseJsonToDto(@NotNull JsonObject json) {
+        try {
+            return gson.fromJson(json, MovieDtoTMDB.class);
+        } catch (JsonSyntaxException e) {
+            System.out.println("Parse Json to TMDB error: " + e.getLocalizedMessage());
+            return new MovieDtoTMDB();
+        }
     }
 
     //todo: remove this in production
