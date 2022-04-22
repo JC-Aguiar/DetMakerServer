@@ -8,7 +8,9 @@ import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
+import javax.persistence.Column;
 import javax.persistence.MappedSuperclass;
+import javax.validation.constraints.NotBlank;
 import java.util.Arrays;
 
 @Data
@@ -19,6 +21,8 @@ import java.util.Arrays;
 @ToString(callSuper = true)
 public class CompanyModel implements NameableModel {
 
+    @NotBlank(message = "Insert a valid company name")
+    @Column(unique = true)
     String name;
 
     @Override

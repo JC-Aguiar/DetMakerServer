@@ -4,7 +4,6 @@ import br.com.jcaguiar.cinephiles.exception.AuthorizationHeaderException;
 import br.com.jcaguiar.cinephiles.exception.BearerTokenException;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import io.jsonwebtoken.JwtException;
-import lombok.SneakyThrows;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,7 +26,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.jwtService = jwtService;
     }
 
-    @SneakyThrows
     @Override
     @ConsoleLog
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)

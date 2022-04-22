@@ -8,6 +8,7 @@ import lombok.experimental.SuperBuilder;
 import org.springframework.data.annotation.Transient;
 
 import java.time.Duration;
+import java.util.List;
 
 @Value
 @RequiredArgsConstructor
@@ -19,7 +20,7 @@ public final class MovieDtoRequest extends MovieModel implements MasterDtoReques
     String logo = null;
     @Transient
     @JsonIgnore
-    String posters = null;
+    List<PostersEntity> posters = null;
     @Transient
     @JsonIgnore
     String font = null;
