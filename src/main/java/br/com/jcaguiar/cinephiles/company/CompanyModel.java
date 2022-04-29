@@ -32,10 +32,9 @@ public class CompanyModel implements NameableModel {
 
     @Override
     public String getInitialsName() {
-        final boolean compositeName = name.contains(" ");
-        return compositeName ?
-                Arrays.stream(name.split(" ")).map(i -> i.charAt(0)).toString()
-                : NameableModel.findInitialsInSoloName(name);
+        return name.contains(" ")
+            ? NameableModel.findInitualsInComposeName(name)
+            : NameableModel.findInitialsInSoloName(name);
 
     }
 }
