@@ -39,6 +39,7 @@ public class MovieModel {
 
     Date premiereDate;
 
+    //tees
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(
         name = "movies_genres", joinColumns = @JoinColumn(name = "movies_id"),
