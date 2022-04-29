@@ -8,6 +8,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 
 import javax.persistence.*;
+import java.io.Serializable;
 
 @Data
 @NoArgsConstructor
@@ -16,7 +17,7 @@ import javax.persistence.*;
 @ToString(callSuper = true)
 @Entity(name = "companies")
 @Table(name = "companies")
-public class CompanyEntity extends CompanyModel {
+public class CompanyEntity extends CompanyModel implements Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
