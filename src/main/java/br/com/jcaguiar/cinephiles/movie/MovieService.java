@@ -163,7 +163,11 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
                 .premiereDate(premier)
                 .duration(duration)
                 .build();
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            //TODO: alterar todo o processo abaixo para serem métodos do service. Motivo: mapeamento precisa ser
+            // bilateral. Atualmente não está realizando vinculo das outras entidades com a MovieEntity
             movie.addGenres(genres).addProducers(producers).addPosters(posters); //todo: uncomment
+            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             System.out.println(movie);
             return dao.saveAndFlush(movie);  //todo: uncomment
         } catch (ParseException | NumberFormatException | IOException e) {
