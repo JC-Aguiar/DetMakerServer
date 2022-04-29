@@ -5,7 +5,6 @@ import java.io.BufferedInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.file.FileSystems;
 import java.nio.file.Paths;
 
 public class Download {
@@ -13,6 +12,7 @@ public class Download {
     static int count = 0;
 
     public static byte[] from(@NotBlank String urlString) throws IOException {
+        //TODO: this method is not working. System report "access denied"
         final URL url = new URL(urlString);
         final String filePath = Paths.get("/temp/").toAbsolutePath().toString();
         final String fileName = filePath + String.format("file%02d", ++count);

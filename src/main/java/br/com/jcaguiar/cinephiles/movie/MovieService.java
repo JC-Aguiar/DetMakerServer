@@ -125,11 +125,15 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
             final String postersString =
                 "https://image.tmdb.org/t/p/w600_and_h900_bestv2"
                 + movieJson.getPoster_path();
+            //todo: link builder OK. But the download system is failing.
+            System.out.println("postersString: " + postersString);
             //            final var connection = posterUrl.openConnection();
             //            final Object posterFile = connection.getContent();
             //            final var byteStream = new ByteArrayOutputStream();
             //            final var objectStream = new ObjectOutputStream(byteStream);
             final byte[] poster = Download.from(postersString);
+            System.out.println("poster: " + poster);
+//            if (true) return null;
             // Poster
             final PostersEntity postersEntity = posterRepository.saveAndFlush(
                 PostersEntity.builder()
