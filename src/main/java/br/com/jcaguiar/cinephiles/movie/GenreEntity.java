@@ -22,4 +22,6 @@ public class GenreEntity extends GenreModel {
     @GeneratedValue(strategy = GenerationType.AUTO)
     Integer id;
 
+
+
 }

@@ -1,6 +1,6 @@
 package br.com.jcaguiar.cinephiles.movie;
 
-import br.com.jcaguiar.cinephiles.company.CompanyEntity;
+import br.com.jcaguiar.cinephiles.company.ProducerEntity;
 import br.com.jcaguiar.cinephiles.master.MasterEntity;
 import br.com.jcaguiar.cinephiles.master.MasterRecord;
 import br.com.jcaguiar.cinephiles.people.ActorEntity;
@@ -73,12 +73,12 @@ final public class MovieEntity extends MovieModel implements MasterEntity {
         return this;
     }
 
-    public MovieEntity addProducers(CompanyEntity producer) {
+    public MovieEntity addProducers(ProducerEntity producer) {
         getProducers().add(producer);
         return this;
     }
 
-    public MovieEntity addProducers(List<CompanyEntity> producers) {
+    public MovieEntity addProducers(List<ProducerEntity> producers) {
         getProducers().addAll(producers);
         return this;
     }
