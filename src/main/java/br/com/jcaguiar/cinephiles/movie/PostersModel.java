@@ -5,9 +5,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
+import org.hibernate.annotations.Type;
 import org.hibernate.validator.constraints.URL;
 
-import javax.persistence.Lob;
+import javax.persistence.Column;
 import javax.persistence.MappedSuperclass;
 import javax.validation.constraints.NotNull;
 
@@ -21,7 +22,9 @@ public class PostersModel {
     @URL(message = "insert a valid url")
     String url;
 
-    @Lob
+    //Lob (ODL BUG)
+    @Type(type="org.hibernate.type.BinaryType")
+    @Column(columnDefinition = "BLOB")
     @NotNull(message = "image file cant be empty/null")
     byte[] image;
 
