@@ -1,7 +1,7 @@
 package br.com.jcaguiar.cinephiles.movie;
 
-import br.com.jcaguiar.cinephiles.company.CompanyEntity;
-import br.com.jcaguiar.cinephiles.company.CompanyService;
+import br.com.jcaguiar.cinephiles.company.ProducerEntity;
+import br.com.jcaguiar.cinephiles.company.ProducerService;
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
 import br.com.jcaguiar.cinephiles.master.MasterService;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
@@ -29,7 +29,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
     @Autowired
     private GenreService genreService;
     @Autowired
-    private CompanyService companyService;
+    private ProducerService producerService;
     @Autowired
     private PostersRepository posterRepository;
     private final MovieRepository dao;
@@ -41,7 +41,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         add("genres");                      //-> genres
         add("production_companies");        //-> producers
         add("poster_path");                 //-> posters
-//        add("backdrop_path");               //-> posters
+        //add("backdrop_path");               //-> posters
         add("runtime");                     //-> duration
     }};
 
@@ -145,15 +145,15 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
                 .stream()
                 .map(MovieDtoTMDBGenre::getName)
                 .toList();
-            final List<GenreEntity> genres = possibleGenres.stream()  //todo: uncomment
-                .map(genreService::loadOrSave).toList();  //todo: uncomment
+            final List<GenreEntity> genres = possibleGenres.stream()
+                .map(genreService::loadOrSave).toList();
             // Producers
             final List<String> possibleProducers = movieJson.getProduction_companies()
                 .stream()
                 .map(MovieDtoTMDBProductors::getName)
                 .toList();
-            final List<CompanyEntity> producers = possibleProducers.stream()  //todo: uncomment
-                .map(companyService::loadOrSave).toList();  //todo: uncomment
+            final List<ProducerEntity> producers = possibleProducers.stream()
+                                                                    .map(producerService::loadOrSave).toList();
             final List<PostersEntity> posters = new ArrayList<>();
             posters.add(postersEntity);
             final MovieEntity movie = MovieEntity.builder()
@@ -166,6 +166,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
             //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             //TODO: alterar todo o processo abaixo para serem métodos do service. Motivo: mapeamento precisa ser
             // bilateral. Atualmente não está realizando vinculo das outras entidades com a MovieEntity
+
             movie.addGenres(genres).addProducers(producers).addPosters(posters); //todo: uncomment
             //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             System.out.println(movie);

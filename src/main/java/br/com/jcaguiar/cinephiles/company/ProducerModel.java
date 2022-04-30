@@ -19,7 +19,7 @@ import java.util.Arrays;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @MappedSuperclass
 @ToString(callSuper = true)
-public class CompanyModel implements NameableModel {
+public class ProducerModel implements NameableModel {
 
     @NotBlank(message = "Insert a valid company name")
     @Column(unique = true)
