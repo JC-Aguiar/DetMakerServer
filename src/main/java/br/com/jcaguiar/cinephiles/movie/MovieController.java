@@ -123,6 +123,9 @@ public class MovieController extends MasterController
         return proxy().craftResponsePage(moviesEntities);
     }
 
+    //TODO: CREATE HANDLE RESPONSE AGAINST DUPLICATED MOVIES
+    // org.postgresql.util.PSQLException
+
     //POST: INSERT ONE FILE
     @ConsoleLog
     @PostMapping(value = "add/one/tmdb", consumes = {"application/json", "text/plain"})

@@ -125,15 +125,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
             final String postersString =
                 "https://image.tmdb.org/t/p/w600_and_h900_bestv2"
                 + movieJson.getPoster_path();
-            //todo: link builder OK. But the download system is failing.
-            System.out.println("postersString: " + postersString);
-            //            final var connection = posterUrl.openConnection();
-            //            final Object posterFile = connection.getContent();
-            //            final var byteStream = new ByteArrayOutputStream();
-            //            final var objectStream = new ObjectOutputStream(byteStream);
-            final byte[] poster = Download.from(postersString);
-            System.out.println("poster: " + poster);
-//            if (true) return null;
+            final byte[] poster = Download.from(postersString); //todo: link builder OK. But the download system is failing.
             // Poster
             final PostersEntity postersEntity = posterRepository.saveAndFlush(
                 PostersEntity.builder()
@@ -153,7 +145,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
                 .map(MovieDtoTMDBProductors::getName)
                 .toList();
             final List<ProducerEntity> producers = possibleProducers.stream()
-                                                                    .map(producerService::loadOrSave).toList();
+                .map(producerService::loadOrSave).toList();
             final List<PostersEntity> posters = new ArrayList<>();
             posters.add(postersEntity);
             final MovieEntity movie = MovieEntity.builder()
@@ -163,12 +155,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
                 .premiereDate(premier)
                 .duration(duration)
                 .build();
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            //TODO: alterar todo o processo abaixo para serem métodos do service. Motivo: mapeamento precisa ser
-            // bilateral. Atualmente não está realizando vinculo das outras entidades com a MovieEntity
-
             movie.addGenres(genres).addProducers(producers).addPosters(posters); //todo: uncomment
-            //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             System.out.println(movie);
             return dao.saveAndFlush(movie);  //todo: uncomment
         } catch (ParseException | NumberFormatException | IOException e) {
