@@ -11,17 +11,22 @@ public enum GenreEnum {
     PARODY("Paródia"),
     REAL_FACTS("História"),
     WAR("Guerra"),
+    CRIME("Crime"),
     DOCUMENTARY("Documentário"),
     ACTION("Ação"),
     ADVENTURE("Aventura"),
+    ANIMATION("Animação"),
+    FAMILY("Família"),
     THRILLER("Thriller"),
     FICTION("Ficção científica"),
     FANTASY("Fantasia"),
     BIBLICAL("Bíblico"),
-    MUSICAL("Musical"),
+    MUSICAL("Música"),
     HORROR("Terror"),
     CLASSIC("Clássico"),
     ROMANCE("Romance"),
+    WESTERN("Faroeste"),
+    TV_MOVIE("Cinema TV"),
     CULT("Cult");
 
     @Getter
