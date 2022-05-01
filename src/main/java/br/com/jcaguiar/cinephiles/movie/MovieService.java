@@ -9,6 +9,7 @@ import br.com.jcaguiar.cinephiles.util.Download;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -157,10 +158,10 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
                 .build();
             movie.addGenres(genres).addProducers(producers).addPosters(posters); //todo: uncomment
             System.out.println(movie);
-            return dao.saveAndFlush(movie);  //todo: uncomment
-        } catch (ParseException | NumberFormatException | IOException e) {
-            e.printStackTrace();
-            return null;
+            return dao.saveAndFlush(movie);
+        } catch (ParseException | NumberFormatException | IOException | DataAccessException e) {
+            System.out.println("MovieEntity persist error: " + e.getLocalizedMessage());
+            return new MovieEntity();
         }
     }
 
