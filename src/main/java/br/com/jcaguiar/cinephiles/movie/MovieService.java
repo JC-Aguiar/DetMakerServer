@@ -1,7 +1,7 @@
 package br.com.jcaguiar.cinephiles.movie;
 
-import br.com.jcaguiar.cinephiles.company.CompanyEntity;
-import br.com.jcaguiar.cinephiles.company.CompanyService;
+import br.com.jcaguiar.cinephiles.company.ProducerEntity;
+import br.com.jcaguiar.cinephiles.company.ProducerService;
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
 import br.com.jcaguiar.cinephiles.master.MasterService;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,7 +31,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
     @Autowired
     private GenreService genreService;
     @Autowired
-    private CompanyService companyService;
+    private ProducerService producerService;
     @Autowired
     private PostersRepository posterRepository;
     @Autowired
@@ -44,7 +45,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         add("genres");                      //-> genres
         add("production_companies");        //-> producers
         add("poster_path");                 //-> posters
-//        add("backdrop_path");               //-> posters
+        //add("backdrop_path");               //-> posters
         add("runtime");                     //-> duration
     }};
 
@@ -128,11 +129,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
             final String postersString =
                 "https://image.tmdb.org/t/p/w600_and_h900_bestv2"
                 + movieJson.getPoster_path();
-            //            final var connection = posterUrl.openConnection();
-            //            final Object posterFile = connection.getContent();
-            //            final var byteStream = new ByteArrayOutputStream();
-            //            final var objectStream = new ObjectOutputStream(byteStream);
-            final byte[] poster = Download.from(postersString);
+            final byte[] poster = Download.from(postersString); //todo: link builder OK. But the download system is failing.
             // Poster
             final PostersEntity postersEntity = posterRepository.saveAndFlush(
                 PostersEntity.builder()
@@ -144,15 +141,15 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
                 .stream()
                 .map(MovieDtoTMDBGenre::getName)
                 .toList();
-            final List<GenreEntity> genres = possibleGenres.stream()  //todo: uncomment
-                .map(genreService::loadOrSave).toList();  //todo: uncomment
+            final List<GenreEntity> genres = possibleGenres.stream()
+                .map(genreService::loadOrSave).toList();
             // Producers
             final List<String> possibleProducers = movieJson.getProduction_companies()
                 .stream()
                 .map(MovieDtoTMDBProductors::getName)
                 .toList();
-            final List<CompanyEntity> producers = possibleProducers.stream()  //todo: uncomment
-                .map(companyService::loadOrSave).toList();  //todo: uncomment
+            final List<ProducerEntity> producers = possibleProducers.stream()
+                .map(producerService::loadOrSave).toList();
             final List<PostersEntity> posters = new ArrayList<>();
             posters.add(postersEntity);
             final MovieEntity movie = MovieEntity.builder()
@@ -166,9 +163,9 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
             final var teste01 = gson.toJson(movie);
             System.out.println(gson.fromJson(teste01, JsonObject.class).toString());
             return dao.saveAndFlush(movie);  //todo: uncomment
-        } catch (ParseException | NumberFormatException | IOException e) {
-            System.out.println("Persist TMDB dto error: " + e.getLocalizedMessage());
-            return null;
+        } catch (ParseException | NumberFormatException | IOException | DataAccessException e) {
+            System.out.println("MovieEntity persist error: " + e.getLocalizedMessage());
+            return new MovieEntity();
         }
     }
 
@@ -182,6 +179,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
             System.out.println("Parse MultipartFile to Json error: " + e.getLocalizedMessage());
             return gson.fromJson(" ", JsonObject.class);
         }
+        return new Gson().fromJson(" ", JsonObject.class);
     }
 
     @ConsoleLog
