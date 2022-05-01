@@ -19,7 +19,7 @@ import java.util.Arrays;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @MappedSuperclass
 @ToString(callSuper = true)
-public class CompanyModel implements NameableModel {
+public class ProducerModel implements NameableModel {
 
     @NotBlank(message = "Insert a valid company name")
     @Column(unique = true)
@@ -32,10 +32,9 @@ public class CompanyModel implements NameableModel {
 
     @Override
     public String getInitialsName() {
-        final boolean compositeName = name.contains(" ");
-        return compositeName ?
-                Arrays.stream(name.split(" ")).map(i -> i.charAt(0)).toString()
-                : NameableModel.findInitialsInSoloName(name);
+        return name.contains(" ")
+            ? NameableModel.findInitualsInComposeName(name)
+            : NameableModel.findInitialsInSoloName(name);
 
     }
 }

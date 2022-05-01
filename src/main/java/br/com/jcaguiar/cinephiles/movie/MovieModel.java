@@ -1,6 +1,6 @@
 package br.com.jcaguiar.cinephiles.movie;
 
-import br.com.jcaguiar.cinephiles.company.CompanyEntity;
+import br.com.jcaguiar.cinephiles.company.ProducerEntity;
 import br.com.jcaguiar.cinephiles.enums.AgeEnum;
 import br.com.jcaguiar.cinephiles.enums.DesignEnum;
 import br.com.jcaguiar.cinephiles.enums.PegiEnum;
@@ -32,21 +32,25 @@ public class MovieModel {
     @NotBlank(message = "'Title' cant be empty")
     String title;
 
+    @Column(length = 999)
     String synopsis;
 
     String tagline;
 
     Date premiereDate;
 
+    //tees
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(
-        name = "movies_genres", joinColumns = @JoinColumn(name = "movies_id"),
+        name = "movies_genres",
+        joinColumns = @JoinColumn(name = "movies_id"),
         inverseJoinColumns = @JoinColumn(name = "genre_id"))
     final List<GenreEntity> genres = new ArrayList<>();
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(
-        name = "movies_directors", joinColumns = @JoinColumn(name = "movies_id"),
+        name = "movies_directors",
+        joinColumns = @JoinColumn(name = "movies_id"),
         inverseJoinColumns = {
             @JoinColumn(name = "directors_first_name", referencedColumnName = "first_name"),
             @JoinColumn(name = "directors_last_name", referencedColumnName = "last_name") })
@@ -54,14 +58,16 @@ public class MovieModel {
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(
-        name = "movies_producers", joinColumns = @JoinColumn(name = "movies_id"),
+        name = "movies_producers",
+        joinColumns = @JoinColumn(name = "movies_id"),
         inverseJoinColumns = @JoinColumn(
-            name = "companies_name", referencedColumnName = "name"))
-    final List<CompanyEntity> producers = new ArrayList<>();
+            name = "producer_id", referencedColumnName = "id"))
+    final List<ProducerEntity> producers = new ArrayList<>();
 
     @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     @JoinTable(
-        name = "movies_actors", joinColumns = @JoinColumn(name = "movies_id"),
+        name = "movies_actors",
+        joinColumns = @JoinColumn(name = "movies_id"),
         inverseJoinColumns = {
             @JoinColumn(name = "actors_first_name", referencedColumnName = "first_name"),
             @JoinColumn(name = "actors_last_name", referencedColumnName = "last_name") })
@@ -84,13 +90,15 @@ public class MovieModel {
 
     @Enumerated(EnumType.STRING)
     @ElementCollection(targetClass = AgeEnum.class, fetch = FetchType.LAZY)
-    final List<AgeEnum> age = new ArrayList<>();
+    @CollectionTable(name = "movies_age", joinColumns = @JoinColumn(name = "movies_id"))
+    final List<AgeEnum> movieAge = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     ScriptEnum script;
 
     @Enumerated(EnumType.STRING)
     @ElementCollection(targetClass = DesignEnum.class, fetch = FetchType.LAZY)
+    @CollectionTable(name = "movies_design", joinColumns = @JoinColumn(name = "movies_id"))
     final List<DesignEnum> design = new ArrayList<>();
 
     Duration duration;

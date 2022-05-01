@@ -2,6 +2,7 @@ package br.com.jcaguiar.cinephiles.master;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
+import java.util.Arrays;
 import java.util.List;
 
 public interface NameableModel {
@@ -18,6 +19,13 @@ public interface NameableModel {
     public static List<String> findInitials(@NotNull List<String> names) {
         return names.stream().map(NameableModel::findInitials).toList();
     };
+
+    public static String findInitualsInComposeName(@NotBlank String name) {
+        return Arrays.stream(
+                name.split(" "))
+            .map(i -> i.charAt(0))
+            .toString();
+    }
 
     public static String findInitialsInSoloName(@NotBlank String name) {
         final int letters = name.length();
