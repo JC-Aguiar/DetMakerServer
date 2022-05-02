@@ -4,6 +4,7 @@ import br.com.jcaguiar.cinephiles.company.ProducerEntity;
 import br.com.jcaguiar.cinephiles.company.ProducerService;
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
 import br.com.jcaguiar.cinephiles.master.MasterService;
+import br.com.jcaguiar.cinephiles.master.ProcessLine;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import br.com.jcaguiar.cinephiles.util.Download;
 import com.google.gson.Gson;
@@ -115,7 +116,18 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         return moviesJson;
     }
 
-    public MovieEntity persistJsonTMDB(@NotNull MovieDtoTMDB movieJson) {
+    public ProcessLine<MovieEntity> persistJsonTMDB(@NotNull ProcessLine<MovieDtoTMDB> movieJson) {
+        try {
+            movieJson.compareObjects(MovieDtoTMDB.class);
+            return proxy().persistJsonTMDB(movieJson.getObject().orElseThrow());
+        } catch (Exception e) {
+            return ProcessLine.error(e.getLocalizedMessage());
+        }
+    }
+
+    @ConsoleLog
+    //MovieEntity
+    private ProcessLine<MovieEntity> persistJsonTMDB(@NotNull MovieDtoTMDB movieJson) {
         try {
             // Single attributes
             final String title = movieJson.getTitle();
@@ -125,13 +137,12 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
                 .parse(movieJson.getRelease_date());
             final long runTime = Long.parseLong(movieJson.getRuntime());
             final Duration duration = Duration.ofMinutes(runTime);
-            // Poster imagem from origin (URL + File)
+            // Poster
             final String postersString =
                 "https://image.tmdb.org/t/p/w600_and_h900_bestv2"
                 + movieJson.getPoster_path();
             final byte[] poster = Download.from(postersString); //todo: link builder OK. But the download system is failing.
-            // Poster
-            final PostersEntity postersEntity = posterRepository.saveAndFlush(
+            final List<PostersEntity> posters = posterRepository.saveAndFlush(
                 PostersEntity.builder()
                     .url(postersString)
                     .image(poster)
@@ -150,8 +161,6 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
                 .toList();
             final List<ProducerEntity> producers = possibleProducers.stream()
                 .map(producerService::loadOrSave).toList();
-            final List<PostersEntity> posters = new ArrayList<>();
-            posters.add(postersEntity);
             final MovieEntity movie = MovieEntity.builder()
                 .title(title)
                 .synopsis(synopsis)
@@ -159,36 +168,63 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
                 .premiereDate(premier)
                 .duration(duration)
                 .build();
-            movie.addGenres(genres).addProducers(producers).addPosters(posters); //todo: uncomment
-            final var teste01 = gson.toJson(movie);
-            System.out.println(gson.fromJson(teste01, JsonObject.class).toString());
-            return dao.saveAndFlush(movie);  //todo: uncomment
+            //Result
+            movie.addGenres(genres).addProducers(producers).addPosters(posters);
+            return ProcessLine.success(dao.saveAndFlush(movie));
+
+            //Exception
         } catch (ParseException | NumberFormatException | IOException | DataAccessException e) {
             System.out.println("MovieEntity persist error: " + e.getLocalizedMessage());
-            return new MovieEntity();
+            return ProcessLine.error(e.getLocalizedMessage());
         }
     }
 
     @ConsoleLog
-    public JsonObject parseFileToJson(@NotNull MultipartFile file) {
+    //JsonObject
+    public ProcessLine<MovieDtoTMDB> parseMapToDto(@NotNull Map<String, Object> file) {
         try {
-            final String jsonString = new String(
-                file.getBytes(), StandardCharsets.UTF_8);
-            return gson.fromJson(jsonString, JsonObject.class);
+            final String stringFile = gson.toJson(file);
+            final MovieDtoTMDB dtoTMDB = gson.fromJson(stringFile, MovieDtoTMDB.class);
+            return ProcessLine.success(dtoTMDB);
+        } catch (Exception e) {
+            System.out.println("Parse Map to TMDB error: " + e.getLocalizedMessage());
+            return ProcessLine.error(e.getLocalizedMessage());
+        }
+    }
+
+    @ConsoleLog
+    //JsonObject
+    public ProcessLine<JsonObject> parseFileToJson(@NotNull MultipartFile file) {
+        try {
+            final String jsonString = new String(file.getBytes(), StandardCharsets.UTF_8);
+            final JsonObject json = gson.fromJson(jsonString, JsonObject.class);
+            return ProcessLine.success(json);
         } catch (IOException e) {
             System.out.println("Parse MultipartFile to Json error: " + e.getLocalizedMessage());
-            return gson.fromJson(" ", JsonObject.class);
+            //final JsonObject json =  gson.fromJson(" ", JsonObject.class);
+            return ProcessLine.error(e.getLocalizedMessage());
         }
-        return new Gson().fromJson(" ", JsonObject.class);
+    }
+
+    public ProcessLine<MovieDtoTMDB> parseJsonToDto(@NotNull ProcessLine<JsonObject> json) {
+        try {
+            json.compareObjects(JsonObject.class);
+            return proxy().parseJsonToDto(json.getObject().orElseThrow());
+        } catch (Exception e) {
+            return ProcessLine.error(e.getLocalizedMessage());
+        }
     }
 
     @ConsoleLog
-    public MovieDtoTMDB parseJsonToDto(@NotNull JsonObject json) {
+    //MovieDtoTMDB
+    private ProcessLine<MovieDtoTMDB> parseJsonToDto(@NotNull JsonObject json) {
         try {
-            return gson.fromJson(json, MovieDtoTMDB.class);
+            final MovieDtoTMDB dto = gson.fromJson(json, MovieDtoTMDB.class);
+            return ProcessLine.success(dto);
         } catch (JsonSyntaxException e) {
             System.out.println("Parse Json to TMDB error: " + e.getLocalizedMessage());
-            return new MovieDtoTMDB();
+            //final MovieDtoTMDB dto = new MovieDtoTMDB();
+            return ProcessLine.error(e.getLocalizedMessage());
         }
     }
 

@@ -1,8 +1,10 @@
 package br.com.jcaguiar.cinephiles.enums;
 
+import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import lombok.Getter;
 
 import javax.validation.constraints.NotBlank;
+import java.util.Arrays;
 
 public enum GenreEnum {
     DRAMA("Drama"),
@@ -36,6 +38,14 @@ public enum GenreEnum {
         this.name = name;
     }
 
+    public static GenreEnum checkEnum(@NotBlank String genreString) {
+        final GenreEnum genreEnum = Arrays.stream(GenreEnum.values())
+            .filter(g -> g.getName().equalsIgnoreCase(genreString))
+            .findFirst()
+            .orElseThrow();
+        System.out.println("Genre detected");
+        return genreEnum;
+    }
 
 
 }

@@ -156,8 +156,9 @@ public abstract class MasterController<
         var = var.toLowerCase(Locale.ROOT);
         value = value.toLowerCase(Locale.ROOT);
         final Method methodCall = Optional.ofNullable(endpointsGet.get(var))
-                                          .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                                                                                         "Incorrect URL path"));
+            .orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND,
+                "Incorrect URL path"));
         final Object[] params = new Object[]{value, page, itens};
         return (ResponseEntity<?>) methodCall.invoke(this, params);
     }
