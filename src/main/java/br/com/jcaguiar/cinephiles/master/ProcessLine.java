@@ -21,6 +21,8 @@ public class ProcessLine<OBJ> {
     String log;
     Optional<Class> objectClass;
     Duration duration;
+    final static String FORMAT_SUCCESS = "[OK]: Success - processed in %d milliseconds";
+    final static String FORMAT_ERROR = "[ERROR]: %s - processed in %d milliseconds";
 
     private ProcessLine(@NotNull OBJ object, @NotNull Duration duration) {
         this.object = Optional.of(object);
@@ -81,10 +83,15 @@ public class ProcessLine<OBJ> {
     }
 
     public String getFullLog() {
-        final String result = error ? "ERROR" : "OK";
-        return String.format(
-                "[%S]: %s - in %s seconds",
-                result, log, duration.getSeconds());
+        return error ? getErrorLog() : getSuccessLog();
+    }
+
+    private String getSuccessLog() {
+        return String.format(FORMAT_SUCCESS, duration.toMillis());
+    }
+
+    private String getErrorLog() {
+        return String.format(FORMAT_ERROR, log, duration.toMillis());
     }
 
 }
