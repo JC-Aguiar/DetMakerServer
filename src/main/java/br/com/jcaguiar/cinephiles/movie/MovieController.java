@@ -2,9 +2,9 @@ package br.com.jcaguiar.cinephiles.movie;
 
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
 import br.com.jcaguiar.cinephiles.master.MasterController;
+import br.com.jcaguiar.cinephiles.master.MasterProcess;
 import br.com.jcaguiar.cinephiles.master.ProcessLine;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
-import com.google.gson.Gson;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -143,7 +143,8 @@ public class MovieController extends MasterController
             .map(service::parseJsonToDto)
             .map(service::persistDtoTMDB)
             .toList();
-        return new ResponseEntity<>(movies, HttpStatus.OK);
+        final MasterProcess<MovieEntity> process = new MasterProcess<>(movies);
+        return new ResponseEntity<>(process, HttpStatus.OK);
     }
 
     //todo: remove this in production
