@@ -2,8 +2,9 @@ package br.com.jcaguiar.cinephiles.movie;
 
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
 import br.com.jcaguiar.cinephiles.master.MasterController;
+import br.com.jcaguiar.cinephiles.master.MasterProcess;
+import br.com.jcaguiar.cinephiles.master.ProcessLine;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
-import com.google.gson.Gson;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -130,23 +131,24 @@ public class MovieController extends MasterController
     @ConsoleLog
     @PostMapping(value = "add/one/tmdb", consumes = {"application/json", "text/plain"})
     public ResponseEntity<?> addOne(final @RequestBody Map<String, Object> file) {
-        final Gson gson =  new Gson();
-        final String stringFile = gson.toJson(file);
-        final MovieDtoTMDB dtoTMDB = gson.fromJson(stringFile, MovieDtoTMDB.class);
-        return new ResponseEntity<>(service.persistJsonTMDB(dtoTMDB), HttpStatus.OK);
+        return new ResponseEntity<>(service.parseMapToDto(file), HttpStatus.OK);
     }
 
     //POST: INSERT MANY FILES
     @ConsoleLog
-    @PostMapping(value = "add/many/tmdb", consumes = {"application/json", "text/plain", "multipart/form-data"})
-    public ResponseEntity<?> addAll(@RequestParam("files") List<MultipartFile> files) {
-        final Gson gson = new Gson();
-        final List<MovieEntity> movies = files.stream()
+    @PostMapping(value = "add/many/tmdb", consumes = "multipart/form-data")
+    public ResponseEntity<?> addAll(
+        final @RequestParam("files") List<MultipartFile> files,
+        @RequestParam(name = "page", defaultValue = "0") int page,
+        @RequestParam(name = "itens", defaultValue = "12") int itens) {
+        final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
+        final List<ProcessLine<MovieEntity>> movies = files.stream()
             .map(service::parseFileToJson)
             .map(service::parseJsonToDto)
-            .map(service::persistJsonTMDB)
+            .map(service::persistDtoTMDB)
             .toList();
-        return new ResponseEntity<>(movies, HttpStatus.OK);
+        final MasterProcess<MovieEntity> process = MasterProcess.of(movies, pageConfig);
+        return new ResponseEntity<>(process, HttpStatus.OK);
     }
 
     //todo: remove this in production
