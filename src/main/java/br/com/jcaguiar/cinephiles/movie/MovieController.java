@@ -137,13 +137,17 @@ public class MovieController extends MasterController
     //POST: INSERT MANY FILES
     @ConsoleLog
     @PostMapping(value = "add/many/tmdb", consumes = "multipart/form-data")
-    public ResponseEntity<?> addAll(final @RequestParam("files") List<MultipartFile> files) {
+    public ResponseEntity<?> addAll(
+        final @RequestParam("files") List<MultipartFile> files,
+        @RequestParam(name = "page", defaultValue = "0") int page,
+        @RequestParam(name = "itens", defaultValue = "12") int itens) {
+        final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
         final List<ProcessLine<MovieEntity>> movies = files.stream()
             .map(service::parseFileToJson)
             .map(service::parseJsonToDto)
             .map(service::persistDtoTMDB)
             .toList();
-        final MasterProcess<MovieEntity> process = new MasterProcess<>(movies);
+        final MasterProcess<MovieEntity> process = MasterProcess.of(movies, pageConfig);
         return new ResponseEntity<>(process, HttpStatus.OK);
     }
 

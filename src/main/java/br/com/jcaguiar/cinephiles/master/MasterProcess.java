@@ -4,11 +4,10 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import javax.validation.constraints.NotNull;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -16,61 +15,47 @@ import java.util.Map;
 @Setter
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class MasterProcess<OBJ> {
+public class MasterProcess<OBJ> extends PageImpl<OBJ> {
 
-    Page<OBJ> result = new PageImpl<>(new ArrayList<>());
     final Map<Integer, String> log = new HashMap<>();
 
-//    public MasterProcess(@NotNull List<ProcessLine<OBJ>> processes, @NotNull Page<?> page) {
-//        this.result = page;
-//        IntStream.range(0, processes.size())
-//            .forEach(i -> {
-//                final ProcessLine obj = processes.get(i);
-//                if(obj.isError()) errors.put(i, obj.getErrorCause());
-//            });
+    private MasterProcess(@NotNull List<OBJ> processes) {
+        super(processes);
+    }
+
+    private MasterProcess(@NotNull List<OBJ> processes, @NotNull Pageable pageable) {
+        super(processes, pageable, processes.size());
+    }
+
+    public static MasterProcess<?> of(@NotNull List<ProcessLine<?>> processes) {
+        final MasterProcess masterProcess = new MasterProcess(getProcessContent(processes));
+        processes.forEach(masterProcess::extractLog);
+        return masterProcess;
+    }
+
+    public static MasterProcess<?> of(@NotNull List<ProcessLine<?>> processes, @NotNull Pageable pageable) {
+        final MasterProcess masterProcess = new MasterProcess(
+                getProcessContent(processes),
+                pageable);
+        processes.forEach(masterProcess::extractLog);
+        return masterProcess;
+    }
+
+//    if(process.isOk()) {
+//        final List<OBJ> list = List.of(process.getObject());
+//        this.result = new PageImpl<OBJ>(list);
 //    }
 
-    public MasterProcess(@NotNull ProcessLine<OBJ> process) {
-        if(process.isOk()) {
-            final List<OBJ> list = List.of(process.getObject());
-            this.result = new PageImpl<OBJ>(list);
-        }
-        extractLog(process);
-    }
-
-    public MasterProcess(@NotNull ProcessLine<OBJ> process, @NotNull Page<OBJ> result) {
-        this.result = result;
-        extractLog(process);
-    }
-
-    public MasterProcess(@NotNull List<ProcessLine<OBJ>> processes) {
-        setResult(processes);
-        processes.forEach(this::extractLog);
-//        final List<ProcessLine<OBJ>> success = new ArrayList<>();
-//        IntStream.range(0, processes.size())
-//            .forEach(i -> {
-//                final ProcessLine obj = processes.get(i);
-//                if(obj.isError()) errors.put(i, obj.getLog());
-//                else success.add(processes.get(i));
-//            });
-//        this.result = (Page<OBJ>) success.stream()
-//            .map(ProcessLine::getObject)
-//            .filter(Optional::isPresent)
-//            .toList();
-    }
-
-    public MasterProcess(@NotNull List<ProcessLine<OBJ>> processes, @NotNull Page<OBJ> result) {
-        this.result = result;
-        processes.forEach(this::extractLog);
-    }
-
-    public void setResult(@NotNull List<ProcessLine<OBJ>> processes) {
-        this.result = new PageImpl<>(
-                processes.stream()
+    private static List<?> getProcessContent(@NotNull List<ProcessLine<?>> processes) {
+        return processes.stream()
                         .filter(ProcessLine::isOk)
                         .map(ProcessLine::getObject)
-                        .toList());
+                        .toList();
     }
+
+//    public void setResult(@NotNull List<ProcessLine<OBJ>> processes) {
+//        this.result = new PageImpl<>(getProcessContent(processes));
+//    }
 
     private void extractLog(@NotNull ProcessLine<OBJ> process) {
         log.put(log.size(), process.getFullLog());
