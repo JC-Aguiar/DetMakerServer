@@ -65,12 +65,12 @@ public class JwtAuthenticationService {
         final Date tokenCreationDate = new Date();
         final Date tokenExpirationDate = new Date(tokenCreationDate.getTime() + TOKEN_VALID_TIME);
         return Jwts.builder()
-            .setIssuer(ISSUER_NAME)
-            .setSubject(user.getId().toString())
-            .setIssuedAt(tokenCreationDate)
-            .setExpiration(tokenExpirationDate)
-            .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
-            .compact();
+                .setIssuer(ISSUER_NAME)
+                .setSubject(user.getId().toString())
+                .setIssuedAt(tokenCreationDate)
+                .setExpiration(tokenExpirationDate)
+                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+                .compact();
     }
 
     //CREATE RESPONSE WITH JWT TOKEN
@@ -97,8 +97,12 @@ public class JwtAuthenticationService {
     public Authentication decodeToken(@NotBlank String bearerToken) {
         System.out.println("decodeToken");
         final String userStringId = Optional.ofNullable(
-            Jwts.parser().setSigningKey(SECRET_KEY).parseClaimsJws(bearerToken).getBody().getSubject())
-            .orElseThrow(() -> new JwtException("Invalid or expired JWT"));
+                Jwts.parser()
+                        .setSigningKey(SECRET_KEY)
+                        .parseClaimsJws(bearerToken)
+                        .getBody()
+                        .getSubject())
+                .orElseThrow(() -> new JwtException("Invalid or expired JWT"));
         System.out.println("BEARER TOKEN:" + bearerToken);
         final int userId = Integer.parseInt(userStringId);
         final UserEntity user = userService.findById(userId);
