@@ -29,13 +29,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     @ConsoleLog
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-    throws ServletException, IOException
+            throws ServletException, IOException
     {
         System.out.println("JwtAuthenticationFilter");
         final String uri = request.getRequestURI();
         final String endpoint = (String) Arrays.stream(uri.split("/"))
-            .filter(s -> !s.isBlank())
-            .toArray()[0];
+                .filter(s -> !s.isBlank())
+                .toArray()[0];
         System.out.println("URI PATH: " + uri);
         System.out.println("END-POINT: " + endpoint);
         final boolean restrictedAccess = WebSecurityConfig.DOMAINS.containsKey(endpoint);
@@ -51,7 +51,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @ConsoleLog
     private void authenticateToken(HttpServletRequest request)
-    throws AuthorizationHeaderException, JwtException
+            throws AuthorizationHeaderException, JwtException
     {
         System.out.println("authenticateToken");
         final String bearerToken = getBearerToken(request);
@@ -65,8 +65,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     {
         System.out.println("getBearerToken");
         final String header = Optional.ofNullable(
-            request.getHeader(HttpHeaders.AUTHORIZATION))
-            .orElseThrow(AuthorizationHeaderException::new);
+                        request.getHeader(HttpHeaders.AUTHORIZATION))
+                .orElseThrow(AuthorizationHeaderException::new);
         System.out.println("AUTHORIZATION HEADER: " + header);
         if (header.startsWith("Bearer")) {
             return header.replace("Bearer", "").trim();

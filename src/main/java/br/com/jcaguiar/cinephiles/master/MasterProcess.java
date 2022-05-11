@@ -4,51 +4,61 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
-import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import javax.validation.constraints.NotNull;
-import java.util.*;
-import java.util.stream.IntStream;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Setter
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class MasterProcess<OBJ> {
+public class MasterProcess<OBJ> extends PageImpl<OBJ> {
 
-    Page<OBJ> result;
-    final Map<Integer, String> errors = new HashMap<>();
+    final Map<Integer, String> log = new HashMap<>();
 
-//    public MasterProcess(@NotNull List<ProcessLine<OBJ>> processes, @NotNull Page<?> page) {
-//        this.result = page;
-//        IntStream.range(0, processes.size())
-//            .forEach(i -> {
-//                final ProcessLine obj = processes.get(i);
-//                if(obj.isError()) errors.put(i, obj.getErrorCause());
-//            });
+    private MasterProcess(@NotNull List<OBJ> processes) {
+        super(processes);
+    }
+
+    private MasterProcess(@NotNull List<OBJ> processes, @NotNull Pageable pageable) {
+        super(processes, pageable, processes.size());
+    }
+
+    public static MasterProcess<?> of(@NotNull List<ProcessLine<?>> processes) {
+        final MasterProcess masterProcess = new MasterProcess(getProcessContent(processes));
+        processes.forEach(masterProcess::extractLog);
+        return masterProcess;
+    }
+
+    public static MasterProcess<?> of(@NotNull List<ProcessLine<?>> processes, @NotNull Pageable pageable) {
+        final MasterProcess masterProcess = new MasterProcess(
+                getProcessContent(processes),
+                pageable);
+        processes.forEach(masterProcess::extractLog);
+        return masterProcess;
+    }
+
+//    if(process.isOk()) {
+//        final List<OBJ> list = List.of(process.getObject());
+//        this.result = new PageImpl<OBJ>(list);
 //    }
 
-    public MasterProcess(@NotNull ProcessLine<OBJ> process) {
-        if(process.isError()) errors.put(0, process.getErrorCause());
-        else result = (Page<OBJ>) process.getObject().get();
+    private static List<?> getProcessContent(@NotNull List<ProcessLine<?>> processes) {
+        return processes.stream()
+                        .filter(ProcessLine::isOk)
+                        .map(ProcessLine::getObject)
+                        .toList();
     }
 
-    public MasterProcess(@NotNull List<ProcessLine<OBJ>> processes) {
-        final List<ProcessLine<OBJ>> success = new ArrayList<>();
-        IntStream.range(0, processes.size())
-            .forEach(i -> {
-                final ProcessLine obj = processes.get(i);
-                if(obj.isError()) errors.put(i, obj.getErrorCause());
-                else success.add(processes.get(i));
-            });
-        this.result = (Page<OBJ>) success.stream()
-            .map(ProcessLine::getObject)
-            .filter(Optional::isPresent)
-            .toList();
-    }
+//    public void setResult(@NotNull List<ProcessLine<OBJ>> processes) {
+//        this.result = new PageImpl<>(getProcessContent(processes));
+//    }
 
-    public MasterProcess setPage(@NotNull Page<OBJ> page) {
-        this.result = page;
-        return this;
+    private void extractLog(@NotNull ProcessLine<OBJ> process) {
+        log.put(log.size(), process.getFullLog());
     }
 
 }

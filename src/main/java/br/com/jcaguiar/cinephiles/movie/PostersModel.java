@@ -24,7 +24,7 @@ public class PostersModel {
 
     //Lob (ODL BUG)
     @Type(type="org.hibernate.type.BinaryType")
-    @Column(columnDefinition = "BLOB")
+    @Column(columnDefinition = "bytea")
     @NotNull(message = "image file cant be empty/null")
     byte[] image;
 
