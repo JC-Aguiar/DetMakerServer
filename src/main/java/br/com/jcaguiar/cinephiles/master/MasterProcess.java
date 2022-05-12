@@ -27,16 +27,16 @@ public class MasterProcess<OBJ> extends PageImpl<OBJ> {
         super(processes, pageable, processes.size());
     }
 
-    public static MasterProcess<?> of(@NotNull List<ProcessLine<?>> processes) {
+    public static MasterProcess<?> of(@NotNull List<ProcessLine> processes) {
         final MasterProcess masterProcess = new MasterProcess(getProcessContent(processes));
         processes.forEach(masterProcess::extractLog);
         return masterProcess;
     }
 
-    public static MasterProcess<?> of(@NotNull List<ProcessLine<?>> processes, @NotNull Pageable pageable) {
+    public static MasterProcess<?> of(@NotNull List<ProcessLine> processes, @NotNull Pageable pageable) {
         final MasterProcess masterProcess = new MasterProcess(
-                getProcessContent(processes),
-                pageable);
+            getProcessContent(processes),
+            pageable);
         processes.forEach(masterProcess::extractLog);
         return masterProcess;
     }
@@ -46,11 +46,11 @@ public class MasterProcess<OBJ> extends PageImpl<OBJ> {
 //        this.result = new PageImpl<OBJ>(list);
 //    }
 
-    private static List<?> getProcessContent(@NotNull List<ProcessLine<?>> processes) {
+    private static List<?> getProcessContent(@NotNull List<ProcessLine> processes) {
         return processes.stream()
-                        .filter(ProcessLine::isOk)
-                        .map(ProcessLine::getObject)
-                        .toList();
+            .filter(ProcessLine::isOk)
+            .map(ProcessLine::getObject)
+            .toList();
     }
 
 //    public void setResult(@NotNull List<ProcessLine<OBJ>> processes) {
