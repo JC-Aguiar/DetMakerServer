@@ -46,9 +46,9 @@ public class MovieController extends MasterController
     @ConsoleLog
     public ResponseEntity<?> byGenre(@NotBlank String genre, int page, int itens) {
         GenreEnum genreEnum = Arrays.stream(GenreEnum.values())
-                                    .filter(en -> genre.equalsIgnoreCase(en.toString()))
-                                    .findFirst()
-                                    .orElseThrow();
+            .filter(en -> genre.equalsIgnoreCase(en.toString()))
+            .findFirst()
+            .orElseThrow();
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesByGenre(genreEnum, pageConfig);
         return proxy().craftResponsePage(moviesEntities);
@@ -147,8 +147,11 @@ public class MovieController extends MasterController
             .map(service::parseJsonToDto)
             .map(service::persistDtoTMDB)
             .toList();
-        final MasterProcess<MovieEntity> process = MasterProcess.of(movies, pageConfig);
-        return new ResponseEntity<>(process, HttpStatus.OK);
+        final List<ProcessLine> process = movies.stream().map(ProcessLine::generallyse).toList();
+        final MasterProcess<?> result = MasterProcess.of(process, pageConfig);
+        return new ResponseEntity<>(result, HttpStatus.OK);
+        //TODO: criar método na MasterController ou MasterService que automaticamente converte Line
+        // em Process e crafta Page final
     }
 
     //todo: remove this in production

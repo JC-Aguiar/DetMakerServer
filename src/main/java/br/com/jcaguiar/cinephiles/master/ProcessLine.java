@@ -4,6 +4,7 @@ import br.com.jcaguiar.cinephiles.exception.ProcessException;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
+import org.springframework.core.NestedExceptionUtils;
 
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
@@ -48,6 +49,12 @@ public class ProcessLine<OBJ> {
         return new ProcessLine<>(cause, convertTimeToDuration(startTime));
     }
 
+    public static ProcessLine error(@NotNull Instant startTime, Exception e) {
+        e.printStackTrace();
+        final String message = NestedExceptionUtils.getMostSpecificCause(e).getMessage();
+        return new ProcessLine<>(message, convertTimeToDuration(startTime));
+    }
+
     private static Duration convertTimeToDuration(@NotNull Instant startTime) {
         return Duration.ofMillis(startTime.getLong(ChronoField.MILLI_OF_SECOND));
     }
@@ -69,17 +76,18 @@ public class ProcessLine<OBJ> {
         if(error) throw new ProcessException(log);
     }
 
-    public void compareObjects(@NotNull Class<?> expectedClass) {
+    public OBJ compareAndGet(@NotNull Class<?> expectedClass) {
         final String classSrting = getObjectClass().getSimpleName();
         final String message = String.format(
-                "ProcessLine expects an object of class %s, but receives %s",
-                classSrting, expectedClass.getSimpleName());
+            "ProcessLine expects an object of class %s, but receives %s",
+            classSrting, expectedClass.getSimpleName());
         if (!expectedClass.equals(getObjectClass())) throw new ProcessException(message);
+        return object.orElseThrow();
     }
 
     public void validade(@NotNull Class<?> expectedClass) {
         checkStatus();
-        compareObjects(expectedClass);
+        compareAndGet(expectedClass);
     }
 
     public String getFullLog() {
@@ -92,6 +100,10 @@ public class ProcessLine<OBJ> {
 
     private String getErrorLog() {
         return String.format(FORMAT_ERROR, log, duration.toMillis());
+    }
+
+    public ProcessLine generallyse(){
+        return this;
     }
 
 }

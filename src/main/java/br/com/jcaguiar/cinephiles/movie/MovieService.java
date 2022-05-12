@@ -9,9 +9,7 @@ import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import br.com.jcaguiar.cinephiles.util.Download;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.DataAccessException;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -134,8 +132,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
             final MovieDtoTMDB dtoTMDB = gson.fromJson(stringFile, MovieDtoTMDB.class);
             return ProcessLine.success(startTime, dtoTMDB);
         } catch (Exception e) {
-            e.printStackTrace();
-            return ProcessLine.error(startTime, e.getLocalizedMessage());
+            return ProcessLine.error(startTime, e);
         }
     }
 
@@ -147,8 +144,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
             final JsonObject json = gson.fromJson(jsonString, JsonObject.class);
             return ProcessLine.success(startTime, json);
         } catch (IOException e) {
-            e.printStackTrace();
-            return ProcessLine.error(startTime, e.getLocalizedMessage());
+            return ProcessLine.error(startTime, e);
         }
     }
 
@@ -157,13 +153,11 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         final Instant startTime = Instant.now();
         try {
             json.checkStatus();
-            json.compareObjects(JsonObject.class); //TODO: COMPARE AND GET!
-            final JsonObject jsonObj = json.getObject();
+            final JsonObject jsonObj = json.compareAndGet(JsonObject.class);
             final MovieDtoTMDB movieDto = proxy().parseJsonToDto(jsonObj);
             return ProcessLine.success(startTime, movieDto);
         } catch (Exception e) {
-            e.printStackTrace();
-            return ProcessLine.error(startTime, e.getLocalizedMessage());
+            return ProcessLine.error(startTime, e);
         }
     }
 
@@ -178,13 +172,11 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         final Instant startTime = Instant.now();
         try {
             movieJson.checkStatus();
-            movieJson.compareObjects(MovieDtoTMDB.class);
-            final MovieDtoTMDB movieDto =  movieJson.getObject();
+            final MovieDtoTMDB movieDto = movieJson.compareAndGet(MovieDtoTMDB.class);
             final MovieEntity movie = proxy().persistDtoTMDB(movieDto);
             return ProcessLine.success(startTime, movie);
         } catch (Exception e) {
-            e.printStackTrace();
-            return ProcessLine.error(startTime, e.getLocalizedMessage());
+            return ProcessLine.error(startTime, e);
         }
     }
 
@@ -195,42 +187,42 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         final String synopsis = movieJson.getOverview();
         final String tagline = movieJson.getTagline();
         final Date premier = new SimpleDateFormat("yyyy-MM-dd")
-                .parse(movieJson.getRelease_date());
+            .parse(movieJson.getRelease_date());
         final long runTime = Long.parseLong(movieJson.getRuntime());
         final Duration duration = Duration.ofMinutes(runTime);
         // Poster imagem from origin (URL + File)
         final String postersString =
-                "https://image.tmdb.org/t/p/w600_and_h900_bestv2"
-                + movieJson.getPoster_path();
+            "https://image.tmdb.org/t/p/w600_and_h900_bestv2"
+            + movieJson.getPoster_path();
         final byte[] poster = Download.from(postersString); //todo: link builder OK. But the download system is failing.
         // Poster
         final PostersEntity postersEntity = posterRepository.saveAndFlush(
-                PostersEntity.builder()
-                        .url(postersString)
-                        .image(poster)
-                        .build());
+            PostersEntity.builder()
+                .url(postersString)
+                .image(poster)
+                .build());
         // Genres
         final List<String> possibleGenres = movieJson.getGenres()
-                .stream()
-                .map(MovieDtoTMDBGenre::getName)
-                .toList();
+            .stream()
+            .map(MovieDtoTMDBGenre::getName)
+            .toList();
         final List<GenreEntity> genres = possibleGenres.stream()
-                .map(genreService::loadOrSave).toList();
+            .map(genreService::loadOrSave).toList();
         // Producers
         final List<String> possibleProducers = movieJson.getProduction_companies()
-                .stream()
-                .map(MovieDtoTMDBProductors::getName)
-                .toList();
+            .stream()
+            .map(MovieDtoTMDBProductors::getName)
+            .toList();
         final List<ProducerEntity> producers = possibleProducers.stream()
-                .map(producerService::loadOrSave).toList();
+            .map(producerService::loadOrSave).toList();
         final List<PostersEntity> posters = List.of(postersEntity);
         final MovieEntity movie = MovieEntity.builder()
-                .title(title)
-                .synopsis(synopsis)
-                .tagline(tagline)
-                .premiereDate(premier)
-                .duration(duration)
-                .build();
+            .title(title)
+            .synopsis(synopsis)
+            .tagline(tagline)
+            .premiereDate(premier)
+            .duration(duration)
+            .build();
         movie.addGenres(genres).addProducers(producers).addPosters(posters); //TODO: this need bee done in a service level?
         //TODO: posters aren't coming with movies_id relationship
         return dao.saveAndFlush(movie);
