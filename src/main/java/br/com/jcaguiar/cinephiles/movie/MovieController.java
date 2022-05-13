@@ -179,7 +179,11 @@ public class MovieController extends MasterController
     }
 
     //todo: remove this in production
-    //DELETE: ALL FILES
+    /** DELETE: ALL FILES <br>
+     * Delete all the movie records in the database
+     *
+     * @return A {@link ResponseEntity} with a {@link MasterProcess} that contains? a message and a simple log;
+     */
     @ConsoleLog
     @DeleteMapping("del/all")
     public ResponseEntity<?> deleteAll() {
