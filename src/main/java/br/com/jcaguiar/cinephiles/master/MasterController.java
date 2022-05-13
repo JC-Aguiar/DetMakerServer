@@ -20,10 +20,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 public abstract class MasterController<
@@ -68,6 +65,7 @@ public abstract class MasterController<
      *
      * @return The MasterController object.
      */
+    @ConsoleLog
     protected final THIS proxy() {
         return (THIS) AopContext.currentProxy();
     }
@@ -78,6 +76,7 @@ public abstract class MasterController<
      * @param entity The entity to be mapped to the response DTO.
      * @return The response object.
      */
+    @ConsoleLog
     public RESPONSE parseToResponseDto(ENTITY entity) {
         return modelMapper.map(entity, (Type) responseClass);
     }
@@ -88,6 +87,7 @@ public abstract class MasterController<
      * @param response The response object that is returned from the API call.
      * @return The entity that was mapped from the response.
      */
+    @ConsoleLog
     public ENTITY parseToEntity(RESPONSE response) {
         return modelMapper.map(response, (Type) entityClass);
     }
@@ -98,6 +98,7 @@ public abstract class MasterController<
      * @param request The request object that is being mapped to an entity.
      * @return The mapped entity.
      */
+    @ConsoleLog
     public ENTITY parseToEntity(REQUEST request) {
         return modelMapper.map(request, (Type) entityClass);
     }
@@ -108,9 +109,39 @@ public abstract class MasterController<
      * @param entityPage The page of entities to be converted to a response page.
      * @return The page of DTOs.
      */
+    @ConsoleLog
+    public ResponseEntity<?> craftResponsePage(
+        @NotNull ProcessLine<ENTITY> processEntity,
+        @NotNull Pageable pageConfig) {
+        final List<ProcessLine> process =List.of(processEntity.generallyse());
+        final MasterProcess<?> result = MasterProcess.of(process, pageConfig);
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+    @ConsoleLog
+    public ResponseEntity<?> craftResponsePage(
+        @NotNull List<ProcessLine<ENTITY>> processEntity,
+        @NotNull Pageable pageConfig) {
+        final List<ProcessLine> process = processEntity.stream()
+            .map(ProcessLine::generallyse)
+            .toList();
+        final MasterProcess<?> result = MasterProcess.of(process, pageConfig);
+        return new ResponseEntity<>(result, HttpStatus.OK);
+    }
+
+    @ConsoleLog
     public ResponseEntity<?> craftResponsePage(@NotNull Page<ENTITY> entityPage) {
         final Page<?> responsePage = entityPage.map(this::parseToResponseDto);
         return new ResponseEntity<>(responsePage, HttpStatus.OK);
+    }
+
+    @ConsoleLog
+    public ResponseEntity<?> craftResponseLog(@NotNull List<ProcessLine<ENTITY>> processEntity) {
+        final List<ProcessLine> process = processEntity.stream()
+            .map(ProcessLine::generallyse)
+            .toList();
+        final MasterProcess<?> result = MasterProcess.of(process);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     //GET: ONE or ALL
@@ -149,7 +180,8 @@ public abstract class MasterController<
     @ConsoleLog
     @GetMapping(path = "/{var}/{value}")
     public ResponseEntity<?> call(
-        @PathVariable @NotBlank String var, @PathVariable @NotBlank String value,
+        @PathVariable @NotBlank String var,
+        @PathVariable @NotBlank String value,
         @RequestParam(name = "page", defaultValue = "0") int page,
         @RequestParam(name = "itens", defaultValue = "12") int itens)
     throws InvocationTargetException, IllegalAccessException {

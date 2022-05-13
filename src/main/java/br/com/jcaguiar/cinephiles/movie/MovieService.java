@@ -180,7 +180,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         }
     }
 
-    public MovieEntity persistDtoTMDB(@NotNull MovieDtoTMDB movieJson)
+    private MovieEntity persistDtoTMDB(@NotNull MovieDtoTMDB movieJson)
     throws ParseException, IOException {
         // Single attributes
         final String title = movieJson.getTitle();
@@ -230,8 +230,16 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
 
     //todo: remove this in production
     @ConsoleLog
-    public void deleteAll() {
-        dao.deleteAll();
+    public ProcessLine deleteAll() {
+        final Instant startTime = Instant.now();
+        try {
+            dao.deleteAll();
+            return ProcessLine.success(startTime, List.of());
+        } catch(Exception e) {
+            e.printStackTrace();;
+            return ProcessLine.error(startTime, e);
+        }
+
     }
 
 }

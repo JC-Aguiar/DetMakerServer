@@ -112,33 +112,61 @@ public class MovieController extends MasterController
         return proxy().craftResponsePage(moviesEntities);
     }
 
-    //POST: ADVANCED SEARCH
-    // A shortcut to create a ResponseEntity with the status CREATED.
+    /** POST: ADVANCED SEARCH <br>
+     * This function unify different movie's attributes to find whatever fits all this conditions. The system will only
+     * compare with all database and if all the requested attributes match will be added as an acceptable result.
+     *
+     * @param movie The movie object that will be used as an example to search for movies.
+     * @param page The page number to be returned.
+     * @param itens the number of items per page
+     * @return A {@link ResponseEntity} with a {@link MasterProcess} that contains: a {@link Page} of
+     * {@link MovieEntity} and a simple log;
+     */
     @ConsoleLog
     @PostMapping(name = "search", params = {"page", "itens"})
     public ResponseEntity<?> byExampleOf(@Valid MovieDtoRequest movie, int page, int itens) {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
+
+        //TODO: move this actions to service layer and apply here the ProcessLine protocol !!!
+
         final MovieEntity movieEntity = parseToEntity(movie);
         final Example<MovieEntity> movieEx = Example.of(movieEntity, MATCHER_ALL);
         final Page<MovieEntity> moviesEntities = service.getMoviesByExample(movieEx, pageConfig);
         return proxy().craftResponsePage(moviesEntities);
     }
 
-    //TODO: CREATE HANDLE RESPONSE AGAINST DUPLICATED MOVIES
-    // org.postgresql.util.PSQLException
-
-    //POST: INSERT ONE FILE
+    /** POST: INSERT ONE FILE <br>
+     * Endpoint for JSON objects with THE MOVIE DATA BASE structure.
+     * It will parse this JSON into a DTO, then persists it.
+     *
+     * @param file The JSON to be processed.
+     * @return A {@link ResponseEntity} with a {@link MasterProcess} that contains: a {@link Page} of
+     * {@link MovieEntity} and a simple log;
+     */
     @ConsoleLog
     @PostMapping(value = "add/one/tmdb", consumes = {"application/json", "text/plain"})
-    public ResponseEntity<?> addOne(final @RequestBody Map<String, Object> file) {
-        return new ResponseEntity<>(service.parseMapToDto(file), HttpStatus.OK);
+    public ResponseEntity<?> addOne(@RequestBody final Map<String, Object> file) {
+        final Pageable pageConfig = PageRequest.of(0, 1, Sort.by("title").ascending());
+        final ProcessLine<MovieDtoTMDB> dto = service.parseMapToDto(file);
+        return proxy().craftResponsePage(service.persistDtoTMDB(dto), pageConfig);
     }
 
-    //POST: INSERT MANY FILES
+    /** POST: INSERT MANY FILES <br>
+     * Endpoint to insert many JSON objects with THE MOVIE DATA BASE structure.
+     * Because the system already excepts a big amount of files, they will come as a list of {@link MultipartFile}.
+     * Everything in the list it will be processed separately.
+     * First, it will parse to JSON, then parse to DTO, and then it will be persisted.
+     *
+     * @param files The list of files to be processed.
+     * @param page The page number to return.
+     * @param itens The number of items per page.
+     * @return A {@link ResponseEntity} with a {@link MasterProcess} that contains: a {@link Page} of
+     * {@link MovieEntity} and a simple log;
+     */
     @ConsoleLog
     @PostMapping(value = "add/many/tmdb", consumes = "multipart/form-data")
     public ResponseEntity<?> addAll(
-        final @RequestParam("files") List<MultipartFile> files,
+        @RequestParam("files") final List<MultipartFile> files,
         @RequestParam(name = "page", defaultValue = "0") int page,
         @RequestParam(name = "itens", defaultValue = "12") int itens) {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
@@ -147,11 +175,7 @@ public class MovieController extends MasterController
             .map(service::parseJsonToDto)
             .map(service::persistDtoTMDB)
             .toList();
-        final List<ProcessLine> process = movies.stream().map(ProcessLine::generallyse).toList();
-        final MasterProcess<?> result = MasterProcess.of(process, pageConfig);
-        return new ResponseEntity<>(result, HttpStatus.OK);
-        //TODO: criar método na MasterController ou MasterService que automaticamente converte Line
-        // em Process e crafta Page final
+        return proxy().craftResponsePage(movies, pageConfig);
     }
 
     //todo: remove this in production
@@ -159,8 +183,8 @@ public class MovieController extends MasterController
     @ConsoleLog
     @DeleteMapping("del/all")
     public ResponseEntity<?> deleteAll() {
-        service.deleteAll();
-        return new ResponseEntity<>(null, HttpStatus.OK);
+        return proxy().craftResponseLog(
+            List.of(service.deleteAll()));
     }
 
 }
