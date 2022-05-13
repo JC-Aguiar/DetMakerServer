@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.util.Streamable;
 
 import javax.validation.constraints.NotNull;
 import java.util.HashMap;
@@ -18,6 +19,7 @@ import java.util.Map;
 public class MasterProcess<OBJ> extends PageImpl<OBJ> {
 
     final Map<Integer, String> log = new HashMap<>();
+//    final Streamable<OBJ> result
 
     private MasterProcess(@NotNull List<OBJ> processes) {
         super(processes);
