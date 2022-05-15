@@ -11,36 +11,41 @@ import org.springframework.data.domain.Pageable;
 
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Setter
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class MasterProcess<OBJ> {
+public abstract class MasterProcess<OBJ> {
 
-    final Table<Integer, Boolean, String> log = HashBasedTable.create();
-    final String status;
-    final PageImpl<OBJ> body;
+    final Table<Integer, Boolean, String> log;
+    final StatusTypes status;
     enum StatusTypes {
         SUCCESSES,
         PARCIAL,
-        FAIL;
+        FAIL,
+        EMPTY
     }
 
-    private MasterProcess(@NotNull List<ProcessLine> processes) {
+    public MasterProcess(@NotNull List<ProcessLine> processes) {
+        this.log = checkContent(processes) ? HashBasedTable.create() : null;
         this.status = validadeProcesses(processes);
-        this.body = new PageImpl(processes);
     }
 
-    private MasterProcess(@NotNull List<ProcessLine> processes, @NotNull Pageable pageable) {
+    public MasterProcess(@NotNull List<ProcessLine> processes, @NotNull Pageable pageable) {
+        this.log = checkContent(processes) ? HashBasedTable.create() : null;
         this.status = validadeProcesses(processes);
-        this.body = new PageImpl(
-            getProcessContent(processes),
-            pageable,
-            processes.size());
     }
 
-    private String validadeProcesses(@NotNull List<ProcessLine> processes) {
+    private boolean checkContent(@NotNull List<ProcessLine> processes) {
+        final int cont = processes.stream()
+            .filter(ProcessLine::isObjectPresent).toList().size();
+        return cont > 0;
+    }
+
+    private StatusTypes validadeProcesses(@NotNull List<ProcessLine> processes) {
+        if(this.log == null) return StatusTypes.EMPTY;
         final int errorCount = populateAndContErrors(processes);
         return checkFinalStatus(processes.size(), errorCount);
     }
@@ -54,13 +59,13 @@ public class MasterProcess<OBJ> {
         return errorCont.get();
     }
 
-    private String checkFinalStatus(int lines, int errorCont) {
+    private StatusTypes checkFinalStatus(int lines, int errorCont) {
         if(errorCont == 0) {
-            return StatusTypes.SUCCESSES.toString();}
+            return StatusTypes.SUCCESSES;}
         else {
             return (errorCont == lines) ?
-                StatusTypes.FAIL.toString() :
-                StatusTypes.PARCIAL.toString();}
+                StatusTypes.FAIL :
+                StatusTypes.PARCIAL;}
     }
 
 //    public static MasterProcess<?> of(@NotNull List<ProcessLine> processes) {
@@ -83,7 +88,7 @@ public class MasterProcess<OBJ> {
 //        this.result = new PageImpl<OBJ>(list);
 //    }
 
-    private static List<?> getProcessContent(@NotNull List<ProcessLine> processes) {
+    protected static List<?> getProcessContent(@NotNull List<ProcessLine> processes) {
         return processes.stream()
             .filter(ProcessLine::isOk)
             .map(ProcessLine::getObject)

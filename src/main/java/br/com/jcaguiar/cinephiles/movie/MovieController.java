@@ -1,9 +1,7 @@
 package br.com.jcaguiar.cinephiles.movie;
 
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
-import br.com.jcaguiar.cinephiles.master.MasterController;
-import br.com.jcaguiar.cinephiles.master.MasterProcess;
-import br.com.jcaguiar.cinephiles.master.ProcessLine;
+import br.com.jcaguiar.cinephiles.master.*;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
@@ -119,7 +117,7 @@ public class MovieController extends MasterController
      * @param movie The movie object that will be used as an example to search for movies.
      * @param page The page number to be returned.
      * @param itens the number of items per page
-     * @return A {@link ResponseEntity} with a {@link MasterProcess} that contains: a {@link Page} of
+     * @return A {@link ResponseEntity} with a {@link MasterProcessPage} that contains: a {@link Page} of
      * {@link MovieEntity} and a simple log;
      */
     @ConsoleLog
@@ -140,7 +138,7 @@ public class MovieController extends MasterController
      * It will parse this JSON into a DTO, then persists it.
      *
      * @param file The JSON to be processed.
-     * @return A {@link ResponseEntity} with a {@link MasterProcess} that contains: a {@link Page} of
+     * @return A {@link ResponseEntity} with a {@link MasterProcessPage} that contains: a {@link Page} of
      * {@link MovieEntity} and a simple log;
      */
     @ConsoleLog
@@ -160,7 +158,7 @@ public class MovieController extends MasterController
      * @param files The list of files to be processed.
      * @param page The page number to return.
      * @param itens The number of items per page.
-     * @return A {@link ResponseEntity} with a {@link MasterProcess} that contains: a {@link Page} of
+     * @return A {@link ResponseEntity} with a {@link MasterProcessPage} that contains: a {@link Page} of
      * {@link MovieEntity} and a simple log;
      */
     @ConsoleLog
@@ -182,12 +180,13 @@ public class MovieController extends MasterController
     /** DELETE: ALL FILES <br>
      * Delete all the movie records in the database
      *
-     * @return A {@link ResponseEntity} with a {@link MasterProcess} that contains? a message and a simple log;
+     * @return A {@link ResponseEntity} with a {@link MasterProcessLog} that contains a message and a simple log;
      */
     @ConsoleLog
     @DeleteMapping("del/all")
     public ResponseEntity<?> deleteAll() {
         return proxy().craftResponseLog(
+            "All movies have been successfully deleted",
             List.of(service.deleteAll())
         );
     }
