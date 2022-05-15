@@ -11,6 +11,8 @@ import javax.validation.constraints.NotNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoField;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 
 @Getter
@@ -25,10 +27,10 @@ public class ProcessLine<OBJ> {
     final static String FORMAT_SUCCESS = "[OK]: Success - processed in %d milliseconds";
     final static String FORMAT_ERROR = "[ERROR]: %s - processed in %d milliseconds";
 
-    private ProcessLine(@NotNull OBJ object, @NotNull Duration duration) {
-        this.object = Optional.of(object);
+    private ProcessLine(OBJ object, @NotNull Duration duration) {
+        this.object = Optional.ofNullable(object);
         this.error = false;
-        this.log = "";
+        this.log = String.format(FORMAT_SUCCESS, duration.toMillis());
         this.objectClass = Optional.of(this.object.get().getClass());
         this.duration = duration;
     }
@@ -36,12 +38,12 @@ public class ProcessLine<OBJ> {
     private ProcessLine(@NotBlank String log, @NotNull Duration duration) {
         this.object = Optional.empty();
         this.error = true;
-        this.log = log;
+        this.log = String.format(FORMAT_ERROR, log, duration.toMillis());
         this.objectClass = Optional.empty();
         this.duration = duration;
     }
 
-    public static ProcessLine success(@NotNull Instant startTime, @NotNull Object object) {
+    public static ProcessLine success(@NotNull Instant startTime, Object object) {
         return new ProcessLine<>(object, convertTimeToDuration(startTime));
     }
 
@@ -90,20 +92,12 @@ public class ProcessLine<OBJ> {
         compareAndGet(expectedClass);
     }
 
-    public String getFullLog() {
-        return error ? getErrorLog() : getSuccessLog();
-    }
-
-    private String getSuccessLog() {
-        return String.format(FORMAT_SUCCESS, duration.toMillis());
-    }
-
-    private String getErrorLog() {
-        return String.format(FORMAT_ERROR, log, duration.toMillis());
-    }
-
     public ProcessLine generallyse(){
         return this;
+    }
+
+    public boolean getError() {
+        return this.error;
     }
 
 }

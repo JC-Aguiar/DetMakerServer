@@ -234,7 +234,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         final Instant startTime = Instant.now();
         try {
             dao.deleteAll();
-            return ProcessLine.success(startTime, List.of());
+            return ProcessLine.success(startTime, null);
         } catch(Exception e) {
             e.printStackTrace();;
             return ProcessLine.error(startTime, e);
