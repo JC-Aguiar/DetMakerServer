@@ -188,7 +188,8 @@ public class MovieController extends MasterController
     @DeleteMapping("del/all")
     public ResponseEntity<?> deleteAll() {
         return proxy().craftResponseLog(
-            List.of(service.deleteAll()));
+            List.of(service.deleteAll())
+        );
     }
 
 }
