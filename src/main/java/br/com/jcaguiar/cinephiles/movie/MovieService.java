@@ -230,7 +230,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
 
     //todo: remove this in production
     @ConsoleLog
-    public ProcessLine deleteAll() {
+    public ProcessLine<MovieEntity> deleteAll() {
         final Instant startTime = Instant.now();
         try {
             dao.deleteAll();

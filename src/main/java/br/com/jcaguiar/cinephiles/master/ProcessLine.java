@@ -31,7 +31,9 @@ public class ProcessLine<OBJ> {
         this.object = Optional.ofNullable(object);
         this.error = false;
         this.log = String.format(FORMAT_SUCCESS, duration.toMillis());
-        this.objectClass = Optional.of(this.object.get().getClass());
+        this.objectClass = null == object ?
+            Optional.empty() :
+            Optional.of(this.object.get().getClass());
         this.duration = duration;
     }
 
@@ -67,6 +69,10 @@ public class ProcessLine<OBJ> {
 
     public OBJ getObject() {
         return object.orElseThrow();
+    }
+
+    public boolean isObjectPresent() {
+        return object.isPresent();
     }
 
     public Class<?> getObjectClass() {

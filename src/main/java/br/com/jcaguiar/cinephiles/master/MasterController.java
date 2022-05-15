@@ -103,30 +103,21 @@ public abstract class MasterController<
         return modelMapper.map(request, (Type) entityClass);
     }
 
-    /**
-     * It maps the entity page to a response DTO page.
-     *
-     * @param entityPage The page of entities to be converted to a response page.
-     * @return The page of DTOs.
-     */
     @ConsoleLog
     public ResponseEntity<?> craftResponsePage(
         @NotNull ProcessLine<ENTITY> processEntity,
         @NotNull Pageable pageConfig) {
-        final List<ProcessLine> process =List.of(processEntity.generallyse());
-        final MasterProcess<?> result = MasterProcess.of(process, pageConfig);
+        final MasterProcessPage<ENTITY> result = new MasterProcessPage(
+            List.of(processEntity), pageConfig);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @ConsoleLog
-    public ResponseEntity<?> craftResponsePage(
+    public ResponseEntity<ENTITY> craftResponsePage(
         @NotNull List<ProcessLine<ENTITY>> processEntity,
         @NotNull Pageable pageConfig) {
-        final List<ProcessLine> process = processEntity.stream()
-            .map(ProcessLine::generallyse)
-            .toList();
-        final MasterProcess<?> result = MasterProcess.of(process, pageConfig);
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        final MasterProcessPage<ENTITY> result = new MasterProcessPage(processEntity, pageConfig);
+        return new ResponseEntity(result, HttpStatus.OK);
     }
 
     @ConsoleLog
@@ -136,11 +127,10 @@ public abstract class MasterController<
     }
 
     @ConsoleLog
-    public ResponseEntity<?> craftResponseLog(@NotNull List<ProcessLine<ENTITY>> processEntity) {
-        final List<ProcessLine> process = processEntity.stream()
-            .map(ProcessLine::generallyse)
-            .toList();
-        final MasterProcess<?> result = MasterProcess.of(process);
+    public ResponseEntity<?> craftResponseLog(
+        @NotBlank String message,
+        @NotNull List<ProcessLine<ENTITY>> processEntity) {
+        final MasterProcessLog<?> result = new MasterProcessLog(processEntity, message);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
