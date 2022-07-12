@@ -1,0 +1,10 @@
+<Configuration status="log" name="Cinephilos Server" packages="">
+    <Appenders>
+        <Console name="CONSOLE LOG" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %p %m%n"/>
+        </Console>
+    </Appenders>
+    <Root level="error">
+        <AppenderRef ref="STDOUT"/>
+    </Root>
+</Configuration>

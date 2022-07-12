@@ -9,6 +9,7 @@ import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import br.com.jcaguiar.cinephiles.util.Download;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
@@ -29,11 +30,12 @@ import java.util.*;
 @Service
 public class MovieService extends MasterService<Integer, MovieEntity, MovieService> {
 
-    @Autowired
+    @Autowired @Getter
     private GenreService genreService;
-    @Autowired
+    @Autowired @Getter
     private ProducerService producerService;
-    @Autowired
+//    @Autowired
+    @Getter
     private PostersRepository posterRepository;
     @Autowired
     private Gson gson;
@@ -50,9 +52,15 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         add("runtime");                     //-> duration
     }};
 
-    public MovieService(MovieRepository dao) {
+    public MovieService(MovieRepository dao, PostersRepository posterRepository) {
         super(dao);
         this.dao = dao;
+        setPostersRepository(posterRepository);
+    }
+
+    @Autowired
+    public void setPostersRepository(PostersRepository postersRepository) {
+        this.posterRepository = postersRepository;
     }
 
     @ConsoleLog
@@ -173,7 +181,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         try {
             movieJson.checkStatus();
             final MovieDtoTMDB movieDto = movieJson.compareAndGet(MovieDtoTMDB.class);
-            final MovieEntity movie = proxy().persistDtoTMDB(movieDto);
+            final MovieEntity movie = persistDtoTMDB(movieDto);
             return ProcessLine.success(startTime, movie);
         } catch (Exception e) {
             return ProcessLine.error(startTime, e);
@@ -196,7 +204,8 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
             + movieJson.getPoster_path();
         final byte[] poster = Download.from(postersString); //todo: link builder OK. But the download system is failing.
         // Poster
-        final PostersEntity postersEntity = posterRepository.saveAndFlush(
+        final var teste = getPosterRepository();
+        final PostersEntity postersEntity = teste.saveAndFlush(
             PostersEntity.builder()
                 .url(postersString)
                 .image(poster)
@@ -207,7 +216,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
             .map(MovieDtoTMDBGenre::getName)
             .toList();
         final List<GenreEntity> genres = possibleGenres.stream()
-            .map(genreService::loadOrSave).toList();
+            .map(g -> getGenreService().loadOrSave(g)).toList();
         // Producers
         final List<String> possibleProducers = movieJson.getProduction_companies()
             .stream()
@@ -234,7 +243,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         final Instant startTime = Instant.now();
         try {
             dao.deleteAll();
-            return ProcessLine.success(startTime, null);
+            return ProcessLine.success(startTime, 0);
         } catch(Exception e) {
             e.printStackTrace();;
             return ProcessLine.error(startTime, e);
