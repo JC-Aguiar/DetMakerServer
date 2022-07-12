@@ -22,13 +22,14 @@ public class CustomAuthenticationProvider implements AuthenticationProvider {
     @Override
     public Authentication authenticate(Authentication requestedLogin) throws AuthenticationException
     {
-        System.out.println("CustomAuthenticationProvider");
+
+        //TODO: System.out.println("CustomAuthenticationProvider");
         final String requestUserEmail = requestedLogin.getName();
         final String requestUserPassword = requestedLogin.getCredentials().toString();
         final UserDetails user = authenticationService.loadUserByUsername(requestUserEmail);
         final Collection<? extends GrantedAuthority> userRoles = user.getAuthorities();
         final String cryptPassword = user.getPassword();
-        System.out.println("getName: " + requestUserEmail);
+        //TODO: System.out.println("getName: " + requestUserEmail);
         final BCryptPasswordEncoder crypt = new BCryptPasswordEncoder();
         final boolean login = crypt.matches(requestUserPassword, cryptPassword);
         if(!login) throw new AuthenticationServiceException("Invalid email or password");

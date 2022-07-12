@@ -1,6 +1,8 @@
 package br.com.jcaguiar.cinephiles.master;
 
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
+import br.com.jcaguiar.cinephiles.util.ConsoleLogAspect;
+import br.com.jcaguiar.cinephiles.util.FormatString;
 import lombok.Getter;
 import org.modelmapper.ModelMapper;
 import org.springframework.aop.framework.AopContext;
@@ -21,6 +23,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 public abstract class MasterController<
@@ -53,11 +56,18 @@ public abstract class MasterController<
      * Prints the class name, the request and response classes, and the endpoints
      */
     public void printInfo() {
-        System.out.println(getClass().getSimpleName());
-        System.out.printf("Entity: %s \nRequest DTO: %s \nResponse DTO: %s \n",
-                          this.entityClass, this.requestClass, this.responseClass);
-        System.out.println("Endpoints(GET):");
-        endpointsGet.values().forEach(System.out::println);
+        final String initMessage = String.format(
+            "Entity: %s - Request DTO: %s - Response DTO: %s",
+            FormatString.subString(this.entityClass.getTypeName(), "\\." ),
+            FormatString.subString(this.requestClass.getTypeName(), "\\."),
+            FormatString.subString(this.responseClass.getTypeName(), "\\."));
+        final String endpointsMessage = endpointsGet
+            .values()
+            .stream()
+            .map(txt -> FormatString.subString(txt.getName(), "//."))
+            .collect(Collectors.joining(", "));
+        ConsoleLogAspect.LOGGER.info(initMessage);
+        ConsoleLogAspect.LOGGER.info("Endpoints(GET): " + endpointsMessage);
     }
 
     /**
@@ -140,7 +150,8 @@ public abstract class MasterController<
     @GetMapping
     public ResponseEntity<?> get(
         @RequestParam(name = "id", required = false) Optional<ID> id,
-        @RequestParam(name = "page", defaultValue = "0") int page,
+        @RequestParam(name = "page", defaultValue = "0") int page,          //TODO: valores padrões devem estar em
+                                                                            // variáveis estáticas globais.
         @RequestParam(name = "itens", defaultValue = "12") int itens) {
         if (id.isPresent()) return proxy().getOne(id.get());
         return proxy().getAll(page, itens);
@@ -148,6 +159,7 @@ public abstract class MasterController<
 
     //GET: by ID
     // A method that returns a specific entity by a given ID.
+    //TODO: não deveria retornar uma Paginação usando também os atributos itens e page?
     @ConsoleLog
     protected ResponseEntity<?> getOne(@NotNull ID id) {
         final ENTITY entity = (ENTITY) service.findById(id);

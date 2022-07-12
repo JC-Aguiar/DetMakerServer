@@ -35,7 +35,7 @@ public class JwtAuthenticationService {
      * @return A JWT token.
      */
     public JwtTokenResponse createToken(@NotNull Authentication auth) {
-        System.out.println("createToken: getPrincipal = " + auth.getPrincipal());
+        //TODO: System.out.println("createToken: getPrincipal = " + auth.getPrincipal());
         return createToken((UserDetails) auth.getPrincipal());
     }
 
@@ -49,7 +49,7 @@ public class JwtAuthenticationService {
     public JwtTokenResponse createToken(@NotNull UserDetails userDetails) {
         final UserEntity user = (UserEntity) userDetails;
         final String jwtToken = craftJwt(user);
-        System.out.println(jwtToken);
+        //TODO: System.out.println(jwtToken);
         return craftDtoResponse(jwtToken, user);
     }
 
@@ -61,7 +61,7 @@ public class JwtAuthenticationService {
      * @return A JWT token.
      */
     private String craftJwt(@NotNull UserEntity user) {
-        System.out.println("CraftToken");
+        //TODO: System.out.println("CraftToken");
         final Date tokenCreationDate = new Date();
         final Date tokenExpirationDate = new Date(tokenCreationDate.getTime() + TOKEN_VALID_TIME);
         return Jwts.builder()
@@ -82,7 +82,7 @@ public class JwtAuthenticationService {
      * @return A JwtTokenResponse
      */
     private JwtTokenResponse craftDtoResponse(@NotBlank String jwtToken, @NotNull UserEntity user) {
-        System.out.println("CraftDtoResponse");
+        //TODO: System.out.println("CraftDtoResponse");
         final UserDtoResponse userResponse = new ModelMapper().map(user, UserDtoResponse.class);
         return new JwtTokenResponse("Bearer", jwtToken, userResponse);
     }
@@ -95,7 +95,7 @@ public class JwtAuthenticationService {
      * @return An Authentication object.
      */
     public Authentication decodeToken(@NotBlank String bearerToken) {
-        System.out.println("decodeToken");
+        //TODO: System.out.println("decodeToken");
         final String userStringId = Optional.ofNullable(
                 Jwts.parser()
                         .setSigningKey(SECRET_KEY)
@@ -103,7 +103,7 @@ public class JwtAuthenticationService {
                         .getBody()
                         .getSubject())
                 .orElseThrow(() -> new JwtException("Invalid or expired JWT"));
-        System.out.println("BEARER TOKEN:" + bearerToken);
+        //TODO: System.out.println("BEARER TOKEN:" + bearerToken);
         final int userId = Integer.parseInt(userStringId);
         final UserEntity user = userService.findById(userId);
         return new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());

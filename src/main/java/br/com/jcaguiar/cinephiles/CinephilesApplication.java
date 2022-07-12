@@ -7,7 +7,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 @EnableCaching
 @SpringBootApplication
-@EnableAspectJAutoProxy(exposeProxy=true)
+@EnableAspectJAutoProxy(exposeProxy = true, proxyTargetClass = true)
 public class CinephilesApplication {
 
 	public static void main(String[] args) {

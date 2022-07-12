@@ -3,6 +3,7 @@ package br.com.jcaguiar.cinephiles.security;
 import br.com.jcaguiar.cinephiles.exception.AuthorizationHeaderException;
 import br.com.jcaguiar.cinephiles.exception.BearerTokenException;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
+import br.com.jcaguiar.cinephiles.util.ConsoleLogAspect;
 import io.jsonwebtoken.JwtException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
@@ -21,29 +22,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtAuthenticationService jwtService;
 
-    public JwtAuthenticationFilter(JwtAuthenticationService jwtService)
-    {
+    public JwtAuthenticationFilter(JwtAuthenticationService jwtService) {
         this.jwtService = jwtService;
     }
 
     @Override
     @ConsoleLog
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
-            throws ServletException, IOException
-    {
-        System.out.println("JwtAuthenticationFilter");
+    throws ServletException, IOException {
+        //TODO: System.out.println("JwtAuthenticationFilter");
         final String uri = request.getRequestURI();
         final String endpoint = (String) Arrays.stream(uri.split("/"))
                 .filter(s -> !s.isBlank())
                 .toArray()[0];
-        System.out.println("URI PATH: " + uri);
-        System.out.println("END-POINT: " + endpoint);
+        //TODO: System.out.println("URI PATH: " + uri);
+        //TODO: System.out.println("END-POINT: " + endpoint);
         final boolean restrictedAccess = WebSecurityConfig.DOMAINS.containsKey(endpoint);
-        System.out.printf("ACCESS: %s \n", restrictedAccess ? "restricted" : "free");
+        //TODO: System.out.printf("ACCESS: %s \n", restrictedAccess ? "restricted" : "free");
         try { authenticateToken(request); }
         catch (AuthorizationHeaderException | JwtException | IllegalArgumentException e) {
-            if(restrictedAccess) { throw e; }
-            else { System.out.println(e.getLocalizedMessage()); }
+            if (restrictedAccess) { throw e; }
+            else { ConsoleLogAspect.LOGGER.error(e.getLocalizedMessage()); }
         }
         catch (Exception e) { throw e; }
         finally { filterChain.doFilter(request, response); }
@@ -51,23 +50,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @ConsoleLog
     private void authenticateToken(HttpServletRequest request)
-            throws AuthorizationHeaderException, JwtException
-    {
-        System.out.println("authenticateToken");
+    throws AuthorizationHeaderException, JwtException {
+        //TODO: System.out.println("authenticateToken");
         final String bearerToken = getBearerToken(request);
         final Authentication auth = jwtService.decodeToken(bearerToken);
         SecurityContextHolder.getContext().setAuthentication(auth);
-        System.out.println("User authenticated!");
+        //TODO: System.out.println("User authenticated!");
     }
 
     @ConsoleLog
-    private String getBearerToken(HttpServletRequest request)
-    {
-        System.out.println("getBearerToken");
+    private String getBearerToken(HttpServletRequest request) {
+        //TODO: System.out.println("getBearerToken");
         final String header = Optional.ofNullable(
                         request.getHeader(HttpHeaders.AUTHORIZATION))
                 .orElseThrow(AuthorizationHeaderException::new);
-        System.out.println("AUTHORIZATION HEADER: " + header);
+        //TODO: System.out.println("AUTHORIZATION HEADER: " + header);
         if (header.startsWith("Bearer")) {
             return header.replace("Bearer", "").trim();
         }

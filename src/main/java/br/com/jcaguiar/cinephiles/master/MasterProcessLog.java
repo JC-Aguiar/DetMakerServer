@@ -21,7 +21,7 @@ public class MasterProcessLog<OBJ> extends MasterProcess<OBJ> {
         switch(getStatus()) {
             case PARCIAL -> this.message = "Process complete, with some exceptions. Consult the log for more details.";
             case FAIL -> this.message = "An error ocorrer during the process. Consult the log for more details.";
-            case EMPTY -> this.message = "No changes applied. The requested action found 0 records in the database.";
+            case EMPTY -> this.message = "No result. The requested action found 0 records in the database.";
             default -> this.message = message;
         }
     }

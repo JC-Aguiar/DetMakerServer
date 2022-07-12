@@ -2,6 +2,8 @@ package br.com.jcaguiar.cinephiles.master;
 
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
+import com.google.common.collect.Tables;
+import com.google.common.collect.TreeBasedTable;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
@@ -10,7 +12,9 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 
 import javax.validation.constraints.NotNull;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -19,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public abstract class MasterProcess<OBJ> {
 
-    final Table<Integer, Boolean, String> log;
+    final Map<Integer, String> log = new HashMap<>();
     final StatusTypes status;
     enum StatusTypes {
         SUCCESSES,
@@ -29,18 +33,20 @@ public abstract class MasterProcess<OBJ> {
     }
 
     public MasterProcess(@NotNull List<ProcessLine> processes) {
-        this.log = checkContent(processes) ? HashBasedTable.create() : null;
+//        this.log = checkContent(processes) ? HashBasedTable.create() : null;
         this.status = validadeProcesses(processes);
     }
 
     public MasterProcess(@NotNull List<ProcessLine> processes, @NotNull Pageable pageable) {
-        this.log = checkContent(processes) ? HashBasedTable.create() : null;
+//        this.log = checkContent(processes) ? HashBasedTable.create() : null;
         this.status = validadeProcesses(processes);
     }
 
     private boolean checkContent(@NotNull List<ProcessLine> processes) {
         final int cont = processes.stream()
-            .filter(ProcessLine::isObjectPresent).toList().size();
+            .filter(ProcessLine::isOk)
+            .filter(ProcessLine::isObjectPresent)
+            .toList().size();
         return cont > 0;
     }
 
@@ -53,7 +59,7 @@ public abstract class MasterProcess<OBJ> {
     private int populateAndContErrors(@NotNull List<ProcessLine> processes) {
         final AtomicInteger errorCont = new AtomicInteger();
         processes.stream().forEach(p -> {
-            log.put(log.size(), p.getError(), p.getLog());
+            this.log.put(this.log.size(), p.getLog());
             if(!p.isOk()) errorCont.getAndIncrement();
         });
         return errorCont.get();

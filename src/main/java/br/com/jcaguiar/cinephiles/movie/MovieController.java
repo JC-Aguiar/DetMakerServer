@@ -185,10 +185,9 @@ public class MovieController extends MasterController
     @ConsoleLog
     @DeleteMapping("del/all")
     public ResponseEntity<?> deleteAll() {
+        final List<ProcessLine<MovieEntity>> voidList = List.of(service.deleteAll());
         return proxy().craftResponseLog(
-            "All movies have been successfully deleted",
-            List.of(service.deleteAll())
-        );
+            "All movies have been successfully deleted", voidList);
     }
 
 }
