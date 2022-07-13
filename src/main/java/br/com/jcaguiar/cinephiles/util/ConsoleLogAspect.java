@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Constructor;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -85,6 +86,7 @@ public class ConsoleLogAspect {
         final var signature = (MethodSignature) joinPoint.getSignature();
         final var classe = getMethodSimpleName(signature);
         final var method = signature.getMethod();
+        final var returnType = signature.getReturnType();
 //      processMap.put(method.getName(), ProcessLine.success(startTime, action));
 
         ProcessLine<?> process = null;
@@ -96,7 +98,9 @@ public class ConsoleLogAspect {
         } catch (Exception e) { //TODO: exception already been handled in the class... change that?
             process = ProcessLine.error(startTime, e);
             processLines.add(process);
-            return Optional.empty();
+            final Class aClass = Class.forName(classe);
+            final Constructor constructor = aClass.getConstructor();
+            return constructor.newInstance() ; //Optional.empty();
         }
         finally {
             LOGGER.info(method.getName() + " - " + process.getLog());

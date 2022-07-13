@@ -1,6 +1,5 @@
 package br.com.jcaguiar.cinephiles.master;
 
-import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import br.com.jcaguiar.cinephiles.util.ConsoleLogAspect;
 import br.com.jcaguiar.cinephiles.util.ControllerProcess;
 import br.com.jcaguiar.cinephiles.util.FormatString;
@@ -108,6 +107,17 @@ public abstract class MasterController<
      */
     public ENTITY parseToEntity(REQUEST request) {
         return modelMapper.map(request, (Type) entityClass);
+    }
+
+    //TODO: TESTE
+    public ResponseEntity<?> craftResponse(
+        @NotNull List<ENTITY> entityList,
+        @NotNull Pageable pageConfig) {
+        final PageImpl<ENTITY> responsePage = new PageImpl(
+            entityList,
+            pageConfig,
+            entityList.size());
+        return new ResponseEntity<>(responsePage, HttpStatus.OK);
     }
 
     public ResponseEntity<?> craftResponsePage(

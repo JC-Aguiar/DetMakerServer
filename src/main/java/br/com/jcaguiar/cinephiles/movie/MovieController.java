@@ -1,8 +1,10 @@
 package br.com.jcaguiar.cinephiles.movie;
 
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
-import br.com.jcaguiar.cinephiles.master.*;
-import br.com.jcaguiar.cinephiles.util.ConsoleLog;
+import br.com.jcaguiar.cinephiles.master.MasterController;
+import br.com.jcaguiar.cinephiles.master.MasterProcessLog;
+import br.com.jcaguiar.cinephiles.master.MasterProcessPage;
+import br.com.jcaguiar.cinephiles.util.ControllerProcess;
 import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -41,7 +43,7 @@ public class MovieController extends MasterController
 
     //GET: by GENRE
     // A shortcut to create a ResponseEntity with the status CREATED.
-    @ConsoleLog
+    @ControllerProcess
     public ResponseEntity<?> byGenre(@NotBlank String genre, int page, int itens) {
         GenreEnum genreEnum = Arrays.stream(GenreEnum.values())
             .filter(en -> genre.equalsIgnoreCase(en.toString()))
@@ -54,7 +56,7 @@ public class MovieController extends MasterController
 
     //GET: by TITLE
     // A shortcut to create a ResponseEntity with the status CREATED.
-    @ConsoleLog
+    @ControllerProcess
     public ResponseEntity<?> byTitle(@NotBlank String title, int page, int itens) {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesByTitle(title, pageConfig);
@@ -63,7 +65,7 @@ public class MovieController extends MasterController
 
     //GET: by SYNOPSIS
     // A shortcut to create a ResponseEntity with the status CREATED.
-    @ConsoleLog
+    @ControllerProcess
     public ResponseEntity<?> bySynopsis(@NotBlank String synopsis, int page, int itens) {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesBySynopsis(synopsis, pageConfig);
@@ -72,7 +74,7 @@ public class MovieController extends MasterController
 
     //GET: by DIRECTOR
     // A shortcut to create a ResponseEntity with the status CREATED.
-    @ConsoleLog
+    @ControllerProcess
     public ResponseEntity<?> byDirector(@NotBlank String director, int page, int itens) {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesByDirector(director, pageConfig);
@@ -81,7 +83,7 @@ public class MovieController extends MasterController
 
     //GET: by ACTOR
     // A shortcut to create a ResponseEntity with the status CREATED.
-    @ConsoleLog
+    @ControllerProcess
     public ResponseEntity<?> byActor(@NotBlank String actor, int page, int itens) {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesByActor(actor, pageConfig);
@@ -90,7 +92,7 @@ public class MovieController extends MasterController
 
     //GET: by PRODUCER
     // A shortcut to create a ResponseEntity with the status CREATED.
-    @ConsoleLog
+    @ControllerProcess
     public ResponseEntity<?> byProducer(@NotBlank String producer, int page, int itens) {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
         final Page<MovieEntity> moviesEntities = service.getMoviesByProducer(producer, pageConfig);
@@ -99,7 +101,7 @@ public class MovieController extends MasterController
 
     //GET: by KEY-WORD
     // A shortcut to create a ResponseEntity with the status CREATED.
-    @ConsoleLog
+    @ControllerProcess
     public ResponseEntity<?> byText(@NotBlank String text, int page, int itens) {
         final PageRequest pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
         //        final MovieEntity movieTemplate = MovieEntity.builder()
@@ -120,7 +122,7 @@ public class MovieController extends MasterController
      * @return A {@link ResponseEntity} with a {@link MasterProcessPage} that contains: a {@link Page} of
      * {@link MovieEntity} and a simple log;
      */
-    @ConsoleLog
+    @ControllerProcess
     @PostMapping(name = "search", params = {"page", "itens"})
     public ResponseEntity<?> byExampleOf(@Valid MovieDtoRequest movie, int page, int itens) {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
@@ -141,12 +143,15 @@ public class MovieController extends MasterController
      * @return A {@link ResponseEntity} with a {@link MasterProcessPage} that contains: a {@link Page} of
      * {@link MovieEntity} and a simple log;
      */
-    @ConsoleLog
+    @ControllerProcess
     @PostMapping(value = "add/one/tmdb", consumes = {"application/json", "text/plain"})
     public ResponseEntity<?> addOne(@RequestBody final Map<String, Object> file) {
         final Pageable pageConfig = PageRequest.of(0, 1, Sort.by("title").ascending());
-        final ProcessLine<MovieDtoTMDB> dto = service.parseMapToDto(file);
-        return proxy().craftResponsePage(service.persistDtoTMDB(dto), pageConfig);
+        final MovieDtoTMDB dto = service.parseMapToDto(file);
+        final MovieEntity entity = service.persistDtoTMDB(dto);
+        final MovieDtoResponse response = parseToResponseDto(entity);
+        return new ResponseEntity<>(response, HttpStatus.OK);
+//        return proxy().craftResponsePage(service.persistDtoTMDB(dto), pageConfig);
     }
 
     /** POST: INSERT MANY FILES <br>
@@ -161,19 +166,19 @@ public class MovieController extends MasterController
      * @return A {@link ResponseEntity} with a {@link MasterProcessPage} that contains: a {@link Page} of
      * {@link MovieEntity} and a simple log;
      */
-    @ConsoleLog
+    @ControllerProcess
     @PostMapping(value = "add/many/tmdb", consumes = "multipart/form-data")
     public ResponseEntity<?> addAll(
         @RequestParam("files") final List<MultipartFile> files,
         @RequestParam(name = "page", defaultValue = "0") int page,
         @RequestParam(name = "itens", defaultValue = "12") int itens) {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
-        final List<ProcessLine<MovieEntity>> movies = files.stream()
+        final List<MovieEntity> movies = files.stream()
             .map(service::parseFileToJson)
             .map(service::parseJsonToDto)
             .map(service::persistDtoTMDB)
             .toList();
-        return proxy().craftResponsePage(movies, pageConfig);
+        return proxy().craftResponse(movies, pageConfig);
     }
 
     //todo: remove this in production
@@ -182,12 +187,11 @@ public class MovieController extends MasterController
      *
      * @return A {@link ResponseEntity} with a {@link MasterProcessLog} that contains a message and a simple log;
      */
-    @ConsoleLog
+    @ControllerProcess
     @DeleteMapping("del/all")
     public ResponseEntity<?> deleteAll() {
-        final List<ProcessLine<MovieEntity>> voidList = List.of(service.deleteAll());
-        return proxy().craftResponseLog(
-            "All movies have been successfully deleted", voidList);
+        service.deleteAll();
+        return new ResponseEntity<>("All movies have been successfully deleted", HttpStatus.OK);
     }
 
 }

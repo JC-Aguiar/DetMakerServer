@@ -43,7 +43,6 @@ public enum GenreEnum {
             .filter(g -> g.getName().equalsIgnoreCase(genreString))
             .findFirst()
             .orElseThrow();
-        System.out.println("Genre detected");
         return genreEnum;
     }
 
