@@ -74,15 +74,15 @@ public abstract class MasterProcess<OBJ> {
                 StatusTypes.PARCIAL;}
     }
 
-//    public static MasterProcess<?> of(@NotNull List<ProcessLine> processes) {
+//    public static MasterProcess<?> of(@NotNull List<ServiceProcess> processes) {
 //        final MasterProcess masterProcess = new MasterProcess(getProcessContent(processes));
 //        processes.forEach(masterProcess::extractLog);
 //        return masterProcess;
 //    }
 //
-//    public static MasterProcess<?> of(@NotNull List<ProcessLine> processes, @NotNull Pageable pageable) {
+//    public static MasterProcess<?> of(@NotNull List<ServiceProcess> processes, @NotNull Pageable pageable) {
 //
-//        final List<String> logList = processes.stream().map(ProcessLine::getLog).toList();
+//        final List<String> logList = processes.stream().map(ServiceProcess::getLog).toList();
 //        return new MasterProcess(
 //            getProcessContent(processes),
 //            pageable,
@@ -101,11 +101,11 @@ public abstract class MasterProcess<OBJ> {
             .toList();
     }
 
-//    public void setResult(@NotNull List<ProcessLine<OBJ>> processes) {
+//    public void setResult(@NotNull List<ServiceProcess<OBJ>> processes) {
 //        this.result = new PageImpl<>(getProcessContent(processes));
 //    }
 
-//    private Map<Boolean, String> extractLog(@NotNull ProcessLine<OBJ> process) {
+//    private Map<Boolean, String> extractLog(@NotNull ServiceProcess<OBJ> process) {
 //        return process.getFullLog();
 //    }
 

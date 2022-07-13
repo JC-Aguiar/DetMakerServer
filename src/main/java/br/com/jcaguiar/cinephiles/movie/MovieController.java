@@ -125,7 +125,7 @@ public class MovieController extends MasterController
     public ResponseEntity<?> byExampleOf(@Valid MovieDtoRequest movie, int page, int itens) {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
 
-        //TODO: move this actions to service layer and apply here the ProcessLine protocol !!!
+        //TODO: move this actions to service layer and apply here the ServiceProcess protocol !!!
 
         final MovieEntity movieEntity = parseToEntity(movie);
         final Example<MovieEntity> movieEx = Example.of(movieEntity, MATCHER_ALL);

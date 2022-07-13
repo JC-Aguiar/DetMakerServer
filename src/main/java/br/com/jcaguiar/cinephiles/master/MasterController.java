@@ -2,6 +2,7 @@ package br.com.jcaguiar.cinephiles.master;
 
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import br.com.jcaguiar.cinephiles.util.ConsoleLogAspect;
+import br.com.jcaguiar.cinephiles.util.ControllerProcess;
 import br.com.jcaguiar.cinephiles.util.FormatString;
 import lombok.Getter;
 import org.modelmapper.ModelMapper;
@@ -75,7 +76,6 @@ public abstract class MasterController<
      *
      * @return The MasterController object.
      */
-    @ConsoleLog
     protected final THIS proxy() {
         return (THIS) AopContext.currentProxy();
     }
@@ -86,7 +86,6 @@ public abstract class MasterController<
      * @param entity The entity to be mapped to the response DTO.
      * @return The response object.
      */
-    @ConsoleLog
     public RESPONSE parseToResponseDto(ENTITY entity) {
         return modelMapper.map(entity, (Type) responseClass);
     }
@@ -97,7 +96,6 @@ public abstract class MasterController<
      * @param response The response object that is returned from the API call.
      * @return The entity that was mapped from the response.
      */
-    @ConsoleLog
     public ENTITY parseToEntity(RESPONSE response) {
         return modelMapper.map(response, (Type) entityClass);
     }
@@ -108,12 +106,10 @@ public abstract class MasterController<
      * @param request The request object that is being mapped to an entity.
      * @return The mapped entity.
      */
-    @ConsoleLog
     public ENTITY parseToEntity(REQUEST request) {
         return modelMapper.map(request, (Type) entityClass);
     }
 
-    @ConsoleLog
     public ResponseEntity<?> craftResponsePage(
         @NotNull ProcessLine<ENTITY> processEntity,
         @NotNull Pageable pageConfig) {
@@ -122,7 +118,6 @@ public abstract class MasterController<
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-    @ConsoleLog
     public ResponseEntity<ENTITY> craftResponsePage(
         @NotNull List<ProcessLine<ENTITY>> processEntity,
         @NotNull Pageable pageConfig) {
@@ -130,13 +125,11 @@ public abstract class MasterController<
         return new ResponseEntity(result, HttpStatus.OK);
     }
 
-    @ConsoleLog
     public ResponseEntity<?> craftResponsePage(@NotNull Page<ENTITY> entityPage) {
         final Page<?> responsePage = entityPage.map(this::parseToResponseDto);
         return new ResponseEntity<>(responsePage, HttpStatus.OK);
     }
 
-    @ConsoleLog
     public ResponseEntity<?> craftResponseLog(
         @NotBlank String message,
         @NotNull List<ProcessLine<ENTITY>> processEntity) {
@@ -144,9 +137,9 @@ public abstract class MasterController<
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-    //GET: ONE or ALL
+    //GET-ONE / GET-ALL
     // The main GET method to delegate what type of database consult will be called: getOne or getAll.
-    @ConsoleLog
+    @ControllerProcess
     @GetMapping
     public ResponseEntity<?> get(
         @RequestParam(name = "id", required = false) Optional<ID> id,
@@ -157,19 +150,17 @@ public abstract class MasterController<
         return proxy().getAll(page, itens);
     }
 
-    //GET: by ID
+    //GET-ONE (by ID)
     // A method that returns a specific entity by a given ID.
     //TODO: não deveria retornar uma Paginação usando também os atributos itens e page?
-    @ConsoleLog
     protected ResponseEntity<?> getOne(@NotNull ID id) {
         final ENTITY entity = (ENTITY) service.findById(id);
         final RESPONSE dto = modelMapper.map(entity, (Type) responseClass);
         return new ResponseEntity<>(dto, HttpStatus.OK);
     }
 
-    //GET: ALL
+    //GET-ALL
     // A method that returns a page of all movies entities.
-    @ConsoleLog
     public ResponseEntity<?> getAll(int page, int itens) {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("id").ascending());
         final Page<?> entitiesPage = service.findAll(pageConfig);
@@ -177,9 +168,9 @@ public abstract class MasterController<
         return new ResponseEntity<>(responsePage, HttpStatus.OK);
     }
 
-    //GET: CUSTOM VAR
+    //GET CUSTOM-PATH
     // A reflection method that will try call one of the mapped methods in the endpointsGet field.
-    @ConsoleLog
+    @ControllerProcess
     @GetMapping(path = "/{var}/{value}")
     public ResponseEntity<?> call(
         @PathVariable @NotBlank String var,

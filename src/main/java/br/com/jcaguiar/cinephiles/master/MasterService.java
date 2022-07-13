@@ -1,6 +1,7 @@
 package br.com.jcaguiar.cinephiles.master;
 
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
+import br.com.jcaguiar.cinephiles.util.ServiceProcess;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -36,6 +37,7 @@ public abstract class MasterService<
 
     // A method that validates the page.
     @ConsoleLog
+    @ServiceProcess
     public Page<ENTITY> pageCheck(@NotNull Page<ENTITY> page) {
         page.stream().map(Objects::nonNull).findFirst().orElseThrow();
         return page;
@@ -43,6 +45,7 @@ public abstract class MasterService<
 
     // A method that returns an entity by id.
     @ConsoleLog
+    @ServiceProcess
     public ENTITY findById(@Positive @NotNull ID id) {
         return Optional.ofNullable(dao.getById(id))
                        .orElseThrow();
@@ -50,6 +53,7 @@ public abstract class MasterService<
 
     // A proxy method that calls `pageCheck` method.
     @ConsoleLog
+    @ServiceProcess
     public Page<?> findAll(@NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findAll(pageable));
     }
