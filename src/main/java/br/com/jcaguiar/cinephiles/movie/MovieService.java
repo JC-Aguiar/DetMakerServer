@@ -7,6 +7,7 @@ import br.com.jcaguiar.cinephiles.master.MasterService;
 import br.com.jcaguiar.cinephiles.master.ProcessLine;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import br.com.jcaguiar.cinephiles.util.Download;
+import br.com.jcaguiar.cinephiles.util.ServiceProcess;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import lombok.Getter;
@@ -64,48 +65,56 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
     }
 
     @ConsoleLog
+    @ServiceProcess
     public Page<MovieEntity> getMoviesByGenre
     (@NotNull GenreEnum genre, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findByGenres(genre, pageable));
     }
 
     @ConsoleLog
+    @ServiceProcess
     public Page<MovieEntity> getMoviesByExample
     (@NotNull Example<MovieEntity> movieEx, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findAll(movieEx, pageable));
     }
 
     @ConsoleLog
+    @ServiceProcess
     public Page<MovieEntity> getMoviesByTitle
     (@NotBlank String title, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findByTitle(title, pageable));
     }
 
     @ConsoleLog
+    @ServiceProcess
     public Page<MovieEntity> getMoviesBySynopsis
     (@NotBlank String synopsis, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findBySynopsis(synopsis, pageable));
     }
 
     @ConsoleLog
+    @ServiceProcess
     public Page<MovieEntity> getMoviesByTextLike
     (@NotBlank String text, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findByKeyword(text, pageable));
     }
 
     @ConsoleLog
+    @ServiceProcess
     public Page<MovieEntity> getMoviesByActor
     (@NotBlank String actor, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findByActorsLike(actor, pageable));
     }
 
     @ConsoleLog
+    @ServiceProcess
     public Page<MovieEntity> getMoviesByDirector
     (@NotBlank String director, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findByDirectorsLike(director, pageable));
     }
 
     @ConsoleLog
+    @ServiceProcess
     public Page<MovieEntity> getMoviesByProducer
     (@NotBlank String producer, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findByProducersLike(producer, pageable));
@@ -113,12 +122,14 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
 
     //TODO: FINISH
     @ConsoleLog
+    @ServiceProcess
     public MovieEntity addOne(@NotNull MovieModel model) {
         final MovieEntity movie = (MovieEntity) model;
         return dao.save(movie);
     }
 
     @ConsoleLog
+    @ServiceProcess
     public Map<String, Object> filterJsonTMDB(@NotNull Map<String, Object> file) {
         // List containing the text values. This removes unnecessary key/value from the given map/json
         final List<Object> values = TMDB_KEYS.stream().map(file::remove).toList();
@@ -133,6 +144,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
     }
 
     @ConsoleLog
+    @ServiceProcess
     public ProcessLine<MovieDtoTMDB> parseMapToDto(@NotNull Map<String, Object> file) {
         final Instant startTime = Instant.now();
         try {
@@ -145,6 +157,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
     }
 
     @ConsoleLog
+    @ServiceProcess
     public ProcessLine<JsonObject> parseFileToJson(@NotNull MultipartFile file) {
         final Instant startTime = Instant.now();
         try {
@@ -157,6 +170,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
     }
 
     @ConsoleLog
+    @ServiceProcess
     public ProcessLine<MovieDtoTMDB> parseJsonToDto(@NotNull ProcessLine<JsonObject> json) {
         final Instant startTime = Instant.now();
         try {
@@ -170,12 +184,14 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
     }
 
     @ConsoleLog
+    @ServiceProcess
     //MovieDtoTMDB
     private MovieDtoTMDB parseJsonToDto(@NotNull JsonObject json) {
         return new Gson().fromJson(json, MovieDtoTMDB.class);
     }
 
     @ConsoleLog
+    @ServiceProcess
     public ProcessLine<MovieEntity> persistDtoTMDB(@NotNull ProcessLine<MovieDtoTMDB> movieJson) {
         final Instant startTime = Instant.now();
         try {
@@ -239,6 +255,7 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
 
     //todo: remove this in production
     @ConsoleLog
+    @ServiceProcess
     public ProcessLine<MovieEntity> deleteAll() {
         final Instant startTime = Instant.now();
         try {
