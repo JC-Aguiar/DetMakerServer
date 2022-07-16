@@ -27,7 +27,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     @Override
-    @ConsoleLog
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
     throws ServletException, IOException {
         //TODO: System.out.println("JwtAuthenticationFilter");
@@ -48,7 +47,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         finally { filterChain.doFilter(request, response); }
     }
 
-    @ConsoleLog
     private void authenticateToken(HttpServletRequest request)
     throws AuthorizationHeaderException, JwtException {
         //TODO: System.out.println("authenticateToken");
@@ -58,7 +56,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         //TODO: System.out.println("User authenticated!");
     }
 
-    @ConsoleLog
     private String getBearerToken(HttpServletRequest request) {
         //TODO: System.out.println("getBearerToken");
         final String header = Optional.ofNullable(

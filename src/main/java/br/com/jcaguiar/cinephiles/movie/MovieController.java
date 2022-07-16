@@ -16,6 +16,7 @@ import javax.validation.constraints.NotBlank;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("movie")
@@ -147,10 +148,8 @@ public class MovieController extends MasterController
     @PostMapping(value = "add/one/tmdb", consumes = {"application/json", "text/plain"})
     public ResponseEntity<?> addOne(@RequestBody final Map<String, Object> file) {
         final Pageable pageConfig = PageRequest.of(0, 1, Sort.by("title").ascending());
-        final MovieDtoTMDB dto = service.parseMapToDto(file);
-        final MovieEntity entity = service.persistDtoTMDB(dto);
-        final MovieDtoResponse response = parseToResponseDto(entity);
-        return new ResponseEntity<>(response, HttpStatus.OK);
+        final MovieDtoTMDB dto = service.processTMDB(file).get();
+        return new ResponseEntity<>(service.persistDtoTMDB(dto), HttpStatus.OK);
 //        return proxy().craftResponsePage(service.persistDtoTMDB(dto), pageConfig);
     }
 
@@ -173,12 +172,12 @@ public class MovieController extends MasterController
         @RequestParam(name = "page", defaultValue = "0") int page,
         @RequestParam(name = "itens", defaultValue = "12") int itens) {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("title").ascending());
-        final List<MovieEntity> movies = files.stream()
-            .map(service::parseFileToJson)
-            .map(service::parseJsonToDto)
+        final List<Optional<MovieEntity>> movies = files.stream()
+            .map(service::processTMDB)
+            .map(Optional::get)
             .map(service::persistDtoTMDB)
             .toList();
-        return proxy().craftResponse(movies, pageConfig);
+        return new ResponseEntity<>(movies, HttpStatus.OK); //proxy().craftResponse(movies, pageConfig);
     }
 
     //todo: remove this in production
@@ -191,7 +190,9 @@ public class MovieController extends MasterController
     @DeleteMapping("del/all")
     public ResponseEntity<?> deleteAll() {
         service.deleteAll();
-        return new ResponseEntity<>("All movies have been successfully deleted", HttpStatus.OK);
+        final List<MovieEntity> voidList = List.of();
+        return proxy().craftResponseLog(
+            "All movies have been successfully deleted", voidList);
     }
 
 }
