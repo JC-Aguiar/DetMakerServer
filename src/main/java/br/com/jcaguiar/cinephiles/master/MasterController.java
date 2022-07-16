@@ -85,6 +85,7 @@ public abstract class MasterController<
      * @param entity The entity to be mapped to the response DTO.
      * @return The response object.
      */
+    @ControllerProcess
     public RESPONSE parseToResponseDto(ENTITY entity) {
         return modelMapper.map(entity, (Type) responseClass);
     }
@@ -95,6 +96,7 @@ public abstract class MasterController<
      * @param response The response object that is returned from the API call.
      * @return The entity that was mapped from the response.
      */
+    @ControllerProcess
     public ENTITY parseToEntity(RESPONSE response) {
         return modelMapper.map(response, (Type) entityClass);
     }
@@ -105,11 +107,13 @@ public abstract class MasterController<
      * @param request The request object that is being mapped to an entity.
      * @return The mapped entity.
      */
+    @ControllerProcess
     public ENTITY parseToEntity(REQUEST request) {
         return modelMapper.map(request, (Type) entityClass);
     }
 
     //TODO: TESTE
+    @ControllerProcess
     public ResponseEntity<?> craftResponse(
         @NotNull List<ENTITY> entityList,
         @NotNull Pageable pageConfig) {
@@ -120,29 +124,32 @@ public abstract class MasterController<
         return new ResponseEntity<>(responsePage, HttpStatus.OK);
     }
 
+    @ControllerProcess
     public ResponseEntity<?> craftResponsePage(
         @NotNull ProcessLine<ENTITY> processEntity,
         @NotNull Pageable pageConfig) {
-        final MasterProcessPage<ENTITY> result = new MasterProcessPage(
-            List.of(processEntity), pageConfig);
+        final MasterProcessPage<ENTITY> result = new MasterProcessPage(List.of(processEntity));
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
+    @ControllerProcess
     public ResponseEntity<ENTITY> craftResponsePage(
         @NotNull List<ProcessLine<ENTITY>> processEntity,
         @NotNull Pageable pageConfig) {
-        final MasterProcessPage<ENTITY> result = new MasterProcessPage(processEntity, pageConfig);
+        final MasterProcessPage<ENTITY> result = new MasterProcessPage(processEntity);
         return new ResponseEntity(result, HttpStatus.OK);
     }
 
+    @ControllerProcess
     public ResponseEntity<?> craftResponsePage(@NotNull Page<ENTITY> entityPage) {
         final Page<?> responsePage = entityPage.map(this::parseToResponseDto);
         return new ResponseEntity<>(responsePage, HttpStatus.OK);
     }
 
+    @ControllerProcess
     public ResponseEntity<?> craftResponseLog(
         @NotBlank String message,
-        @NotNull List<ProcessLine<ENTITY>> processEntity) {
+        @NotNull List<ENTITY> processEntity) {
         final MasterProcessLog<?> result = new MasterProcessLog(processEntity, message);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
@@ -163,7 +170,7 @@ public abstract class MasterController<
     //GET-ONE (by ID)
     // A method that returns a specific entity by a given ID.
     //TODO: não deveria retornar uma Paginação usando também os atributos itens e page?
-    protected ResponseEntity<?> getOne(@NotNull ID id) {
+    public ResponseEntity<?> getOne(@NotNull ID id) {
         final ENTITY entity = (ENTITY) service.findById(id);
         final RESPONSE dto = modelMapper.map(entity, (Type) responseClass);
         return new ResponseEntity<>(dto, HttpStatus.OK);

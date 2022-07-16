@@ -17,12 +17,20 @@ public class HandlerException {
     public ResponseEntity<?> mainHandler(RuntimeException exception, WebRequest request) {
         String message = "DEFAULT ERROR MESSAGE";
         HttpStatus status = HttpStatus.BAD_REQUEST;
-//        switch(exception.getCause().getClass().toString()) {
-//            case "NoSuchElementException"    -> {
-//                message = "Sorry. We couldn't find what you are looking for..."; //TODO: NOT WORKING!
-//                status = HttpStatus.NOT_FOUND;
-//            }
-//        };
+        switch(exception.getCause().getClass().getSimpleName()) { //TODO: WORKING??!
+            case "NoSuchElementException" -> {
+                message = "Sorry. We couldn't find what you are looking for...";
+                status = HttpStatus.NOT_FOUND;
+            }
+            case "ConstraintViolationException" -> {
+                message = "Your request violates one or more Database rules. Example: duplicated unique keys.";
+                status = HttpStatus.CONFLICT;
+            }
+            case "DuplicatedRecordException" -> {
+                message = "The record you want to save in the Database already exist.";
+                status = HttpStatus.CONFLICT;
+            }
+        };
         return new ResponseEntity<>(message, status);
     }
 

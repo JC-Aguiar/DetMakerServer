@@ -4,7 +4,7 @@ import javax.validation.constraints.NotBlank;
 
 public class ProcessException extends RuntimeException {
 
-    final static String MESSAGE = "Process already failed";
+    final static String MESSAGE = "Internal error. Process has failed   ";
 
     public ProcessException() {
         super(MESSAGE);

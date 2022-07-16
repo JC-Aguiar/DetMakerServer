@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import javax.validation.constraints.NotBlank;
@@ -18,7 +19,7 @@ import javax.validation.constraints.NotNull;
 import java.util.Date;
 import java.util.Optional;
 
-@Service
+@Component
 public class JwtAuthenticationService {
 
     @Autowired

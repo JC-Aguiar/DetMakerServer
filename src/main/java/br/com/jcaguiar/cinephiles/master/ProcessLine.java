@@ -50,13 +50,16 @@ public class ProcessLine<OBJ> {
     }
 
     public static ProcessLine error(@NotNull Instant startTime, @NotBlank String cause) {
-        return new ProcessLine<>(cause, convertTimeToDuration(startTime));
+        return new ProcessLine<>(handleMessage(cause), convertTimeToDuration(startTime));
     }
 
     public static ProcessLine error(@NotNull Instant startTime, Exception e) {
-        e.printStackTrace();
         final String message = NestedExceptionUtils.getMostSpecificCause(e).getMessage();
-        return new ProcessLine<>(message, convertTimeToDuration(startTime));
+        return new ProcessLine<>(handleMessage(message), convertTimeToDuration(startTime));
+    }
+
+    private static String handleMessage(@NotBlank String message) {
+        return message.replace("\n", ". ");
     }
 
     private static Duration convertTimeToDuration(@NotNull Instant startTime) {
@@ -67,8 +70,8 @@ public class ProcessLine<OBJ> {
         return !error;
     }
 
-    public OBJ getObject() {
-        return object.orElseThrow();
+    public Object getObject() {
+        return object.orElseThrow(); //TODO: verify
     }
 
     public boolean isObjectPresent() {

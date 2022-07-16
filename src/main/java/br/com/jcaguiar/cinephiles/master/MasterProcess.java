@@ -1,11 +1,13 @@
 package br.com.jcaguiar.cinephiles.master;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.google.common.collect.Tables;
 import com.google.common.collect.TreeBasedTable;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.PageImpl;
@@ -20,58 +22,55 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Setter
 @Getter
+@NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public abstract class MasterProcess<OBJ> {
 
     final Map<Integer, String> log = new HashMap<>();
-    final StatusTypes status;
+    StatusTypes status = StatusTypes.EMPTY;
     enum StatusTypes {
         SUCCESSES,
         PARCIAL,
         FAIL,
         EMPTY
     }
+    @JsonIgnore
+    int errorCount = 0;
+
+    public MasterProcess(@NotNull ProcessLine process) {
+        addProcess(process);
+        checkFinalStatus();
+    }
 
     public MasterProcess(@NotNull List<ProcessLine> processes) {
-//        this.log = checkContent(processes) ? HashBasedTable.create() : null;
-        this.status = validadeProcesses(processes);
+        addProcess(processes);
+        checkFinalStatus();
     }
 
-    public MasterProcess(@NotNull List<ProcessLine> processes, @NotNull Pageable pageable) {
-//        this.log = checkContent(processes) ? HashBasedTable.create() : null;
-        this.status = validadeProcesses(processes);
+    public MasterProcess<?> addProcess(@NotNull ProcessLine<?> process) {
+        this.log.put(this.log.size(), process.getLog());
+        if(!process.isOk()) errorCount++;
+        return this;
     }
 
-    private boolean checkContent(@NotNull List<ProcessLine> processes) {
-        final int cont = processes.stream()
-            .filter(ProcessLine::isOk)
-            .filter(ProcessLine::isObjectPresent)
-            .toList().size();
-        return cont > 0;
+    public MasterProcess<?> addProcess(@NotNull List<ProcessLine> process) {
+        process.forEach(this::addProcess);
+        return this;
     }
 
-    private StatusTypes validadeProcesses(@NotNull List<ProcessLine> processes) {
-        if(this.log == null) return StatusTypes.EMPTY;
-        final int errorCount = populateAndContErrors(processes);
-        return checkFinalStatus(processes.size(), errorCount);
-    }
-
-    private int populateAndContErrors(@NotNull List<ProcessLine> processes) {
-        final AtomicInteger errorCont = new AtomicInteger();
-        processes.stream().forEach(p -> {
-            this.log.put(this.log.size(), p.getLog());
-            if(!p.isOk()) errorCont.getAndIncrement();
-        });
-        return errorCont.get();
-    }
-
-    private StatusTypes checkFinalStatus(int lines, int errorCont) {
-        if(errorCont == 0) {
-            return StatusTypes.SUCCESSES;}
+    private void checkFinalStatus() {
+        if(log.isEmpty()) {
+            status = StatusTypes.EMPTY;
+            return;
+        };
+        if(errorCount == 0) {
+            status = StatusTypes.SUCCESSES;
+        }
         else {
-            return (errorCont == lines) ?
+            status = (errorCount >= log.size()) ?
                 StatusTypes.FAIL :
-                StatusTypes.PARCIAL;}
+                StatusTypes.PARCIAL;
+        }
     }
 
 //    public static MasterProcess<?> of(@NotNull List<ServiceProcess> processes) {
@@ -94,9 +93,9 @@ public abstract class MasterProcess<OBJ> {
 //        this.result = new PageImpl<OBJ>(list);
 //    }
 
-    protected static List<?> getProcessContent(@NotNull List<ProcessLine> processes) {
+    protected static List<Object> getProcessContent(@NotNull List<ProcessLine> processes) {
         return processes.stream()
-            .filter(ProcessLine::isOk)
+            .filter(ProcessLine::isOk) //TODO: revisar lógica!
             .map(ProcessLine::getObject)
             .toList();
     }

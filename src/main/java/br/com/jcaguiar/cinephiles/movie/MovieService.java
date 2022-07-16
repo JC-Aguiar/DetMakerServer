@@ -4,12 +4,11 @@ import br.com.jcaguiar.cinephiles.company.ProducerEntity;
 import br.com.jcaguiar.cinephiles.company.ProducerService;
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
 import br.com.jcaguiar.cinephiles.master.MasterService;
-import br.com.jcaguiar.cinephiles.master.ProcessLine;
-import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import br.com.jcaguiar.cinephiles.util.Download;
 import br.com.jcaguiar.cinephiles.util.ServiceProcess;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +29,7 @@ import java.time.Instant;
 import java.util.*;
 
 @Service
+@ServiceProcess
 public class MovieService extends MasterService<Integer, MovieEntity, MovieService> {
 
     @Autowired @Getter
@@ -65,63 +65,75 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         this.posterRepository = postersRepository;
     }
 
-    @ServiceProcess
+
     public Page<MovieEntity> getMoviesByGenre
     (@NotNull GenreEnum genre, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findByGenres(genre, pageable));
     }
 
-    @ServiceProcess
+
     public Page<MovieEntity> getMoviesByExample
     (@NotNull Example<MovieEntity> movieEx, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findAll(movieEx, pageable));
     }
 
-    @ServiceProcess
+
     public Page<MovieEntity> getMoviesByTitle
     (@NotBlank String title, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findByTitle(title, pageable));
     }
 
-    @ServiceProcess
+
     public Page<MovieEntity> getMoviesBySynopsis
     (@NotBlank String synopsis, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findBySynopsis(synopsis, pageable));
     }
 
-    @ServiceProcess
+
     public Page<MovieEntity> getMoviesByTextLike
     (@NotBlank String text, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findByKeyword(text, pageable));
     }
 
-    @ServiceProcess
+
     public Page<MovieEntity> getMoviesByActor
     (@NotBlank String actor, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findByActorsLike(actor, pageable));
     }
 
-    @ServiceProcess
+
     public Page<MovieEntity> getMoviesByDirector
     (@NotBlank String director, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findByDirectorsLike(director, pageable));
     }
 
-    @ServiceProcess
+
     public Page<MovieEntity> getMoviesByProducer
     (@NotBlank String producer, @NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findByProducersLike(producer, pageable));
     }
 
-    //TODO: FINISH
-    @ServiceProcess
-    public MovieEntity addOne(@NotNull MovieModel model) {
+
+    public Optional<MovieEntity> addOne(@NotNull MovieModel model) {
         final MovieEntity movie = (MovieEntity) model;
-        return dao.save(movie);
+        return Optional.of(dao.save(movie));
     }
 
-    @ServiceProcess
-    public Map<String, Object> filterJsonTMDB(@NotNull Map<String, Object> file) {
+
+    public Optional<MovieEntity> addOne(@NotNull MovieEntity movie) {
+        return Optional.of(dao.save(movie));
+    }
+
+    public Optional<MovieDtoTMDB> processTMDB(@NotNull Map<String, Object> file) {
+        return parseMapToDto(filterMapTMDB(file));
+    }
+
+    public Optional<MovieDtoTMDB> processTMDB(@NotNull MultipartFile file) {
+        return parseJsonToDto(parseFileToJson(file).get());
+    }
+
+
+    public Map<String, Object> filterMapTMDB(@NotNull Map<String, Object> file) {
         // List containing the text values. This removes unnecessary key/value from the given map/json
         final List<Object> values = TMDB_KEYS.stream().map(file::remove).toList();
         // The filtered map/json with only useful key/values.
@@ -133,39 +145,86 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         return moviesJson;
     }
 
-    @ServiceProcess
-    public MovieDtoTMDB parseMapToDto(@NotNull Map<String, Object> file) {
-        final String stringFile = gson.toJson(file);
-        return gson.fromJson(stringFile, MovieDtoTMDB.class);
+
+    public Optional<MovieDtoTMDB> parseMapToDto(@NotNull Map<String, Object> file) {
+//        final Instant startTime = Instant.now();
+//        try {
+            final String stringFile = gson.toJson(file);
+            final MovieDtoTMDB dtoTMDB = gson.fromJson(stringFile, MovieDtoTMDB.class);
+            return Optional.of(dtoTMDB);
+//        } catch (JsonSyntaxException e) {
+//            return Optional.empty();
+//        }
     }
 
-    @ServiceProcess
+
+
+
     @SneakyThrows
-    public JsonObject parseFileToJson(@NotNull MultipartFile file) {
+    public Optional<JsonObject> parseFileToJson(@NotNull MultipartFile file) {
         final String jsonString = new String(file.getBytes(), StandardCharsets.UTF_8);
-        return gson.fromJson(jsonString, JsonObject.class);
+        final JsonObject json = gson.fromJson(jsonString, JsonObject.class);
+        return Optional.of(json);
+//        final Instant startTime = Instant.now();
+//        try {
+//            final String jsonString = new String(file.getBytes(), StandardCharsets.UTF_8);
+//            final JsonObject json = gson.fromJson(jsonString, JsonObject.class);
+//            return ProcessLine.success(startTime, json);
+//        } catch (IOException e) {
+//            return ProcessLine.error(startTime, e);
+//        }
     }
 
-    @ServiceProcess
-    public MovieDtoTMDB parseJsonToDto(@NotNull JsonObject json) {
-        return new Gson().fromJson(json, MovieDtoTMDB.class); //TODO: new Gson its really need here?
+
+    public Optional<MovieDtoTMDB> parseJsonToDto(@NotNull JsonObject json) {
+        return Optional.of(gson.fromJson(json, MovieDtoTMDB.class));
+//        final Instant startTime = Instant.now();
+//        try {
+//            json.checkStatus();
+//            final JsonObject jsonObj = json.compareAndGet(JsonObject.class);
+//            return proxy().parseJsonToDto(jsonObj);
+//            final MovieDtoTMDB movieDto = proxy().parseJsonToDto(jsonObj);
+//            return ProcessLine.success(startTime, movieDto);
+//        } catch (Exception e) {
+//            return ProcessLine.error(startTime, e);
+//        }
     }
 
-    @ServiceProcess
+//
+//    //MovieDtoTMDB
+//    private MovieDtoTMDB parseJsonToDto(@NotNull JsonObject json) {
+//        return new Gson().fromJson(json, MovieDtoTMDB.class);
+//    }
+
+
     @SneakyThrows
-    public MovieEntity persistDtoTMDB(@NotNull MovieDtoTMDB movieDto) {
+    public Optional<MovieEntity> persistDtoTMDB(@NotNull MovieDtoTMDB movieJson) {
+          return    persistDtoTMDB(movieJson, true);
+//        final Instant startTime = Instant.now();
+//        try {
+//            movieJson.checkStatus();
+//            final MovieDtoTMDB movieDto = movieJson.compareAndGet(MovieDtoTMDB.class);
+//            final MovieEntity movie = persistDtoTMDB(movieDto);
+//            return ProcessLine.success(startTime, movie);
+//        } catch (Exception e) {
+//            return ProcessLine.error(startTime, e);
+//        }
+    }
+
+    private Optional<MovieEntity> persistDtoTMDB(@NotNull MovieDtoTMDB movieJson, boolean ignore)
+    throws ParseException, IOException {
         // Single attributes
-        final String title = movieDto.getTitle();
-        final String synopsis = movieDto.getOverview();
-        final String tagline = movieDto.getTagline();
+        final String title = movieJson.getTitle();
+        final String synopsis = movieJson.getOverview();
+        final String tagline = movieJson.getTagline();
         final Date premier = new SimpleDateFormat("yyyy-MM-dd")
-            .parse(movieDto.getRelease_date());
-        final long runTime = Long.parseLong(movieDto.getRuntime());
+            .parse(movieJson.getRelease_date());
+        final long runTime = Long.parseLong(movieJson.getRuntime());
         final Duration duration = Duration.ofMinutes(runTime);
         // Poster imagem from origin (URL + File)
         final String postersString =
             "https://image.tmdb.org/t/p/w600_and_h900_bestv2"
-            + movieDto.getPoster_path();
+            + movieJson.getPoster_path();
         final byte[] poster = Download.from(postersString); //todo: link builder OK. But the download system is failing.
         // Poster
         final var teste = getPosterRepository();
@@ -175,14 +234,14 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
                 .image(poster)
                 .build());
         // Genres
-        final List<String> possibleGenres = movieDto.getGenres()
+        final List<String> possibleGenres = movieJson.getGenres()
             .stream()
             .map(MovieDtoTMDBGenre::getName)
             .toList();
         final List<GenreEntity> genres = possibleGenres.stream()
             .map(g -> getGenreService().loadOrSave(g)).toList();
         // Producers
-        final List<String> possibleProducers = movieDto.getProduction_companies()
+        final List<String> possibleProducers = movieJson.getProduction_companies()
             .stream()
             .map(MovieDtoTMDBProductors::getName)
             .toList();
@@ -198,13 +257,23 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
             .build();
         movie.addGenres(genres).addProducers(producers).addPosters(posters); //TODO: this need bee done in a service level?
         //TODO: posters aren't coming with movies_id relationship
-        return dao.saveAndFlush(movie);
+        return addOne(movie);
     }
 
     //todo: remove this in production
-    @ServiceProcess
-    public void deleteAll() {
+
+    public Optional<MovieEntity> deleteAll() {
         dao.deleteAll();
+        return Optional.empty();
+//        final Instant startTime = Instant.now();
+//        try {
+//            dao.deleteAll();
+//            return ProcessLine.success(startTime, 0);
+//        } catch(Exception e) {
+//            e.printStackTrace();;
+//            return ProcessLine.error(startTime, e);
+//        }
+
     }
 
 }

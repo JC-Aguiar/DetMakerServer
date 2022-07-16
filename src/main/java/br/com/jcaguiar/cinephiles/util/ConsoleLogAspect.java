@@ -1,19 +1,20 @@
 package br.com.jcaguiar.cinephiles.util;
 
-import br.com.jcaguiar.cinephiles.master.MasterProcessPage;
-import br.com.jcaguiar.cinephiles.master.ProcessLine;
+import br.com.jcaguiar.cinephiles.master.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.Constructor;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -23,9 +24,18 @@ import java.util.stream.Collectors;
 public class ConsoleLogAspect {
 
     final public static Logger LOGGER = LogManager.getLogger("CONSOLE LOG");
-    final private static String MESSAGE = "%s::%s(%s)";
-    final private List<ProcessLine<?>> processLines = new ArrayList<>();
-    final private Map<String, ProcessLine> processMap = new HashMap<>();
+    final public static Logger CONTROLLER = LogManager.getLogger("CONTROLLER LOG");
+    final public static Logger SERVICER = LogManager.getLogger("SERVICE LOG");
+    final private static String LOG_MESSAGE = "%s::%s(%s)";
+    final private static String FULL_LOG_MESSAGE =
+        """
+        Process Result: {}
+        Full Process: {
+            {}
+        }
+        """;
+    final private List<ProcessLine> processLines = new ArrayList<>();
+//    final private Map<String, ProcessLine> processMap = new HashMap<>();
 
     @Pointcut("within(br.com.jcaguiar.cinephiles..*)")
     public void log() {
@@ -34,6 +44,11 @@ public class ConsoleLogAspect {
     @Pointcut("within(br.com.jcaguiar.cinephiles.security..*)")
     public void webFilter() {
     }
+
+//    @Pointcut("@within(org.springframework.stereotype.Service)")
+//    public void service() {
+//
+//    }
 
     @Before("log()")
     public void identify(JoinPoint joinPoint) {
@@ -58,8 +73,7 @@ public class ConsoleLogAspect {
                       .append(paramitersValues.get(i))
                       .append(args);
         }
-        LOGGER.info(String.format(
-            MESSAGE,
+        LOGGER.info(String.format(LOG_MESSAGE,
             classe, method.getName(), parameters.toString())
         );
     }
@@ -79,77 +93,114 @@ public class ConsoleLogAspect {
 //        return procced;
 //    }
 
-    @Around("@annotation(ServiceProcess)")
+    //SERVICE ASPECT
+    @Around("@within(org.springframework.stereotype.Service)")
     public Object processLine(ProceedingJoinPoint joinPoint) throws Throwable {
         final Instant startTime = Instant.now();
-
-        final var signature = (MethodSignature) joinPoint.getSignature();
-        final var classe = getMethodSimpleName(signature);
-        final var method = signature.getMethod();
-        final var returnType = signature.getReturnType();
-//      processMap.put(method.getName(), ProcessLine.success(startTime, action));
-
+        final MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        final Method method = signature.getMethod();
         ProcessLine<?> process = null;
         try {
             final Object action = joinPoint.proceed();
             process = ProcessLine.success(startTime, action);
             processLines.add(process);
             return action;
-        } catch (Exception e) { //TODO: exception already been handled in the class... change that?
+        } catch (Exception e) {
+//            e.printStackTrace();
+            SERVICER.error("SERVICE ERROR/EXCEPTION");
             process = ProcessLine.error(startTime, e);
             processLines.add(process);
-            final Class aClass = Class.forName(classe);
-            final Constructor constructor = aClass.getConstructor();
-            return constructor.newInstance() ; //Optional.empty();
+            final String returnedType = ((MethodSignature) joinPoint.getSignature())
+                .getReturnType()
+                .getSimpleName();
+            return compareClassNameAndGetEmptyInstance(returnedType);
         }
         finally {
-            LOGGER.info(method.getName() + " - " + process.getLog());
+            SERVICER.info(method.getName() + " - " + process.getLog());
         }
     }
 
-    /**
-     * CONTROLLER PROCESS
-     * Todos Controllers retornam uma ResponseEntity
-     * Todos os Services retornam um Objeto Entidade ou DTO
-     * @param joinPoint
-     * @return
-     * @throws Throwable
-     */
+    //WORKING
+//    @AfterThrowing(pointcut = "@annotation(ServiceProcess)", throwing = "ex")
+//    public void processLineException(Exception ex) throws Throwable {
+//        final Instant startTime = Instant.now();
+//        ProcessLine<?> process = null;
+//        LOGGER.info("TESTE EXCEPTION!");
+//        process = ProcessLine.error(startTime, ex);
+//        LOGGER.info(process.getLog());
+//    }
 
-    @Around("@annotation(ControllerProcess)")
+    //CONTROLLER ASPECT
+    @Around("@within(org.springframework.stereotype.Controller)")
     public Object controllerService(ProceedingJoinPoint joinPoint) throws Throwable {
-//        final var args = joinPoint.getArgs();
-//        final var algo = ((MethodSignature) joinPoint.getSignature()).getMethod().getReturnType();
-//        final List<ProcessLine> action = (List<ProcessLine>) joinPoint.proceed();
-//        return new MasterProcessPage<List<ProcessLine>>(action, pageConfig);
-        final Object action = joinPoint.proceed();
-        final Pageable pageConfig = PageRequest.of(0, 12, Sort.by("id").ascending());
-        final MasterProcessPage<List<?>> resultProcess = new MasterProcessPage(processLines,pageConfig);
-        LOGGER.info("Process Result: {} - Full Process:\n\t\t\t\t\t\t{}",
-            resultProcess.getStatus(),
-            processLines.stream().map(ProcessLine::getLog).collect(Collectors.joining("\n\t\t\t\t\t\t"))
-        );
+        return restControllerService(joinPoint);
+    }
+
+    //CONTROLLER ASPECT
+    @Around("@within(org.springframework.web.bind.annotation.RestController)")
+    public Object restControllerService(ProceedingJoinPoint joinPoint) throws Throwable {
+        final Instant startTime = Instant.now();
+        final MasterProcessPage<List<?>> resultProcess = new MasterProcessPage<>();
+        HttpStatus status = HttpStatus.OK;
+        try {
+            joinPoint.proceed();
+            resultProcess.addProcess(processLines);
+        } catch (Exception e) { //NoSuchElementException, DataIntegrityViolationException
+            e.printStackTrace();
+            resultProcess.addProcess(processLines);
+            CONTROLLER.error("Exception occur in the Controller level! See the Stack-Trace or in the Log-Summary.");
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+            resultProcess.addProcess(ProcessLine.error(startTime, e));
+        }
+        fullProcessMessage(resultProcess);
         processLines.clear();
-        return action;
+        return new ResponseEntity<>(resultProcess, status);
     }
 
-
-
-    @AfterThrowing(value = "@annotation(br.com.jcaguiar.cinephiles.util.ConsoleLog)", throwing = "exception")
-    public void printConsoleLogException(JoinPoint joinPoint, Exception exception) {
-        final MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        final String className = getMethodSimpleName(signature);
-        LOGGER.error(
-            "{}::{} --> {}",
-            className,
-            exception.getClass().getSimpleName(),
-            exception.getMessage());
+    private Object compareClassNameAndGetEmptyInstance(@NotBlank String text) {
+        final String textL = text.toLowerCase(Locale.ROOT);
+        if (textL.contains("optional")) return Optional.empty();
+        if (textL.contains("page")) return Page.empty();
+        if (textL.contains("list")) return List.of();
+        if (textL.contains("map")) return Map.of();
+        return Optional.empty();
     }
 
-    private static String getMethodSimpleName(MethodSignature signature)
-    {
+    private void fullProcessMessage(@NotNull MasterProcess resultProcess) {
+        CONTROLLER.info(
+            FULL_LOG_MESSAGE,
+            resultProcess.getStatus(),
+            processLines.stream()
+                .map(ProcessLine::getLog)
+                .collect(Collectors.joining("\n\t"))
+            );
+    }
+
+    private static String getMethodSimpleName(MethodSignature signature)  {
         final String[] className = signature.getDeclaringType().toString().split("\\.");
         return className[(className.length - 1)];
     }
+
+//} catch (NoSuchElementException e) {
+//    e.printStackTrace();
+//final Class returnType = ((MethodSignature) joinPoint.getSignature()).getReturnType();
+//final String name = returnType.getSimpleName();
+//    LOGGER.info("returnType: " + returnType);
+//    LOGGER.info("name: " + name);
+//    return compareClassNameAndGetEmptyInstance(name);
+//    } finally {
+//    processLines.clear();
+//    }
+
+//    @AfterThrowing(value = "@annotation(br.com.jcaguiar.cinephiles.util.ConsoleLog)", throwing = "exception")
+//    public void printConsoleLogException(JoinPoint joinPoint, Exception exception) {
+//        final MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+//        final String className = getMethodSimpleName(signature);
+//        LOGGER.error(
+//            "{}::{} --> {}",
+//            className,
+//            exception.getClass().getSimpleName(),
+//            exception.getMessage());
+//    }
 
 }
