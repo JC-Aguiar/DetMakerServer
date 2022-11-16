@@ -1,5 +1,6 @@
 package br.com.jcaguiar.cinephiles.access;
 
+import br.com.jcaguiar.cinephiles.master.MasterServiceResult;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -8,21 +9,21 @@ import lombok.experimental.SuperBuilder;
 
 import javax.persistence.MappedSuperclass;
 import javax.validation.constraints.NotBlank;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
-@NoArgsConstructor
 @SuperBuilder
-@FieldDefaults(level = AccessLevel.PRIVATE)
 @MappedSuperclass
-public class AccessModel {
+@NoArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE)
+public class AccessLogModel {
 
-    @NotBlank(message = "'IP' cant be empty")
-    String ip;
-
-    @NotBlank(message = "'O.S' cant be empty")
-    String os;
-
-    @NotBlank(message = "'Device' cant be empty")
-    String device;
+    String name;
+    String status;
+    String log;
+    Instant startTime;
+    Long duration;
 
 }

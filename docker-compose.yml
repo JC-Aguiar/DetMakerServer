@@ -1,0 +1,20 @@
+version: '3'
+volumes:
+    - ./docker/volume/postgresql:/var/lib/postgresql/data
+services:
+    cinephiles-server:
+        build:
+            context: ./
+            dockerfile: Dockerfile
+        image: cinephilos01
+        ports:
+            -   "8017:8017"
+    db:
+        image: postgres:latest
+        ports:
+            -   "5432:5432"
+        environment:
+            POSTGRES_DB: "cinephiles"
+            POSTGRES_USER: "postgres"
+            POSTGRES_PASSWORD: 170017
+

@@ -1,9 +1,7 @@
 package br.com.jcaguiar.cinephiles.master;
 
 import br.com.jcaguiar.cinephiles.exception.DuplicatedRecordException;
-import br.com.jcaguiar.cinephiles.movie.MovieEntity;
 import br.com.jcaguiar.cinephiles.util.ConsoleLog;
-import br.com.jcaguiar.cinephiles.util.ServiceProcess;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -18,7 +16,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Service
-@ServiceProcess
 public abstract class MasterService<
     ID, ENTITY, THIS extends  MasterService> {
 
@@ -65,5 +62,12 @@ public abstract class MasterService<
     @ConsoleLog
     public Page<?> findAll(@NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findAll(pageable));
+    }
+
+    //todo: remove this in production
+    @ConsoleLog
+    public Optional<ENTITY> deleteAll() {
+        dao.deleteAll();
+        return Optional.empty();
     }
 }

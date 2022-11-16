@@ -1,11 +1,15 @@
 package br.com.jcaguiar.cinephiles.util;
 
-import br.com.jcaguiar.cinephiles.master.*;
+import br.com.jcaguiar.cinephiles.master.MasterControllerResult;
+import br.com.jcaguiar.cinephiles.master.MasterServiceResult;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.*;
+import org.aspectj.lang.annotation.Around;
+import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
+import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -13,54 +17,41 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.lang.reflect.Method;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Aspect
 @Component
 public class ConsoleLogAspect {
 
+    MethodSignature signature;
+    String className;
+    Method methodName;
+    String processName;
+    List<String> paramitersType;
+    List<String> paramitersValues;
+    final private List<MasterServiceResult> servicesResult = new ArrayList<>();
     final public static Logger LOGGER = LogManager.getLogger("CONSOLE LOG");
     final public static Logger CONTROLLER = LogManager.getLogger("CONTROLLER LOG");
     final public static Logger SERVICER = LogManager.getLogger("SERVICE LOG");
-    final private static String LOG_MESSAGE = "%s::%s(%s)";
-    final private static String FULL_LOG_MESSAGE =
-        """
-        Process Result: {}
-        Full Process: {
-            {}
-        }
-        """;
-    final private List<ProcessLine> processLines = new ArrayList<>();
-//    final private Map<String, ProcessLine> processMap = new HashMap<>();
+    final private static String LOG_FORMAT = "%s::%s(%s)";
 
-    @Pointcut("within(br.com.jcaguiar.cinephiles..*)")
-    public void log() {
-    }
-
-    @Pointcut("within(br.com.jcaguiar.cinephiles.security..*)")
-    public void webFilter() {
-    }
-
-//    @Pointcut("@within(org.springframework.stereotype.Service)")
-//    public void service() {
-//
-//    }
+    @Pointcut("(execution(* br.com.jcaguiar..*(..))) && !within(is(FinalType))")
+    public void log() {    }
 
     @Before("log()")
     public void identify(JoinPoint joinPoint) {
-        final Instant startTime = Instant.now();
-        final var signature = (MethodSignature) joinPoint.getSignature();
-        final var classe = getMethodSimpleName(signature);
-        final var method = signature.getMethod();
-        final var paramitersType = Arrays
-            .stream(method.getParameterTypes())
+        signature = (MethodSignature) joinPoint.getSignature();
+        className = getMethodSimpleName(signature);
+        methodName = signature.getMethod();
+        processName = className + methodName.getName() + LocalDateTime.now().toString();
+        paramitersType = Arrays
+            .stream(methodName.getParameterTypes())
             .map(type -> type != null ? type.getSimpleName() : "NULL")
             .toList();
-        final var paramitersValues = Arrays
+        paramitersValues = Arrays
             .stream(joinPoint.getArgs())
             .map(obj -> obj != null ? obj.toString() : "NULL")
             .toList();
@@ -73,108 +64,89 @@ public class ConsoleLogAspect {
                       .append(paramitersValues.get(i))
                       .append(args);
         }
-        LOGGER.info(String.format(LOG_MESSAGE,
-            classe, method.getName(), parameters.toString())
-        );
+        LOGGER.info(String.format(LOG_FORMAT, className, methodName.getName(), parameters));
     }
 
-    @Before("webFilter()")
-    public void security(JoinPoint joinPoint) {
-        identify(joinPoint);
-    }
-
-//    @Around("@annotation(ConsoleLog)")
-//    public Object printConsoleLogBefore(ProceedingJoinPoint joinPoint) throws Throwable {
-//        final long startTime = System.currentTimeMillis();
-//        final Object procced = joinPoint.proceed();
-//        final long endTime = startTime - System.currentTimeMillis();
-//        System.out.println(String.format(
-//            "%s processed in %d ms", joinPoint.getSignature(), endTime));
-//        return procced;
-//    }
-
-    //SERVICE ASPECT
+    //SERVICE-LOG: @Service
     @Around("@within(org.springframework.stereotype.Service)")
-    public Object processLine(ProceedingJoinPoint joinPoint) throws Throwable {
+    public Object serviceAspect(ProceedingJoinPoint joinPoint) throws Throwable {
         final Instant startTime = Instant.now();
-        final MethodSignature signature = (MethodSignature) joinPoint.getSignature();
-        final Method method = signature.getMethod();
-        ProcessLine<?> process = null;
         try {
-            final Object action = joinPoint.proceed();
-            process = ProcessLine.success(startTime, action);
-            processLines.add(process);
-            return action;
+            final Object serviceAction = joinPoint.proceed();
+            servicesResult.add(MasterServiceResult.success(
+                className, methodName.getName(), startTime, serviceAction));
+            return serviceAction;
         } catch (Exception e) {
-//            e.printStackTrace();
-            SERVICER.error("SERVICE ERROR/EXCEPTION");
-            process = ProcessLine.error(startTime, e);
-            processLines.add(process);
+            e.printStackTrace();
+            servicesResult.add(MasterServiceResult.error(
+                className, methodName.getName(), startTime, e));
             final String returnedType = ((MethodSignature) joinPoint.getSignature())
-                .getReturnType()
-                .getSimpleName();
+                    .getReturnType()
+                    .getSimpleName();
             return compareClassNameAndGetEmptyInstance(returnedType);
         }
-        finally {
-            SERVICER.info(method.getName() + " - " + process.getLog());
-        }
     }
 
-    //WORKING
-//    @AfterThrowing(pointcut = "@annotation(ServiceProcess)", throwing = "ex")
-//    public void processLineException(Exception ex) throws Throwable {
-//        final Instant startTime = Instant.now();
-//        ProcessLine<?> process = null;
-//        LOGGER.info("TESTE EXCEPTION!");
-//        process = ProcessLine.error(startTime, ex);
-//        LOGGER.info(process.getLog());
-//    }
-
-    //CONTROLLER ASPECT
+    //CONTROLLER-LOG: @Controller
     @Around("@within(org.springframework.stereotype.Controller)")
-    public Object controllerService(ProceedingJoinPoint joinPoint) throws Throwable {
-        return restControllerService(joinPoint);
+    public Object controllerAspect(ProceedingJoinPoint joinPoint) throws Throwable {
+        return restControllerAspect(joinPoint);
     }
 
-    //CONTROLLER ASPECT
+    //CONTROLLER-LOG: @RestController
     @Around("@within(org.springframework.web.bind.annotation.RestController)")
-    public Object restControllerService(ProceedingJoinPoint joinPoint) throws Throwable {
+    public Object restControllerAspect(ProceedingJoinPoint joinPoint) throws Throwable {
         final Instant startTime = Instant.now();
-        final MasterProcessPage<List<?>> resultProcess = new MasterProcessPage<>();
+        final String controllerName = className + "." + methodName.getName();
+        final String controllerProcessName = processName;
         HttpStatus status = HttpStatus.OK;
+        MasterControllerResult controllerResult;
+        Object controllerAction = "";
+        String resultLog;
         try {
-            joinPoint.proceed();
-            resultProcess.addProcess(processLines);
-        } catch (Exception e) { //NoSuchElementException, DataIntegrityViolationException
+            controllerAction = joinPoint.proceed();
+            resultLog = MasterControllerResult.buildControllerLog(
+                controllerName,
+                servicesResult,
+                startTime,
+                null);
+            System.out.println(resultLog);
+            controllerResult = new MasterControllerResult(controllerAction, resultLog);
+            servicesResult.clear();
+        } catch (Exception e) {
+            resultLog = MasterControllerResult.buildControllerLog(
+                controllerName,
+                servicesResult,
+                startTime,
+                e);
+            System.out.println(resultLog);
             e.printStackTrace();
-            resultProcess.addProcess(processLines);
-            CONTROLLER.error("Exception occur in the Controller level! See the Stack-Trace or in the Log-Summary.");
             status = HttpStatus.INTERNAL_SERVER_ERROR;
-            resultProcess.addProcess(ProcessLine.error(startTime, e));
+            controllerResult = new MasterControllerResult(controllerAction, resultLog);
+            servicesResult.clear();
         }
-        fullProcessMessage(resultProcess);
-        processLines.clear();
-        return new ResponseEntity<>(resultProcess, status);
+        return new ResponseEntity<>(controllerResult, status);
     }
 
-    private Object compareClassNameAndGetEmptyInstance(@NotBlank String text) {
-        final String textL = text.toLowerCase(Locale.ROOT);
-        if (textL.contains("optional")) return Optional.empty();
-        if (textL.contains("page")) return Page.empty();
-        if (textL.contains("list")) return List.of();
-        if (textL.contains("map")) return Map.of();
+    private Object compareClassNameAndGetEmptyInstance(@NotBlank String className) {
+        final String lowerClassName = className.toLowerCase(Locale.ROOT);
+        if (lowerClassName.contains("optional")) return Optional.empty();
+        if (lowerClassName.contains("page")) return Page.empty();
+        if (lowerClassName.contains("list")) return List.of();
+        if (lowerClassName.contains("map")) return Map.of();
+        if (lowerClassName.contains("set")) return Set.of();
         return Optional.empty();
     }
 
-    private void fullProcessMessage(@NotNull MasterProcess resultProcess) {
-        CONTROLLER.info(
-            FULL_LOG_MESSAGE,
-            resultProcess.getStatus(),
-            processLines.stream()
-                .map(ProcessLine::getLog)
-                .collect(Collectors.joining("\n\t"))
-            );
-    }
+//    private void fullProcessMessage(@NotNull MasterProcessManager resultProcess) {
+//        CONTROLLER.info(
+//            FULL_LOG_MESSAGE,
+//            resultProcess.getStatus(),
+//            masterServiceLogs.stream()
+//                             .map(MasterServiceResult::getLog)
+//                             .collect(Collectors.joining("\n\t"))
+//            );
+//    }
 
     private static String getMethodSimpleName(MethodSignature signature)  {
         final String[] className = signature.getDeclaringType().toString().split("\\.");
@@ -189,7 +161,7 @@ public class ConsoleLogAspect {
 //    LOGGER.info("name: " + name);
 //    return compareClassNameAndGetEmptyInstance(name);
 //    } finally {
-//    processLines.clear();
+//    masterServiceLogs.clear();
 //    }
 
 //    @AfterThrowing(value = "@annotation(br.com.jcaguiar.cinephiles.util.ConsoleLog)", throwing = "exception")

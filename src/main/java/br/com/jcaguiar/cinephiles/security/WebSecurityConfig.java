@@ -28,12 +28,12 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     private AuthenticationService authService;
 
     @Autowired
-    private CustomAuthenticationProvider authProvider;
+    private AuthenticationController authProvider;
 
     @Autowired
     private JwtAuthenticationService jwtAuthService;
 
-    public static final Map<String, String> DOMAINS = new HashMap<>(){{
+    public static final Map<String, String> PROTECTED_DOMAINS = new HashMap<>(){{
         put("adm", "/adm/**");
         put("profile", "/profile/**");
     }};
@@ -50,8 +50,8 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
         //Defining rules for authorities, csrf + rest configuration and custom login filter (JWT)
         http.authorizeRequests()
-            .mvcMatchers(DOMAINS.get("adm")).hasAnyAuthority("ADMIN")
-            .mvcMatchers(DOMAINS.get("profile")).hasAnyAuthority("USER")
+            .mvcMatchers(PROTECTED_DOMAINS.get("adm")).hasAnyAuthority("ADMIN")
+            .mvcMatchers(PROTECTED_DOMAINS.get("profile")).hasAnyAuthority("USER")
             .mvcMatchers( HttpMethod.POST, "/login").permitAll()
             .anyRequest().permitAll()
             .and()
