@@ -5,10 +5,8 @@ import br.com.jcaguiar.cinephiles.company.ProducerService;
 import br.com.jcaguiar.cinephiles.enums.GenreEnum;
 import br.com.jcaguiar.cinephiles.master.MasterService;
 import br.com.jcaguiar.cinephiles.util.Download;
-import br.com.jcaguiar.cinephiles.util.ServiceProcess;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,11 +23,9 @@ import java.nio.charset.StandardCharsets;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.*;
 
 @Service
-@ServiceProcess
 public class MovieService extends MasterService<Integer, MovieEntity, MovieService> {
 
     @Autowired @Getter
@@ -169,9 +165,9 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
 //        try {
 //            final String jsonString = new String(file.getBytes(), StandardCharsets.UTF_8);
 //            final JsonObject json = gson.fromJson(jsonString, JsonObject.class);
-//            return ProcessLine.success(startTime, json);
+//            return MasterServiceLog.success(startTime, json);
 //        } catch (IOException e) {
-//            return ProcessLine.error(startTime, e);
+//            return MasterServiceLog.error(startTime, e);
 //        }
     }
 
@@ -184,9 +180,9 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
 //            final JsonObject jsonObj = json.compareAndGet(JsonObject.class);
 //            return proxy().parseJsonToDto(jsonObj);
 //            final MovieDtoTMDB movieDto = proxy().parseJsonToDto(jsonObj);
-//            return ProcessLine.success(startTime, movieDto);
+//            return MasterServiceLog.success(startTime, movieDto);
 //        } catch (Exception e) {
-//            return ProcessLine.error(startTime, e);
+//            return MasterServiceLog.error(startTime, e);
 //        }
     }
 
@@ -205,9 +201,9 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
 //            movieJson.checkStatus();
 //            final MovieDtoTMDB movieDto = movieJson.compareAndGet(MovieDtoTMDB.class);
 //            final MovieEntity movie = persistDtoTMDB(movieDto);
-//            return ProcessLine.success(startTime, movie);
+//            return MasterServiceLog.success(startTime, movie);
 //        } catch (Exception e) {
-//            return ProcessLine.error(startTime, e);
+//            return MasterServiceLog.error(startTime, e);
 //        }
     }
 
@@ -258,22 +254,6 @@ public class MovieService extends MasterService<Integer, MovieEntity, MovieServi
         movie.addGenres(genres).addProducers(producers).addPosters(posters); //TODO: this need bee done in a service level?
         //TODO: posters aren't coming with movies_id relationship
         return addOne(movie);
-    }
-
-    //todo: remove this in production
-
-    public Optional<MovieEntity> deleteAll() {
-        dao.deleteAll();
-        return Optional.empty();
-//        final Instant startTime = Instant.now();
-//        try {
-//            dao.deleteAll();
-//            return ProcessLine.success(startTime, 0);
-//        } catch(Exception e) {
-//            e.printStackTrace();;
-//            return ProcessLine.error(startTime, e);
-//        }
-
     }
 
 }

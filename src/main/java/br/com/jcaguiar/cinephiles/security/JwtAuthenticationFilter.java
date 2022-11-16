@@ -2,9 +2,9 @@ package br.com.jcaguiar.cinephiles.security;
 
 import br.com.jcaguiar.cinephiles.exception.AuthorizationHeaderException;
 import br.com.jcaguiar.cinephiles.exception.BearerTokenException;
-import br.com.jcaguiar.cinephiles.util.ConsoleLog;
 import br.com.jcaguiar.cinephiles.util.ConsoleLogAspect;
 import io.jsonwebtoken.JwtException;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,8 +16,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
+@Log4j2(topic = "JWT AUTHENTICATION FILTER")
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtAuthenticationService jwtService;
@@ -29,22 +31,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
     throws ServletException, IOException {
-        //TODO: System.out.println("JwtAuthenticationFilter");
         final String uri = request.getRequestURI();
-        final String endpoint = (String) Arrays.stream(uri.split("/"))
-                .filter(s -> !s.isBlank())
-                .toArray()[0];
-        //TODO: System.out.println("URI PATH: " + uri);
-        //TODO: System.out.println("END-POINT: " + endpoint);
-        final boolean restrictedAccess = WebSecurityConfig.DOMAINS.containsKey(endpoint);
-        //TODO: System.out.printf("ACCESS: %s \n", restrictedAccess ? "restricted" : "free");
-        try { authenticateToken(request); }
-        catch (AuthorizationHeaderException | JwtException | IllegalArgumentException e) {
+        final List<String> path = Arrays.stream(uri.split("/")).filter(s -> !s.isBlank()).toList();
+        final String endpoint = path.get(0);
+        final String parameters = String.join(",", path.subList(1, path.size()));
+        final boolean restrictedAccess = WebSecurityConfig.PROTECTED_DOMAINS.containsKey(endpoint);
+        log.info("Request URI: {}", uri);
+        log.info("Request Endpoint: {} {}", endpoint, parameters);
+        log.info("Request Access: {}", restrictedAccess ? "restricted" : "free");
+        try {
+            authenticateToken(request);
+        } catch (AuthorizationHeaderException | JwtException | IllegalArgumentException e) {
             if (restrictedAccess) { throw e; }
-            else { ConsoleLogAspect.LOGGER.error(e.getLocalizedMessage()); }
-        }
-        catch (Exception e) { throw e; }
-        finally { filterChain.doFilter(request, response); }
+            else { log.warn(e.getLocalizedMessage()); }
+        } finally { filterChain.doFilter(request, response); }
+    }
+
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return false;
+    }
+
+    @Override
+    protected boolean shouldNotFilterErrorDispatch() {
+        return false;
     }
 
     private void authenticateToken(HttpServletRequest request)

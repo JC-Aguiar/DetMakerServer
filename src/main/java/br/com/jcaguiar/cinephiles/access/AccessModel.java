@@ -1,7 +1,6 @@
 package br.com.jcaguiar.cinephiles.access;
 
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
