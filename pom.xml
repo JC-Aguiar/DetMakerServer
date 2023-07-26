@@ -1,22 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
 	<modelVersion>4.0.0</modelVersion>
+	<groupId>br.com.jcaguiar</groupId>
+	<artifactId>det-maker-api</artifactId>
+	<version>v1.0</version>
+	<name>cinephiles</name>
+	<description>
+		API back-end para o sistema Det-Maker usando Java 16 com Spring-Boot,
+		Spring Data, Spring Security, Spring OAP, com JJWT e banco H2 em arquivo local
+	</description>
+
+	<properties>
+		<java.version>16</java.version>
+	</properties>
+
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>2.6.7</version>
-		<relativePath/> <!-- lookup parent from repository -->
+		<relativePath/>
 	</parent>
-	<groupId>br.com.jcaguiar</groupId>
-	<artifactId>cinephiles</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name>cinephiles</name>
-	<description>back-end for beta movie and series show with Java Spring-Boot</description>
-	<properties>
-		<java.version>16</java.version>
-	</properties>
+
 	<dependencies>
+		<!-- Spring-Boot Framework -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
@@ -37,7 +45,7 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
-        <!-- https://mvnrepository.com/artifact/org.springframework.boot/spring-boot-devtools -->
+        <!-- Spring-Boot Devtools -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -45,31 +53,35 @@
 <!--            <scope>runtime</scope>-->
 <!--            <optional>true</optional>-->
         </dependency>
-        <!-- PostgSql -->
-        <dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<scope>runtime</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<optional>true</optional>
-		</dependency>
+		<!-- Spring-Boot Test -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<dependency>
-			<groupId>io.projectreactor</groupId>
-			<artifactId>reactor-test</artifactId>
-			<scope>test</scope>
-		</dependency>
+		<!-- Spring Security -->
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
+		</dependency>
+		<!-- Spring Boot Starter AOP -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+			<version>2.6.3</version>
+		</dependency>
+        <!-- Banco H2 -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<!-- Lombok -->
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
 		</dependency>
         <!-- JJWT -->
         <dependency>
@@ -77,17 +89,11 @@
             <artifactId>jjwt</artifactId>
             <version>0.9.1</version>
         </dependency>
-        <!-- Modelmapper -->
+        <!-- Modelmapper (conversor) -->
         <dependency>
             <groupId>org.modelmapper</groupId>
             <artifactId>modelmapper</artifactId>
             <version>3.0.0</version>
-        </dependency>
-        <!-- Spring Boot Starter AOP -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
-            <version>2.6.3</version>
         </dependency>
         <!-- OpenCSV -->
         <dependency>
@@ -101,43 +107,64 @@
             <artifactId>commons-fileupload</artifactId>
             <version>1.4</version>
         </dependency>
-        <!-- GSON -->
+        <!-- Gson -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.9.0</version>
         </dependency>
+		<!-- J-Unit  -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
             <version>5.8.2</version>
         </dependency>
-        <!-- GOOGLE GUAVA -->
+        <!-- Google Guava (utilidades) -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>31.1-jre</version>
         </dependency>
-        <!-- LOG4J 2 - CORE -->
+        <!-- Log4J 2 -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
             <version>2.17.2</version>
         </dependency>
-        <!-- LOG4J 2 - API -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
             <version>2.17.2</version>
         </dependency>
-        <!-- DISRUPTOR -->
-        <dependency>
-            <groupId>com.lmax</groupId>
-            <artifactId>disruptor</artifactId>
-            <version>3.4.4</version>
-        </dependency>
-
-
+		<!-- SSHJ -->
+		<dependency>
+			<groupId>com.hierynomus</groupId>
+			<artifactId>sshj</artifactId>
+			<version>0.35.0</version>
+		</dependency>
+		<!-- JSCH (SFTP) -->
+		<dependency>
+			<groupId>com.jcraft</groupId>
+			<artifactId>jsch</artifactId>
+			<version>0.1.55</version>
+		</dependency>
+		<!-- Apache Net TODO: confirmar se necessário -->
+		<dependency>
+			<groupId>commons-net</groupId>
+			<artifactId>commons-net</artifactId>
+			<version>3.8.0</version>
+		</dependency>
+		<!-- Apache POI (Excel) -->
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi</artifactId>
+			<version>5.2.3</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.poi</groupId>
+			<artifactId>poi-ooxml</artifactId>
+			<version>5.2.3</version>
+		</dependency>
     </dependencies>
 
 	<build>

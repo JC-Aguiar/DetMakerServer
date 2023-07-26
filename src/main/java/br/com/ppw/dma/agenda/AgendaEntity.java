@@ -1,0 +1,121 @@
+package br.com.ppw.dma.agenda;
+
+import lombok.*;
+
+import javax.persistence.*;
+import java.time.OffsetDateTime;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+@ToString
+@Entity(name = "agendas")
+@Table(name = "agendas")
+@SequenceGenerator(name = "SEQ_AGENDA_ID", sequenceName = "RCVRY.SEQ_AGENDA_ID", allocationSize = 1)
+public class AgendaEntity {
+    
+    @EmbeddedId
+    AgendaID id;
+    
+    @Column(name = "EXEC_POS_JOB", length = 20)
+    // 'Indica os IDs dos Jobs do qual se deve executar após conclusão'")
+    String executarAposJob;
+    
+    @Column(name = "GRUPO_CONCOR", length = 25)
+    // 'Grupo de concorrência'")
+    String grupoConcorrencia;
+    
+    @Column(name = "FASE", length = 25)
+    // 'Fase'")
+    String fase;
+    
+    @Column(name = "JOB", length = 75)
+    // 'Nome da shell, serviço ou artefato'")
+    String job;
+    
+    @Column(name = "DESCRICAO", length = 500)
+    // 'Descrição do Job'")
+    String descricao;
+    
+    @Column(name = "GRUPO_UDA", length = 5)
+    // 'Grupo (UDAx)'")
+    String grupoUda;
+    
+    @Column(name = "PROGRAMA", length = 150)
+    // 'Programas envolvidos no Job'")
+    String programa;
+    
+    @Column(name = "TABELAS", length = 300)
+    // 'Tabelas atualizadas pelo Job'")
+    String tabelas;
+    
+    @Column(name = "SERVIDOR", length = 30)
+    // 'Servidor'")
+    String servidor;
+    
+    @Column(name = "CAMINHO_EXEC", length = 100)
+    // 'Caminho de execução do Job'")
+    String caminhoExec;
+
+    @Column(name = "PARAMETROS", length = 50)
+    // 'Máscara dos parâmetros para executar o Job'")
+    String parametros;
+    
+    @Column(name = "PARAM_DESCRICAO", length = 500)
+    // 'Descrição dos parâmetros'")
+    String descricaoParametros;
+    
+    @Column(name = "ENTRADA_DIR", length = 100)
+    // 'Caminho de entrada para arquivo de carga'")
+    String diretorioEntrada;
+    
+    @Column(name = "ENTRADA_MASK", length = 350)
+    // 'Máscara do arquivo de entrada'")
+    String mascaraEntrada;
+    
+    @Column(name = "SAIDA_DIR", length = 100)
+    // 'Caminho de saída para arquivos pós-processamento'")
+    String diretorioSaida;
+    
+    @Column(name = "SAIDA_MASK", length = 150)
+    // 'Máscara do arquivo de saída'")
+    String mascaraSaida;
+    
+    @Column(name = "LOG_DIR", length = 100)
+    // 'Caminho para os arquivos de log'")
+    String diretorioLog;
+    
+    @Column(name = "LOG_MASK", length = 150)
+    // 'Máscara dos arquivos de log'")
+    String mascaraLog;
+    
+    @Column(name = "TRATAMENTO", length = 25)
+    // 'Tratamento'")
+    String tratamento;
+    
+    @Column(name = "ESCALATION", length = 25)
+    // 'Escalation'")
+    String escalation;
+    
+    @Column(name = "ATUALIZACAO")
+    // 'Data da última atualização no Job'")
+    OffsetDateTime dataAtualizacao;
+    
+    @Column(name = "ATUALIZADO_POR", length = 50)
+    // 'Atualizado por'")
+    String atualizadoPor;
+    
+    @Column(name = "COMMIT_REGISTRO")
+    // 'Data em que esse registro foi salvo no banco'")
+    OffsetDateTime dataRegistro;
+    
+    @Column(name = "COMMIT_AUTOR", length = 50)
+    // 'Nome de quem salvou o registro no banco'")
+    String autorRegistro;
+    
+    @Column(name = "COMMIT_ORIGEM", length = 50)
+    // 'Nome da aplicação que salvou o registro'")
+    String origemRegistro;
+}
