@@ -1,4 +1,4 @@
-package br.com.ppw.dma.agenda;
+package br.com.ppw.dma.job;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,7 +13,6 @@ import java.util.Map;
 @Builder
 public class EvidenciaTabela {
     
-     String queryWhere;
      List<Map<String, Object>> resultado = new ArrayList<>();
      
      public EvidenciaTabela addResultado(Map<String, Object> resultado) {

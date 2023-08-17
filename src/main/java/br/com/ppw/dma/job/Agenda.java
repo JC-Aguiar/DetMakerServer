@@ -1,4 +1,4 @@
-package br.com.ppw.dma.agenda;
+package br.com.ppw.dma.job;
 
 import lombok.*;
 
@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
 @Entity(name = "agendas")
 @Table(name = "agendas")
 @SequenceGenerator(name = "SEQ_AGENDA_ID", sequenceName = "RCVRY.SEQ_AGENDA_ID", allocationSize = 1)
-public class AgendaEntity {
+public class Agenda {
     
     @EmbeddedId
     AgendaID id;

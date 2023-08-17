@@ -1,7 +1,11 @@
-package br.com.ppw.dma.agenda;
+package br.com.ppw.dma.job;
 
+import br.com.ppw.dma.job.ItemPilhaPostDTO.ComandoSqlPOJO;
 import br.com.ppw.dma.batch.ShellPointer;
+import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Data;
+import lombok.experimental.FieldDefaults;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -10,33 +14,38 @@ import java.util.List;
 import java.util.Map;
 
 @Data
+@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class ItemPilha<T extends ShellPointer> {
 
-    private final List<String> argumentos = new ArrayList<>();
-    private final T registro;
-    private final Map<String, EvidenciaTabela> tabelasPreJob = new HashMap<>();
-    private final Map<String, EvidenciaTabela> tabelasPosJob = new HashMap<>();
-    private final List<File> logs = new ArrayList<>();
-    private final List<File> entradas = new ArrayList<>();
-    private final List<File> saidas = new ArrayList<>();
-    private boolean sucesso = false;
-    
-    public ItemPilha addTabelasPreJob(String tabela, EvidenciaTabela evidencia) {
-        this.tabelasPreJob.put(tabela, evidencia);
+    Integer ordem;
+    T registro;
+    List<String> argumentos = new ArrayList<>();
+    List<ComandoSqlPOJO> queries = new ArrayList<>();
+    List<String> cargas = new ArrayList<>();
+    Map<ComandoSqlPOJO, EvidenciaTabela> tabelasPreJob = new HashMap<>();
+    Map<ComandoSqlPOJO, EvidenciaTabela> tabelasPosJob = new HashMap<>();
+    List<File> logs = new ArrayList<>();
+    List<File> entradas = new ArrayList<>();
+    List<File> saidas = new ArrayList<>();
+    boolean sucesso = false;
+
+    public ItemPilha addTabelasPreJob(ComandoSqlPOJO comandoSql, EvidenciaTabela evidencia) {
+        this.tabelasPreJob.put(comandoSql, evidencia);
         return this;
     }
     
-    public ItemPilha addTabelasPreJob(Map<String, EvidenciaTabela> evidencia) {
+    public ItemPilha addTabelasPreJob(Map<ComandoSqlPOJO, EvidenciaTabela> evidencia) {
         this.tabelasPreJob.putAll(evidencia);
         return this;
     }
     
-    public ItemPilha addTabelasPosJob(String tabela, EvidenciaTabela evidencia) {
-        this.tabelasPosJob.put(tabela, evidencia);
+    public ItemPilha addTabelasPosJob(ComandoSqlPOJO comandoSql, EvidenciaTabela evidencia) {
+        this.tabelasPosJob.put(comandoSql, evidencia);
         return this;
     }
     
-    public ItemPilha addTabelasPosJob(Map<String, EvidenciaTabela> evidencia) {
+    public ItemPilha addTabelasPosJob(Map<ComandoSqlPOJO, EvidenciaTabela> evidencia) {
         this.tabelasPosJob.putAll(evidencia);
         return this;
     }

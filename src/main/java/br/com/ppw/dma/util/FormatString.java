@@ -15,6 +15,8 @@ public final class FormatString {
 
     public static final String LINHA_HIFENS = "------------------------------";
 
+    public static final List<String> INDICADORES_QUEBRA_LINHA = Arrays.asList("\n", ";");
+
     public static final List<String> INDICADORES_NULOS = Arrays.asList(
         "N/A", "VAZIO", "NULL", "NUL", "NULO","NÃO", "NAO", "NO", "NENHUM", "NADA", "NENHUN", "0", "-", "X"
     );
@@ -25,27 +27,31 @@ public final class FormatString {
     ));
 
     /**
+     * Verifica se o texto obtido indica representar um valor nulo (exemplo: "N/A").
+     * Os indicadores de valor nulo se encontram na variável {@link FormatString#INDICADORES_NULOS}.
+     * @param texto {@link String} texto a validar
+     * @return true se indica vazio/nulo ou false se o texto de fato tem um conteúdo importante.
+     */
+    public static String valorVazio(String texto) {
+        if(texto == null || texto.isEmpty()) return "";
+
+        val textoRefinado = refinarTexto(texto);
+        val textoSemConteudo = INDICADORES_NULOS
+            .stream()
+            .anyMatch(ind -> ind.equalsIgnoreCase(textoRefinado));
+        return textoSemConteudo ? "" : textoRefinado;
+    }
+
+    /**
      * Método destinado a tratar textos retirados de células Excel ou de outros editores de texto que
      * tendem a adicionar caracteres especiais, como aspas simples ou aspas duplas.
      * @param texto {@link String} a ser refinada
      * @return {@link String} refinada
      */
     public static String refinarTexto(String texto) {
-        return texto.replace("'", "").replace("\"", "").trim();
-    }
-
-    /**
-     * Verifica se o texto obtido indica representar um valor nulo (exemplo: "N/A").
-     * Os indicadores de valor nulo se encontram na variável {@link FormatString#INDICADORES_NULOS}.
-     * @param parametro {@link String} texto a validar
-     * @return true se indica vazio/nulo ou false se o texto de fato tem um conteúdo importante.
-     */
-    public static boolean valorVazio(String parametro) {
-        if(parametro == null || parametro.isEmpty()) return true;
-
-        val textoRefinado = refinarTexto(parametro);
-        return INDICADORES_NULOS.stream()
-            .anyMatch(ind -> ind.equalsIgnoreCase(textoRefinado));
+        return texto.replace("'", "")
+            .replace("\"", "")
+            .trim();
     }
 
     /**
@@ -56,17 +62,18 @@ public final class FormatString {
      * @return {@link List} {@link String} podendo ter 0 ou mais textos
      */
     public static List<String> dividirValores(String valor) {
-        return dividirValores(List.of("\n", ";"), valor);
-    }
-    public static List<String> dividirValores(List<String> coringas, String valor) {
         if(valor == null || valor.isEmpty()) return new ArrayList<>();
-        val valorRefinado = refinarTexto(valor) + "\n";
 
-        return coringas.stream()
-            .filter(valorRefinado::contains)
-            .flatMap(ind -> Stream.of(valorRefinado.split(ind)))
-            .filter(texto -> !texto.isEmpty())
-            .map(texto -> texto.replace("\n", ""))
+        //Adicionando um indicador no final para garantir que textos sem indicadores fiquem OK
+        val valorRefinado = refinarTexto(valor)
+            .replace("\n", ";")
+            .replace(", ", ";")
+            .concat(";");
+
+        val stream = Stream.of(valorRefinado.split(";"));
+
+        //Dividindo texto
+        return stream.filter(texto -> !texto.isEmpty())
             .collect(Collectors.toList());
     }
 

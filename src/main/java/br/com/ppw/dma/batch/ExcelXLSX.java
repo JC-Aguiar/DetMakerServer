@@ -1,9 +1,8 @@
 package br.com.ppw.dma.batch;
 
-import br.com.ppw.dma.agenda.AgendaDTO;
+import br.com.ppw.dma.job.AgendaPOJO;
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -12,11 +11,11 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -33,7 +32,7 @@ public class ExcelXLSX {
     static final Map<String, Field> MAP_CAMPOS_AGENDA = new HashMap<>();
 
     static {
-        Arrays.stream(AgendaDTO.class.getDeclaredFields())
+        Arrays.stream(AgendaPOJO.class.getDeclaredFields())
             .forEach(campo -> {
                 val anotacao = campo.getAnnotation(PlanilhaTitulo.class);
                 if(anotacao == null) return;
@@ -42,23 +41,14 @@ public class ExcelXLSX {
             });
     }
 
-    public ExcelXLSX(@NonNull String camihnoArquivo) throws IOException {
-        log.info(LINHA_HORINZONTAL);
-        log.info("LEITOR EXCEL XLSX");
-        camihnoArquivo = camihnoArquivo
-            .replace("/", File.separator)
-            .replace("\\", File.separator);
-        log.info("Caminho = '{}'", camihnoArquivo);
-        if(!camihnoArquivo.endsWith(".xlsx"))
-            throw new RuntimeException("O arquivo informado não é um Excel XLSX.");
-
+    public ExcelXLSX(@NotNull File arquivo) throws IOException {
         log.info("Abrindo e lendo arquivo...");
-        try(val workbook = new XSSFWorkbook(Files.newInputStream(Paths.get(camihnoArquivo)))) {
+        try(val workbook = new XSSFWorkbook(Files.newInputStream(arquivo.toPath()))) {
             log.info("Workbook = '{}'", workbook);
             log.info("Iterando planilhas disponíveis.");
             workbook.forEach(planilha -> {
                 log.info("-- PLANILHA '{}' {} INICIANDO", planilha.getSheetName(), LINHA_HIFENS);
-                final List<AgendaDTO> listaDto = new ArrayList<>();
+                final List<AgendaPOJO> listaDto = new ArrayList<>();
                 val mapColunas = new HashMap<Integer, String>();
                 boolean colunasFechadas = false;
                 boolean coletarColunas = false;
@@ -67,7 +57,7 @@ public class ExcelXLSX {
 
                 log.info("-- PLANILHA '{}' {} LENDO CABEÇALHO", planilha.getSheetName(), LINHA_HIFENS);
                 for(Row linha : planilha) {
-                    AgendaDTO registro = new AgendaDTO();
+                    AgendaPOJO registro = new AgendaPOJO();
 
                     for(Cell celula : linha) {
                         celula.setCellType(CellType.STRING);
@@ -135,7 +125,7 @@ public class ExcelXLSX {
                         }
                     }
                     //Fim looping das células
-                    //Insere somente os registros (AgendaDTO) preenchidos na lista de DTOs
+                    //Insere somente os registros (AgendaPOJO) preenchidos na lista de DTOs
                     //Ná próxima linha o registro será re-instanciado com campos vazios
                     if(registro.getId() == null) continue;
                     listaDto.add(registro);
@@ -163,7 +153,7 @@ public class ExcelXLSX {
 //            }
 //            log.info(LINHA_HORINZONTAL);
 //            log.info("ARTEFATOS DISPONÍVEIS");
-//            listaDto.stream().map(AgendaDTO::getJob).forEach(log::info);
+//            listaDto.stream().map(AgendaPOJO::getJob).forEach(log::info);
 //
 //            log.info(LINHA_HORINZONTAL);
 //            log.info("QUAL ARTEFATO IRÁ EXECUTAR?");
