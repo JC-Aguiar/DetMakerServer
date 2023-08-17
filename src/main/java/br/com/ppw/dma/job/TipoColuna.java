@@ -1,4 +1,4 @@
-package br.com.ppw.dma.agenda;
+package br.com.ppw.dma.job;
 
 import lombok.val;
 

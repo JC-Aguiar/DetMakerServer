@@ -13,6 +13,8 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,25 +35,25 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private JwtAuthenticationService jwtAuthService;
 
-    public static final Map<String, String> PROTECTED_DOMAINS = new HashMap<>(){{
-        put("adm", "/adm/**");
-        put("profile", "/profile/**");
-    }};
+    public static final Map<String, String> PROTECTED_DOMAINS = new HashMap<>();
+//    {{
+//        put("adm", "/adm/**");
+//        put("profile", "/profile/**");
+//    }};
 
     private static final List<String> SUPPORTED_ORIGINS = new ArrayList<>() {{
-        add("http://localhost:8100/**");
+        add("http://localhost:3000/**");
     }};
 
     //SERVER SECURITY CONFIGURATION
     @Override
-    protected void configure(HttpSecurity http) throws Exception
-    {
+    protected void configure(HttpSecurity http) throws Exception {
         JwtAuthenticationFilter jwtAuthFilter = new JwtAuthenticationFilter(jwtAuthService);
 
         //Defining rules for authorities, csrf + rest configuration and custom login filter (JWT)
         http.authorizeRequests()
-            .mvcMatchers(PROTECTED_DOMAINS.get("adm")).hasAnyAuthority("ADMIN")
-            .mvcMatchers(PROTECTED_DOMAINS.get("profile")).hasAnyAuthority("USER")
+//            .mvcMatchers(PROTECTED_DOMAINS.get("adm")).hasAnyAuthority("ADMIN")
+//            .mvcMatchers(PROTECTED_DOMAINS.get("profile")).hasAnyAuthority("USER")
             .mvcMatchers( HttpMethod.POST, "/login").permitAll()
             .anyRequest().permitAll()
             .and()
@@ -67,8 +69,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     //AUTHENTICATION LOGIC
     @Override
-    public void configure(AuthenticationManagerBuilder auth) throws Exception
-    {
+    public void configure(AuthenticationManagerBuilder auth) throws Exception {
         final BCryptPasswordEncoder crypt = new BCryptPasswordEncoder();
         auth.userDetailsService(authService).passwordEncoder(crypt)
             .and().authenticationProvider(authProvider);
@@ -76,9 +77,23 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     @Bean
-    protected AuthenticationManager authenticationManager() throws Exception
-    {
+    protected AuthenticationManager authenticationManager() throws Exception {
         return super.authenticationManagerBean();
+    }
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurer() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/**")
+                    .allowedOrigins("http://localhost:3000")
+                    .allowedMethods("GET", "POST", "PUT", "DELETE")
+                    .allowedHeaders("*")
+                    .allowCredentials(true)
+                    .maxAge(3600);
+            }
+        };
     }
 
     //CROSS-ORIGIN-RESOURCE-SHARING

@@ -1,4 +1,4 @@
-package br.com.ppw.dma.agenda;
+package br.com.ppw.dma.job;
 
 import lombok.*;
 
@@ -21,16 +21,15 @@ public class AgendaID implements Serializable {
     
     @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_AGENDA_ID")
-// 'Identificador numérico do artefato'")
+    // Identificador numérico do artefato
     Long id;
     
     @Column(name = "PLANILHA", length = 40)
-// 'Nome da planilha em que o registro pertence'")
+    // Nome da planilha em que o registro pertence
     String nomePlanilha;
     
     @Column(name = "NOME_ARQUIVO", length = 70)
-// 'Nome do arquivo em que o registro pertence'")
+    // Nome do arquivo em que o registro pertence
     String nomeArquivo;
-
 
 }

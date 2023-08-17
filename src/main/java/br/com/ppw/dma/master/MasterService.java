@@ -4,6 +4,7 @@ import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.util.ConsoleLog;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -53,9 +54,9 @@ public abstract class MasterService<
 
     // A method that returns an entity by id.
     @ConsoleLog
-    public ENTITY findById(@Positive @NotNull ID id) {
+    public ENTITY findById(@Positive @NotNull ID id) throws NoSuchMethodException {
         return Optional.ofNullable(dao.getById(id))
-                       .orElseThrow();
+           .orElseThrow();
     }
 
     // A proxy method that calls `pageCheck` method.
@@ -64,7 +65,7 @@ public abstract class MasterService<
         return proxy().pageCheck(dao.findAll(pageable));
     }
 
-    //todo: remove this in production
+    @Profile("teste")
     @ConsoleLog
     public Optional<ENTITY> deleteAll() {
         dao.deleteAll();

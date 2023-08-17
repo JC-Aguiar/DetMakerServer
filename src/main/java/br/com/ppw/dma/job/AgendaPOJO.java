@@ -1,24 +1,17 @@
-package br.com.ppw.dma.agenda;
+package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.batch.PlanilhaTitulo;
-import br.com.ppw.dma.batch.ShellPointer;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import lombok.val;
 
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import static br.com.ppw.dma.util.FormatString.*;
 
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AgendaDTO implements ShellPointer {
+public class AgendaPOJO {
 
     OffsetDateTime dataRegistro;
 
@@ -114,46 +107,46 @@ public class AgendaDTO implements ShellPointer {
 //        }
 //        return camposValores;
 //    }
-
-    @Override
-    public String pathShell() {
-        if(!caminhoExec.endsWith("/")) caminhoExec = caminhoExec + "/";
-        return caminhoExec + job;
-    }
-
-    @Override
-    public List<String> pathLog() {
-        return montarPath(diretorioLog, extrairMascara(mascaraLog));
-    }
-
-    @Override
-    public List<String> pathSaida() {
-        return montarPath(diretorioSaida, extrairMascara(mascaraSaida));
-    }
-
-    @Override
-    public List<String> pathEntrada() {
-        return montarPath(diretorioEntrada, extrairMascara(mascaraEntrada));
-    }
-
-    public List<String> getTabelasRefinadas() {
-        if(valorVazio(tabelas)) return new ArrayList<>();
-        return dividirValores(
-            List.of("\n" ,  ";" , ","),
-            tabelas.replace("RCVRY.", "")
-        );
-    }
-
-    private static List<String> montarPath(String diretorio, String nome) {
-        if(!diretorio.endsWith("/")) diretorio = diretorio + "/";
-        
-        if(valorVazio(diretorio) || valorVazio(nome))
-            return new ArrayList<>();
-
-        val finalDiretorio = diretorio;
-        return dividirValores(nome)
-            .stream()
-            .map(log -> finalDiretorio + log)
-            .collect(Collectors.toList());
-    }
+//
+//    @Override
+//    public String pathShell() {
+//        if(!caminhoExec.endsWith("/")) caminhoExec = caminhoExec + "/";
+//        return caminhoExec + pilha;
+//    }
+//
+//    @Override
+//    public List<String> pathLog() {
+//        return montarPath(diretorioLog, extrairMascara(mascaraLog));
+//    }
+//
+//    @Override
+//    public List<String> pathSaida() {
+//        return montarPath(diretorioSaida, extrairMascara(mascaraSaida));
+//    }
+//
+//    @Override
+//    public List<String> pathEntrada() {
+//        return montarPath(diretorioEntrada, extrairMascara(mascaraEntrada));
+//    }
+//
+//    public List<String> getAllTabelas() {
+//        if(valorVazio(tabelas).isEmpty()) return new ArrayList<>();
+//        return dividirValores(
+//            List.of("\n" ,  ";" , ","),
+//            tabelas.replace("RCVRY.", "")
+//        );
+//    }
+//
+//    private static List<String> montarPath(String diretorio, String nome) {
+//        if(!diretorio.endsWith("/")) diretorio = diretorio + "/";
+//
+//        if(valorVazio(diretorio).isEmpty() || valorVazio(nome).isEmpty())
+//            return new ArrayList<>();
+//
+//        val finalDiretorio = diretorio;
+//        return dividirValores(nome)
+//            .stream()
+//            .map(log -> finalDiretorio + log)
+//            .collect(Collectors.toList());
+//    }
 }

@@ -8,6 +8,6 @@ public interface ShellPointer {
     List<String> pathLog();
     List<String> pathSaida();
     List<String> pathEntrada();
-    List<String> getTabelasRefinadas();
+    List<String> getAllTabelas();
 
 }

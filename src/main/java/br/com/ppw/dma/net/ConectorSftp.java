@@ -33,25 +33,25 @@ public class ConectorSftp extends Uploader {
             return new ConectorSftp(ip, porta, usuario, senha);
         }
         catch(NumberFormatException e) {
-            //log.info(VERMELHO, "O host informado está fora do padrão ().");
-            //log.info(VERMELHO, e.getMessage());
             throw new RuntimeException("O host informado está fora do padrão IPv4: " + e.getMessage());
         }
         catch(IOException e) {
-            //log.info(VERMELHO, e.getMessage());
             throw new RuntimeException("Erro inesperado: " + e.getMessage());
         }
     }
 
+    //TODO: Javadoc
     private ConectorSftp(String server, int port, String username, String password) throws IOException {
         super(server, port, username, password);
         comando("hostname; whoami; date; uptime; uname -a");
     }
 
+    //TODO: Javadoc
     private Session iniciarSessao() throws JSchException {
         return iniciarSessao(0);
     }
 
+    //TODO: Javadoc
     private Session iniciarSessao(int timeout) throws JSchException {
         Session session = new JSch().getSession(getUsername(), getServer(), getPort());
         session.setPassword(getPassword());
@@ -60,6 +60,7 @@ public class ConectorSftp extends Uploader {
         return session;
     }
 
+    //TODO: Javadoc
     @Override
     public int upload(@NonNull String dirRemoto, @NonNull File...arquivos) {
         int sucessos = 0;
@@ -107,6 +108,7 @@ public class ConectorSftp extends Uploader {
         return sucessos;
     }
 
+    //TODO: Javadoc
     public int download(@NonNull Path pathLocal, @NonNull String...dirArquivosRemotos) {
         int sucessos = 0;
         Session session = null;
@@ -136,10 +138,6 @@ public class ConectorSftp extends Uploader {
                 }
                 catch(SftpException e) {
                     e.printStackTrace();
-//                    log.error(
-//                        "Erro ao tentar realizar download do arquivo '{}': {}",
-//                        arquivoRemoto, e.getMessage()
-//                    );
                 }
             }
         }
@@ -155,14 +153,10 @@ public class ConectorSftp extends Uploader {
         if(sucessos > 0) log.info("Quantidade de downloads: " + sucessos);
         else log.warn("Nenhum arquivo foi baixado com sucesso.");
         return sucessos;
-        
-        //if(!pathLocal.toFile().exists()) {
-        //log.error("Mesmo após o download, o arquivo não se encontra presente");
-        //}
-        //return pathLocal.toFile();
         //TODO: print das informações do arquivo no diretório local
     }
 
+    //TODO: Javadoc
     public List<String> comando(String comando) throws IOException {
         log.info("Estabelecendo conexão SFTP.");
         log.info("Executando comando: " + comando);
@@ -170,18 +164,6 @@ public class ConectorSftp extends Uploader {
         ChannelExec channelExec = null;
         InputStream in = null;
         try {
-
-//            // Obtém o ConsoleAppender com nome "STDOUT"
-//            // Obtém o OutputStream padrão usado pelo ConsoleAppender
-//            val loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-//            val consoleAppender = (ConsoleAppender<?>) loggerContext
-//                .getLogger("ROOT")
-//                .getAppender("STDOUT");
-//            val out = consoleAppender.getOutputStream();
-//            out.write("teste".getBytes());
-//            val out = new PrintException(System.out, true, StandardCharsets.UTF_8.name());
-//            out.log.info("TESTE");
-
             val properties = getShellProperties();
             val comandoFull = properties.keySet()
                 .stream()
@@ -237,7 +219,8 @@ public class ConectorSftp extends Uploader {
             if(in != null) in.close();
         }
     }
-    
+
+    //TODO: Javadoc
     private Properties getShellProperties() {
         val properties = new Properties();
         properties.put("ORACLE_HOME", "/u01/app/oracle/product/client12.2");
@@ -275,13 +258,15 @@ public class ConectorSftp extends Uploader {
         //comando = "export ORACLE_HOME=/u01/app/oracle/product/client12.2 && "
         return properties;
     }
-    
+
+    //TODO: Javadoc
     public int downloadMaisRecente(Path pathLocal, String...dirArquivosRemotos) {
         return Stream.of(dirArquivosRemotos)
             .mapToInt(dir -> listarArquivoDownload(dir, pathLocal))
             .sum();
     }
-    
+
+    //TODO: Javadoc
     private int listarArquivoDownload(String dirArquivoNome, Path pathLocal) {
         try {
             final List<String> listaArquivos = comando("ls -t " + dirArquivoNome);
@@ -295,8 +280,7 @@ public class ConectorSftp extends Uploader {
         }
         catch(IOException e) {
             log.error("Erro ao tentar fechar leitor remoto do arquivo '{}': {}",
-                dirArquivoNome, e.getMessage()
-            );
+                dirArquivoNome, e.getMessage());
             return 0;
         }
     }
