@@ -10,22 +10,15 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ItemPilhaPostDTO {
+public class ItemPilhaDTO {
 
    Integer ordem;
    AgendaID id;
    List<String> argumentos = new ArrayList<>();
-   List<ComandoSqlPOJO> queries;
+   List<ComandoSql> queries;
    List<String> cargas;
 
    @JsonIgnore
    AgendaDTO agenda;
 
-   @Setter
-   @Getter
-   @NoArgsConstructor
-   public class ComandoSqlPOJO {
-      private String tabela;
-      private String query;
-   }
 }

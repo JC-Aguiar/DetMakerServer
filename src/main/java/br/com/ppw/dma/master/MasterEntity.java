@@ -1,5 +1,5 @@
 package br.com.ppw.dma.master;
 
-public interface MasterEntity {
-    public Integer getId();
+public interface MasterEntity<T> {
+    public T getId();
 }

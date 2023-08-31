@@ -11,6 +11,7 @@ import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.IOException;
@@ -28,8 +29,9 @@ import static br.com.ppw.dma.util.FormatString.LINHA_HORINZONTAL;
 public class ExcelXLSX {
 
     final static int TAB = 4;
+    final static Map<String, Field> MAP_CAMPOS_AGENDA = new HashMap<>();
+    final String nomeArquivo;
     final List<PlanilhaExcel> planilhas = new ArrayList<>();
-    static final Map<String, Field> MAP_CAMPOS_AGENDA = new HashMap<>();
 
     static {
         Arrays.stream(AgendaPOJO.class.getDeclaredFields())
@@ -41,8 +43,10 @@ public class ExcelXLSX {
             });
     }
 
-    public ExcelXLSX(@NotNull File arquivo) throws IOException {
-        log.info("Abrindo e lendo arquivo...");
+    public ExcelXLSX(@NotBlank String nomeArquivo, @NotNull File arquivo) throws IOException {
+        this.nomeArquivo = nomeArquivo;
+        log.info("Abrindo e lendo arquivo {}.", this.nomeArquivo);
+
         try(val workbook = new XSSFWorkbook(Files.newInputStream(arquivo.toPath()))) {
             log.info("Workbook = '{}'", workbook);
             log.info("Iterando planilhas disponíveis.");
@@ -137,140 +141,7 @@ public class ExcelXLSX {
             });
             log.info(LINHA_HORINZONTAL);
             log.info("EXCEL XLSX FINALIZADO");
-//            log.info(LINHA_HORINZONTAL);
-//            log.info("FORMATANDO DADOS COLETADOS");
-//            log.info("Total de registros = {}", listaDto.size());
-//            final Map<String, List<String>> tabela = new HashMap<>();
-//            mapColunas.values().forEach(titulo -> tabela.put(titulo, new ArrayList<>()));
-//
-//            for(val pojo : listaDto) {
-//                val camposValores = pojo.mapearCamposValores();
-//                for(String coluna : camposValores.keySet()) {
-//                    val valoresDaColuna = tabela.get(coluna);
-//                    valoresDaColuna.add(camposValores.get(coluna));
-//                    tabela.put(coluna, valoresDaColuna);
-//                }
-//            }
-//            log.info(LINHA_HORINZONTAL);
-//            log.info("ARTEFATOS DISPONÍVEIS");
-//            listaDto.stream().map(AgendaPOJO::getJob).forEach(log::info);
-//
-//            log.info(LINHA_HORINZONTAL);
-//            log.info("QUAL ARTEFATO IRÁ EXECUTAR?");
-
-//            val input = new Scanner(System.in);
-//            //Adiciona gatilho para teclado
-//            try {
-//                GlobalScreen.registerNativeHook();
-//                GlobalScreen.addNativeKeyListener(new ExcelXLSX());
-//                log.info("Digite sua opção... ");
-//            }
-//            catch(Exception e) {
-//                log.warn(e.getMessage());
-//                log.warn("Não foi possível acionar teclado para encerrar a aplicação em segurança");
-//                log.warn("Se a aplicação for parada abruptamente registros no banco poderão ser perdidos");
-//            }
         }
-    }
-
-
-    public static void tabelaFormatada(Map<String, List<String>> tabela) {
-        val tabelaArray = new String[tabela.values().size()][tabela.keySet().size()];
-        int index = 0;
-        for(String coluna : tabela.keySet()) {
-            val conteudo = tabela.get(coluna);
-            conteudo.add(0, coluna);
-            val conteudoFormatado = formatarColuna(conteudo);
-            tabelaArray[index++] = conteudoFormatado.toArray(new String[conteudoFormatado.size()]);
-        }
-        for(String[] strings : tabelaArray) {
-            System.out.print(strings[0].concat(" | "));
-        }
-    }
-
-//    public static void printTabela(Class<?> classeAlvo, List<Objects> objs) {
-//        val objsAlvo = objs.stream()
-//            .filter(obj -> obj.getClass().equals(classeAlvo))
-//            .collect(Collectors.toList());
-//        if(objsAlvo.isEmpty())
-//            throw new RuntimeException("A classe informada não consta na lista de objetos");
-//
-//        var camposNome = Arrays.asList(classeAlvo.getDeclaredFields());
-//        var camposValores = new HashMap<Object, List<String>>();
-//        val colunas = camposNome.size();
-//        val linhas = objsAlvo.size();
-//        val tabela = new String[colunas][linhas];
-//        int index = 1;
-//
-//        //Preenchendo a primeira linha da tabela com o nome dos campos
-//        for(int col = 0; col < camposNome.size(); col++) {
-//            tabela[col][0] = camposNome.get(col).getName();
-//        }
-//
-//        //Preenchendo as demais linhas da tabela com os valores
-//        for(Object obj : objsAlvo) {
-//            //Obtendo todos os valores dos campos de cada objeto
-//            val valores = new ArrayList<String>();
-//            Arrays.asList(obj.getClass().getDeclaredFields()).forEach(campo -> {
-//                try {
-//                    val valor = campo.get(obj);
-//                    valores.add(String.valueOf(valor));
-//                }
-//                catch(IllegalAccessException e) {
-//                    val mensagem = "Não foi possível coletar o valor do campo %s: %s.";
-//                    System.out.printf(mensagem, campo.getName(), e.getMessage());
-//                    valores.add(" ");
-//                }
-//            });
-//            //Preenchendo na tabela os valores desse objeto
-//            for(int i = 0; i < valores.size(); i++) {
-//                tabela[i][index] = valores.get(0);
-//            }
-//            index++;
-//            //camposValores.put(obj, valores);
-//        }
-//        //Obtendo o maior tamanho de todos os valores de cada campo
-//        for(int col = 0; col < tabela.length; col++) {
-//            val valoresPorColuna = new ArrayList<String>();
-//            for(int lin = 0; lin < tabela[col].length; lin++) {
-//
-//                val listaFormatada = formatarColuna(Arrays.asList(tabela[col]));
-//                tabela[col] = listaFormatada.toArray(new String[listaFormatada.size()]);
-//            }
-//        }
-//
-//        val camposString = String.join(" | ", formatarColuna(camposNome));
-//        val valoresString = String.join(" | ", formatarColuna(camposValores));
-//        val tabelaHeader = new StringBuilder("| ")
-//            .append(String.join(" | ", camposString))
-//            .append(" |")
-//            .append("\n")
-//            .append("")
-//        System.out.println();
-////        val camposNome = campoValores.keySet()
-////            .stream()
-////            .map(Field::getName)
-////            .collect(Collectors.toList());
-////        val camposValores =
-//    }
-
-
-    public static List<String> formatarColuna(List<String> textos) {
-        //Obtendo texto com maior tamanho
-        int maiorTamanho = 0;
-        for(String txt : textos) {
-            maiorTamanho = Math.max(txt.length(), maiorTamanho);
-        }
-        //Identificando diferença entre textos, ajusta e retorna as mensagens numa lista
-        final int finalMaiorTamanho = maiorTamanho;
-        return textos
-            .stream()
-            .map(txt -> {
-                final int diferenca = finalMaiorTamanho - txt.length() + TAB;
-                StringBuilder formatador = new StringBuilder();
-                for(int i = 0; i < diferenca; i++) formatador.append(" ");
-                return txt + formatador;
-            }).collect(Collectors.toList());
     }
 
 }

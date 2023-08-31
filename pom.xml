@@ -5,8 +5,8 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>br.com.jcaguiar</groupId>
 	<artifactId>det-maker-api</artifactId>
-	<version>v1.1.Beta</version>
-	<name>cinephiles</name>
+	<version>v1.2.Beta</version>
+	<name>DetMakerApi</name>
 	<description>
 		API back-end para o sistema Det-Maker usando Java 16 com Spring-Boot,
 		Spring Data, Spring Security, Spring OAP, com JJWT e banco H2 em arquivo local

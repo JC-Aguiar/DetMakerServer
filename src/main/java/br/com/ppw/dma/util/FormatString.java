@@ -50,6 +50,8 @@ public final class FormatString {
      */
     public static String refinarTexto(String texto) {
         return texto.replace("'", "")
+            .replace("[", "")
+            .replace("]", "")
             .replace("\"", "")
             .trim();
     }
@@ -74,7 +76,7 @@ public final class FormatString {
 
         //Dividindo texto
         return stream.filter(texto -> !texto.isEmpty())
-            .collect(Collectors.toList());
+            .toList();
     }
 
     //TODO: criar throw customizado

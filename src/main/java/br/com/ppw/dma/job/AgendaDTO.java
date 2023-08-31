@@ -1,6 +1,7 @@
 package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.batch.ShellPointer;
+import br.com.ppw.dma.master.MasterDtoResponse;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -18,7 +19,7 @@ import static br.com.ppw.dma.util.FormatString.*;
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AgendaDTO implements ShellPointer {
+public class AgendaDTO implements ShellPointer, MasterDtoResponse {
 
     OffsetDateTime dataRegistro;
 
