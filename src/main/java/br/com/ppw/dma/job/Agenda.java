@@ -1,6 +1,8 @@
 package br.com.ppw.dma.job;
 
+import br.com.ppw.dma.master.MasterEntity;
 import lombok.*;
+import lombok.experimental.FieldDefaults;
 
 import javax.persistence.*;
 import java.time.OffsetDateTime;
@@ -13,13 +15,14 @@ import java.time.OffsetDateTime;
 @ToString
 @Entity(name = "agendas")
 @Table(name = "agendas")
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @SequenceGenerator(name = "SEQ_AGENDA_ID", sequenceName = "RCVRY.SEQ_AGENDA_ID", allocationSize = 1)
-public class Agenda {
+public class Agenda implements MasterEntity<AgendaID> {
     
     @EmbeddedId
     AgendaID id;
     
-    @Column(name = "EXEC_POS_JOB", length = 20)
+    @Column(name = "EXEC_POS_JOB", length = 60)
     // 'Indica os IDs dos Jobs do qual se deve executar após conclusão'")
     String executarAposJob;
     
@@ -87,7 +90,7 @@ public class Agenda {
     // 'Caminho para os arquivos de log'")
     String diretorioLog;
     
-    @Column(name = "LOG_MASK", length = 150)
+    @Column(name = "LOG_MASK", length = 300)
     // 'Máscara dos arquivos de log'")
     String mascaraLog;
     

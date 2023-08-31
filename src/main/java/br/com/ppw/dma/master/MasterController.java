@@ -29,10 +29,12 @@ public abstract class MasterController<
     ID, ENTITY extends MasterEntity, REQUEST extends MasterDtoRequest,
     RESPONSE extends MasterDtoResponse, THIS extends MasterController> {
 
-    @Autowired
+    @Getter @Autowired
     private ModelMapper modelMapper;
+
     @Getter
     private final MasterService service;
+
     private final Type entityClass;
     private final Type requestClass;
     private final Type responseClass;
@@ -84,7 +86,7 @@ public abstract class MasterController<
      * @param entity The entity to be mapped to the response DTO.
      * @return The response object.
      */
-    public RESPONSE parseToResponseDto(ENTITY entity) {
+    public RESPONSE parseToDto(ENTITY entity) {
         return modelMapper.map(entity, (Type) responseClass);
     }
 
@@ -133,7 +135,7 @@ public abstract class MasterController<
 //    }
 
     public ResponseEntity<?> craftResponsePage(@NotNull Page<ENTITY> entityPage) {
-        final Page<?> responsePage = entityPage.map(this::parseToResponseDto);
+        final Page<?> responsePage = entityPage.map(this::parseToDto);
         return new ResponseEntity<>(responsePage, HttpStatus.OK);
     }
 
@@ -142,9 +144,9 @@ public abstract class MasterController<
     @GetMapping
     public ResponseEntity<?> get(
         @RequestParam(name = "id", required = false) Optional<ID> id,
-        @RequestParam(name = "page", defaultValue = "0") int page,          //TODO: valores padrões devem estar em
-                                                                            // variáveis estáticas globais.
-        @RequestParam(name = "itens", defaultValue = "12") int itens) {
+        @RequestParam(name = "page", defaultValue = "0") int page,      //TODO: valores padrões devem estar em variáveis estáticas globais.
+        @RequestParam(name = "itens", defaultValue = "12") int itens)
+    throws NoSuchMethodException {
         if (id.isPresent()) return proxy().getOne(id.get());
         return proxy().getAll(page, itens);
     }
@@ -152,7 +154,7 @@ public abstract class MasterController<
     //GET-ONE (by ID)
     // A method that returns a specific entity by a given ID.
     //TODO: não deveria retornar uma Paginação usando também os atributos itens e page?
-    public ResponseEntity<?> getOne(@NotNull ID id) {
+    public ResponseEntity<?> getOne(@NotNull ID id) throws NoSuchMethodException {
         final ENTITY entity = (ENTITY) service.findById(id);
         final RESPONSE dto = modelMapper.map(entity, (Type) responseClass);
         return new ResponseEntity<>(dto, HttpStatus.OK);

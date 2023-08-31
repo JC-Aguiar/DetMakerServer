@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.IOException;
@@ -58,9 +57,11 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
     }
 
     public Agenda persist(Agenda agenda) {
+        log.info("Persistindo agenda no banco:");
         agenda.setDataRegistro(OffsetDateTime.now(RELOGIO));
         agenda.setAutorRegistro("PENDENTE DE DESENVOLVER"); //TODO: alterar para colocar o nome do usuário
         agenda.setOrigemRegistro("DET-MAKER-API v1.0.Beta");
+        log.info(agenda.toString());
         return dao.save(agenda);
     }
 
@@ -69,39 +70,45 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
         log.info("Nome do arquivo: '{}'.", nomeArquivo);
         val localDir = System.getProperty("user.dir") + File.separator;
 
-        log.info("Validando extensão do arquivo.");
+        log.debug("Validando extensão do arquivo.");
         val extensao = nomeArquivo.substring(nomeArquivo.lastIndexOf(".") + 1);
         if(!extensao.equals("xlsx"))
             throw new RuntimeException("Arquivo inválido. O arquivo precisa ser no formato '.xlsx'");
+        log.debug("Extensão do arquivo validada com sucesso.");
 
         log.info("Salvando arquivo localmente: '{}'.", localDir + DIR_RECURSOS);
         val arquivoDestino = new File(localDir + DIR_RECURSOS, nomeArquivo);
         file.transferTo(arquivoDestino); //TODO: Criar handler para IOException
+        log.debug("Arquivo salvo com sucesso.");
 
         log.info("Abrindo Schedule.");
-        return new ExcelXLSX(arquivoDestino); //TODO: Criar handler para NoClassDefFoundError
+        return new ExcelXLSX(nomeArquivo, arquivoDestino); //TODO: Criar handler para NoClassDefFoundError
     }
 
     public List<AgendaDTO> mapearPlanilhaParaListaDto(
         @NotNull ExcelXLSX excel, @NotBlank String planilhaNome) {
         //--------------------------------------------------------
+        val arquivoNome = excel.getNomeArquivo();
         log.info("Tentando ler registros da planilha '{}'.", planilhaNome);
         return excel.getPlanilhas()
             .stream()
             .filter(planilha -> planilha.getNome().equals(planilhaNome))
             .findFirst()
-            .orElseThrow(
-                () -> new RuntimeException("Planilha " + planilhaNome + " não encontrada.")
-            )
+            .orElseThrow(() -> new RuntimeException("Planilha " + planilhaNome + " não encontrada."))
             .getAgendaPOJOS()
             .stream()
-            .map(this::refinarCampos)
+            .map(agenda -> refinarCampos(agenda, planilhaNome, arquivoNome))
+//            .peek(agenda -> agenda.setNomeArquivo(arquivoNome))
+//            .peek(agenda -> agenda.setNomePlanilha(planilhaNome))
             .collect(Collectors.toList());
     }
 
     // TODO: javadoc
-    private AgendaDTO refinarCampos(AgendaPOJO agendaPojo) {
-        log.info("Validando os campos possuem conteúdo de fato ou apenas indicadores vazios.");
+    private AgendaDTO refinarCampos(
+        @NotNull AgendaPOJO agendaPojo, @NotBlank String planilhaNome, @NotBlank String arquivoNome) {
+        //---------------------------------------------------------------------------------------------
+        val registro = "Job [" +agendaPojo.getId()+ "] " +agendaPojo.getJob();
+        log.info("{}: Validando os campos possuem conteúdo de fato ou apenas indicadores vazios.", registro);
         val tabelas = valorVazio(agendaPojo.getTabelas().replace("RCVRY.", ""));
         val parametroNome = valorVazio(agendaPojo.getParametros());
         val parametroDescricao = valorVazio(agendaPojo.getDescricaoParametros());
@@ -112,7 +119,7 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
         val diretorioLog = valorVazio(agendaPojo.getDiretorioLog());
         val mascaraLog = valorVazio(agendaPojo.getMascaraLog());
 
-        log.info("Detectando se há separadores no texto para dividi-los em listas.");
+        log.info("{}: Detectando se há separadores no texto para dividi-los em listas.", registro);
         val listaExecPosJob = dividirValores(agendaPojo.getExecutarAposJob());
         val listaPrograma = dividirValores(agendaPojo.getPrograma());
         val listaTabelas = dividirValores(tabelas);
@@ -130,7 +137,7 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
             log.warn("ATENÇÃO: A aplicação usará a quantidade na coluna 'Parâmetros' e, portanto, " +
                 "não haverá descrição de todos os parâmetros para auxiliar o preenchimento.");
         }
-        log.info("Gerando AgendaDTO.");
+        log.info("{}: Gerando AgendaDTO.", registro);
         val agendaDto = new ModelMapper().map(agendaPojo, AgendaDTO.class);
         agendaDto.setDiretorioEntrada(diretorioEntrada);
         agendaDto.setDiretorioSaida(diretorioSaida);
@@ -143,28 +150,30 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
         agendaDto.setMascaraEntrada(listaMascarasEntrada);
         agendaDto.setMascaraSaida(listaMascarasSaida);
         agendaDto.setMascaraLog(listaMascarasLog);
+        agendaDto.setNomeArquivo(arquivoNome);
+        agendaDto.setNomePlanilha(planilhaNome);
         try {
-            log.info("Tentando converter 'Data de Atualização' da planilha para o DTO.");
+            log.info("{}: Tentando converter 'Data de Atualização' da planilha para o DTO.", registro);
             val data = refinarTexto(agendaPojo.getDataAtualizacao());
             agendaDto.setDataAtualizacao(LocalDate.parse(data, CONVERSOR_DATA_SCHEDULE));
-            log.info("Conversão realizada com sucesso.");
+            log.info("{}: Conversão realizada com sucesso.", registro);
         }
         catch(Exception e) {
-            log.info("Não foi possível converter a data: {}.", e.getMessage());
+            log.info("{}: Não foi possível converter a data: {}.", registro, e.getMessage());
         }
-        log.info(agendaDto.toString());
+        log.info("{}: {}", registro, agendaDto);
         return agendaDto;
     }
 
     //TODO: javadoc
-    public ItemPilha<AgendaDTO> executarPilha(ItemPilha<AgendaDTO> itemPilha) {
-        val agenda = itemPilha.getRegistro();
+    public Evidencia executarPilha(Evidencia evidencia) {
+        val agenda = evidencia.getRegistro();
         try {
             log.info("Preparando diretório para evidências desse Job.");
             val jobNome = agenda.getJob().split("\\.")[0];
             val path = Arquivos.criarDiretorio(DIR_RECURSOS + jobNome).toPath();
 
-            log.info("Testando acesso ao ambiente remoto.");
+            log.info("Tentando acessar ambiente remoto.");
             sftp = ConectorSftp.conectar("10.129.164.206", 22, "rcvry", "Ppw@1022");
             //TODO: obter e tratar corretamente o IP, PORTA, USUÁRIO E SENHA
 
@@ -172,7 +181,7 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
             val logAntes = downloadMaisRecente(agenda, path);
 
             log.info("Executa comando do Job.");
-            if(sftp.comando(itemPilha.comandoShell()).isEmpty())
+            if(sftp.comando(evidencia.comandoShell()).isEmpty())
                 throw new RuntimeException("Comando não executado com sucesso.");
 
             log.info("Obtendo log mais recente pós-execução");
@@ -185,13 +194,22 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
 
             log.info("Evidência de log coletada: ");
             printArquivo(logEvidencia.get());
-            itemPilha.addEvidencias(logEvidencia.get());
-            itemPilha.setSucesso(true);
+            evidencia.addEvidencias(logEvidencia.get());
+            evidencia.setSucesso(true);
         }
         catch(Exception e) {
+            //TODO: melhorar tratamento. É preciso validar e informar:
+            // 1. Se o comando foi executado com sucesso
+            // 2. Se foi identificado log antes
+            // 3. Se foi identificado log depois
+            // 4. Se foi baixado log com sucesso
+            // 5. Se foi identificado registro no banco antes
+            // 6. Se foi identificado registro no banco depois
+            // 7. Se o comando SQL foi inválido
+            // 8. Se o comando SQL informado com declarações não permitidas (DELETE, DTOP, etc)
             log.error("Erro durante execução do job '{}': {}", agenda.getJob(), e.getMessage());
         }
-        return itemPilha;
+        return evidencia;
     }
 
     //TODO: Javadoc
