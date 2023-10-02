@@ -1,8 +1,9 @@
-package br.com.ppw.dma.job;
+package br.com.ppw.dma.evidencia;
 
-import br.com.ppw.dma.batch.ShellPointer;
+import br.com.ppw.dma.job.AgendaDTO;
+import br.com.ppw.dma.job.ComandoSql;
+import br.com.ppw.dma.master.MasterEntity;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -16,36 +17,55 @@ import java.util.Map;
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class Evidencia {
+//@Entity(name = "evidencias")
+//@Table(name = "evidencias")
+public class Evidencia implements MasterEntity<Long> {
 
+    /*
+    Long id
+    Integer ordem
+    Job job
+    String argumentos
+    Set<ExecFile> cargas
+    Set<ExecQuery> bancoPreJob
+    Set<ExecQuery> bancoPosJob
+    Set<ExecFile> logs
+    Set<ExecFile> saidas
+    Boolean sucesso
+    OffsetDateTime dataExecInicio
+    OffsetDateTime dataExecFim
+     */
+
+//    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
     Integer ordem;
     AgendaDTO registro;
     List<String> argumentos = new ArrayList<>();
     List<ComandoSql> queries = new ArrayList<>();
     List<String> cargas = new ArrayList<>();
-    Map<ComandoSql, EvidenciaTabela> tabelasPreJob = new HashMap<>();
-    Map<ComandoSql, EvidenciaTabela> tabelasPosJob = new HashMap<>();
+    Map<ComandoSql, ExtrcaoBanco> tabelasPreJob = new HashMap<>();
+    Map<ComandoSql, ExtrcaoBanco> tabelasPosJob = new HashMap<>();
     List<File> logs = new ArrayList<>();
     List<File> entradas = new ArrayList<>();
     List<File> saidas = new ArrayList<>();
     boolean sucesso = false;
 
-    public Evidencia addTabelasPreJob(ComandoSql comandoSql, EvidenciaTabela evidencia) {
+    public Evidencia addTabelasPreJob(ComandoSql comandoSql, ExtrcaoBanco evidencia) {
         this.tabelasPreJob.put(comandoSql, evidencia);
         return this;
     }
-    
-    public Evidencia addTabelasPreJob(Map<ComandoSql, EvidenciaTabela> evidencia) {
+
+    public Evidencia addTabelasPreJob(Map<ComandoSql, ExtrcaoBanco> evidencia) {
         this.tabelasPreJob.putAll(evidencia);
         return this;
     }
-    
-    public Evidencia addTabelasPosJob(ComandoSql comandoSql, EvidenciaTabela evidencia) {
+
+    public Evidencia addTabelasPosJob(ComandoSql comandoSql, ExtrcaoBanco evidencia) {
         this.tabelasPosJob.put(comandoSql, evidencia);
         return this;
     }
-    
-    public Evidencia addTabelasPosJob(Map<ComandoSql, EvidenciaTabela> evidencia) {
+
+    public Evidencia addTabelasPosJob(Map<ComandoSql, ExtrcaoBanco> evidencia) {
         this.tabelasPosJob.putAll(evidencia);
         return this;
     }

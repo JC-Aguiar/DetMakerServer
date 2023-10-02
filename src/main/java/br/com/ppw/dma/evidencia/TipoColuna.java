@@ -1,4 +1,4 @@
-package br.com.ppw.dma.job;
+package br.com.ppw.dma.evidencia;
 
 import lombok.val;
 
