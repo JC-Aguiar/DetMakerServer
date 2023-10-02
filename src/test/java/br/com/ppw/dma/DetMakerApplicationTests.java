@@ -15,11 +15,4 @@ class DetMakerApplicationTests {
 	void contextLoads() {
 	}
 
-	@Test
-	public void dividirStringEmLista() {
-		val tabelas = "TB_TEMP_CARGA_4P, TB_CONTROLE_SEQ, TB_ARQENTRADA";
-		val listaTabelas = dividirValores(tabelas);
-		listaTabelas.forEach(log::info);
-	}
-
 }

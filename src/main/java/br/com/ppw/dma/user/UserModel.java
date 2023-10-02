@@ -1,6 +1,5 @@
 package br.com.ppw.dma.user;
 
-import br.com.ppw.dma.people.PeopleModel;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -19,7 +18,7 @@ import javax.validation.constraints.NotBlank;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @ToString(callSuper = true)
 @MappedSuperclass
-public class UserModel extends PeopleModel {
+public class UserModel {
 
     @Column(unique = true)
     @NotBlank(message = "Insert valid email")
@@ -28,6 +27,5 @@ public class UserModel extends PeopleModel {
 
     @NotBlank(message = "'Password' cant be empty")
     String password;
-    String avatar;
 
 }

@@ -48,12 +48,6 @@ final public class UserEntity extends UserModel implements UserDetails, MasterEn
     @Column(name = "roles_id")
     final List<RoleEntity> authorities = new ArrayList<>();
 
-    @ToString.Exclude
-    @JsonBackReference
-    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "id")
-    @Column(name = "watchpoints_id")
-    final List<WatchpointsEntity> moviesWatchpoints = new ArrayList<>();
-
     @Embedded
     MasterRecord data;
 

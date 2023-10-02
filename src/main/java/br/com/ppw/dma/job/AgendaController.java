@@ -1,13 +1,11 @@
 package br.com.ppw.dma.job;
 
+import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.master.MasterController;
-import br.com.ppw.dma.movie.MovieDtoRequest;
-import br.com.ppw.dma.movie.MovieDtoResponse;
-import br.com.ppw.dma.movie.MovieEntity;
+import br.com.ppw.dma.master.MasterDtoRequest;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +15,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 import static br.com.ppw.dma.util.FormatString.LINHA_HORINZONTAL;
 import static br.com.ppw.dma.util.FormatString.dividirValores;
@@ -26,7 +23,7 @@ import static br.com.ppw.dma.util.FormatString.dividirValores;
 @RequestMapping("job")
 @Slf4j
 public class AgendaController extends MasterController
-    <AgendaID, Agenda, MovieDtoRequest, AgendaDTO, AgendaController> {
+    <AgendaID, Agenda, MasterDtoRequest, AgendaDTO, AgendaController> {
 
     private final AgendaService agendaService;
     public static final String PLANILHA_NOME = "DIÁRIA";
@@ -41,6 +38,7 @@ public class AgendaController extends MasterController
         return ResponseEntity.ok("pong");
     }
 
+    //TODO: remover ou sobrescrever da classe-mãe
     @GetMapping(value = "/")
     public ResponseEntity<?> getAgenda(
         @RequestParam("arquivo") String arquivo,
@@ -102,6 +100,7 @@ public class AgendaController extends MasterController
             .body("Todas os jobs falharam. Mais detalhes no log, consulte o ID " + serviceId);
     }
 
+    //TODO: javadoc
     private Evidencia converterItemPilhaDtoEmEntidade(@NonNull ItemPilhaDTO postDTO) {
         final Evidencia evidencia = getModelMapper().map(postDTO, Evidencia.class);
         evidencia.setRegistro(postDTO.getAgenda());
@@ -129,6 +128,7 @@ public class AgendaController extends MasterController
         }
     }
 
+    //TODO: javadoc
     private AgendaDTO converterAgendaEmDto(@NonNull Agenda agenda) {
         log.info("Convertendo Agenda para AgendaDTO.");
         val agendaDto = getModelMapper().map(agenda, AgendaDTO.class);

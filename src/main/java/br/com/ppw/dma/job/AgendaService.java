@@ -2,6 +2,7 @@ package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.batch.Arquivos;
 import br.com.ppw.dma.batch.ExcelXLSX;
+import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.net.ConectorSftp;
 import com.google.gson.Gson;

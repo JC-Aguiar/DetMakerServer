@@ -89,7 +89,7 @@
             <artifactId>jjwt</artifactId>
             <version>0.9.1</version>
         </dependency>
-        <!-- Modelmapper (conversor) -->
+        <!-- ModelMapper (conversor) -->
         <dependency>
             <groupId>org.modelmapper</groupId>
             <artifactId>modelmapper</artifactId>
@@ -101,7 +101,7 @@
             <artifactId>opencsv</artifactId>
             <version>5.5.2</version>
         </dependency>
-        <!-- FileUpload -->
+        <!-- FileUpload TODO: confirmar se necessário -->
         <dependency>
             <groupId>commons-fileupload</groupId>
             <artifactId>commons-fileupload</artifactId>
@@ -119,7 +119,7 @@
             <artifactId>junit-jupiter-api</artifactId>
             <version>5.8.2</version>
         </dependency>
-        <!-- Google Guava (utilidades) -->
+        <!-- Google Guava TODO: confirmar se necessário -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>

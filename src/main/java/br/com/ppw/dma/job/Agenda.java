@@ -18,6 +18,37 @@ import java.time.OffsetDateTime;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @SequenceGenerator(name = "SEQ_AGENDA_ID", sequenceName = "RCVRY.SEQ_AGENDA_ID", allocationSize = 1)
 public class Agenda implements MasterEntity<AgendaID> {
+
+    /*
+    JobID id;
+    String plano;
+    String executarAposJob;
+    String grupoConcorrencia;
+    String fase;
+    String descricao;
+    String grupoUda;
+    String programa;
+    String tabelas;
+    String servidor;
+    String caminhoExec;
+    String parametros;
+    String descricaoParametros;
+    String diretorioEntrada;
+    String mascaraEntrada;
+    String diretorioSaida;
+    String mascaraSaida;
+    String diretorioLog;
+    String mascaraLog;
+    String tratamento;
+    String escalation;
+    OffsetDateTime dataAtualizacao;
+    String atualizadoPor;
+    OffsetDateTime dataRegistro;
+    String autorRegistro;
+    String origemRegistro;
+    Set<Evidencia> evidencias;
+    Set<Pipeline> pipelines;
+     */
     
     @EmbeddedId
     AgendaID id;
