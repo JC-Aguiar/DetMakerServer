@@ -1,14 +1,14 @@
 package br.com.ppw.dma.master;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import org.springframework.core.NestedExceptionUtils;
 import org.springframework.lang.Nullable;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoField;
@@ -18,13 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Getter
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public final class MasterControllerResult {
-
-//    final String name;                                              //the controller name
-//    int errors;                                                     //the amount of errors in the process
-//    String log;                                                     //the controller message log
-//    @Setter LogStatus status = LogStatus.EMPTY;                     //the controller response status
-//    final Instant startTime = Instant.now();                        //the moment this service starts
-//    Duration duration;                                             //the service process duration
 
     final Object response;
     final String log;
@@ -73,11 +66,12 @@ public final class MasterControllerResult {
         @NotBlank String controllerName,
         @NotNull List<MasterServiceResult> services,
         @NotNull Instant startTime,
-        @Nullable Exception exception)
-    {
+        @Nullable Exception exception) {
+        //--------------------------------------------------
         final AtomicInteger successes = new AtomicInteger();
         final AtomicInteger errors = new AtomicInteger();
         final long duration = convertInstantToDuration(startTime).toMillis();
+
         services.forEach(service -> {
             if(service.isOk()) successes.incrementAndGet();
             else errors.incrementAndGet();
@@ -110,8 +104,8 @@ public final class MasterControllerResult {
         @NotBlank String status,
         @NotBlank String name,
         @NotNull long duration,
-        @NotNull Exception exception
-    ) {
+        @NotNull Exception exception) {
+        //--------------------------------------
         final String cause = NestedExceptionUtils.getMostSpecificCause(exception).getMessage();
         return String.format(ERROR_MESSAGE, status, name, duration, exception.getClass(), cause);
     }
@@ -122,8 +116,8 @@ public final class MasterControllerResult {
         @NotNull int servicesSize,
         @NotNull int successes,
         @NotNull int errors,
-        @NotNull long duration
-    ) {
+        @NotNull long duration) {
+        //--------------------------------------
         return String.format(DEFAULT_MESSAGE, status, name, servicesSize, successes, errors, duration);
     }
 

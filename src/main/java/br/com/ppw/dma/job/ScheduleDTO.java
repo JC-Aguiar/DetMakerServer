@@ -22,7 +22,7 @@ public class ScheduleDTO {
     public class PlanilhaSchedule {
 
         String nomePlanilha;
-        List<AgendaPOJO> registros = new ArrayList<>();
+        List<JobPOJO> registros = new ArrayList<>();
 
     }
 }

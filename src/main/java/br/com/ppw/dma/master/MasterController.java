@@ -2,6 +2,8 @@ package br.com.ppw.dma.master;
 
 import br.com.ppw.dma.util.ConsoleLogAspect;
 import br.com.ppw.dma.util.FormatString;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import org.modelmapper.ModelMapper;
 import org.springframework.aop.framework.AopContext;
@@ -15,8 +17,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
@@ -114,6 +114,7 @@ public abstract class MasterController<
     public ResponseEntity<?> craftResponse(
         @NotNull List<ENTITY> entityList,
         @NotNull Pageable pageConfig) {
+        //-------------------------------------------------
         final PageImpl<ENTITY> responsePage = new PageImpl(
             entityList,
             pageConfig,

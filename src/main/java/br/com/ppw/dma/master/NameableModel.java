@@ -1,7 +1,8 @@
 package br.com.ppw.dma.master;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,7 +23,7 @@ public interface NameableModel {
 
     public static String findInitualsInComposeName(@NotBlank String name) {
         return Arrays.stream(
-                name.split(" "))
+            name.split(" "))
             .map(i -> i.charAt(0))
             .toString();
     }

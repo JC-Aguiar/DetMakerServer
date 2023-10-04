@@ -19,7 +19,7 @@ import static br.com.ppw.dma.util.FormatString.*;
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AgendaDTO implements ShellPointer, MasterDtoResponse {
+public class JobDTO implements ShellPointer, MasterDtoResponse {
 
     OffsetDateTime dataRegistro;
 

@@ -1,8 +1,8 @@
 package br.com.ppw.dma.enums;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 
-import javax.validation.constraints.NotBlank;
 import java.util.Arrays;
 
 public enum GenreEnum {

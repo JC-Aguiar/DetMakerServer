@@ -1,150 +1,92 @@
 package br.com.ppw.dma.evidencia;
 
-import br.com.ppw.dma.job.AgendaDTO;
-import br.com.ppw.dma.job.ComandoSql;
+import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.master.MasterEntity;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.persistence.*;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.type.NumericBooleanConverter;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.LinkedHashSet;
+import java.util.Objects;
+import java.util.Set;
 
-@Data
+import static jakarta.persistence.CascadeType.ALL;
+import static jakarta.persistence.FetchType.LAZY;
+
+
+@Getter
+@Setter
+@ToString
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-//@Entity(name = "evidencias")
-//@Table(name = "evidencias")
+@Entity(name = "PPW_EVIDENCIA")
+@Table(name = "PPW_EVIDENCIA")
+@SequenceGenerator(name = "SEQ_EVIDENCIA_ID", sequenceName = "RCVRY.SEQ_EVIDENCIA_ID", allocationSize = 1)
 public class Evidencia implements MasterEntity<Long> {
 
-    /*
-    Long id
-    Integer ordem
-    Job job
-    String argumentos
-    Set<ExecFile> cargas
-    Set<ExecQuery> bancoPreJob
-    Set<ExecQuery> bancoPosJob
-    Set<ExecFile> logs
-    Set<ExecFile> saidas
-    Boolean sucesso
-    OffsetDateTime dataExecInicio
-    OffsetDateTime dataExecFim
-     */
-
-//    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id @Column(name = "ID")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_EVIDENCIA_ID")
     Long id;
+
+    @Column(name = "ORDEM")
     Integer ordem;
-    AgendaDTO registro;
-    List<String> argumentos = new ArrayList<>();
-    List<ComandoSql> queries = new ArrayList<>();
-    List<String> cargas = new ArrayList<>();
-    Map<ComandoSql, ExtrcaoBanco> tabelasPreJob = new HashMap<>();
-    Map<ComandoSql, ExtrcaoBanco> tabelasPosJob = new HashMap<>();
-    List<File> logs = new ArrayList<>();
-    List<File> entradas = new ArrayList<>();
-    List<File> saidas = new ArrayList<>();
-    boolean sucesso = false;
 
-    public Evidencia addTabelasPreJob(ComandoSql comandoSql, ExtrcaoBanco evidencia) {
-        this.tabelasPreJob.put(comandoSql, evidencia);
-        return this;
+    @ToString.Exclude
+    @ManyToOne(fetch = LAZY)
+    @JoinColumns({
+        @JoinColumn(name = "JOB_ID", referencedColumnName = "ID")
+        //@JoinColumn(name = "JOB_NOME", referencedColumnName = "NOME")
+    })
+    Job job;
+
+    @ToString.Exclude
+    @Column(name = "CARGAS")
+    @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
+    Set<ExecFile> cargas = new LinkedHashSet<>();
+
+    @ToString.Exclude
+    @Column(name = "BANCO_PRE_JOB")
+    @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
+    Set<ExecQuery> bancoPreJob = new LinkedHashSet<>();
+
+    @ToString.Exclude
+    @Column(name = "BANCO_POS_JOB")
+    @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
+    Set<ExecQuery> bancoPosJob = new LinkedHashSet<>();
+
+    @ToString.Exclude
+    @Column(name = "LOGS")
+    @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
+    Set<ExecFile> logs = new LinkedHashSet<>();
+
+    @ToString.Exclude
+    @Column(name = "SAIDAS")
+    @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
+    Set<ExecFile> saidas = new LinkedHashSet<>();
+
+    @Convert(converter = NumericBooleanConverter.class)
+    @Column(name = "SUCESSO")
+    Boolean sucesso = false;
+
+    @Override
+    public final boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ?
+            ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() :
+            o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ?
+            ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() :
+            this.getClass();
+        if(thisEffectiveClass != oEffectiveClass) return false;
+        Evidencia evidencia = (Evidencia) o;
+        return getId() != null && Objects.equals(getId(), evidencia.getId());
     }
 
-    public Evidencia addTabelasPreJob(Map<ComandoSql, ExtrcaoBanco> evidencia) {
-        this.tabelasPreJob.putAll(evidencia);
-        return this;
-    }
-
-    public Evidencia addTabelasPosJob(ComandoSql comandoSql, ExtrcaoBanco evidencia) {
-        this.tabelasPosJob.put(comandoSql, evidencia);
-        return this;
-    }
-
-    public Evidencia addTabelasPosJob(Map<ComandoSql, ExtrcaoBanco> evidencia) {
-        this.tabelasPosJob.putAll(evidencia);
-        return this;
-    }
-
-    public Evidencia addArgumentos(String arg) {
-        argumentos.add(arg);
-        return this;
-    }
-
-    public Evidencia addArgumentos(List<String> args) {
-        argumentos.addAll(args);
-        return this;
-    }
-
-    public Evidencia limparArgumentos() {
-        argumentos.clear();
-        return this;
-    }
-
-    public Evidencia addEvidencias(File arquivo) {
-        logs.add(arquivo);
-        return this;
-    }
-
-    public Evidencia addEvidencias(List<File> arquivo) {
-        logs.addAll(arquivo);
-        return this;
-    }
-
-    public Evidencia limparEvidencias() {
-        logs.clear();
-        return this;
-    }
-
-    public Evidencia addEntradas(File arquivo) {
-        entradas.add(arquivo);
-        return this;
-    }
-
-    public Evidencia addEntradas(List<File> arquivo) {
-        entradas.addAll(arquivo);
-        return this;
-    }
-
-    public Evidencia limparEntradas() {
-        entradas.clear();
-        return this;
-    }
-
-    public Evidencia addSaidas(File arquivo) {
-        saidas.add(arquivo);
-        return this;
-    }
-
-    public Evidencia addSaidas(List<File> arquivo) {
-        saidas.addAll(arquivo);
-        return this;
-    }
-
-    public Evidencia limparSaidas() {
-        saidas.clear();
-        return this;
-    }
-
-    public String getParametro() {
-        return String.join(" ", argumentos);
-    }
-
-    public String comandoShell() {
-        return "ksh "
-            .concat(registro.pathShell())
-            .concat(" ")
-            .concat(getParametro());
-    }
-
-    public String pathLog() {
-        return "ksh "
-            .concat(registro.pathShell())
-            .concat(" ")
-            .concat(getParametro());
+    @Override
+    public final int hashCode() {
+        return getClass().hashCode();
     }
 }
