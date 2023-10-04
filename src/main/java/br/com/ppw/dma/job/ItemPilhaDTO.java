@@ -13,12 +13,13 @@ import java.util.List;
 public class ItemPilhaDTO {
 
    Integer ordem;
-   AgendaID id;
+//   JobID id;
+   Long id;
    List<String> argumentos = new ArrayList<>();
    List<ComandoSql> queries;
    List<String> cargas;
 
    @JsonIgnore
-   AgendaDTO agenda;
+   JobDTO agenda;
 
 }

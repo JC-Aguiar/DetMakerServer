@@ -1,11 +1,18 @@
 package br.com.ppw.dma.job;
 
+import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.master.MasterEntity;
+import br.com.ppw.dma.pipeline.Pipeline;
+import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import javax.persistence.*;
 import java.time.OffsetDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import static jakarta.persistence.FetchType.LAZY;
+
 
 @Getter
 @Setter
@@ -13,45 +20,28 @@ import java.time.OffsetDateTime;
 @AllArgsConstructor
 @Builder
 @ToString
-@Entity(name = "agendas")
-@Table(name = "agendas")
+@Entity(name = "PPW_JOB")
+@Table(name = "PPW_JOB")
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@SequenceGenerator(name = "SEQ_AGENDA_ID", sequenceName = "RCVRY.SEQ_AGENDA_ID", allocationSize = 1)
-public class Agenda implements MasterEntity<AgendaID> {
+@SequenceGenerator(name = "SEQ_JOB_ID", sequenceName = "RCVRY.SEQ_JOB_ID", allocationSize = 1)
+public class Job implements MasterEntity<Long> {
 
-    /*
-    JobID id;
+    //@EmbeddedId
+    //JobID id;
+
+    @Id
+    @Column(name = "ID")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_JOB_ID")
+    // Identificador numérico do artefato
+    Long id;
+
+    @Column(name = "NOME", length = 100, unique = true, nullable = false)
+    // 'Nome da shell, serviço ou artefato'")
+    String nome;
+
+    @Column(name = "PLANO", length = 50)
+    // Nome da planilha em que o registro pertence
     String plano;
-    String executarAposJob;
-    String grupoConcorrencia;
-    String fase;
-    String descricao;
-    String grupoUda;
-    String programa;
-    String tabelas;
-    String servidor;
-    String caminhoExec;
-    String parametros;
-    String descricaoParametros;
-    String diretorioEntrada;
-    String mascaraEntrada;
-    String diretorioSaida;
-    String mascaraSaida;
-    String diretorioLog;
-    String mascaraLog;
-    String tratamento;
-    String escalation;
-    OffsetDateTime dataAtualizacao;
-    String atualizadoPor;
-    OffsetDateTime dataRegistro;
-    String autorRegistro;
-    String origemRegistro;
-    Set<Evidencia> evidencias;
-    Set<Pipeline> pipelines;
-     */
-    
-    @EmbeddedId
-    AgendaID id;
     
     @Column(name = "EXEC_POS_JOB", length = 60)
     // 'Indica os IDs dos Jobs do qual se deve executar após conclusão'")
@@ -64,10 +54,6 @@ public class Agenda implements MasterEntity<AgendaID> {
     @Column(name = "FASE", length = 25)
     // 'Fase'")
     String fase;
-    
-    @Column(name = "JOB", length = 75)
-    // 'Nome da shell, serviço ou artefato'")
-    String job;
     
     @Column(name = "DESCRICAO", length = 500)
     // 'Descrição do Job'")
@@ -133,7 +119,7 @@ public class Agenda implements MasterEntity<AgendaID> {
     // 'Escalation'")
     String escalation;
     
-    @Column(name = "ATUALIZACAO")
+    @Column(name = "DT_ATUALIZACAO")
     // 'Data da última atualização no Job'")
     OffsetDateTime dataAtualizacao;
     
@@ -141,15 +127,18 @@ public class Agenda implements MasterEntity<AgendaID> {
     // 'Atualizado por'")
     String atualizadoPor;
     
-    @Column(name = "COMMIT_REGISTRO")
-    // 'Data em que esse registro foi salvo no banco'")
-    OffsetDateTime dataRegistro;
-    
-    @Column(name = "COMMIT_AUTOR", length = 50)
+    @Column(name = "ULTIMO_AUTOR", length = 50)
     // 'Nome de quem salvou o registro no banco'")
-    String autorRegistro;
-    
-    @Column(name = "COMMIT_ORIGEM", length = 50)
-    // 'Nome da aplicação que salvou o registro'")
-    String origemRegistro;
+    String autorAtualizacao;
+
+    @ToString.Exclude
+    @OneToMany(fetch = LAZY, mappedBy = "job")
+    @Column(name = "EVIDENCIAS")
+    Set<Evidencia> evidencias = new LinkedHashSet<>();
+
+    @ToString.Exclude
+    @ManyToMany(fetch = LAZY, mappedBy = "jobs")
+    @Column(name = "PIPELINES")
+    Set<Pipeline> pipelines = new LinkedHashSet<>();
+
 }

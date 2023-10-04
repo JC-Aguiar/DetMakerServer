@@ -2,10 +2,12 @@ package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.batch.Arquivos;
 import br.com.ppw.dma.batch.ExcelXLSX;
-import br.com.ppw.dma.evidencia.Evidencia;
+import br.com.ppw.dma.evidencia.EvidenciaPOJO;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.net.ConectorSftp;
 import com.google.gson.Gson;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -14,31 +16,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static br.com.ppw.dma.DetMakerApplication.DIR_RECURSOS;
-import static br.com.ppw.dma.DetMakerApplication.RELOGIO;
 import static br.com.ppw.dma.util.FormatString.*;
 
 @Service
 @Slf4j
-public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService> {
+public class JobService extends MasterService<Long, Job, JobService> {
 
     @Autowired
     private Gson gson;
 
     @Autowired
-    private final AgendaRepository dao;
+    private final JobRepository dao;
 
     private ConectorSftp sftp;
 
@@ -46,24 +44,25 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
         .ofPattern("dd/MM/yyyy");
 
 
-    public AgendaService(AgendaRepository dao) {
+    public JobService(JobRepository dao) {
         super(dao);
         this.dao = dao; //TODO: precisa mesmo?
     }
 
-    public List<Agenda> persistAll(List<Agenda> agendas) {
-        return agendas.stream()
+    public Job findByNome(@NotBlank String nome) {
+        return dao.findByNome(nome);
+    }
+
+    public List<Job> persistAll(List<Job> jobs) {
+        return jobs.stream()
             .map(this::persist)
             .collect(Collectors.toList());
     }
 
-    public Agenda persist(Agenda agenda) {
-        log.info("Persistindo agenda no banco:");
-        agenda.setDataRegistro(OffsetDateTime.now(RELOGIO));
-        agenda.setAutorRegistro("PENDENTE DE DESENVOLVER"); //TODO: alterar para colocar o nome do usuário
-        agenda.setOrigemRegistro("DET-MAKER-API v1.0.Beta");
-        log.info(agenda.toString());
-        return dao.save(agenda);
+    public Job persist(@NotNull Job job) {
+        log.info("Persistindo Job no banco:");
+        log.info(job.toString());
+        return dao.save(job);
     }
 
     public ExcelXLSX lerXlsx(@NotNull MultipartFile file) throws IOException {
@@ -86,7 +85,7 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
         return new ExcelXLSX(nomeArquivo, arquivoDestino); //TODO: Criar handler para NoClassDefFoundError
     }
 
-    public List<AgendaDTO> mapearPlanilhaParaListaDto(
+    public List<JobDTO> mapearPlanilhaParaListaDto(
         @NotNull ExcelXLSX excel, @NotBlank String planilhaNome) {
         //--------------------------------------------------------
         val arquivoNome = excel.getNomeArquivo();
@@ -96,33 +95,33 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
             .filter(planilha -> planilha.getNome().equals(planilhaNome))
             .findFirst()
             .orElseThrow(() -> new RuntimeException("Planilha " + planilhaNome + " não encontrada."))
-            .getAgendaPOJOS()
+            .getJobsPOJO()
             .stream()
-            .map(agenda -> refinarCampos(agenda, planilhaNome, arquivoNome))
-//            .peek(agenda -> agenda.setNomeArquivo(arquivoNome))
-//            .peek(agenda -> agenda.setNomePlanilha(planilhaNome))
+            .map(Job -> refinarCampos(Job, planilhaNome, arquivoNome))
+//            .peek(Job -> Job.setNomeArquivo(arquivoNome))
+//            .peek(Job -> Job.setNomePlanilha(planilhaNome))
             .collect(Collectors.toList());
     }
 
     // TODO: javadoc
-    private AgendaDTO refinarCampos(
-        @NotNull AgendaPOJO agendaPojo, @NotBlank String planilhaNome, @NotBlank String arquivoNome) {
+    private JobDTO refinarCampos(
+        @NotNull JobPOJO jobPojo, @NotBlank String planilhaNome, @NotBlank String arquivoNome) {
         //---------------------------------------------------------------------------------------------
-        val registro = "Job [" +agendaPojo.getId()+ "] " +agendaPojo.getJob();
+        val registro = "Job [" +jobPojo.getId()+ "] " +jobPojo.getJob();
         log.info("{}: Validando os campos possuem conteúdo de fato ou apenas indicadores vazios.", registro);
-        val tabelas = valorVazio(agendaPojo.getTabelas().replace("RCVRY.", ""));
-        val parametroNome = valorVazio(agendaPojo.getParametros());
-        val parametroDescricao = valorVazio(agendaPojo.getDescricaoParametros());
-        val diretorioEntrada = valorVazio(agendaPojo.getDiretorioEntrada());
-        val mascaraEntrada = valorVazio(agendaPojo.getMascaraEntrada());
-        val diretorioSaida = valorVazio(agendaPojo.getDiretorioSaida());
-        val mascaraSaida = valorVazio(agendaPojo.getMascaraSaida());
-        val diretorioLog = valorVazio(agendaPojo.getDiretorioLog());
-        val mascaraLog = valorVazio(agendaPojo.getMascaraLog());
+        val tabelas = valorVazio(jobPojo.getTabelas().replace("RCVRY.", ""));
+        val parametroNome = valorVazio(jobPojo.getParametros());
+        val parametroDescricao = valorVazio(jobPojo.getDescricaoParametros());
+        val diretorioEntrada = valorVazio(jobPojo.getDiretorioEntrada());
+        val mascaraEntrada = valorVazio(jobPojo.getMascaraEntrada());
+        val diretorioSaida = valorVazio(jobPojo.getDiretorioSaida());
+        val mascaraSaida = valorVazio(jobPojo.getMascaraSaida());
+        val diretorioLog = valorVazio(jobPojo.getDiretorioLog());
+        val mascaraLog = valorVazio(jobPojo.getMascaraLog());
 
         log.info("{}: Detectando se há separadores no texto para dividi-los em listas.", registro);
-        val listaExecPosJob = dividirValores(agendaPojo.getExecutarAposJob());
-        val listaPrograma = dividirValores(agendaPojo.getPrograma());
+        val listaExecPosJob = dividirValores(jobPojo.getExecutarAposJob());
+        val listaPrograma = dividirValores(jobPojo.getPrograma());
         val listaTabelas = dividirValores(tabelas);
         val listaParametrosNome = dividirValores(parametroNome);
         val listaParametrosDescricao = dividirValores(parametroDescricao);
@@ -138,40 +137,40 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
             log.warn("ATENÇÃO: A aplicação usará a quantidade na coluna 'Parâmetros' e, portanto, " +
                 "não haverá descrição de todos os parâmetros para auxiliar o preenchimento.");
         }
-        log.info("{}: Gerando AgendaDTO.", registro);
-        val agendaDto = new ModelMapper().map(agendaPojo, AgendaDTO.class);
-        agendaDto.setDiretorioEntrada(diretorioEntrada);
-        agendaDto.setDiretorioSaida(diretorioSaida);
-        agendaDto.setDiretorioLog(diretorioLog);
-        agendaDto.setExecutarAposJob(listaExecPosJob);
-        agendaDto.setPrograma(listaPrograma);
-        agendaDto.setTabelas(listaTabelas);
-        agendaDto.setParametros(listaParametrosNome);
-        agendaDto.setDescricaoParametros(listaParametrosDescricao);
-        agendaDto.setMascaraEntrada(listaMascarasEntrada);
-        agendaDto.setMascaraSaida(listaMascarasSaida);
-        agendaDto.setMascaraLog(listaMascarasLog);
-        agendaDto.setNomeArquivo(arquivoNome);
-        agendaDto.setNomePlanilha(planilhaNome);
+        log.info("{}: Gerando JobDTO.", registro);
+        val JobDto = new ModelMapper().map(jobPojo, JobDTO.class);
+        JobDto.setDiretorioEntrada(diretorioEntrada);
+        JobDto.setDiretorioSaida(diretorioSaida);
+        JobDto.setDiretorioLog(diretorioLog);
+        JobDto.setExecutarAposJob(listaExecPosJob);
+        JobDto.setPrograma(listaPrograma);
+        JobDto.setTabelas(listaTabelas);
+        JobDto.setParametros(listaParametrosNome);
+        JobDto.setDescricaoParametros(listaParametrosDescricao);
+        JobDto.setMascaraEntrada(listaMascarasEntrada);
+        JobDto.setMascaraSaida(listaMascarasSaida);
+        JobDto.setMascaraLog(listaMascarasLog);
+        JobDto.setNomeArquivo(arquivoNome);
+        JobDto.setNomePlanilha(planilhaNome);
         try {
             log.info("{}: Tentando converter 'Data de Atualização' da planilha para o DTO.", registro);
-            val data = refinarTexto(agendaPojo.getDataAtualizacao());
-            agendaDto.setDataAtualizacao(LocalDate.parse(data, CONVERSOR_DATA_SCHEDULE));
+            val data = refinarTexto(jobPojo.getDataAtualizacao());
+            JobDto.setDataAtualizacao(LocalDate.parse(data, CONVERSOR_DATA_SCHEDULE));
             log.info("{}: Conversão realizada com sucesso.", registro);
         }
         catch(Exception e) {
             log.info("{}: Não foi possível converter a data: {}.", registro, e.getMessage());
         }
-        log.info("{}: {}", registro, agendaDto);
-        return agendaDto;
+        log.info("{}: {}", registro, JobDto);
+        return JobDto;
     }
 
     //TODO: javadoc
-    public Evidencia executarPilha(Evidencia evidencia) {
-        val agenda = evidencia.getRegistro();
+    public EvidenciaPOJO executarPilha(EvidenciaPOJO evidenciaPOJO) {
+        val Job = evidenciaPOJO.getRegistro();
         try {
             log.info("Preparando diretório para evidências desse Job.");
-            val jobNome = agenda.getJob().split("\\.")[0];
+            val jobNome = Job.getJob().split("\\.")[0];
             val path = Arquivos.criarDiretorio(DIR_RECURSOS + jobNome).toPath();
 
             log.info("Tentando acessar ambiente remoto.");
@@ -179,14 +178,14 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
             //TODO: obter e tratar corretamente o IP, PORTA, USUÁRIO E SENHA
 
             log.info("Obtendo log mais recente pré-execução.");
-            val logAntes = downloadMaisRecente(agenda, path);
+            val logAntes = downloadMaisRecente(Job, path);
 
             log.info("Executa comando do Job.");
-            if(sftp.comando(evidencia.comandoShell()).isEmpty())
+            if(sftp.comando(evidenciaPOJO.comandoShell()).isEmpty())
                 throw new RuntimeException("Comando não executado com sucesso.");
 
             log.info("Obtendo log mais recente pós-execução");
-            val logDepois = downloadMaisRecente(agenda, path);
+            val logDepois = downloadMaisRecente(Job, path);
 
             log.info("Comparando logs para anexar como evidência.");
             val logEvidencia = getArquivoMaisRecente(logAntes, logDepois);
@@ -195,8 +194,8 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
 
             log.info("Evidência de log coletada: ");
             printArquivo(logEvidencia.get());
-            evidencia.addEvidencias(logEvidencia.get());
-            evidencia.setSucesso(true);
+            evidenciaPOJO.addEvidencias(logEvidencia.get());
+            evidenciaPOJO.setSucesso(true);
         }
         catch(Exception e) {
             //TODO: melhorar tratamento. É preciso validar e informar:
@@ -208,9 +207,9 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
             // 6. Se foi identificado registro no banco depois
             // 7. Se o comando SQL foi inválido
             // 8. Se o comando SQL informado com declarações não permitidas (DELETE, DTOP, etc)
-            log.error("Erro durante execução do job '{}': {}", agenda.getJob(), e.getMessage());
+            log.error("Erro durante execução do job '{}': {}", Job.getJob(), e.getMessage());
         }
-        return evidencia;
+        return evidenciaPOJO;
     }
 
     //TODO: Javadoc
@@ -223,8 +222,8 @@ public class AgendaService extends MasterService<AgendaID, Agenda, AgendaService
     }
 
     //TODO: Javadoc
-    private Optional<File> downloadMaisRecente(AgendaDTO agendaDTO, Path path) {
-        val logDirRemoto = agendaDTO.pathLog().toArray(new String[0]);
+    private Optional<File> downloadMaisRecente(JobDTO jobDTO, Path path) {
+        val logDirRemoto = jobDTO.pathLog().toArray(new String[0]);
         log.info(Arrays.toString(logDirRemoto));
 
         //Realizando cada download para cada log informado pelo Job

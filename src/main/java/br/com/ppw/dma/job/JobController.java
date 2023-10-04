@@ -1,6 +1,6 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.evidencia.Evidencia;
+import br.com.ppw.dma.evidencia.EvidenciaPOJO;
 import br.com.ppw.dma.master.MasterController;
 import br.com.ppw.dma.master.MasterDtoRequest;
 import lombok.NonNull;
@@ -22,15 +22,15 @@ import static br.com.ppw.dma.util.FormatString.dividirValores;
 @RestController
 @RequestMapping("job")
 @Slf4j
-public class AgendaController extends MasterController
-    <AgendaID, Agenda, MasterDtoRequest, AgendaDTO, AgendaController> {
+public class JobController extends MasterController
+    <Long, Job, MasterDtoRequest, JobDTO, JobController> {
 
-    private final AgendaService agendaService;
+    private final JobService jobService;
     public static final String PLANILHA_NOME = "DIÁRIA";
 
-    public AgendaController(@Autowired AgendaService agendaService) {
-        super(agendaService);
-        this.agendaService = agendaService;
+    public JobController(@Autowired JobService jobService) {
+        super(jobService);
+        this.jobService = jobService;
     }
 
     @GetMapping(value = "ping")
@@ -40,34 +40,39 @@ public class AgendaController extends MasterController
 
     //TODO: remover ou sobrescrever da classe-mãe
     @GetMapping(value = "/")
-    public ResponseEntity<?> getAgenda(
-        @RequestParam("arquivo") String arquivo,
-        @RequestParam("planilha") String planilha,
-        @RequestParam("id") Long id) {
+    public ResponseEntity<?> getJob(
+        @RequestParam(value = "id", required = false) Long id,
+        @RequestParam(value = "nome", required = false) String nome) {
         //--------------------------------------
-        val agenda = agendaService.findById(new AgendaID(id, planilha, arquivo));
-        return ResponseEntity.ok(agenda);
+        Job job = null;
+        if(id != null)
+            job = jobService.findById(id);
+        else if(nome != null && !nome.trim().isEmpty())
+            job = jobService.findByNome(nome);
+        else
+            return ResponseEntity.badRequest().body("Informe o ID ou o NOME do job");
+        return ResponseEntity.ok(job);
     }
 
     //TODO: javadoc
     @PostMapping(value = "open/xlsx")
     @Transactional
     public ResponseEntity<?> abrirXlsx(@RequestParam("file") final MultipartFile file) throws IOException {
-        val xlsx = agendaService.lerXlsx(file);
-        val agendasDto = agendaService.mapearPlanilhaParaListaDto(xlsx, PLANILHA_NOME);
-        log.info("Total de agendas obtidas: {}", agendasDto.size());
+        val xlsx = jobService.lerXlsx(file);
+        val jobsDto = jobService.mapearPlanilhaParaListaDto(xlsx, PLANILHA_NOME);
+        log.info("Total de agendas obtidas: {}", jobsDto.size());
 
         log.info("Salvando agendas no banco local H2.");
-        int agendasSalvas = 0;
-        for(val dto: agendasDto) {
+        int jobsSalvos = 0;
+        for(val dto: jobsDto) {
             log.info("Convertendo DTO em Entidade.");
-            val agendaEntidade = getModelMapper().map(dto, Agenda.class);
-            agendaEntidade.setId(new AgendaID(dto.getId(), dto.getNomePlanilha(), dto.getNomeArquivo()));
-            agendaService.persist(agendaEntidade);
-            agendasSalvas++;
+            val jobEntidade = getModelMapper().map(dto, Job.class);
+            //jobEntidade.setId(new JobID(dto.getId(), dto.getJob()));
+            jobService.persist(jobEntidade);
+            jobsSalvos++;
         }
-        log.info("Total de agendas salvas: {}", agendasSalvas);
-        return ResponseEntity.ok(agendasDto);
+        log.info("Total de agendas salvas: {}", jobsSalvos);
+        return ResponseEntity.ok(jobsDto);
     }
 
     //TODO: javadoc
@@ -83,12 +88,12 @@ public class AgendaController extends MasterController
         val pilha = pilhaDto.stream()
             .map(this::setAgendaDto)
             .map(this::converterItemPilhaDtoEmEntidade)
-            .map(agendaService::executarPilha)
+            .map(jobService::executarPilha)
             .toList();
         log.info("Total de jobs executadas: {}.", pilha.size());
 
         val sucessos = pilha.stream()
-            .filter(Evidencia::isSucesso)
+            .filter(EvidenciaPOJO::isSucesso)
             .toList()
             .size();
         log.info("Total de jobs realizados com sucesso: {}.", sucessos);
@@ -101,25 +106,21 @@ public class AgendaController extends MasterController
     }
 
     //TODO: javadoc
-    private Evidencia converterItemPilhaDtoEmEntidade(@NonNull ItemPilhaDTO postDTO) {
-        final Evidencia evidencia = getModelMapper().map(postDTO, Evidencia.class);
-        evidencia.setRegistro(postDTO.getAgenda());
-        return evidencia;
+    private EvidenciaPOJO converterItemPilhaDtoEmEntidade(@NonNull ItemPilhaDTO postDTO) {
+        final EvidenciaPOJO evidenciaPOJO = getModelMapper().map(postDTO, EvidenciaPOJO.class);
+        evidenciaPOJO.setRegistro(postDTO.getAgenda());
+        return evidenciaPOJO;
     }
 
     //TODO: javadoc
     private ItemPilhaDTO setAgendaDto(ItemPilhaDTO postDTO) {
         try {
-            log.info("Buscando registro do arquivo '{}', planilha '{}', job-id {}.",
-                postDTO.getId().getNomeArquivo(),
-                postDTO.getId().getNomePlanilha(),
-                postDTO.getId().getId()
-            );
-            val agenda = agendaService.findById(postDTO.getId());
-            log.info("Entidade Agenda encontrada: {}.", agenda);
-            log.info("Mascara Log ('agenda'): {}", agenda.getMascaraLog());
+            log.info("Buscando registro do job id {}.", postDTO.getId());
+            val job = jobService.findById(postDTO.getId());
+            log.info("Entidade Job encontrada: {}.", job);
+            log.info("Mascara Log ('agenda'): {}", job.getMascaraLog());
 
-            val agendaDto = converterAgendaEmDto(agenda);
+            val agendaDto = converterJobEmDto(job);
             postDTO.setAgenda(agendaDto);
             return postDTO;
         }
@@ -129,9 +130,9 @@ public class AgendaController extends MasterController
     }
 
     //TODO: javadoc
-    private AgendaDTO converterAgendaEmDto(@NonNull Agenda agenda) {
-        log.info("Convertendo Agenda para AgendaDTO.");
-        val agendaDto = getModelMapper().map(agenda, AgendaDTO.class);
+    private JobDTO converterJobEmDto(@NonNull Job agenda) {
+        log.info("Convertendo Job para JobDTO.");
+        val agendaDto = getModelMapper().map(agenda, JobDTO.class);
         agendaDto.setParametros(dividirValores(agenda.getParametros()));
         agendaDto.setDescricaoParametros(dividirValores(agenda.getDescricaoParametros()));
         agendaDto.setMascaraEntrada(dividirValores(agenda.getMascaraEntrada()));

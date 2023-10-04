@@ -1,7 +1,7 @@
 package br.com.ppw.dma.evidencia;
 
-import br.com.ppw.dma.job.AgendaID;
 import br.com.ppw.dma.job.ComandoSql;
+import br.com.ppw.dma.job.JobID;
 import br.com.ppw.dma.master.MasterDtoRequest;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -18,13 +18,11 @@ import java.util.List;
 public class EvidenciaPostDTO implements MasterDtoRequest {
 
     Integer ordem;
-    AgendaID id;
-    String job;
+    JobID id;
+    //String job;
     List<String> argumentos = new ArrayList<>();
     List<ComandoSql> queries = new ArrayList<>();
     List<String> cargas = new ArrayList<>();
-    //List<ExtrcaoBanco> tabelasPreJob = new ArrayList<>();
-    //List<ExtrcaoBanco> tabelasPosJob = new ArrayList<>();
     List<File> logs = new ArrayList<>();
     List<File> entradas = new ArrayList<>();
     List<File> saidas = new ArrayList<>();

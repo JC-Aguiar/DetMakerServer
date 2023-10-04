@@ -11,7 +11,7 @@ import java.time.OffsetDateTime;
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class AgendaPOJO {
+public class JobPOJO {
 
     OffsetDateTime dataRegistro;
 

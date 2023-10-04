@@ -2,6 +2,8 @@ package br.com.ppw.dma.master;
 
 import br.com.ppw.dma.exception.ProcessException;
 import br.com.ppw.dma.util.ConsoleLogAspect;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,8 +11,6 @@ import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import org.springframework.core.NestedExceptionUtils;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotNull;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoField;
@@ -51,8 +51,8 @@ public final class MasterServiceResult {
         @NotBlank String serviceName,
         @NotBlank String methodName,
         @NotNull Instant startTime,
-        @NotNull Object result)
-    {
+        @NotNull Object result) {
+        //---------------------------------
         this.serviceName = serviceName;
         this.methodName = methodName;
         this.error = false;
@@ -71,8 +71,8 @@ public final class MasterServiceResult {
         @NotBlank String serviceName,
         @NotBlank String methodName,
         @NotNull Instant startTime,
-        @NotNull Exception e)
-    {
+        @NotNull Exception e) {
+        //---------------------------------
         this.serviceName = serviceName;
         this.methodName = methodName;
         this.error = true;
@@ -83,13 +83,17 @@ public final class MasterServiceResult {
         this.log = buildLogMessage(cause);
     }
 
-    public static MasterServiceResult success
-    (@NotBlank String serviceName, @NotBlank String methodName, @NotNull Instant startTime, @NotNull Object result) {
+    public static MasterServiceResult success(
+        @NotBlank String serviceName, @NotBlank String methodName,
+        @NotNull Instant startTime, @NotNull Object result) {
+        //--------------------------------------------------------
         return new MasterServiceResult(serviceName, methodName, startTime, result);
     }
 
-    public static MasterServiceResult error
-    (@NotBlank String serviceName, @NotBlank String methodName, @NotNull Instant startTime, @NotNull Exception e) {
+    public static MasterServiceResult error(
+        @NotBlank String serviceName, @NotBlank String methodName,
+        @NotNull Instant startTime, @NotNull Exception e) {
+        //--------------------------------------------------------
         return new MasterServiceResult(serviceName, methodName, startTime, e);
     }
 

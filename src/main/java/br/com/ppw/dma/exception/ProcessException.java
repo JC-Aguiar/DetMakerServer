@@ -1,6 +1,7 @@
 package br.com.ppw.dma.exception;
 
-import javax.validation.constraints.NotBlank;
+
+import jakarta.validation.constraints.NotBlank;
 
 public class ProcessException extends RuntimeException {
 

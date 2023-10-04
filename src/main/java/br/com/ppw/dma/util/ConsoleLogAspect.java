@@ -1,6 +1,7 @@
 package br.com.ppw.dma.util;
 
 import br.com.ppw.dma.master.MasterServiceResult;
+import jakarta.validation.constraints.NotBlank;
 import lombok.val;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -12,7 +13,6 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
-import javax.validation.constraints.NotBlank;
 import java.lang.reflect.Method;
 import java.util.*;
 

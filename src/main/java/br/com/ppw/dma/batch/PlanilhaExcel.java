@@ -1,6 +1,6 @@
 package br.com.ppw.dma.batch;
 
-import br.com.ppw.dma.job.AgendaPOJO;
+import br.com.ppw.dma.job.JobPOJO;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -10,24 +10,24 @@ import java.util.List;
 public class PlanilhaExcel {
 
     private final String nome;
-    private final List<AgendaPOJO> agendaPOJOS = new ArrayList<>();
+    private final List<JobPOJO> jobsPOJO = new ArrayList<>();
 
     public PlanilhaExcel(String nome) {
         this.nome = nome;
     }
 
-    public PlanilhaExcel(String nome, List<AgendaPOJO> agendaPOJOS) {
+    public PlanilhaExcel(String nome, List<JobPOJO> jobsPOJO) {
         this.nome = nome;
-        this.agendaPOJOS.addAll(agendaPOJOS);
+        this.jobsPOJO.addAll(jobsPOJO);
     }
 
-    public PlanilhaExcel addCampoSchedule(AgendaPOJO dto) {
-        this.agendaPOJOS.add(dto);
+    public PlanilhaExcel addCampoSchedule(JobPOJO dto) {
+        this.jobsPOJO.add(dto);
         return this;
     }
 
-    public PlanilhaExcel addCampoSchedule(List<AgendaPOJO> agendaPOJOS) {
-        this.agendaPOJOS.addAll(agendaPOJOS);
+    public PlanilhaExcel addCampoSchedule(List<JobPOJO> jobPOJOS) {
+        this.jobsPOJO.addAll(jobPOJOS);
         return this;
     }
 

@@ -1,11 +1,11 @@
 package br.com.ppw.dma.batch;
 
 import br.com.ppw.dma.exception.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.NotEmpty;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
