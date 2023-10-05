@@ -1,4 +1,4 @@
-package br.com.ppw.dma.batch;
+package br.com.ppw.dma.system;
 
 import br.com.ppw.dma.job.JobPOJO;
 import lombok.Getter;

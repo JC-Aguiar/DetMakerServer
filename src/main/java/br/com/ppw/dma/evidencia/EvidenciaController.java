@@ -1,6 +1,7 @@
 package br.com.ppw.dma.evidencia;
 
 import br.com.ppw.dma.job.ComandoSql;
+import br.com.ppw.dma.util.ExtrcaoBanco;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

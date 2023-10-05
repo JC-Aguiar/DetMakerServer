@@ -1,5 +1,7 @@
 package br.com.ppw.dma.evidencia;
 
+import br.com.ppw.dma.execFile.ExecFile;
+import br.com.ppw.dma.execQuery.ExecQuery;
 import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.master.MasterEntity;
 import jakarta.persistence.*;

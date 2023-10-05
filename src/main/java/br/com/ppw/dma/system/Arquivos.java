@@ -1,4 +1,4 @@
-package br.com.ppw.dma.batch;
+package br.com.ppw.dma.system;
 
 import br.com.ppw.dma.exception.*;
 import jakarta.validation.constraints.NotBlank;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static br.com.ppw.dma.batch.TipoPermissao.*;
+import static br.com.ppw.dma.system.TipoPermissao.*;
 
 
 @Slf4j

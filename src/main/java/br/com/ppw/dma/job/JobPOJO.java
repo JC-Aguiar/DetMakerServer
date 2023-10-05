@@ -1,6 +1,6 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.batch.PlanilhaTitulo;
+import br.com.ppw.dma.system.PlanilhaTitulo;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;

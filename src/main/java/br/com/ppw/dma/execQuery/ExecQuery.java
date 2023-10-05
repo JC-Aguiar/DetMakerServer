@@ -1,5 +1,6 @@
-package br.com.ppw.dma.evidencia;
+package br.com.ppw.dma.execQuery;
 
+import br.com.ppw.dma.evidencia.Evidencia;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -20,18 +21,23 @@ import static jakarta.persistence.FetchType.LAZY;
 @SequenceGenerator(name = "SEQ_EXEC_QUERY_ID", sequenceName = "RCVRY.SEQ_EXEC_QUERY_ID", allocationSize = 1)
 public class ExecQuery {
 
-    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_EXEC_QUERY_ID")
+    @Id @Column(name = "ID")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_EXEC_QUERY_ID")
+    // Identificador numérico dessa query pós-execução da evidência
     Long id;
 
     @ToString.Exclude
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "EVIDENCIA_ID")
+    // ID da evidência relacionada com esse query pós-execução
     Evidencia evidencia;
 
     @Column(name = "TABELA_NOME", length = 150)
+    // Nome da tabela usada na query
     String tabelaNome;
 
     @Column(name = "QUERY", length = 500)
+    // SQL usada na evidência desse query pós-execução
     String query;
 
 

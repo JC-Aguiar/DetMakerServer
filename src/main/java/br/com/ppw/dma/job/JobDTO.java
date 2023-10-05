@@ -1,6 +1,6 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.batch.ShellPointer;
+import br.com.ppw.dma.system.ShellPointer;
 import br.com.ppw.dma.master.MasterDtoResponse;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;

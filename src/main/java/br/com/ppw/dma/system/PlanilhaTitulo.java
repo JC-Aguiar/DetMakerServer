@@ -1,4 +1,4 @@
-package br.com.ppw.dma.batch;
+package br.com.ppw.dma.system;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;

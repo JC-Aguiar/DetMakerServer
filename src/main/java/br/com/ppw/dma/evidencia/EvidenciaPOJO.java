@@ -2,6 +2,7 @@ package br.com.ppw.dma.evidencia;
 
 import br.com.ppw.dma.job.JobDTO;
 import br.com.ppw.dma.job.ComandoSql;
+import br.com.ppw.dma.util.ExtrcaoBanco;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;

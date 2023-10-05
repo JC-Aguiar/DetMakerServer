@@ -7,4 +7,12 @@
     <Root level="error">
         <AppenderRef ref="STDOUT"/>
     </Root>
+    <Loggers>
+        <Logger name="org.hibernate" level="debug" additivity="false">
+            <AppenderRef ref="Console"/>
+        </Logger>
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+        </Root>
+    </Loggers>
 </Configuration>

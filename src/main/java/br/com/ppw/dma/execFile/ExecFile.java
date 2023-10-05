@@ -1,5 +1,6 @@
-package br.com.ppw.dma.evidencia;
+package br.com.ppw.dma.execFile;
 
+import br.com.ppw.dma.evidencia.Evidencia;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -22,17 +23,21 @@ import static jakarta.persistence.FetchType.LAZY;
 public class ExecFile {
 
     @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_EXEC_FILE_ID")
+    // Identificador numérico do arquivo pós-execução da evidência
     Long id;
 
     @ToString.Exclude
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "EVIDENCIA_ID")
+    // ID da evidência relacionada com esse arquivo pós-execução
     Evidencia evidencia;
 
     @Column(name = "NOME", length = 200)
+    // Nome desse arquivo pós-execução
     String nome;
 
     @Column(name = "ARQUIVO")
+    // Conteúdo do arquivo pós-execução
     File arquivo;
 
 

@@ -1,4 +1,4 @@
-package br.com.ppw.dma.batch;
+package br.com.ppw.dma.system;
 
 public enum TipoPermissao {
 

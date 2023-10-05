@@ -1,6 +1,6 @@
 package br.com.ppw.dma;
 
-import br.com.ppw.dma.batch.Arquivos;
+import br.com.ppw.dma.system.Arquivos;
 import br.com.ppw.dma.exception.DiretorioSemPermissaoException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;

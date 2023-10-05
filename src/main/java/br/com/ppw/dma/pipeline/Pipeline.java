@@ -26,27 +26,20 @@ public class Pipeline implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_PIPELINE_ID")
+    // Identificador numérico da pipeline
     Long id;
 
-    @Column(name = "NOME", length = 200)
+    @Column(name = "NOME", length = 200, unique = true)
+    // Nome da pipeline
     String nome;
 
     @ToString.Exclude
     @Column(name = "JOBS")
     @ManyToMany(fetch = LAZY)
-//    @JoinColumns({
-//        @JoinColumn(name = "JOB_ID", referencedColumnName = "ID"),
-//        @JoinColumn(name = "JOB_NOME", referencedColumnName = "NOME") })
-//    @JoinColumnsOrFormulas({
-//        @JoinColumnOrFormula(column = @JoinColumn(name = "JOB_ID", referencedColumnName = "ID")),
-//        @JoinColumnOrFormula(formula = @JoinFormula(value = "JOB_NOME", referencedColumnName = "NOME")) })
-    @JoinTable(
-        name = "PPW_PIPELINE_JOB",
+    @JoinTable(name = "PPW_PIPELINE_JOB",
         joinColumns = @JoinColumn(name = "PIPELINE_ID", referencedColumnName = "ID"),
-        inverseJoinColumns = {
-            @JoinColumn(name = "JOB_ID", referencedColumnName = "ID")
-            //@JoinColumn(name = "JOB_NOME", referencedColumnName = "NOME")
-    })
+        inverseJoinColumns = @JoinColumn(name = "JOB_ID", referencedColumnName = "ID"))
+    // IDs dos jobs relacionados a essa pipeline
     Set<Job> jobs = new LinkedHashSet<>();
 
     @Override

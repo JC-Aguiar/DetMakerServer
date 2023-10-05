@@ -1,7 +1,7 @@
 package br.com.ppw.dma.exception;
 
 
-import br.com.ppw.dma.batch.TipoPermissao;
+import br.com.ppw.dma.system.TipoPermissao;
 
 public class DiretorioSemPermissaoException extends CheckedException {
     private static final String MENSAGEM = "Diretório '%s' sem permissão de %s";

@@ -1,6 +1,5 @@
 package br.com.ppw.dma.util;
 
-import br.com.ppw.dma.master.MasterServiceResult;
 import jakarta.validation.constraints.NotBlank;
 import lombok.val;
 import org.apache.logging.log4j.LogManager;

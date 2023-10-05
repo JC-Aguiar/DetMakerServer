@@ -1,8 +1,10 @@
 package br.com.ppw.dma.evidencia;
 
 import br.com.ppw.dma.job.ComandoSql;
-import jakarta.validation.constraints.NotBlank;
+import br.com.ppw.dma.util.ExtrcaoBanco;
+import br.com.ppw.dma.util.NativeSqlDAO;
 import jakarta.validation.constraints.NotEmpty;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,7 +12,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Service
 @Slf4j
@@ -25,43 +26,54 @@ public class EvidenciaService {
 
     //TODO: javadoc
     public List<ExtrcaoBanco> extractTable(@NotEmpty List<ComandoSql> comandosSql) {
-        val tabelasGenericas = new ArrayList<ExtrcaoBanco>();
+        val extracoes = new ArrayList<ExtrcaoBanco>();
         for(val cmdSql : comandosSql) {
-            val bancoResult = extractTable(cmdSql.getTabela(), cmdSql.getTabela());
-            if(bancoResult == null) continue;
-
-            bancoResult.forEach((k, v) -> log.info("\t - {}: {}", k, v));
-            tabelasGenericas.add(
-                new ExtrcaoBanco(cmdSql).addResultado(bancoResult)
-            );
+            try {
+                extracoes.add(extractTable(cmdSql));
+            }
+            catch(Exception e) {
+                log.warn(e.getMessage());
+            }
         }
-        log.info("Total de extrações dinâmicas realizadas no banco: {}.",
-            tabelasGenericas.size());
-        return tabelasGenericas;
+        log.info("Total de comandos SQL realizadas: {}.", extracoes.size());
+        return extracoes;
     }
 
     //TODO: criar exception própria
     //TODO: javadoc
-    private Map<String, Object> extractTable(@NotBlank String tableName, @NotBlank String whereQuery) {
-        boolean isValid = validateQuery(whereQuery);
-        //if(!isValid) throw new RuntimeException("A query informada têm comandos DDL não permitidos.");
-        if(!isValid) {
-            log.warn("A query informada têm comandos DDL não permitidos.");
-            return null;
+    public ExtrcaoBanco extractTable(@NonNull ComandoSql sql) {
+        log.info("Realizando extração da tabela '{}'.", sql.getTabela());
+        boolean camposValidos = validateQuery(sql.getCampos());
+        boolean tabelaValida = validateQuery(sql.getTabela());
+        boolean filtroValido = validateQuery(sql.getFiltro());
+        if(!camposValidos || !tabelaValida || !filtroValido) {
+            //TODO: criar exception própria?
+            throw new RuntimeException("A query informada contêm comandos DDL não permitidos.");
         }
-        log.info("Acessando no banco os nomes dos campos da tabela '{}'.", tableName);
-        //val tabelaGenerica = new ExtrcaoBanco();
-        final List<String> fields = dao.getFieldsFromTable(tableName);
-        return dao.getMapFromFieldsTableAndFilter(fields, tableName, whereQuery);
+        List<String> campos = null;
+        if(sql.getCampos() == null || sql.getCampos().isEmpty()) {
+            log.info("Acessando no banco os nomes dos campos da tabela '{}'.", sql.getTabela());
+            campos = dao.getFieldsFromTable(sql.getTabela());
+        }
+        else campos = sql.getCampos();
+        val resultado = dao.getFieldAndValuesFromTable(campos, sql.getTabela(), sql.getFiltro());
+
+        log.info("Total de campos coletados da tabela '{}': {}.",
+            sql.getTabela(), resultado.size());
+        return new ExtrcaoBanco(sql).addResultado(resultado);
     }
 
     //TODO: javadoc
     public boolean validateQuery(String query) {
+        if(query == null || query.trim().isEmpty()) return true;
         String ddlPattern = "(?i)\\b(create|alter|drop|truncate|rename)\\b";
-        // (?i) --> Case-Insensitive
-        // \b --> Fronteira de Palavra. Corresponde a uma posição entre caracteres alfanuméricos e não-alfanuméricos
-        //        indicando o limite entre uma palavra e outra.
         return !query.matches(".*" + ddlPattern + ".*");
+    }
+
+    //TODO: javadoc
+    public boolean validateQuery(List<String> campos) {
+        if(campos.isEmpty()) return true;
+        return campos.stream().allMatch(this::validateQuery);
     }
 
 }
