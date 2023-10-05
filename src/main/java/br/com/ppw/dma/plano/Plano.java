@@ -1,4 +1,4 @@
-package br.com.ppw.dma.pipeline;
+package br.com.ppw.dma.plano;
 
 import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.master.MasterEntity;
@@ -19,28 +19,29 @@ import static jakarta.persistence.FetchType.LAZY;
 @ToString
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Entity(name = "PPW_PIPELINE")
-@Table(name = "PPW_PIPELINE")
-@SequenceGenerator(name = "SEQ_PIPELINE_ID", sequenceName = "RCVRY.SEQ_PIPELINE_ID", allocationSize = 1)
-public class Pipeline implements MasterEntity<Long> {
+@Entity(name = "PPW_PLANO")
+@Table(name = "PPW_PLANO")
+@SequenceGenerator(name = "SEQ_PLANO_ID", sequenceName = "RCVRY.SEQ_PLANO_ID", allocationSize = 1)
+public class Plano implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_PIPELINE_ID")
-    // Identificador numérico da pipeline
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_PLANO_ID")
+    // Identificador numérico do plano
     Long id;
 
-    @Column(name = "NOME", length = 200, unique = true)
-    // Nome da pipeline
+    @Column(name = "NOME", unique = true)
+    // Nome do plano
     String nome;
 
     @ToString.Exclude
     @Column(name = "JOBS")
     @ManyToMany(fetch = LAZY)
-    @JoinTable(name = "PPW_PIPELINE_JOB",
-        joinColumns = @JoinColumn(name = "PIPELINE_ID", referencedColumnName = "ID"),
+    @JoinTable(name = "PPW_PLANO_JOB",
+        joinColumns = @JoinColumn(name = "PLANO_ID", referencedColumnName = "ID"),
         inverseJoinColumns = @JoinColumn(name = "JOB_ID", referencedColumnName = "ID"))
-    // IDs dos jobs relacionados a essa pipeline
+    // IDs dos jobs relacionados a esse plano
     Set<Job> jobs = new LinkedHashSet<>();
+
 
     @Override
     public final boolean equals(Object o) {
@@ -53,7 +54,7 @@ public class Pipeline implements MasterEntity<Long> {
             ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() :
             this.getClass();
         if(thisEffectiveClass != oEffectiveClass) return false;
-        Pipeline evidencia = (Pipeline) o;
+        Plano evidencia = (Plano) o;
         return getId() != null && Objects.equals(getId(), evidencia.getId());
     }
 

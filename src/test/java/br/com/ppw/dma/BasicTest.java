@@ -5,8 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
 
-import java.sql.PreparedStatement;
-
 import static br.com.ppw.dma.util.FormatString.dividirValores;
 
 @Slf4j
@@ -15,7 +13,7 @@ public class BasicTest {
     @Test
     public void testeDeColetaGenericaAoBanco() {
         val comandoSql = new ComandoSql();
-        comandoSql.setQuery("SELECT * FROM EVENTOS_WEB ew WHERE EVTYPE='EV_BOLETO_CYBER_HUBPGTO' ORDER BY EVID");
+        comandoSql.setFiltro("SELECT * FROM EVENTOS_WEB ew WHERE EVTYPE='EV_BOLETO_CYBER_HUBPGTO' ORDER BY EVID");
         comandoSql.setTabela("EVENTOS_WEB");
     }
 

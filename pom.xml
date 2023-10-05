@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>br.com.jcaguiar</groupId>
 	<artifactId>det-maker-api</artifactId>
-	<version>v1.2.Beta</version>
+	<version>v1.3.Beta</version>
 	<name>DetMakerApi</name>
 	<description>
 		API back-end para o sistema Det-Maker usando Java 16 com Spring-Boot,
@@ -114,11 +114,12 @@
             <version>2.9.0</version>
         </dependency>
 		<!-- J-Unit  -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <version>5.8.2</version>
-        </dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.13.1</version>
+			<scope>test</scope>
+		</dependency>
         <!-- Google Guava TODO: confirmar se necessário -->
         <dependency>
             <groupId>com.google.guava</groupId>

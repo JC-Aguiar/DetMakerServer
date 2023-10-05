@@ -1,7 +1,7 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.batch.Arquivos;
-import br.com.ppw.dma.batch.ExcelXLSX;
+import br.com.ppw.dma.system.Arquivos;
+import br.com.ppw.dma.system.ExcelXLSX;
 import br.com.ppw.dma.evidencia.EvidenciaPOJO;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.net.ConectorSftp;
