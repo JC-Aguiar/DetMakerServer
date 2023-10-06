@@ -15,17 +15,17 @@ import java.util.Map;
 @RequiredArgsConstructor
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ExtrcaoBanco {
+public class ExtracaoBanco {
 
      final ComandoSql comandoSql;
      final List<Map<String, Object>> resultadoQuery = new ArrayList<>();
      
-     public ExtrcaoBanco addResultado(Map<String, Object> resultado) {
+     public ExtracaoBanco addResultado(Map<String, Object> resultado) {
           this.resultadoQuery.add(resultado);
           return this;
      }
-     
-     public ExtrcaoBanco addResultado(List<Map<String, Object>> resultado) {
+
+     public ExtracaoBanco addResultado(List<Map<String, Object>> resultado) {
           this.resultadoQuery.addAll(resultado);
           return this;
      }

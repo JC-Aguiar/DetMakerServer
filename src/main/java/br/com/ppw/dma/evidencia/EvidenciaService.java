@@ -1,7 +1,7 @@
 package br.com.ppw.dma.evidencia;
 
 import br.com.ppw.dma.job.ComandoSql;
-import br.com.ppw.dma.util.ExtrcaoBanco;
+import br.com.ppw.dma.util.ExtracaoBanco;
 import br.com.ppw.dma.util.NativeSqlDAO;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.NonNull;
@@ -25,8 +25,8 @@ public class EvidenciaService {
     }
 
     //TODO: javadoc
-    public List<ExtrcaoBanco> extractTable(@NotEmpty List<ComandoSql> comandosSql) {
-        val extracoes = new ArrayList<ExtrcaoBanco>();
+    public List<ExtracaoBanco> extractTable(@NotEmpty List<ComandoSql> comandosSql) {
+        val extracoes = new ArrayList<ExtracaoBanco>();
         for(val cmdSql : comandosSql) {
             try {
                 extracoes.add(extractTable(cmdSql));
@@ -42,7 +42,7 @@ public class EvidenciaService {
 
     //TODO: criar exception própria
     //TODO: javadoc
-    public ExtrcaoBanco extractTable(@NonNull ComandoSql sql) {
+    public ExtracaoBanco extractTable(@NonNull ComandoSql sql) {
         log.info("Realizando extração da tabela '{}'.", sql.getTabela());
         boolean camposValidos = validateQuery(sql.getCampos());
         boolean tabelaValida = validateQuery(sql.getTabela());
@@ -58,7 +58,7 @@ public class EvidenciaService {
             campos = sql.getCampos();
 
         val resultado = dao.getFieldAndValuesFromTable(campos, sql.getTabela(), sql.getFiltro());
-        return new ExtrcaoBanco(sql).addResultado(resultado);
+        return new ExtracaoBanco(sql).addResultado(resultado);
     }
 
     //TODO: javadoc
