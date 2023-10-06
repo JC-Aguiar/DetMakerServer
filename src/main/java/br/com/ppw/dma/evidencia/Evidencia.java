@@ -10,13 +10,12 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.type.NumericBooleanConverter;
 
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.FetchType.LAZY;
-
 
 @Getter
 @Setter
@@ -46,31 +45,32 @@ public class Evidencia implements MasterEntity<Long> {
     @ToString.Exclude
     @Column(name = "CARGAS")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    Set<ExecFile> cargas = new LinkedHashSet<>();
+    List<ExecFile> cargas = new ArrayList<>();
 
     @ToString.Exclude
     @Column(name = "BANCO_PRE_JOB")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    Set<ExecQuery> bancoPreJob = new LinkedHashSet<>();
+    List<ExecQuery> bancoPreJob = new ArrayList<>();
 
     @ToString.Exclude
     @Column(name = "BANCO_POS_JOB")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    Set<ExecQuery> bancoPosJob = new LinkedHashSet<>();
+    List<ExecQuery> bancoPosJob = new ArrayList<>();
 
     @ToString.Exclude
     @Column(name = "LOGS")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    Set<ExecFile> logs = new LinkedHashSet<>();
+    List<ExecFile> logs = new ArrayList<>();
 
     @ToString.Exclude
     @Column(name = "SAIDAS")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    Set<ExecFile> saidas = new LinkedHashSet<>();
+    List<ExecFile> saidas = new ArrayList<>();
 
     @Convert(converter = NumericBooleanConverter.class)
     @Column(name = "SUCESSO")
     Boolean sucesso = false;
+
 
     @Override
     public final boolean equals(Object o) {
