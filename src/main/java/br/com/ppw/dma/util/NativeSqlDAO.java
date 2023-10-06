@@ -22,7 +22,9 @@ public class NativeSqlDAO {
     private static final String SQL_GET_FIELDS_FROM_TABLE =
         "SELECT a.column_name " +
         "FROM all_tab_columns a " +
-        "WHERE a.table_name = :tableName ";
+        "WHERE a.table_name = :tableName AND " +
+        "ROWNUM <= 125 " +
+        "ORDER BY COLUMN_ID ";
 
     private static final String SQL_VALUES_FROM_TABLE = "SELECT :fields FROM :tableName ";
 
@@ -30,13 +32,16 @@ public class NativeSqlDAO {
     private EntityManager entityManager;
 
     public List<String> getFieldsFromTable(@NotBlank String tableName) {
+        log.info("Acessando no banco os nomes dos campos da tabela '{}'.", tableName);
         val session = entityManager.unwrap(Session.class);
-        return (List<String>) session.createNativeQuery(SQL_GET_FIELDS_FROM_TABLE)
+        val campos = session.createNativeQuery(SQL_GET_FIELDS_FROM_TABLE)
             .setParameter("tableName", tableName)
             .getResultList()
             .stream()
             .map(String::valueOf)
-            .collect(Collectors.toSet());
+            .toList();
+        log.info("Total de campos coletados da tabela '{}': {}.", tableName, campos.size());
+        return campos;
     }
 
     public List<Map<String, Object>> getFieldAndValuesFromTable(
@@ -68,6 +73,7 @@ public class NativeSqlDAO {
             resultadoFinal.add(resultSet);
         });
         //Exibindo resultado
+        log.info("Total de registros coletados da tabela '{}': {}.", tableName, resultadoFinal.size());
         resultadoFinal.forEach(
             map -> map.forEach(
                 (k, v) -> log.debug("{}: {}", k, v)

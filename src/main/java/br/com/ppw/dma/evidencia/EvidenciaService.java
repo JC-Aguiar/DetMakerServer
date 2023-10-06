@@ -32,6 +32,7 @@ public class EvidenciaService {
                 extracoes.add(extractTable(cmdSql));
             }
             catch(Exception e) {
+                e.printStackTrace();
                 log.warn(e.getMessage());
             }
         }
@@ -51,15 +52,12 @@ public class EvidenciaService {
             throw new RuntimeException("A query informada contêm comandos DDL não permitidos.");
         }
         List<String> campos = null;
-        if(sql.getCampos() == null || sql.getCampos().isEmpty()) {
-            log.info("Acessando no banco os nomes dos campos da tabela '{}'.", sql.getTabela());
+        if(sql.getCampos() == null || sql.getCampos().isEmpty())
             campos = dao.getFieldsFromTable(sql.getTabela());
-        }
-        else campos = sql.getCampos();
-        val resultado = dao.getFieldAndValuesFromTable(campos, sql.getTabela(), sql.getFiltro());
+        else
+            campos = sql.getCampos();
 
-        log.info("Total de campos coletados da tabela '{}': {}.",
-            sql.getTabela(), resultado.size());
+        val resultado = dao.getFieldAndValuesFromTable(campos, sql.getTabela(), sql.getFiltro());
         return new ExtrcaoBanco(sql).addResultado(resultado);
     }
 
@@ -72,7 +70,7 @@ public class EvidenciaService {
 
     //TODO: javadoc
     public boolean validateQuery(List<String> campos) {
-        if(campos.isEmpty()) return true;
+        if(campos == null || campos.isEmpty()) return true;
         return campos.stream().allMatch(this::validateQuery);
     }
 

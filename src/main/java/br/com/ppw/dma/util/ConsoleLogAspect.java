@@ -24,7 +24,6 @@ public class ConsoleLogAspect {
     Method methodName;
     List<String> parametersType;
     List<String> paramitersValues;
-    final private List<MasterServiceResult> servicesResult = new ArrayList<>();
     final public static Logger LOGGER = LogManager.getLogger("CONSOLE LOG");
     final public static Logger CONTROLLER = LogManager.getLogger("CONTROLLER LOG");
     final public static Logger SERVICER = LogManager.getLogger("SERVICE LOG");
