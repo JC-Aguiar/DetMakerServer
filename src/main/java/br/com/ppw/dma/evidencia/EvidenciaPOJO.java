@@ -2,7 +2,7 @@ package br.com.ppw.dma.evidencia;
 
 import br.com.ppw.dma.job.JobDTO;
 import br.com.ppw.dma.job.ComandoSql;
-import br.com.ppw.dma.util.ExtrcaoBanco;
+import br.com.ppw.dma.util.ExtracaoBanco;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -25,29 +25,29 @@ public class EvidenciaPOJO {
     List<String> argumentos = new ArrayList<>();
     List<ComandoSql> queries = new ArrayList<>();
     List<String> cargas = new ArrayList<>();
-    Map<ComandoSql, ExtrcaoBanco> tabelasPreJob = new HashMap<>();
-    Map<ComandoSql, ExtrcaoBanco> tabelasPosJob = new HashMap<>();
+    Map<ComandoSql, ExtracaoBanco> tabelasPreJob = new HashMap<>();
+    Map<ComandoSql, ExtracaoBanco> tabelasPosJob = new HashMap<>();
     List<File> logs = new ArrayList<>();
     List<File> entradas = new ArrayList<>();
     List<File> saidas = new ArrayList<>();
     boolean sucesso = false;
 
-    public EvidenciaPOJO addTabelasPreJob(ComandoSql comandoSql, ExtrcaoBanco evidencia) {
+    public EvidenciaPOJO addTabelasPreJob(ComandoSql comandoSql, ExtracaoBanco evidencia) {
         this.tabelasPreJob.put(comandoSql, evidencia);
         return this;
     }
 
-    public EvidenciaPOJO addTabelasPreJob(Map<ComandoSql, ExtrcaoBanco> evidencia) {
+    public EvidenciaPOJO addTabelasPreJob(Map<ComandoSql, ExtracaoBanco> evidencia) {
         this.tabelasPreJob.putAll(evidencia);
         return this;
     }
 
-    public EvidenciaPOJO addTabelasPosJob(ComandoSql comandoSql, ExtrcaoBanco evidencia) {
+    public EvidenciaPOJO addTabelasPosJob(ComandoSql comandoSql, ExtracaoBanco evidencia) {
         this.tabelasPosJob.put(comandoSql, evidencia);
         return this;
     }
 
-    public EvidenciaPOJO addTabelasPosJob(Map<ComandoSql, ExtrcaoBanco> evidencia) {
+    public EvidenciaPOJO addTabelasPosJob(Map<ComandoSql, ExtracaoBanco> evidencia) {
         this.tabelasPosJob.putAll(evidencia);
         return this;
     }

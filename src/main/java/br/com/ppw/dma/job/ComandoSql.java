@@ -1,6 +1,9 @@
 package br.com.ppw.dma.job;
 
-import lombok.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.util.List;
 
@@ -8,7 +11,6 @@ import java.util.List;
 @Getter
 @ToString
 @NoArgsConstructor
-@AllArgsConstructor
 public class ComandoSql {
 
     private List<String> campos;
