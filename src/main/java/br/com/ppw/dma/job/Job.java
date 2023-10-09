@@ -24,14 +24,14 @@ import static jakarta.persistence.FetchType.LAZY;
 @Entity(name = "PPW_JOB")
 @Table(name = "PPW_JOB")
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@SequenceGenerator(name = "SEQ_JOB_ID", sequenceName = "RCVRY.SEQ_JOB_ID", allocationSize = 1)
+//@SequenceGenerator(name = "SEQ_JOB_ID", sequenceName = "RCVRY.SEQ_JOB_ID", allocationSize = 1)
 public class Job implements MasterEntity<Long> {
 
     //@EmbeddedId
     //JobID id;
 
     @Id @Column(name = "ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_JOB_ID")
+//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_JOB_ID")
     // Identificador numérico do job
     Long id;
 

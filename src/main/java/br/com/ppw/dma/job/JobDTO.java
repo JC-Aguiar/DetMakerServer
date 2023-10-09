@@ -1,7 +1,7 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.system.ShellPointer;
 import br.com.ppw.dma.master.MasterDtoResponse;
+import br.com.ppw.dma.system.ShellPointer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -14,7 +14,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static br.com.ppw.dma.util.FormatString.*;
+import static br.com.ppw.dma.util.FormatString.extrairMascara;
+import static br.com.ppw.dma.util.FormatString.valorVazio;
 
 @Data
 @NoArgsConstructor
@@ -23,15 +24,9 @@ public class JobDTO implements ShellPointer, MasterDtoResponse {
 
     OffsetDateTime dataRegistro;
 
-    String autorRegistro;
-
-    String origemRegistro;
-
-    String nomeArquivo;
-    
-    String nomePlanilha;
-
     Long id;
+
+    String plano;
 
     List<String> executarAposJob = new ArrayList<>();
 
@@ -39,7 +34,7 @@ public class JobDTO implements ShellPointer, MasterDtoResponse {
 
     String fase;
 
-    String job;
+    String nome;
 
     String descricao;
 
@@ -81,7 +76,7 @@ public class JobDTO implements ShellPointer, MasterDtoResponse {
     @JsonIgnore
     public String pathShell() {
         if(!caminhoExec.endsWith("/")) caminhoExec = caminhoExec + "/";
-        return caminhoExec + job;
+        return caminhoExec + nome;
     }
 
     @JsonIgnore

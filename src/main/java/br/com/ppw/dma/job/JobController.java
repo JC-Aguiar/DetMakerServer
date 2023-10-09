@@ -56,23 +56,44 @@ public class JobController extends MasterController
 
     //TODO: javadoc
     @PostMapping(value = "open/xlsx")
-    @Transactional
     public ResponseEntity<?> abrirXlsx(@RequestParam("file") final MultipartFile file) throws IOException {
         val xlsx = jobService.lerXlsx(file);
         val jobsDto = jobService.mapearPlanilhaParaListaDto(xlsx, PLANILHA_NOME);
-        log.info("Total de agendas obtidas: {}", jobsDto.size());
+        log.info("Total de jobs mapeados da planilha: {}.", jobsDto.size());
+        return ResponseEntity.ok(jobsDto);
+    }
 
-        log.info("Salvando agendas no banco local H2.");
+    //TODO: javadoc
+    @Transactional
+    @PostMapping(value = "save/all")
+    public ResponseEntity<?> salvarJobs(@RequestBody List<JobDTO> jobsDto) {
+        log.info("Salvando jobs no banco.");
+        if(jobsDto.isEmpty()) {
+            return ResponseEntity.badRequest()
+                .body("A lista de jobs enviada está vazia.");
+        }
         int jobsSalvos = 0;
         for(val dto: jobsDto) {
+            log.info("{}.", dto);
             log.info("Convertendo DTO em Entidade.");
             val jobEntidade = getModelMapper().map(dto, Job.class);
-            //jobEntidade.setId(new JobID(dto.getId(), dto.getJob()));
-            jobService.persist(jobEntidade);
-            jobsSalvos++;
+            try {
+                jobService.persist(jobEntidade);
+                jobsSalvos++;
+            }
+            catch(Exception e) {
+                log.warn("Erro ao tentar salvar job [{}] {}: {}.",
+                    dto.getId(), dto.getNome(), e.getMessage());
+            }
         }
-        log.info("Total de agendas salvas: {}", jobsSalvos);
-        return ResponseEntity.ok(jobsDto);
+        val mensagem = "Total de jobs salvos: " +jobsSalvos+ ".";
+        log.info(mensagem);
+
+        if(jobsSalvos == 0) {
+            return ResponseEntity.internalServerError()
+                .body("Não foi possível salvar nenhum dos jobs enviados.");
+        }
+        return ResponseEntity.ok(mensagem);
     }
 
     //TODO: javadoc
@@ -86,7 +107,7 @@ public class JobController extends MasterController
         //  (aonde teve sucesso e aonde teve falha)
 
         val pilha = pilhaDto.stream()
-            .map(this::setAgendaDto)
+            .map(this::setjobDto)
             .map(this::converterItemPilhaDtoEmEntidade)
             .map(jobService::executarPilha)
             .toList();
@@ -108,20 +129,20 @@ public class JobController extends MasterController
     //TODO: javadoc
     private EvidenciaPOJO converterItemPilhaDtoEmEntidade(@NonNull ItemPilhaDTO postDTO) {
         final EvidenciaPOJO evidenciaPOJO = getModelMapper().map(postDTO, EvidenciaPOJO.class);
-        evidenciaPOJO.setRegistro(postDTO.getAgenda());
+        evidenciaPOJO.setRegistro(postDTO.getJob());
         return evidenciaPOJO;
     }
 
     //TODO: javadoc
-    private ItemPilhaDTO setAgendaDto(ItemPilhaDTO postDTO) {
+    private ItemPilhaDTO setjobDto(ItemPilhaDTO postDTO) {
         try {
             log.info("Buscando registro do job id {}.", postDTO.getId());
             val job = jobService.findById(postDTO.getId());
             log.info("Entidade Job encontrada: {}.", job);
-            log.info("Mascara Log ('agenda'): {}", job.getMascaraLog());
+            log.info("Mascara Log ('job'): {}", job.getMascaraLog());
 
-            val agendaDto = converterJobEmDto(job);
-            postDTO.setAgenda(agendaDto);
+            val jobDto = converterJobEmDto(job);
+            postDTO.setJob(jobDto);
             return postDTO;
         }
         catch(Exception e) {
@@ -130,18 +151,18 @@ public class JobController extends MasterController
     }
 
     //TODO: javadoc
-    private JobDTO converterJobEmDto(@NonNull Job agenda) {
+    private JobDTO converterJobEmDto(@NonNull Job job) {
         log.info("Convertendo Job para JobDTO.");
-        val agendaDto = getModelMapper().map(agenda, JobDTO.class);
-        agendaDto.setParametros(dividirValores(agenda.getParametros()));
-        agendaDto.setDescricaoParametros(dividirValores(agenda.getDescricaoParametros()));
-        agendaDto.setMascaraEntrada(dividirValores(agenda.getMascaraEntrada()));
-        agendaDto.setMascaraSaida(dividirValores(agenda.getMascaraSaida()));
-        agendaDto.setMascaraLog(dividirValores(agenda.getMascaraLog()));
+        val jobDto = getModelMapper().map(job, JobDTO.class);
+        jobDto.setParametros(dividirValores(job.getParametros()));
+        jobDto.setDescricaoParametros(dividirValores(job.getDescricaoParametros()));
+        jobDto.setMascaraEntrada(dividirValores(job.getMascaraEntrada()));
+        jobDto.setMascaraSaida(dividirValores(job.getMascaraSaida()));
+        jobDto.setMascaraLog(dividirValores(job.getMascaraLog()));
 
         log.info("Conversão realizada com sucesso.");
-        log.info("{}", agendaDto);
-        return agendaDto;
+        log.info("{}", jobDto);
+        return jobDto;
     }
 
 

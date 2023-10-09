@@ -11,6 +11,7 @@ import lombok.val;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFRichTextString;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
@@ -66,7 +67,6 @@ public class ExcelXLSX {
                         celula.setCellType(CellType.STRING);
                         val colIndex = celula.getColumnIndex();
                         val valor = celula.getStringCellValue();
-
                         //Comece a contar a quantidade de colunas ao identificar a célula "ID"
                         //Se a contagem foi iniciada e não consta finalizada, incremente a contagem
                         //Se estiver no meio da contagem de colunas e encontrar valor vazio, finalize a contagem
@@ -99,8 +99,13 @@ public class ExcelXLSX {
                                 }
                             }
                         }
+                        //Processo de preenchimento de valores,
+                        //uma vez que o mapeamento das colunas já se encerrou
                         else if(colIndex >= indexZero && colIndex < quantColunas - indexZero) {
+                            //Caso conteúdo do campo ID esteja vazio = pular linha
                             if(colIndex == indexZero && valor.isEmpty()) break;
+
+                            //Confirmando se a célula da linha representa uma coluna válida pré-mapeada
                             val colunaTitulo = mapColunas.get(colIndex);
                             val colunaIdentificada = MAP_CAMPOS_AGENDA.containsKey(colunaTitulo);
                             log.trace("[Linha {} | Coluna {}] = '{}'",
@@ -108,8 +113,23 @@ public class ExcelXLSX {
                                 celula.getColumnIndex(),
                                 valor.replace("\n", "   ")
                             );
+                            //Se a coluna foi identificada, a célula é válida
                             if(colunaIdentificada) {
                                 log.trace("Coluna mapeada no título: '{}'", colunaTitulo);
+                                //Validando se o registro está riscado (inválido)
+                                //val cellProps = ((XSSFRichTextString) celula
+                                //    .getRichStringCellValue())
+                                //    .getFontAtIndex(0);
+                                //if(cellProps.getStrikeout()) {
+                                //    log.info(
+                                //        "[Linha {} | Coluna {}] " +
+                                //        "Será ignorada, pois seu conteúdo está riscado.",
+                                //        linha.getRowNum(),
+                                //        celula.getColumnIndex()
+                                //    );
+                                //    continue;
+                                //}
+                                //Tentando obter e associar o valor da célula
                                 val campo = MAP_CAMPOS_AGENDA.get(colunaTitulo);
                                 try {
                                     Object valorFinal = null;
