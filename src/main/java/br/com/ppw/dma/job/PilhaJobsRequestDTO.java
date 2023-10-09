@@ -13,7 +13,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@Builder
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PilhaJobsRequestDTO implements MasterDtoRequest {
@@ -21,7 +20,7 @@ public class PilhaJobsRequestDTO implements MasterDtoRequest {
     Long jobId;
     Integer ordem;
     String argumentos;
-    List<ComandoSql> queries = new ArrayList<>();
-    List<File> cargas = new ArrayList<>();
+    final List<ComandoSql> queries = new ArrayList<>();
+    final List<File> cargas = new ArrayList<>();
 
 }
