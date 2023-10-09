@@ -15,13 +15,7 @@ public class JobPOJO {
 
     OffsetDateTime dataRegistro;
 
-    String autorRegistro;
-
-    String origemRegistro;
-
-    String nomeArquivo;
-    
-    String nomePlanilha;
+    String plano;
 
     @PlanilhaTitulo("ID")
     Long id;
@@ -36,7 +30,7 @@ public class JobPOJO {
     String fase;
 
     @PlanilhaTitulo("JOB")
-    String job;
+    String nome;
 
     @PlanilhaTitulo("Descrição")
     String descricao;

@@ -20,6 +20,6 @@ public class ItemPilhaDTO {
    List<String> cargas = new ArrayList<>();
 
    @JsonIgnore
-   JobDTO agenda;
+   JobDTO job;
 
 }

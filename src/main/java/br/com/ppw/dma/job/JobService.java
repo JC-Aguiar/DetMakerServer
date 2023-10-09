@@ -1,10 +1,10 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.system.Arquivos;
-import br.com.ppw.dma.system.ExcelXLSX;
 import br.com.ppw.dma.evidencia.EvidenciaPOJO;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.net.ConectorSftp;
+import br.com.ppw.dma.system.Arquivos;
+import br.com.ppw.dma.system.ExcelXLSX;
 import com.google.gson.Gson;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -14,6 +14,7 @@ import lombok.val;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -59,6 +60,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
             .collect(Collectors.toList());
     }
 
+    @Transactional
     public Job persist(@NotNull Job job) {
         log.info("Persistindo Job no banco:");
         log.info(job.toString());
@@ -107,7 +109,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
     private JobDTO refinarCampos(
         @NotNull JobPOJO jobPojo, @NotBlank String planilhaNome, @NotBlank String arquivoNome) {
         //---------------------------------------------------------------------------------------------
-        val registro = "Job [" +jobPojo.getId()+ "] " +jobPojo.getJob();
+        val registro = "Job [" +jobPojo.getId()+ "] " +jobPojo.getNome();
         log.info("{}: Validando os campos possuem conteúdo de fato ou apenas indicadores vazios.", registro);
         val tabelas = valorVazio(jobPojo.getTabelas().replace("RCVRY.", ""));
         val parametroNome = valorVazio(jobPojo.getParametros());
@@ -150,8 +152,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
         JobDto.setMascaraEntrada(listaMascarasEntrada);
         JobDto.setMascaraSaida(listaMascarasSaida);
         JobDto.setMascaraLog(listaMascarasLog);
-        JobDto.setNomeArquivo(arquivoNome);
-        JobDto.setNomePlanilha(planilhaNome);
+        JobDto.setPlano(planilhaNome);
         try {
             log.info("{}: Tentando converter 'Data de Atualização' da planilha para o DTO.", registro);
             val data = refinarTexto(jobPojo.getDataAtualizacao());
@@ -170,7 +171,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
         val Job = evidenciaPOJO.getRegistro();
         try {
             log.info("Preparando diretório para evidências desse Job.");
-            val jobNome = Job.getJob().split("\\.")[0];
+            val jobNome = Job.getNome().split("\\.")[0];
             val path = Arquivos.criarDiretorio(DIR_RECURSOS + jobNome).toPath();
 
             log.info("Tentando acessar ambiente remoto.");
@@ -206,8 +207,8 @@ public class JobService extends MasterService<Long, Job, JobService> {
             // 5. Se foi identificado registro no banco antes
             // 6. Se foi identificado registro no banco depois
             // 7. Se o comando SQL foi inválido
-            // 8. Se o comando SQL informado com declarações não permitidas (DELETE, DTOP, etc)
-            log.error("Erro durante execução do job '{}': {}", Job.getJob(), e.getMessage());
+            // 8. Se o comando SQL informado com declarações não permitidas (DELETE, DROP, etc)
+            log.error("Erro durante execução do job '{}': {}", Job.getNome(), e.getMessage());
         }
         return evidenciaPOJO;
     }
