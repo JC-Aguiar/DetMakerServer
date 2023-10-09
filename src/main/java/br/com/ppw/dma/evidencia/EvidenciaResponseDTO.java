@@ -8,10 +8,10 @@ import java.io.File;
 import java.util.List;
 import java.util.Map;
 
-@Data
+//@Data
 @Builder
-@AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
+//@AllArgsConstructor
+//@EqualsAndHashCode(callSuper = true)
 public record EvidenciaResponseDTO(
     @NonNull String job,
     @NonNull Boolean sucesso,

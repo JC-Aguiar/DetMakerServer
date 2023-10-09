@@ -5,10 +5,10 @@ import lombok.*;
 
 import java.util.List;
 
-@Data
+//@Data
 @Builder
-@AllArgsConstructor
-@EqualsAndHashCode(callSuper = true)
+//@AllArgsConstructor
+//@EqualsAndHashCode(callSuper = true)
 public record PilhaEvidenciasResponseDTO(
     List<EvidenciaResponseDTO> evidencias
 ) implements MasterDtoResponse {}
