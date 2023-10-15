@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 @RestController
 public abstract class MasterController<
     ID, ENTITY extends MasterEntity, REQUEST extends MasterDtoRequest,
-    RESPONSE extends MasterDtoResponse, THIS extends MasterController> {
+    RESPONSE extends MasterResponseDTO, THIS extends MasterController> {
 
     @Getter @Autowired
     private ModelMapper modelMapper;

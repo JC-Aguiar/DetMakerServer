@@ -1,10 +1,11 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.evidencia.EvidenciaPOJO;
+import br.com.ppw.dma.evidencia.EvidenciaService;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.system.Arquivos;
 import br.com.ppw.dma.system.ExcelXLSX;
+import br.com.ppw.dma.util.ResultadoSql;
 import com.google.gson.Gson;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -36,6 +37,10 @@ public class JobService extends MasterService<Long, Job, JobService> {
     @Autowired
     private Gson gson;
 
+    //TODO: remover daqui e reorganizar
+    @Autowired
+    private final EvidenciaService evidenciaSerive;
+
     @Autowired
     private final JobRepository dao;
 
@@ -45,9 +50,10 @@ public class JobService extends MasterService<Long, Job, JobService> {
         .ofPattern("dd/MM/yyyy");
 
 
-    public JobService(JobRepository dao) {
+    public JobService(JobRepository dao, EvidenciaService evidenciaSerive) {
         super(dao);
         this.dao = dao; //TODO: precisa mesmo?
+        this.evidenciaSerive = evidenciaSerive;
     }
 
     public Job findByNome(@NotBlank String nome) {
@@ -64,7 +70,10 @@ public class JobService extends MasterService<Long, Job, JobService> {
     public Job persist(@NotNull Job job) {
         log.info("Persistindo Job no banco:");
         log.info(job.toString());
-        return dao.save(job);
+        job = dao.save(job);
+
+        log.info("Job ID {} gravado com sucesso.", job.getId());
+        return job;
     }
 
     public ExcelXLSX lerXlsx(@NotNull MultipartFile file) throws IOException {
@@ -87,7 +96,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
         return new ExcelXLSX(nomeArquivo, arquivoDestino); //TODO: Criar handler para NoClassDefFoundError
     }
 
-    public List<JobDTO> mapearPlanilhaParaListaDto(
+    public List<JobInfoDTO> mapExcelToJobDto(
         @NotNull ExcelXLSX excel, @NotBlank String planilhaNome) {
         //--------------------------------------------------------
         val arquivoNome = excel.getNomeArquivo();
@@ -106,8 +115,8 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     // TODO: javadoc
-    private JobDTO refinarCampos(
-        @NotNull JobPOJO jobPojo, @NotBlank String planilhaNome, @NotBlank String arquivoNome) {
+    private JobInfoDTO refinarCampos(
+        @NotNull JobSchedulePOJO jobPojo, @NotBlank String planilhaNome, @NotBlank String arquivoNome) {
         //---------------------------------------------------------------------------------------------
         val registro = "Job [" +jobPojo.getId()+ "] " +jobPojo.getNome();
         log.info("{}: Validando os campos possuem conteúdo de fato ou apenas indicadores vazios.", registro);
@@ -139,8 +148,8 @@ public class JobService extends MasterService<Long, Job, JobService> {
             log.warn("ATENÇÃO: A aplicação usará a quantidade na coluna 'Parâmetros' e, portanto, " +
                 "não haverá descrição de todos os parâmetros para auxiliar o preenchimento.");
         }
-        log.info("{}: Gerando JobDTO.", registro);
-        val JobDto = new ModelMapper().map(jobPojo, JobDTO.class);
+        log.info("{}: Gerando JobInfoDTO.", registro);
+        val JobDto = new ModelMapper().map(jobPojo, JobInfoDTO.class);
         JobDto.setDiretorioEntrada(diretorioEntrada);
         JobDto.setDiretorioSaida(diretorioSaida);
         JobDto.setDiretorioLog(diretorioLog);
@@ -167,36 +176,50 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: javadoc
-    public EvidenciaPOJO executarPilha(EvidenciaPOJO evidenciaPOJO) {
-        val Job = evidenciaPOJO.getRegistro();
+    public JobExecutePOJO executarPilha(@NonNull JobExecutePOJO pojo) {
+        val jobDto = pojo.getJobInfo();
         try {
-            log.info("Preparando diretório para evidências desse Job.");
-            val jobNome = Job.getNome().split("\\.")[0];
+            log.info("Preparando diretório para evidências do Job id {}.", pojo.getJob().getId());
+            val jobNome = jobDto.getNome().split("\\.")[0];
             val path = Arquivos.criarDiretorio(DIR_RECURSOS + jobNome).toPath();
 
             log.info("Tentando acessar ambiente remoto.");
             sftp = ConectorSftp.conectar("10.129.164.206", 22, "rcvry", "Ppw@1022");
+            //TODO: mover o ConectorSftp para outro escopo, a fim de não ser necessário múltiplas instâncias
             //TODO: obter e tratar corretamente o IP, PORTA, USUÁRIO E SENHA
 
             log.info("Obtendo log mais recente pré-execução.");
-            val logAntes = downloadMaisRecente(Job, path);
+            val logAntes = downloadMaisRecente(jobDto, path);
 
-            log.info("Executa comando do Job.");
-            if(sftp.comando(evidenciaPOJO.comandoShell()).isEmpty())
-                throw new RuntimeException("Comando não executado com sucesso.");
+            log.info("Consultando tabelas pré-execução.");
+            pojo.setTabelas(
+                evidenciaSerive.extractTablePreJob(pojo.getTabelas()));
 
+            log.info("Executando Job.");
+            if(sftp.comando(pojo.comandoShell()).isEmpty()) {
+//                throw new RuntimeException("Comando não executado com sucesso.");
+                log.error("Comando não executado com sucesso.");
+            }
             log.info("Obtendo log mais recente pós-execução");
-            val logDepois = downloadMaisRecente(Job, path);
+            val logDepois = downloadMaisRecente(jobDto, path);
+
+            log.info("Consultando tabelas pós-execução.");
+            val tabelasDepois = extrairBanco(pojo.getTabelas());
+            pojo.setTabelas(
+                evidenciaSerive.extractTablePosJob(pojo.getTabelas()));
 
             log.info("Comparando logs para anexar como evidência.");
             val logEvidencia = getArquivoMaisRecente(logAntes, logDepois);
-            if(logEvidencia.isEmpty())
-                throw new RuntimeException("Nenhum arquivo de log disponível para esse job.");
-
-            log.info("Evidência de log coletada: ");
-            printArquivo(logEvidencia.get());
-            evidenciaPOJO.addEvidencias(logEvidencia.get());
-            evidenciaPOJO.setSucesso(true);
+            if(logEvidencia.isEmpty()) {
+                //throw new RuntimeException("Nenhum arquivo de log disponível para esse job.");
+                log.warn("Nenhum arquivo de log disponível para Job id {}.", pojo.getJob().getId());
+            }
+            else {
+                log.info("Evidência de log coletada: ");
+                printArquivo(logEvidencia.get());
+            }
+            pojo.addEvidencias(logEvidencia.get());
+            pojo.setSucesso(true);
         }
         catch(Exception e) {
             //TODO: melhorar tratamento. É preciso validar e informar:
@@ -208,9 +231,16 @@ public class JobService extends MasterService<Long, Job, JobService> {
             // 6. Se foi identificado registro no banco depois
             // 7. Se o comando SQL foi inválido
             // 8. Se o comando SQL informado com declarações não permitidas (DELETE, DROP, etc)
-            log.error("Erro durante execução do job '{}': {}", Job.getNome(), e.getMessage());
+            log.error("Erro durante execução do Job [{}] {}: {}",
+                jobDto.getId(), jobDto.getNome(), e.getMessage());
         }
-        return evidenciaPOJO;
+        return pojo;
+    }
+
+    private List<ResultadoSql> extrairBanco(List<ResultadoSql> tabelas) {
+        return tabelas.stream()
+            .map(evidenciaSerive::extractTablePreJob)
+            .toList();
     }
 
     //TODO: Javadoc
@@ -223,8 +253,8 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: Javadoc
-    private Optional<File> downloadMaisRecente(JobDTO jobDTO, Path path) {
-        val logDirRemoto = jobDTO.pathLog().toArray(new String[0]);
+    private Optional<File> downloadMaisRecente(JobInfoDTO jobInfo, Path path) {
+        val logDirRemoto = jobInfo.pathLog().toArray(new String[0]);
         log.info(Arrays.toString(logDirRemoto));
 
         //Realizando cada download para cada log informado pelo Job

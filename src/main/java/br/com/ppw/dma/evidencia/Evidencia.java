@@ -20,6 +20,8 @@ import static jakarta.persistence.FetchType.LAZY;
 @Getter
 @Setter
 @ToString
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_EVIDENCIA")
@@ -41,6 +43,9 @@ public class Evidencia implements MasterEntity<Long> {
         //@JoinColumn(name = "JOB_NOME", referencedColumnName = "NOME")
     })
     Job job;
+
+    @Column(name = "ARGUMENTOS", length = 300)
+    String argumentos;
 
     @ToString.Exclude
     @Column(name = "CARGAS")

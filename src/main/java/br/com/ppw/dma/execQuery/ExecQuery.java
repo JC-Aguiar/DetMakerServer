@@ -6,6 +6,8 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
 
+import java.io.File;
+import java.sql.Blob;
 import java.util.Objects;
 
 import static jakarta.persistence.FetchType.LAZY;
@@ -14,6 +16,8 @@ import static jakarta.persistence.FetchType.LAZY;
 @Getter
 @Setter
 @ToString
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_EXEC_QUERY")
@@ -23,22 +27,27 @@ public class ExecQuery {
 
     @Id @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_EXEC_QUERY_ID")
-    // Identificador numérico dessa query pós-execução da evidência
+    // Identificador numérico dessa queries pós-execução da evidência
     Long id;
 
     @ToString.Exclude
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "EVIDENCIA_ID")
-    // ID da evidência relacionada com esse query pós-execução
+    // ID da evidência relacionada com esse queries pós-execução
     Evidencia evidencia;
 
     @Column(name = "TABELA_NOME", length = 150)
-    // Nome da tabela usada na query
+    // Nome da tabela usada na queries
     String tabelaNome;
 
     @Column(name = "QUERY", length = 500)
-    // SQL usada na evidência desse query pós-execução
+    // SQL usada na evidência desse queries pós-execução
     String query;
+
+    @Lob
+    @Column(name = "RESULTADO")
+    // Conteúdo da tabela extraída
+    Blob resultado;
 
 
     @Override

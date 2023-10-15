@@ -1,12 +1,10 @@
 package br.com.ppw.dma.evidencia;
 
-import br.com.ppw.dma.master.MasterDtoResponse;
+import br.com.ppw.dma.master.MasterResponseDTO;
 import lombok.*;
-import lombok.experimental.FieldDefaults;
 
 import java.io.File;
 import java.util.List;
-import java.util.Map;
 
 //@Data
 @Builder
@@ -16,11 +14,11 @@ public record EvidenciaResponseDTO(
     @NonNull String job,
     @NonNull Boolean sucesso,
     String argumentos,
-    List<String> query,
+    List<String> queries,
     List<File> tabelas,
     List<File> cargas,
     List<File> logs,
     List<File> saidas)
-implements MasterDtoResponse {}
+implements MasterResponseDTO {}
 
 

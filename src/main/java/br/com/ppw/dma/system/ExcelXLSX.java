@@ -1,6 +1,6 @@
 package br.com.ppw.dma.system;
 
-import br.com.ppw.dma.job.JobPOJO;
+import br.com.ppw.dma.job.JobSchedulePOJO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
@@ -11,7 +11,6 @@ import lombok.val;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.xssf.usermodel.XSSFRichTextString;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.File;
@@ -34,7 +33,7 @@ public class ExcelXLSX {
     final List<PlanilhaExcel> planilhas = new ArrayList<>();
 
     static {
-        Arrays.stream(JobPOJO.class.getDeclaredFields())
+        Arrays.stream(JobSchedulePOJO.class.getDeclaredFields())
             .forEach(campo -> {
                 val anotacao = campo.getAnnotation(PlanilhaTitulo.class);
                 if(anotacao == null) return;
@@ -52,7 +51,7 @@ public class ExcelXLSX {
             log.info("Iterando planilhas disponíveis.");
             workbook.forEach(planilha -> {
                 log.info("-- PLANILHA '{}' {} INICIANDO", planilha.getSheetName(), LINHA_HIFENS);
-                final List<JobPOJO> listaDto = new ArrayList<>();
+                final List<JobSchedulePOJO> listaDto = new ArrayList<>();
                 val mapColunas = new HashMap<Integer, String>();
                 boolean colunasFechadas = false;
                 boolean coletarColunas = false;
@@ -61,7 +60,7 @@ public class ExcelXLSX {
 
                 log.info("-- PLANILHA '{}' {} LENDO CABEÇALHO", planilha.getSheetName(), LINHA_HIFENS);
                 for(Row linha : planilha) {
-                    JobPOJO registro = new JobPOJO();
+                    JobSchedulePOJO registro = new JobSchedulePOJO();
 
                     for(Cell celula : linha) {
                         celula.setCellType(CellType.STRING);
@@ -148,7 +147,7 @@ public class ExcelXLSX {
                         }
                     }
                     //Fim looping das células
-                    //Insere somente os registros (JobPOJO) preenchidos na lista de DTOs
+                    //Insere somente os registros (JobSchedulePOJO) preenchidos na lista de DTOs
                     //Ná próxima linha o registro será re-instanciado com campos vazios
                     if(registro.getId() == null) continue;
                     listaDto.add(registro);

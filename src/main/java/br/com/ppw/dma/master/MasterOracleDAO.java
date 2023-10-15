@@ -1,4 +1,4 @@
-package br.com.ppw.dma.util;
+package br.com.ppw.dma.master;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -13,11 +13,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Component
 @Slf4j
-public class NativeSqlDAO {
+public class MasterOracleDAO {
 
     private static final String SQL_GET_FIELDS_FROM_TABLE =
         "SELECT a.column_name " +

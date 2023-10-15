@@ -1,7 +1,7 @@
 package br.com.ppw.dma.evidencia;
 
-import br.com.ppw.dma.job.ComandoSql;
-import br.com.ppw.dma.util.ExtracaoBanco;
+import br.com.ppw.dma.util.ComandoSql;
+import br.com.ppw.dma.util.ResultadoSql;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -31,13 +31,13 @@ public class EvidenciaController {
     @PostMapping(value = "database")
     @Transactional
     public ResponseEntity<?> executarPilha(@RequestBody List<ComandoSql> comandosSql) {
-//    public ResponseEntity<?> executarPilha(@RequestBody List<PilhaJobsRequestDTO> evidenciasDto) {
+//    public ResponseEntity<?> executarPilha(@RequestBody List<JobExecuteDTO> evidenciasDto) {
 //        comandosSql.forEach(evidencia -> {
 //            val result = evidenciaService.extractTable(evidencia.getQueries());
 //            evidencia.addTabelasPreJob(result);
 //            }
 //        );
-        final List<ExtracaoBanco> result = evidenciaService.extractTable(comandosSql);
+        final List<ResultadoSql> result = evidenciaService.extractTablePreJob(comandosSql);
         return ResponseEntity.ok(result);
     }
 

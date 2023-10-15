@@ -1,6 +1,6 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.master.MasterDtoResponse;
+import br.com.ppw.dma.master.MasterResponseDTO;
 import br.com.ppw.dma.system.ShellPointer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AccessLevel;
@@ -20,56 +20,32 @@ import static br.com.ppw.dma.util.FormatString.valorVazio;
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class JobDTO implements ShellPointer, MasterDtoResponse {
+public class JobInfoDTO implements ShellPointer, MasterResponseDTO {
 
     OffsetDateTime dataRegistro;
-
     Long id;
-
     String plano;
-
     List<String> executarAposJob = new ArrayList<>();
-
     String grupoConcorrencia;
-
     String fase;
-
     String nome;
-
     String descricao;
-
     String grupoUda;
-
     List<String> programa = new ArrayList<>();
-
     List<String> tabelas = new ArrayList<>();
-
     String servidor;
-
     String caminhoExec;
-
     List<String> parametros = new ArrayList<>();
-
     List<String> descricaoParametros = new ArrayList<>();
-
     String diretorioEntrada;
-
     List<String> mascaraEntrada = new ArrayList<>();
-
     String diretorioSaida;
-
     List<String> mascaraSaida = new ArrayList<>();
-
     String diretorioLog;
-
     List<String> mascaraLog = new ArrayList<>();
-
     String tratamento;
-
     String escalation;
-
     LocalDate dataAtualizacao;
-
     String atualizadoPor;
 
 

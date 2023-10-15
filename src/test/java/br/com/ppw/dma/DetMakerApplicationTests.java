@@ -1,7 +1,7 @@
 package br.com.ppw.dma;
 
 import br.com.ppw.dma.evidencia.EvidenciaService;
-import br.com.ppw.dma.job.ComandoSql;
+import br.com.ppw.dma.util.ComandoSql;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -24,7 +24,7 @@ class DetMakerApplicationTests {
 		val tabela = "DELQMST";
 
 		val comandosSql = List.of(new ComandoSql(null, tabela, null));
-		evidenciaService.extractTable(comandosSql);
+		evidenciaService.extractTablePreJob(comandosSql);
 	}
 
 }
