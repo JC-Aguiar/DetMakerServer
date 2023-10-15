@@ -1,6 +1,6 @@
 package br.com.ppw.dma;
 
-import br.com.ppw.dma.job.ComandoSql;
+import br.com.ppw.dma.util.ComandoSql;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -13,7 +13,7 @@ public class BasicTest {
     @Test
     public void testeDeColetaGenericaAoBanco() {
         val comandoSql = new ComandoSql();
-        comandoSql.setFiltro("SELECT * FROM EVENTOS_WEB ew WHERE EVTYPE='EV_BOLETO_CYBER_HUBPGTO' ORDER BY EVID");
+        comandoSql.setFiltros("SELECT * FROM EVENTOS_WEB ew WHERE EVTYPE='EV_BOLETO_CYBER_HUBPGTO' ORDER BY EVID");
         comandoSql.setTabela("EVENTOS_WEB");
     }
 

@@ -55,7 +55,8 @@ public abstract class MasterService<
     // A method that returns an entity by id.
     @ConsoleLog
     public ENTITY findById(@Positive @NotNull ID id) {
-        return Optional.ofNullable(dao.getById(id))
+        return Optional
+            .ofNullable(dao.getById(id))
            .orElseThrow();
     }
 

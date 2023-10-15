@@ -1,5 +1,6 @@
-package br.com.ppw.dma.job;
+package br.com.ppw.dma.util;
 
+import br.com.ppw.dma.job.JobSchedulePOJO;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,7 +12,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ScheduleDTO {
+public class Schedule {
 
     String nomeArquivo;
     List<PlanilhaSchedule> planilha = new ArrayList<>();
@@ -22,7 +23,7 @@ public class ScheduleDTO {
     public class PlanilhaSchedule {
 
         String nomePlanilha;
-        List<JobPOJO> registros = new ArrayList<>();
+        List<JobSchedulePOJO> registros = new ArrayList<>();
 
     }
 }

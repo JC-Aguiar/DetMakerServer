@@ -15,6 +15,8 @@ import static jakarta.persistence.FetchType.LAZY;
 @Getter
 @Setter
 @ToString
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_EXEC_FILE")
