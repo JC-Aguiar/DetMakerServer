@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>br.com.jcaguiar</groupId>
 	<artifactId>det-maker-api</artifactId>
-	<version>v1.4.Beta</version>
+	<version>v1.5.Beta</version>
 	<name>DetMakerApi</name>
 	<description>
 		API back-end para o sistema Det-Maker usando Java 16 com Spring-Boot,
