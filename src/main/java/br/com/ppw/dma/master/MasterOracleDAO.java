@@ -49,6 +49,7 @@ public class MasterOracleDAO {
         //Obtendo valores das diferentes colunas de cada registro no banco dessa determinada tabela
         val resultadoFinal = new ArrayList<Map<String, Object>>();
         val session = entityManager.unwrap(Session.class);
+        whereQuery = whereQuery.replace("WHERE", "");
 //        final List<Object[]> queryResult = session.createNativeQuery(SQL_VALUES_FROM_TABLE)
 //            .setParameter("fields", fields)
 //            .setParameter("tableName", tableName)
@@ -59,8 +60,8 @@ public class MasterOracleDAO {
         String sql = SQL_VALUES_FROM_TABLE
             .replace(":fields", String.join(", ", fields))
             .replace(":tableName", tableName);
-        if(whereQuery != null) sql = sql + "WHERE " + whereQuery + "ROWNUM <= 50";
-        else sql = sql + "WHERE ROWNUM <= 50";
+        if(whereQuery != null) sql = sql + "WHERE " + whereQuery + " AND ROWNUM <= 50";
+        else sql = sql + " WHERE ROWNUM <= 50";
 
         session.createNativeQuery(sql).getResultList().forEach(obj -> {
             log.debug("{}", obj);

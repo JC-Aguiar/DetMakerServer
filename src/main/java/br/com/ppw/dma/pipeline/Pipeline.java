@@ -2,14 +2,15 @@ package br.com.ppw.dma.pipeline;
 
 import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.master.MasterEntity;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
 
-import java.util.LinkedHashSet;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 import static jakarta.persistence.FetchType.LAZY;
 
@@ -33,14 +34,20 @@ public class Pipeline implements MasterEntity<Long> {
     // Nome da pipeline
     String nome;
 
+    @Column(name = "DESCRICAO", length = 500)
+    // Nome da pipeline
+    String descricao;
+
     @ToString.Exclude
+    @JsonBackReference
     @Column(name = "JOBS")
     @ManyToMany(fetch = LAZY)
     @JoinTable(name = "PPW_PIPELINE_JOB",
         joinColumns = @JoinColumn(name = "PIPELINE_ID", referencedColumnName = "ID"),
         inverseJoinColumns = @JoinColumn(name = "JOB_ID", referencedColumnName = "ID"))
     // IDs dos jobs relacionados a essa pipeline
-    Set<Job> jobs = new LinkedHashSet<>();
+    List<Job> jobs = new ArrayList<>();
+
 
     @Override
     public final boolean equals(Object o) {

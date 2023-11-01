@@ -3,6 +3,7 @@ package br.com.ppw.dma.job;
 import br.com.ppw.dma.evidencia.EvidenciaService;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.net.ConectorSftp;
+import br.com.ppw.dma.pipeline.Pipeline;
 import br.com.ppw.dma.system.Arquivos;
 import br.com.ppw.dma.system.ExcelXLSX;
 import br.com.ppw.dma.util.ResultadoSql;
@@ -22,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -161,7 +163,6 @@ public class JobService extends MasterService<Long, Job, JobService> {
         JobDto.setMascaraEntrada(listaMascarasEntrada);
         JobDto.setMascaraSaida(listaMascarasSaida);
         JobDto.setMascaraLog(listaMascarasLog);
-        JobDto.setPlano(planilhaNome);
         try {
             log.info("{}: Tentando converter 'Data de Atualização' da planilha para o DTO.", registro);
             val data = refinarTexto(jobPojo.getDataAtualizacao());
@@ -179,6 +180,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
     public JobExecutePOJO executarPilha(@NonNull JobExecutePOJO pojo) {
         val jobDto = pojo.getJobInfo();
         try {
+            pojo.setDataInicio(OffsetDateTime.now());
             log.info("Preparando diretório para evidências do Job id {}.", pojo.getJob().getId());
             val jobNome = jobDto.getNome().split("\\.")[0];
             val path = Arquivos.criarDiretorio(DIR_RECURSOS + jobNome).toPath();
@@ -189,7 +191,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
             //TODO: obter e tratar corretamente o IP, PORTA, USUÁRIO E SENHA
 
             log.info("Obtendo log mais recente pré-execução.");
-            val logAntes = downloadMaisRecente(jobDto, path);
+            val logsAntes = downloadMaisRecente(jobDto, path);
 
             log.info("Consultando tabelas pré-execução.");
             pojo.setTabelas(
@@ -197,11 +199,11 @@ public class JobService extends MasterService<Long, Job, JobService> {
 
             log.info("Executando Job.");
             if(sftp.comando(pojo.comandoShell()).isEmpty()) {
-//                throw new RuntimeException("Comando não executado com sucesso.");
+                //throw new RuntimeException("Comando não executado com sucesso.");
                 log.error("Comando não executado com sucesso.");
             }
             log.info("Obtendo log mais recente pós-execução");
-            val logDepois = downloadMaisRecente(jobDto, path);
+            val logsDepois = downloadMaisRecente(jobDto, path);
 
             log.info("Consultando tabelas pós-execução.");
             val tabelasDepois = extrairBanco(pojo.getTabelas());
@@ -209,16 +211,16 @@ public class JobService extends MasterService<Long, Job, JobService> {
                 evidenciaSerive.extractTablePosJob(pojo.getTabelas()));
 
             log.info("Comparando logs para anexar como evidência.");
-            val logEvidencia = getArquivoMaisRecente(logAntes, logDepois);
+            val logEvidencia = getLogMaisRecente(logsAntes, logsDepois);
             if(logEvidencia.isEmpty()) {
                 //throw new RuntimeException("Nenhum arquivo de log disponível para esse job.");
                 log.warn("Nenhum arquivo de log disponível para Job id {}.", pojo.getJob().getId());
             }
             else {
-                log.info("Evidência de log coletada: ");
-                printArquivo(logEvidencia.get());
+                log.info("Logs coletados como Evidência: ");
+                logEvidencia.forEach(this::printArquivo);
             }
-            pojo.addEvidencias(logEvidencia.get());
+            pojo.addEvidencias(logEvidencia);
             pojo.setSucesso(true);
         }
         catch(Exception e) {
@@ -234,6 +236,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
             log.error("Erro durante execução do Job [{}] {}: {}",
                 jobDto.getId(), jobDto.getNome(), e.getMessage());
         }
+        pojo.setDataFim(OffsetDateTime.now());
         return pojo;
     }
 
@@ -244,42 +247,54 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: Javadoc
-    @SafeVarargs
-    private Optional<File> getArquivoMaisRecente(Optional<File>...arquivo) {
-        return Stream.of(arquivo)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .max(Comparator.comparing(File::lastModified));
+    public List<File> getLogMaisRecente(@NonNull List<File> logs1, @NonNull List<File> logs2) {
+        log.info("Lista 1 possuí {} log(s). Lista 2 possuí {} log(s).", logs1.size(), logs2.size());
+        val maiorTamanho = Math.max(logs1.size(), logs2.size());
+        val listaLogs = new ArrayList<File>();
+
+        for(int i = 0; i < maiorTamanho; i++) {
+            val file1 = logs1.size() > i ? logs1.get(i) : null;
+            val file2 = logs2.size() > i ? logs2.get(i) : null;
+            long lastModified1 = file1 == null ? Long.MAX_VALUE : file1.lastModified();
+            long lastModified2 = file2 == null ? Long.MAX_VALUE : file2.lastModified();
+            val arquivoMaisRecente = (lastModified1 > lastModified2) ? file1 : file2;
+            listaLogs.add(arquivoMaisRecente);
+        }
+        return listaLogs;
     }
 
     //TODO: Javadoc
-    private Optional<File> downloadMaisRecente(JobInfoDTO jobInfo, Path path) {
-        val logDirRemoto = jobInfo.pathLog().toArray(new String[0]);
-        log.info(Arrays.toString(logDirRemoto));
+    private List<File> downloadMaisRecente(JobInfoDTO jobInfo, Path path) {
+        val logsNome = jobInfo.pathLog().toArray(new String[0]);
+        log.info(Arrays.toString(logsNome));
 
-        //Realizando cada download para cada log informado pelo Job
-        val sucessos = sftp.downloadMaisRecente(path, logDirRemoto);
+        log.debug("Realizando cada download para cada log informado pelo Job.");
+        val sucessos = sftp.downloadMaisRecente(path, logsNome);
         if(sucessos > 0)
             log.info("Total de downloads: " + sucessos);
         else {
             log.warn("Nenhum download realizado com sucesso.");
-            return Optional.empty();
+            return List.of();
         }
-        //Obtendo somente o arquivo mais recente
-        final File arquivoMaisRecente = Arquivos.loadArquivos(path)
-            .stream()
-            .max(Comparator.comparing(File::lastModified))
-            .orElse(null);
-        if(arquivoMaisRecente != null) {
-            printArquivo(arquivoMaisRecente);
-            return Optional.of(arquivoMaisRecente);
-        }
+        log.debug("Buscando pelo log mais recente, nos downloads, para cada máscara de log.");
+        final List<File> arquivosMaisRecentes = Stream.of(logsNome)
+            .map(log -> log.split("/*")[0])
+            .map(log -> Arquivos.loadArquivos(path, log)
+                .stream()
+                .max(Comparator.comparing(File::lastModified))
+                .orElse(null))
+            .filter(Objects::nonNull)
+            .peek(this::printArquivo)
+            .toList();
+
+        //Resultado final
+        if(!arquivosMaisRecentes.isEmpty()) return arquivosMaisRecentes;
         log.warn("Nenhum arquivo de log disponível agora para esse job.");
-        return Optional.empty();
+        return List.of();
     }
 
     //TODO: Javadoc
-    private void printArquivo(@NonNull File arquivo) {
+    public void printArquivo(@NonNull File arquivo) {
         if(!arquivo.exists()) return;
         val data = new Date(arquivo.lastModified());
         val peso = (double) arquivo.length() / 1000;

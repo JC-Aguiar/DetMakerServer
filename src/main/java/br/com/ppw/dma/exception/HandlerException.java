@@ -18,8 +18,8 @@ public class HandlerException {
         "Veja no log para mais detalhes (%s).\n" +
         "Mensagem do erro: %s.";
 
-    public static final String ERRO_ALVO_AUSENTE = "Desculpa. Os elementos solicitados não se " +
-        "encontram disponíveis...";
+    public static final String ERRO_ALVO_AUSENTE = "Não existe nenhum registro na base de dados " +
+        "para o que foi solicitado";
 
     public static final String ERRO_INTEGRIDADE = "A requisição viola uma ou mais regras de " +
         "integridade no banco de dados.\n" +

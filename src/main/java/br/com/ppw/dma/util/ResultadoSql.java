@@ -8,8 +8,9 @@ import java.util.List;
 import java.util.Map;
 
 @Getter
-@NoArgsConstructor
+@ToString
 @Builder
+@NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ResultadoSql extends ComandoSql {
 

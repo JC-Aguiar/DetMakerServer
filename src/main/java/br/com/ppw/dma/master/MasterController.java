@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 @RestController
 public abstract class MasterController<
-    ID, ENTITY extends MasterEntity, REQUEST extends MasterDtoRequest,
+    ID, ENTITY extends MasterEntity, REQUEST extends MasterRequestDTO,
     RESPONSE extends MasterResponseDTO, THIS extends MasterController> {
 
     @Getter @Autowired
@@ -76,7 +76,7 @@ public abstract class MasterController<
      *
      * @return The MasterController object.
      */
-    protected final THIS proxy() {
+    public final THIS proxy() {
         return (THIS) AopContext.currentProxy();
     }
 
@@ -157,7 +157,7 @@ public abstract class MasterController<
     //TODO: não deveria retornar uma Paginação usando também os atributos itens e page?
     public ResponseEntity<?> getOne(@NotNull ID id) throws NoSuchMethodException {
         final ENTITY entity = (ENTITY) service.findById(id);
-        final RESPONSE dto = modelMapper.map(entity, (Type) responseClass);
+        final RESPONSE dto = modelMapper.map(entity, responseClass);
         return new ResponseEntity<>(dto, HttpStatus.OK);
     }
 
@@ -172,21 +172,23 @@ public abstract class MasterController<
 
     //GET CUSTOM-PATH
     // A reflection method that will try call one of the mapped methods in the endpointsGet field.
-    @GetMapping(path = "/{var}/{value}")
-    public ResponseEntity<?> call(
-        @PathVariable @NotBlank String var,
-        @PathVariable @NotBlank String value,
-        @RequestParam(name = "page", defaultValue = "0") int page,
-        @RequestParam(name = "itens", defaultValue = "12") int itens)
-    throws InvocationTargetException, IllegalAccessException {
-        var = var.toLowerCase(Locale.ROOT);
-        value = value.toLowerCase(Locale.ROOT);
-        final Method methodCall = Optional.ofNullable(endpointsGet.get(var))
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.NOT_FOUND,
-                "Incorrect URL path"));
-        final Object[] params = new Object[]{value, page, itens};
-        return (ResponseEntity<?>) methodCall.invoke(this, params);
-    }
+//    @GetMapping(path = "/{var}/{value}")
+//    public ResponseEntity<?> call(
+//        @PathVariable @NotBlank String var,
+//        @PathVariable @NotBlank String value,
+//        @RequestParam(name = "page", defaultValue = "0") int page,
+//        @RequestParam(name = "itens", defaultValue = "12") int itens)
+//    throws InvocationTargetException, IllegalAccessException {
+//        var = var.toLowerCase(Locale.ROOT);
+//        value = value.toLowerCase(Locale.ROOT);
+//        final Method methodCall = Optional
+//            .ofNullable(endpointsGet.get(var))
+//            .orElseThrow(() -> new ResponseStatusException(
+//                HttpStatus.NOT_FOUND,
+//                "Incorrect URL path")
+//            );
+//        final Object[] params = new Object[]{value, page, itens};
+//        return (ResponseEntity<?>) methodCall.invoke(this, params);
+//    }
 
 }

@@ -1,6 +1,7 @@
 package br.com.ppw.dma.net;
 
 import com.jcraft.jsch.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.experimental.FieldDefaults;
@@ -26,7 +27,7 @@ import static br.com.ppw.dma.util.FormatString.LINHA_HIFENS;
 public class ConectorSftp extends Uploader {
 
     //TODO: criar uma throw customizado
-    public static ConectorSftp conectar(String ip, int porta, String usuario, String senha) {
+    public static ConectorSftp conectar(@NotBlank String ip, int porta, @NotBlank String usuario, String senha) {
         log.info("Testando conexão remota...");
         try {
             Long.parseLong(ip.trim().replace(".", ""));
@@ -269,7 +270,7 @@ public class ConectorSftp extends Uploader {
     //TODO: Javadoc
     private int listarArquivoDownload(String dirArquivoNome, Path pathLocal) {
         try {
-            final List<String> listaArquivos = comando("ls -t " + dirArquivoNome);
+            final List<String> listaArquivos = comando("ls -t " + dirArquivoNome + " | head -1");
             if(listaArquivos.isEmpty()) {
                 log.warn("Nenhum arquivo encontrado para '{}'", dirArquivoNome);
                 return 0;

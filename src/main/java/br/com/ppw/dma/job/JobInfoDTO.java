@@ -24,7 +24,6 @@ public class JobInfoDTO implements ShellPointer, MasterResponseDTO {
 
     OffsetDateTime dataRegistro;
     Long id;
-    String plano;
     List<String> executarAposJob = new ArrayList<>();
     String grupoConcorrencia;
     String fase;
@@ -93,4 +92,5 @@ public class JobInfoDTO implements ShellPointer, MasterResponseDTO {
             diretorio = diretorio + "/";
         return diretorio + nome;
     }
+
 }

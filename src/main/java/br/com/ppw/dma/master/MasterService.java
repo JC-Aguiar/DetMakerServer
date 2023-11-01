@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -38,7 +39,6 @@ public abstract class MasterService<
     }
 
     // A method that validates the page.
-    @ConsoleLog
     public Page<ENTITY> pageCheck(@NotNull Page<ENTITY> page) {
         page.stream().map(Objects::nonNull).findFirst().orElseThrow();
         return page;
@@ -53,7 +53,6 @@ public abstract class MasterService<
     }
 
     // A method that returns an entity by id.
-    @ConsoleLog
     public ENTITY findById(@Positive @NotNull ID id) {
         return Optional
             .ofNullable(dao.getById(id))
@@ -61,15 +60,16 @@ public abstract class MasterService<
     }
 
     // A proxy method that calls `pageCheck` method.
-    @ConsoleLog
-    public Page<?> findAll(@NotNull Pageable pageable) {
+    public Page<ENTITY> findAll(@NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findAll(pageable));
     }
 
-    @Profile("teste")
-    @ConsoleLog
-    public Optional<ENTITY> deleteAll() {
+    public List<ENTITY> findAllById(List<ID> ids) {
+        return dao.findAllById(ids);
+    }
+
+    @Profile("dev")
+    public void deleteAll() {
         dao.deleteAll();
-        return Optional.empty();
     }
 }

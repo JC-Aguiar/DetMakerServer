@@ -1,14 +1,13 @@
-package br.com.ppw.dma.execQuery;
+package br.com.ppw.dma.configQuery;
 
-import br.com.ppw.dma.evidencia.Evidencia;
+import br.com.ppw.dma.job.Job;
+import br.com.ppw.dma.pipeline.Pipeline;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
 
-import java.io.File;
-import java.sql.Blob;
 import java.util.Objects;
 
 import static jakarta.persistence.FetchType.LAZY;
@@ -21,42 +20,43 @@ import static jakarta.persistence.FetchType.LAZY;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Entity(name = "PPW_EXEC_QUERY")
-@Table(name = "PPW_EXEC_QUERY")
-@SequenceGenerator(name = "SEQ_EXEC_QUERY_ID", sequenceName = "RCVRY.SEQ_EXEC_QUERY_ID", allocationSize = 1)
-public class ExecQuery {
+@Entity(name = "PPW_CONFIG_QUERY")
+@Table(name = "PPW_CONFIG_QUERY")
+@SequenceGenerator(name = "SEQ_CONFIG_QUERY_ID", sequenceName = "RCVRY.SEQ_CONFIG_QUERY_ID", allocationSize = 1)
+public class ConfigQuery {
 
     @Id @Column(name = "ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_EXEC_QUERY_ID")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CONFIG_QUERY_ID")
     // Identificador numérico dessa queries pós-execução da evidência
     Long id;
 
     @ToString.Exclude
     @JsonBackReference
     @ManyToOne(fetch = LAZY)
-    @JoinColumn(name = "EVIDENCIA_ID")
-    // ID da evidência relacionada com esse queries pós-execução
-    Evidencia evidencia;
+    @JoinColumn(name = "PIPELINE_ID")
+    // ID da pipeline relacionada com essa configuração de queries
+    Pipeline pipeline;
 
-    @Column(name = "JOB_NOME", length = 100, nullable = false)
-    // Nome do job que gerou essa query
-    String jobNome;
+    @ToString.Exclude
+    @JsonBackReference
+    @ManyToOne(fetch = LAZY)
+    @JoinColumn(name = "JOB_ID")
+    // ID do job relacionado com essa configuração de queries
+    Job job;
 
-    @Column(name = "CONTEXTO", length = 10)
-    // Informação para contextualizar se a query foi pré-job ou pós-job
-    String contexto;
-
-    @Column(name = "TABELA_NOME", length = 150, nullable = false)
+    @Column(name = "TABELA_NOME", length = 150)
     // Nome da tabela usada na queries
     String tabelaNome;
 
-    @Column(name = "QUERY", length = 500, nullable = false)
-    // SQL usada na evidência desse queries pós-execução
-    String query;
+    @Column(name = "QUERIES", length = 900)
+    // SQL usada na evidência desse queries pré e pós-execução
+    // Exemplo: SELECT * FROM EVENTOS_WEB WHERE EVACCT='${CONTRATO}' AND EVDTPROC=TO_DATE('${DATA}', 'YYYYY-MM-DD')
+    String queries;
 
-    @Column(name = "RESULTADO", columnDefinition = "CLOB", nullable = false)
-    // Conteúdo da tabela extraída
-    String resultado;
+    @Column(name = "DESCRICAO", length = 500)
+    // Informações sobre como preencher a SQL
+    // Exemplo: ${CONTRATO}=Código do contrato; ${DATA}=Data do ciclo (YYYYY-MM-DD);
+    String descricao;
 
 
     @Override
@@ -70,7 +70,7 @@ public class ExecQuery {
             ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() :
             this.getClass();
         if(thisEffectiveClass != oEffectiveClass) return false;
-        ExecQuery execFile = (ExecQuery) o;
+        ConfigQuery execFile = (ConfigQuery) o;
         return getId() != null && Objects.equals(getId(), execFile.getId());
     }
 

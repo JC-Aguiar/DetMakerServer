@@ -1,0 +1,130 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lugrasimo&family=Play:wght@700&display=swap');
+
+nav {
+  border-bottom: 2px solid yellow;
+  background-clip: padding-box;
+}
+
+th {
+    width: 16em;
+}
+
+teste-1-nome
+teste-1-descricao
+teste-1-pre-config
+teste-1-expectativa
+teste-1-resultado
+teste-1-status
+teste-1-responsavel
+teste-1-data
+teste-1-anexos
+
+#identificacao-geral {
+    height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+#dropdown-testes {
+    /*display: none;*/
+    position: absolute;
+    right: 0px;
+    z-index: -1;
+    width: 120%;
+}
+
+#navbarNavDropdown {
+    font-size: 0.75vw;
+}
+
+#capa {
+    text-shadow:
+        -2px -2px 0 white,
+        2px -2px 0 white,
+        -2px 2px 0 white,
+        2px 2px 0 white;
+}
+
+#capa-background {
+    margin-top: -2%;
+    scale: 80%;
+    opacity: 50%;
+}
+
+.banner {
+    /*120px*/
+    width: 100%;
+    background: linear-gradient(135deg, #0051c2, #87cefa, #dbe9f1, #1e90ff, #0f71d3);
+    background-size: 400% 400%;
+    animation: gradient 20s ease-in infinite;
+}
+
+.banner>h1 {
+    opacity: 50%;
+    color: #072651;
+}
+
+@keyframes gradient {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    30% {
+        background-position: 100% 50%;
+    }
+
+    50% {
+        background-position: 50% 0%;
+    }
+
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+.logo-det {
+    color: #0051c2;
+    -webkit-text-stroke: 0.5vw white;
+     text-stroke: 0.2vw white;
+     font-family: 'Play', sans-serif;
+    font-size: 10vw;
+    text-shadow: 0.4vw 0.4vw rgba(255, 255, 0, 1);
+}
+
+@media (max-width: 768px) {
+    .container,
+    #identificacao,
+    #detalhamento,
+    #evolucao-testes {
+        display: contents;
+    }
+
+    #capa {
+        padding-top: 2vh;
+        background-color: transparent;
+    }
+
+    #capa>div {
+        text-shadow:
+            -3px -3px 0 white,
+            3px -3px 0 white,
+            -3px 3px 0 white,
+            3px 3px 0 white;
+    }
+
+    #capa-background {
+        padding-bottom: 3vh;
+        object-fit: cover;
+        opacity: 50%;
+        scale: 80%;
+    }
+
+    #navbarNavDropdown {
+        font-size: 2.5vw;
+    }
+}
+/*fim do ajuste para mídia pequena -------------------------------------*/

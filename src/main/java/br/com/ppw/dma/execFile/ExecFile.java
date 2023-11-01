@@ -1,12 +1,12 @@
 package br.com.ppw.dma.execFile;
 
 import br.com.ppw.dma.evidencia.Evidencia;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
 
-import java.io.File;
 import java.util.Objects;
 
 import static jakarta.persistence.FetchType.LAZY;
@@ -29,18 +29,27 @@ public class ExecFile {
     Long id;
 
     @ToString.Exclude
+    @JsonBackReference
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "EVIDENCIA_ID")
     // ID da evidência relacionada com esse arquivo pós-execução
     Evidencia evidencia;
 
-    @Column(name = "NOME", length = 200)
-    // Nome desse arquivo pós-execução
-    String nome;
+    @Column(name = "JOB_NOME", length = 100, nullable = false)
+    // Nome do job que gerou esse arquivo
+    String jobNome;
 
-    @Column(name = "ARQUIVO")
+    @Column(name = "TIPO", length = 10)
+    // Informação para descrever se o arquivo é do tipo 'entrada', 'saída', 'log' ou 'terminal'
+    String tipo;
+
+    @Column(name = "ARQUIVO_NOME", length = 200, nullable = false)
+    // Nome desse arquivo pós-execução
+    String arquivoNome;
+
+    @Column(name = "ARQUIVO", columnDefinition = "CLOB", nullable = false)
     // Conteúdo do arquivo pós-execução
-    File arquivo;
+    String arquivo;
 
 
     @Override

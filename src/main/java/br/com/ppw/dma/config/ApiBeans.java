@@ -1,4 +1,4 @@
-package br.com.ppw.dma.util;
+package br.com.ppw.dma.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
