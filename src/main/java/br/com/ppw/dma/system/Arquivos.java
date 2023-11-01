@@ -3,13 +3,11 @@ package br.com.ppw.dma.system;
 import br.com.ppw.dma.exception.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -201,9 +199,15 @@ public class Arquivos {
         log.trace("Arquivo atualizado com sucesso");
     }
 
-    public static List<File> loadArquivos(Path path) {
+    public static List<File> loadArquivos(@NonNull Path path) {
+        return loadArquivos(path, "*");
+    }
+
+    public static List<File> loadArquivos(@NonNull Path path, @NotBlank String nome) {
+        val complemento = nome.equals("*") ? "" : ", padrão: '" +nome+ "'";
+        log.info("Carregando arquivos do path: '{}' {}", path, complemento);
         val arquivos = new ArrayList<File>();
-        try(DirectoryStream<Path> diretorio = Files.newDirectoryStream(path)) {
+        try(DirectoryStream<Path> diretorio = Files.newDirectoryStream(path, nome)) {
             for(Path arquivoPath : diretorio) {
                 if(Files.isRegularFile(arquivoPath)) {
                     arquivos.add(arquivoPath.toFile());
@@ -214,5 +218,18 @@ public class Arquivos {
         catch(IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static String lerArquivo(@NonNull File arquivo) {
+        val arquivoString = new StringBuilder();
+        try (val reader = new BufferedReader(new FileReader(arquivo))) {
+            String line;
+            while((line = reader.readLine()) != null) {
+                arquivoString.append(line);
+            }
+        } catch (Exception e) {
+            log.warn(e.getMessage());
+        }
+        return arquivoString.toString();
     }
 }

@@ -4,12 +4,16 @@ import br.com.ppw.dma.execFile.ExecFile;
 import br.com.ppw.dma.execQuery.ExecQuery;
 import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.master.MasterEntity;
+import br.com.ppw.dma.relatorio.Relatorio;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.type.NumericBooleanConverter;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -37,6 +41,7 @@ public class Evidencia implements MasterEntity<Long> {
     Integer ordem;
 
     @ToString.Exclude
+    @JsonBackReference
     @ManyToOne(fetch = LAZY)
     @JoinColumns({
         @JoinColumn(name = "JOB_ID", referencedColumnName = "ID")
@@ -44,30 +49,44 @@ public class Evidencia implements MasterEntity<Long> {
     })
     Job job;
 
+    @ToString.Exclude
+    @JsonBackReference
+    @ManyToOne(fetch = LAZY)
+    @JoinColumns({
+        @JoinColumn(name = "RELATORIO_ID", referencedColumnName = "ID")
+        //@JoinColumn(name = "JOB_NOME", referencedColumnName = "NOME")
+    })
+    Relatorio relatorio;
+
     @Column(name = "ARGUMENTOS", length = 300)
     String argumentos;
 
     @ToString.Exclude
+    @JsonManagedReference
     @Column(name = "CARGAS")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     List<ExecFile> cargas = new ArrayList<>();
 
     @ToString.Exclude
+    @JsonManagedReference
     @Column(name = "BANCO_PRE_JOB")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     List<ExecQuery> bancoPreJob = new ArrayList<>();
 
     @ToString.Exclude
+    @JsonManagedReference
     @Column(name = "BANCO_POS_JOB")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     List<ExecQuery> bancoPosJob = new ArrayList<>();
 
     @ToString.Exclude
+    @JsonManagedReference
     @Column(name = "LOGS")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     List<ExecFile> logs = new ArrayList<>();
 
     @ToString.Exclude
+    @JsonManagedReference
     @Column(name = "SAIDAS")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     List<ExecFile> saidas = new ArrayList<>();
@@ -75,6 +94,12 @@ public class Evidencia implements MasterEntity<Long> {
     @Convert(converter = NumericBooleanConverter.class)
     @Column(name = "SUCESSO")
     Boolean sucesso = false;
+
+    @Column(name = "DATA_INICIO", columnDefinition = "DATE")
+    OffsetDateTime dataInicio;
+
+    @Column(name = "DATA_FIM", columnDefinition = "DATE")
+    OffsetDateTime dataFim;
 
 
     @Override

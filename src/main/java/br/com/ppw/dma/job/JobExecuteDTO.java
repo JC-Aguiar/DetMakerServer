@@ -1,8 +1,7 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.master.MasterDtoRequest;
+import br.com.ppw.dma.master.MasterRequestDTO;
 import br.com.ppw.dma.util.ComandoSql;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -10,14 +9,17 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class JobExecuteDTO implements MasterDtoRequest {
+public class JobExecuteDTO implements MasterRequestDTO {
 
    Long id;
    Integer ordem;
-   List<String> argumentos = new ArrayList<>();
+   String argumentos;
    List<ComandoSql> queries = new ArrayList<>();
    List<String> cargas = new ArrayList<>();
+   //TODO: precisa da informação da pipeline?
 
 }

@@ -1,6 +1,7 @@
 package br.com.ppw.dma.execQuery;
 
 import br.com.ppw.dma.evidencia.Evidencia;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -31,23 +32,31 @@ public class ExecQuery {
     Long id;
 
     @ToString.Exclude
+    @JsonBackReference
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "EVIDENCIA_ID")
     // ID da evidência relacionada com esse queries pós-execução
     Evidencia evidencia;
 
-    @Column(name = "TABELA_NOME", length = 150)
+    @Column(name = "JOB_NOME", length = 100, nullable = false)
+    // Nome do job que gerou essa query
+    String jobNome;
+
+    @Column(name = "CONTEXTO", length = 10)
+    // Informação para contextualizar se a query foi pré-job ou pós-job
+    String contexto;
+
+    @Column(name = "TABELA_NOME", length = 150, nullable = false)
     // Nome da tabela usada na queries
     String tabelaNome;
 
-    @Column(name = "QUERY", length = 500)
+    @Column(name = "QUERY", length = 500, nullable = false)
     // SQL usada na evidência desse queries pós-execução
     String query;
 
-    @Lob
-    @Column(name = "RESULTADO")
+    @Column(name = "RESULTADO", columnDefinition = "CLOB", nullable = false)
     // Conteúdo da tabela extraída
-    Blob resultado;
+    String resultado;
 
 
     @Override

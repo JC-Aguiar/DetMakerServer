@@ -1,17 +1,20 @@
 package br.com.ppw.dma.job;
 
+import br.com.ppw.dma.configQuery.ConfigQuery;
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.master.MasterEntity;
 import br.com.ppw.dma.pipeline.Pipeline;
-import br.com.ppw.dma.plano.Plano;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.OffsetDateTime;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
+import static br.com.ppw.dma.util.FormatString.refinarTexto;
 import static jakarta.persistence.FetchType.LAZY;
 
 
@@ -27,11 +30,8 @@ import static jakarta.persistence.FetchType.LAZY;
 //@SequenceGenerator(name = "SEQ_JOB_ID", sequenceName = "RCVRY.SEQ_JOB_ID", allocationSize = 1)
 public class Job implements MasterEntity<Long> {
 
-    //@EmbeddedId
-    //JobID id;
-
     @Id @Column(name = "ID")
-//    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_JOB_ID")
+    // @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_JOB_ID")
     // Identificador numérico do job
     Long id;
 
@@ -127,26 +127,58 @@ public class Job implements MasterEntity<Long> {
     // Atualizado por
     String atualizadoPor;
     
-    @Column(name = "ULTIMO_AUTOR", length = 50)
-    // Nome de quem salvou o registro no banco
-    String autorAtualizacao;
+    @Column(name = "ORIGEM", length = 50)
+    // Origem de como esse Job foi criado ('planilha', 'api' ou 'banco')
+    String origem;
 
     @ToString.Exclude
+    @JsonManagedReference
+    @Column(name = "CONFIG_QUERY")
+    @OneToMany(fetch = LAZY, mappedBy = "job")
+    // IDs das configurações de queries relacionadas a este job
+    List<ConfigQuery> queries = new ArrayList<>();
+
+    @ToString.Exclude
+    @JsonManagedReference
     @Column(name = "EVIDENCIAS")
     @OneToMany(fetch = LAZY, mappedBy = "job")
     // IDs das evidências relacionadas a este job
-    Set<Evidencia> evidencias = new LinkedHashSet<>();
+    List<Evidencia> evidencias = new ArrayList<>();
 
     @ToString.Exclude
+    @JsonManagedReference
     @Column(name = "PIPELINES")
     @ManyToMany(fetch = LAZY, mappedBy = "jobs")
     // IDs das pipelines relacionadas a este job
-    Set<Pipeline> pipelines = new LinkedHashSet<>();
+    List<Pipeline> pipelines = new ArrayList<>();
 
-    @ToString.Exclude
-    @Column(name = "PLANOS")
-    @ManyToMany(fetch = LAZY, mappedBy = "jobs")
-    // IDs dos planos relacionados a este job
-    private Set<Plano> planos = new LinkedHashSet<>();
+//    @JsonManagedReference
+//    @Column(name = "PLANOS")
+//    @ManyToMany(fetch = LAZY, mappedBy = "jobs")
+//    // IDs dos planos relacionados a este job
+//    private Set<Plano> planos = new LinkedHashSet<>();
 
+    /**
+     * Método para após conversão da classe {@link JobInfoDTO}, para garantir que os campos que
+     * antes eram de listagem agora estão corretamente preenchidos como uma string. Os elementos deverão
+     * estar separados por vírgula (',')
+     * @return {@link Job} esse mesmo objeto
+     */
+    public Job refinarCampos() {
+        executarAposJob = refinarTexto(executarAposJob);
+        programa = refinarTexto(programa);
+        tabelas = refinarTexto(tabelas);
+        parametros = refinarTexto(parametros);
+        descricaoParametros = refinarTexto(descricaoParametros);
+        mascaraEntrada = refinarTexto(mascaraEntrada);
+        mascaraSaida = refinarTexto(mascaraSaida);
+        mascaraLog = refinarTexto(mascaraLog);
+        return this;
+    }
+
+    public Evidencia getEvidenciaMaisRecente() {
+        return evidencias.stream()
+            .min(Comparator.comparing(Evidencia::getDataInicio))
+            .orElseThrow();
+    }
 }

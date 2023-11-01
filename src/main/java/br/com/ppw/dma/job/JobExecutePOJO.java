@@ -10,6 +10,7 @@ import lombok.NonNull;
 import lombok.experimental.FieldDefaults;
 
 import java.io.File;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,7 +28,9 @@ public class JobExecutePOJO implements MasterResponseDTO {
     List<File> cargas = new ArrayList<>();
     List<File> produtos = new ArrayList<>();
     boolean sucesso = false;
-
+    OffsetDateTime dataInicio;
+    OffsetDateTime dataFim;
+    //TODO: precisa da informação da pipeline
 
     public JobExecutePOJO addComandoSql(@NonNull ComandoSql comandoSql) {
         this.tabelas.add(new ResultadoSql(comandoSql));

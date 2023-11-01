@@ -1,12 +1,21 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.evidencia.EvidenciaService;
+import br.com.ppw.dma.evidencia.Evidencia;
+import br.com.ppw.dma.evidencia.EvidenciaController;
+import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
 import br.com.ppw.dma.master.MasterController;
-import br.com.ppw.dma.master.MasterDtoRequest;
+import br.com.ppw.dma.master.MasterRequestDTO;
+import br.com.ppw.dma.pipeline.Pipeline;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.hibernate.service.spi.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -24,18 +33,19 @@ import static br.com.ppw.dma.util.FormatString.dividirValores;
 @RequestMapping("job")
 @Slf4j
 public class JobController extends MasterController
-    <Long, Job, MasterDtoRequest, JobInfoDTO, JobController> {
+    <Long, Job, MasterRequestDTO, JobInfoDTO, JobController> {
 
     private final JobService jobService;
-    private final EvidenciaService evidenciaService;
+    private final EvidenciaController evidenciaController;
     public static final String PLANILHA_NOME = "DIÁRIA";
 
     public JobController(
         @Autowired JobService jobService,
-        @Autowired EvidenciaService evidenciaService) {
+        @Autowired EvidenciaController evidenciaController) {
+        //----------------------------------------------------
         super(jobService);
         this.jobService = jobService;
-        this.evidenciaService = evidenciaService;
+        this.evidenciaController = evidenciaController;
     }
 
     @GetMapping(value = "ping")
@@ -43,20 +53,12 @@ public class JobController extends MasterController
         return ResponseEntity.ok("pong");
     }
 
-    //TODO: remover ou sobrescrever da classe-mãe
-    @GetMapping(value = "/")
-    public ResponseEntity<?> getJobs(
-        @RequestParam(value = "id", required = false) Long id,
-        @RequestParam(value = "nome", required = false) String nome) {
-        //--------------------------------------
-        Job job = null;
-        if(id != null)
-            job = jobService.findById(id);
-        else if(nome != null && !nome.trim().isEmpty())
-            job = jobService.findByNome(nome);
-        else
-            return ResponseEntity.badRequest().body("Informe o ID ou o NOME do job");
-        return ResponseEntity.ok(job);
+    @Override
+    public ResponseEntity<Page<JobInfoDTO>> getAll(int page, int itens) {
+        final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("id").ascending());
+        final Page<Job> entitiesPage = jobService.findAll(pageConfig);
+        final Page<JobInfoDTO> responsePage = entitiesPage.map(this::converterJobEmDto);
+        return new ResponseEntity<>(responsePage, HttpStatus.OK);
     }
 
     //TODO: javadoc
@@ -76,7 +78,7 @@ public class JobController extends MasterController
     //TODO: javadoc
     @Transactional
     @PostMapping(value = "save/all")
-    public ResponseEntity<?> setJobs(@RequestBody List<JobInfoDTO> jobsDto) {
+    public ResponseEntity<?> saveJobs(@RequestBody List<JobInfoDTO> jobsDto) {
         log.info("Salvando jobs no banco.");
         if(jobsDto.isEmpty()) {
             return ResponseEntity.badRequest()
@@ -84,10 +86,13 @@ public class JobController extends MasterController
         }
         int jobsSalvos = 0;
         for(val dto: jobsDto) {
-            log.info("{}.", dto);
-            log.info("Convertendo DTO em Entidade.");
-            val jobEntidade = getModelMapper().map(dto, Job.class);
             try {
+                log.info("Convertendo DTO em Entidade.");
+                log.info(dto.toString());
+                val jobEntidade = getModelMapper()
+                    .map(dto, Job.class)
+                    .refinarCampos();
+
                 jobService.persist(jobEntidade);
                 jobsSalvos++;
             }
@@ -113,6 +118,18 @@ public class JobController extends MasterController
         val serviceId = "$" + Instant.now().toEpochMilli();
         log.info("Iniciando Serviço {} {}{}", serviceId, LINHA_HORINZONTAL, LINHA_HORINZONTAL);
 
+        val evidenciasDto = executeJobsCore(jobsExecute)
+            .stream()
+            .map(env -> evidenciaController.parseToResponseDto(env, env.getOrdem()))
+            .toList();
+        val sucesso = evidenciasDto.stream().anyMatch(EvidenciaInfoDTO::getSucesso);
+
+        log.info("Encerrando Serviço {} {}{}", serviceId, LINHA_HORINZONTAL, LINHA_HORINZONTAL);
+        if(sucesso) return ResponseEntity.ok(evidenciasDto);
+        return ResponseEntity.internalServerError().body(evidenciasDto);
+    }
+
+    public List<Evidencia> executeJobsCore(List<JobExecuteDTO> jobsExecute) {
         //TODO: separar a Evidência do Resumo, onde o Resumo contêm as informações da execução
         //  (aonde teve sucesso e aonde teve falha)
         //Será convertido o JobExecuteDTO para JobExecutePOJO, inserindo nele a entidade Job via ID.
@@ -130,18 +147,10 @@ public class JobController extends MasterController
             .filter(JobExecutePOJO::isSucesso)
             .toList()
             .size();
-        log.info("Total de jobs realizados com sucesso: {}.", sucessos);
+        log.info("Total de Jobs com sucesso: {}.", sucessos);
 
         //TODO: comentar etapas abaixo
-        val evidenciasDto = jobsPojo.stream()
-         .map(evidenciaService::createEvidencia)
-         .map(evidenciaService::parseToResponseDto) //parse para EvidenciaResponseDTO
-        .toList();
-
-        log.info("Encerrando Serviço {} {}{}", serviceId, LINHA_HORINZONTAL, LINHA_HORINZONTAL);
-        if(sucessos > 0) return ResponseEntity.ok(jobsPojo);
-        return ResponseEntity.internalServerError()
-            .body("Todas os jobs falharam. Mais detalhes no log. Consulte o ID " + serviceId);
+        return evidenciaController.gerarEvidencias(jobsPojo);
     }
 
     //TODO: javadoc
@@ -172,23 +181,11 @@ public class JobController extends MasterController
     }
 
     //TODO: javadoc
-    private JobExecuteDTO addJobDto(@NonNull JobExecuteDTO dto, @NonNull Job job) {
-        try {
-            dto.setJobInfo(responseDto);
-            return dto;
-        }
-        catch(Exception e) {
-            log.warn("Erro durante tratamento da pilha de jobs, para item idem {}: {}.",
-                dto.getId(), e.getMessage());
-            return null;
-        }
-    }
-
-    //TODO: javadoc
     private JobInfoDTO converterJobEmDto(@NonNull Job job) {
         log.info("Convertendo Job para JobInfoDTO.");
         val jobDto = getModelMapper().map(job, JobInfoDTO.class);
         jobDto.setParametros(dividirValores(job.getParametros()));
+        jobDto.setTabelas(dividirValores(job.getTabelas()));
         jobDto.setDescricaoParametros(dividirValores(job.getDescricaoParametros()));
         jobDto.setMascaraEntrada(dividirValores(job.getMascaraEntrada()));
         jobDto.setMascaraSaida(dividirValores(job.getMascaraSaida()));
@@ -199,5 +196,16 @@ public class JobController extends MasterController
         return jobDto;
     }
 
+    @DeleteMapping(value = "all")
+    public ResponseEntity<String> deleteAll() {
+        try {
+            jobService.deleteAll();
+            return ResponseEntity.ok("Todos os jobs foram deletados com sucesso.");
+        }
+        catch(Exception e) {
+            log.warn(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
 
 }
