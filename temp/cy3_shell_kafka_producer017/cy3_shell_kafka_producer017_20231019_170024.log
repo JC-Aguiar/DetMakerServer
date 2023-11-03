@@ -1,0 +1,19 @@
+19/10/2023 17:00:24 Configuracao das variaveis de ambiente usadas pelos sistemas CyberFinancial concluida.
+19/10/2023 17:00:24 Referencia (DIA) : 19
+19/10/2023 17:00:24 Referencia (MES) : 10
+19/10/2023 17:00:24 Referencia (ANO) : 2023
+19/10/2023 17:00:24 Referencia (DATA): 20231019
+19/10/2023 17:00:24 USR_HOME         : /app/rcvry
+19/10/2023 17:00:24 EXEC             : /app/rcvry/bin
+19/10/2023 17:00:24 ORACLE_HOME      : /u01/app/oracle/product/client12.2
+19/10/2023 17:00:24 ORACLE_SID       : CYB3DEV
+19/10/2023 17:00:24 NLS_DATE_FORMAT  : dd-mon-yyyy hh24:mi:ss
+19/10/2023 17:00:24 --------------------------------
+19/10/2023 17:00:24 ACIONANDO ROTINA DAS PARCELAS DA VEZ PARA INTEGRAÇÃO HUB-PAGAMENTOS E SMART-BILL
+19/10/2023 17:00:24 Chamando Java: eventosProducer017.jar
+19/10/2023 17:00:28 Existem alguns alertas informados durante a execução do EventosProducer017. Verifique /app/rcvry/cy3/log/EVENTOS_PRODUCER_017_20231019_170024.log
+19/10/2023 17:00:28 --------------------------------
+19/10/2023 17:00:28 REALIZANDO TRATAMENTO DOS JSONS DE INTEGRAÇÃO SMART-BILL
+19/10/2023 17:00:28 Criando diretorio /ArqOrig
+19/10/2023 17:00:28 Criando diretorio /ArqSaida
+19/10/2023 17:00:28 Sem boletos a serem enviados

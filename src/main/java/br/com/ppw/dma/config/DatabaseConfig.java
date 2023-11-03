@@ -13,9 +13,11 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import javax.sql.DataSource;
 
+@Getter
+@Setter
+@Slf4j
 @Configuration
 @PropertySource("classpath:db-config.properties")
-@Slf4j
 public class DatabaseConfig {
 
     @Value("${db.sistema}")

@@ -128,53 +128,54 @@ public class Arquivos {
     }
     
     //TODO: javadoc
-    public static File criarDiretorio(String dirEntrada) {
+    public static File criarDiretorio(@NonNull String dirEntrada) throws IOException {
         log.trace("Criando novo diretorio '{}'...", dirEntrada);
         val path = Paths.get(dirEntrada);
         if(Files.exists(path)) {
             log.trace("Diretorio '{}' já existe", dirEntrada);
             return path.toFile();
         }
-        val novoArquivo = new File(dirEntrada);
-        if(novoArquivo.mkdir()) {
-            log.trace("Novo diretório gerado com sucesso");
-            return novoArquivo;
-        }
-        throw new RuntimeException("Algo inesperado impediu a criação do diretório '"  + dirEntrada + "'");
+        val novoArquivo = Files.createDirectory(path.toAbsolutePath()).toFile();
+        log.trace("Novo diretório gerado com sucesso");
+        return novoArquivo;
     }
     
     //TODO: javadoc
     public static File criarEscrever(String dirEntrada, String nome, String linha)
     throws IOException {
+        criarDiretorio(dirEntrada);
         val arquivo = criar(dirEntrada, nome).orElseThrow(
-            () -> new RuntimeException("Algo inesperado impediu a criação do arquivo '" + nome + "'")
-        );
+            () -> new RuntimeException("Algo inesperado impediu a criação do arquivo '" + nome + "'"));
         escreverArquivo(arquivo, linha);
         return arquivo;
     }
 
     //TODO: javadoc
-    public static Optional<File> criar(String dirEntrada, String nome) {
+    public static Optional<File> criar(@NonNull String dirEntrada, String nome) {
+        val tipo = (nome == null || nome.isEmpty()) ? "diretório" : "arquivo";
         val path = Paths.get(dirEntrada, nome);
+        val pathString = path.toFile().getAbsolutePath();
+        log.info("Solicitada criação do {}: '{}'", tipo, pathString);
+
         if(path.toFile().exists()) return Optional.of(path.toFile());
 
-        log.trace("Criando novo arquivo '{}'...", path.toFile().getAbsolutePath());
+        log.info("Criando {} '{}'", tipo, pathString);
         if(Files.exists(path)) {
-            log.error("Arquivo '{}' já existe! Operação cancelada...", path.toFile().getAbsolutePath());
-            return Optional.empty();
+            log.error("Identificado que {} '{}' já existe.", tipo, pathString);
+            return Optional.of(path.toFile());
         }
         val novoArquivo = new File(dirEntrada, nome);
         try {
             if(novoArquivo.createNewFile()) {
-                log.trace("Novo arquivo gerado com sucesso");
+                log.trace("Novo {} gerado com sucesso.", tipo);
                 return Optional.of(novoArquivo);
             }
-            log.error("Algo bloqueou a criação do arquivo '{}'", path.toFile().getAbsolutePath());
+            log.error("Algo bloqueou a criação do {} '{}'", tipo, pathString);
             return Optional.empty();
         }
         catch(IOException e) {
             e.printStackTrace();
-            log.error("Erro inesperado ao tentar criar o arquivo '{}'", path.toFile().getAbsolutePath());
+            log.error("Erro inesperado ao tentar criar o {} '{}': {}", tipo, pathString, e.getMessage());
             return Optional.empty();
         }
     }
@@ -222,10 +223,11 @@ public class Arquivos {
 
     public static String lerArquivo(@NonNull File arquivo) {
         val arquivoString = new StringBuilder();
-        try (val reader = new BufferedReader(new FileReader(arquivo))) {
+        try(val reader = new BufferedReader(new FileReader(arquivo))) {
             String line;
             while((line = reader.readLine()) != null) {
-                arquivoString.append(line);
+                arquivoString.append(line)
+                    .append(System.lineSeparator());
             }
         } catch (Exception e) {
             log.warn(e.getMessage());

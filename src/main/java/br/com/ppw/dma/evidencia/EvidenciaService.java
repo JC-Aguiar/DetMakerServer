@@ -284,6 +284,8 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
 
         val evidencia = EvidenciaInfoDTO.builder()
             .job(pilhaDTO.getJobInfo().getNome())
+            .jobDescricao(pilhaDTO.getJobInfo().getDescricao())
+            .data(pilhaDTO.getDataInicio())
             .sucesso(pilhaDTO.isSucesso())
             .ordem(pilhaDTO.getOrdem())
             .argumentos(pilhaDTO.getParametro())
@@ -351,6 +353,8 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
 
         val dto = EvidenciaInfoDTO.builder()
                 .job(evidencia.getJob().getNome())
+                .jobDescricao(evidencia.getJob().getDescricao())
+                .data(evidencia.getDataInicio())
                 .sucesso(evidencia.getSucesso())
                 .ordem(ordem)
                 .argumentos(evidencia.getArgumentos())
