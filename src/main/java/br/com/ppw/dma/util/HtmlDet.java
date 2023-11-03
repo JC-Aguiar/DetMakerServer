@@ -5,8 +5,10 @@ import br.com.ppw.dma.config.DatabaseConfig;
 import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
 import br.com.ppw.dma.pipeline.PipelineRelatorioDTO;
 import br.com.ppw.dma.system.Arquivos;
+import br.com.ppw.dma.user.UserInfoDTO;
 import com.sun.tools.javac.Main;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.NonNull;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,8 +65,10 @@ public abstract class HtmlDet {
     public static final String CAMPO_TABELAS_TESTECASE = "const AllTabelasTestecase = [${var}];";
 
     public static File gerarNovoDet(
-        @NonNull PipelineRelatorioDTO pipelineRelatorio, @Autowired DatabaseConfig dbConfig) throws IOException, URISyntaxException {
-        //----------------------------------------------------------------------------
+        @NonNull PipelineRelatorioDTO pipelineRelatorio,
+        @Autowired DatabaseConfig dbConfig,
+        @NotEmpty List<UserInfoDTO> userInfo)
+    throws IOException, URISyntaxException {
         //IDENTIFICAÇÃO 1) SOBRE O PROJETO
         val projeto = pipelineRelatorio.getRelatorio()
             .getNomeProjeto()
@@ -79,11 +83,11 @@ public abstract class HtmlDet {
         val testeSistema = dbConfig.getDbSistema();
 
         //IDENTIFICAÇÃO 3) SOBRE OS ENVOLVIDOS
-        val userNome = ""; //TODO
-        val userPapel = ""; //TODO
-        val userEmpresa = ""; //TODO
-        val userEmail = ""; //TODO
-        val userTelefone = ""; //TODO
+        val userNome = userInfo.size() > 0 ? userInfo.get(0).getNome() : ""; //TODO
+        val userPapel = userInfo.size() > 0 ? userInfo.get(0).getPapel() : ""; //TODO
+        val userEmpresa = userInfo.size() > 0 ? userInfo.get(0).getEmpresa() : ""; //TODO
+        val userEmail = userInfo.size() > 0 ? userInfo.get(0).getEmail() : ""; //TODO
+        val userTelefone = userInfo.size() > 0 ? userInfo.get(0).getTelefone() : ""; //TODO
 
         //DADOS DO DET
         val dataHoraHoje = LocalDateTime.now().format(DateTimeFormatter.ofPattern("YYYY/MM/DD HH:mm:ss"));
