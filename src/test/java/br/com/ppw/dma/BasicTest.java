@@ -7,6 +7,7 @@ import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.pipeline.PipelineRelatorioDTO;
 import br.com.ppw.dma.relatorio.RelatorioHistoricoDTO;
 import br.com.ppw.dma.system.Arquivos;
+import br.com.ppw.dma.user.UserInfoDTO;
 import br.com.ppw.dma.util.ComandoSql;
 import br.com.ppw.dma.util.HtmlDet;
 import lombok.NonNull;
@@ -71,14 +72,25 @@ public class BasicTest {
             .evidencias(evidenciasDTO)
             .sucesso(false)
             .build();
+
         val pipelineRelatorio = new PipelineRelatorioDTO(
             "Teste 01",
             "Tentando criar documento DET com HTML, CSS e JS unificados",
             relatorioDto);
+
         val dbConfig = new DatabaseConfig();
         dbConfig.setDbAmbiente("DEV");
         dbConfig.setDbSistema("Vivo Cyber 3");
-        HtmlDet.gerarNovoDet(pipelineRelatorio, dbConfig);
+
+        val usersInfo = List.of(UserInfoDTO.builder()
+            .nome("João Aguiar")
+            .papel("DEV")
+            .empresa("Peopleware")
+            .email("joao.aguiar@ppware.com.br")
+            .telefone("(13) 988465656")
+            .build());
+
+        HtmlDet.gerarNovoDet(pipelineRelatorio, dbConfig, usersInfo);
     }
 
     @Test
