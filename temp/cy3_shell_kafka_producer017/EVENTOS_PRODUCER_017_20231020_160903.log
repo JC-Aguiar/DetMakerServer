@@ -1,0 +1,365 @@
+
+ ________                      _                  _______                     __                                  ____    __ _______  
+|_   __  |                    / |_               |_   __ \                   |  ]                               .'    '. /  |  ___  | 
+  | |_ \_|   __ .---.  _ .--.`| |-' .--.  .--.     | |__) | .--.  .--.   .--.| | __   _   .---. .---.  _ .--.  |  .--.  |`| |_/  / /  
+  |  _| [ \ [  ] /__\\[ `.-. || | / .'`\ ( (`\]    |  ___[ `/'`\] .'`\ Y /'`\' |[  | | | / /'`\] /__\\[ `/'`\] | |    | | | |   / /   
+ _| |__/ \ \/ /| \__., | | | || |,| \__. |`'.'.   _| |_   | |   | \__. | \__/  | | \_/ |,| \__.| \__., | |     |  `--'  |_| |_ / /    
+|________|\__/  '.__.'[___||__]__/ '.__.'[\__) ) |_____| [___]   '.__.' '.__.;__]'.__.'_/'.___.''.__.'[___]     '.____.'|_____/_/     
+Realiza rotina Batch para identificar acordos pagos na data de ciclo a fim de enviar as parcelas da vez (próximas faturas) ao Hub-Pagamentos via Kafka e também gerar Json de integração ao Smart-Bill
+23/10/20 16:09:04
+    THREAD: eventos-producer-017
+        LOGGER: br.com.ppware.ep017.App
+            INFO : *******************************************************************************************************
+            INFO : PREPARANDO EVENTOS PRODUCER 017
+            INFO : *******************************************************************************************************
+            INFO : Configuração dos loggers da aplicação:
+            INFO : 	 - Logger ROOT = INFO
+            INFO : 	 - Logger br.com.ppware = INFO
+            INFO : 	 - Logger br.com.vivo = INFO
+            INFO : 	 - Logger io.confluent.kafka = INFO
+            INFO : 	 - Logger org.apache.kafka = INFO
+            INFO : 	 - Logger org.hibernate = OFF
+            INFO : *******************************************************************************************************
+            INFO : Etapas:
+            INFO : 	 - 1) Obter a data do ciclo
+            INFO : 	 - 2) Obter cada boleto de cada acordo pago na data do ciclo
+            INFO : 	 - 3) Validar se o acordo já não foi processado antes
+            INFO : 	 - 4) Obter os próximos boletos do acordo
+            INFO : 	 - 5) Validar se esses próximos boletos já não foram processados nessa data de ciclo
+            INFO : 	 - 6) Para cada boleto: inserir log de registro na EVENTOS_WEB
+            INFO : 	 - 7) Para cada boleto: enviar evento Kafka ao Hub-Pagamentos
+            INFO : 	 - 8) Para cada boleto: gerar arquivos Json Smart-Bill
+            INFO : Carregando Variáveis do Ambiente
+            INFO : Variáveis do Ambiente finalizadas
+            INFO : Validando diretórios e arquivos obrigatórios...
+            INFO : Criando Unidade de Persistência
+23/10/20 16:09:06
+    THREAD: eventos-producer-017
+        LOGGER: br.com.ppware.ep017.App
+            INFO : Unidade de Persistência pronta para uso
+            INFO : Definindo topicos para publicacao Kafka ao Hub-Pagamentos
+        LOGGER: br.com.ppware.ep017.dao.LovValsDAO
+            INFO : Obtendo registro na LOV_VALS para o id KAFKACFG, codigo EV_BOLETO_CYBER_HUBPGTO
+            INFO : JPQL = select lovvals.LSDESC from rcvry.LOV_VALS lovvals where lovvals.LSID=EV_BOLETO_CYBER_HUBPGTO and lovvals.LSCODE=KAFKACFG
+            INFO : Query executada com sucesso. Topico obtido: dunning.pauseresumecollectiontreatment.cyber.dunningcase
+        LOGGER: br.com.ppware.ep017.App
+            INFO : Iniciando Kafka Producer...
+        LOGGER: br.com.ppware.kafka.config.KafkaClientConfiguration
+            INFO : Starting Online kafka producer configuration
+            INFO : Start using batch configurations
+            INFO : Look for KafkaClientConfiguration property file.
+            INFO : Starting to load configuration properties from property file.
+            INFO : Env var not found, using the default path.
+            INFO : Loading properties from /app/rcvry/shells/config/kafka_client.properties
+            INFO : Finished loading configuration properties from property file.
+            INFO : Configure the GROUP_ID
+            INFO : Configure Kafka bootstrap server Uri
+            INFO : Configure the ACKS
+            INFO : Configure the RETRIES
+            INFO : Configure the REQUEST_TIMEOUT_MS
+            INFO : Configure the RETRY_BACKOFF
+            INFO : Configure the SSL_ENDPOINT_IDENTIFICATION_ALGORITHM	
+            INFO : Configure the SSL_TRUSTSTORE_LOCATION
+            INFO : Configure the SSL_TRUSTSTORE_PASSWORD
+            INFO : Configure the SECURITY_PROTOCOL
+            INFO : Configure the SASL_MECHANISM
+            INFO : Configure the SASL_JAAS
+            INFO : Configure the SASL_LOGIN_CALLBACK_HANDLER_CLASS
+        LOGGER: org.apache.kafka.clients.producer.ProducerConfig
+            INFO : ProducerConfig values: 
+	acks = -1
+	auto.include.jmx.reporter = true
+	batch.size = 16384
+	bootstrap.servers = [esteira1-bootstrap-events.ecare.tlf-dev.redecorp.br:31000]
+	buffer.memory = 33554432
+	client.dns.lookup = use_all_dns_ips
+	client.id = cyber_batch
+	compression.type = none
+	connections.max.idle.ms = 540000
+	delivery.timeout.ms = 120000
+	enable.idempotence = true
+	interceptor.classes = []
+	key.serializer = class org.apache.kafka.common.serialization.StringSerializer
+	linger.ms = 0
+	max.block.ms = 60000
+	max.in.flight.requests.per.connection = 5
+	max.request.size = 1048576
+	metadata.max.age.ms = 300000
+	metadata.max.idle.ms = 300000
+	metric.reporters = []
+	metrics.num.samples = 2
+	metrics.recording.level = INFO
+	metrics.sample.window.ms = 30000
+	partitioner.adaptive.partitioning.enable = true
+	partitioner.availability.timeout.ms = 0
+	partitioner.class = null
+	partitioner.ignore.keys = false
+	receive.buffer.bytes = 32768
+	reconnect.backoff.max.ms = 1000
+	reconnect.backoff.ms = 50
+	request.timeout.ms = 2000
+	retries = 3
+	retry.backoff.ms = 1000
+	sasl.client.callback.handler.class = null
+	sasl.jaas.config = [hidden]
+	sasl.kerberos.kinit.cmd = /usr/bin/kinit
+	sasl.kerberos.min.time.before.relogin = 60000
+	sasl.kerberos.service.name = null
+	sasl.kerberos.ticket.renew.jitter = 0.05
+	sasl.kerberos.ticket.renew.window.factor = 0.8
+	sasl.login.callback.handler.class = class br.com.ppware.kafka.callback.OAuthAuthenticateLoginCallbackHandler
+	sasl.login.class = null
+	sasl.login.connect.timeout.ms = null
+	sasl.login.read.timeout.ms = null
+	sasl.login.refresh.buffer.seconds = 300
+	sasl.login.refresh.min.period.seconds = 60
+	sasl.login.refresh.window.factor = 0.8
+	sasl.login.refresh.window.jitter = 0.05
+	sasl.login.retry.backoff.max.ms = 10000
+	sasl.login.retry.backoff.ms = 100
+	sasl.mechanism = OAUTHBEARER
+	sasl.oauthbearer.clock.skew.seconds = 30
+	sasl.oauthbearer.expected.audience = null
+	sasl.oauthbearer.expected.issuer = null
+	sasl.oauthbearer.jwks.endpoint.refresh.ms = 3600000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.max.ms = 10000
+	sasl.oauthbearer.jwks.endpoint.retry.backoff.ms = 100
+	sasl.oauthbearer.jwks.endpoint.url = null
+	sasl.oauthbearer.scope.claim.name = scope
+	sasl.oauthbearer.sub.claim.name = sub
+	sasl.oauthbearer.token.endpoint.url = null
+	security.protocol = SASL_SSL
+	security.providers = null
+	send.buffer.bytes = 131072
+	socket.connection.setup.timeout.max.ms = 30000
+	socket.connection.setup.timeout.ms = 10000
+	ssl.cipher.suites = null
+	ssl.enabled.protocols = [TLSv1.2, TLSv1.3]
+	ssl.endpoint.identification.algorithm = https
+	ssl.engine.factory.class = null
+	ssl.key.password = null
+	ssl.keymanager.algorithm = SunX509
+	ssl.keystore.certificate.chain = null
+	ssl.keystore.key = null
+	ssl.keystore.location = null
+	ssl.keystore.password = null
+	ssl.keystore.type = JKS
+	ssl.protocol = TLSv1.3
+	ssl.provider = null
+	ssl.secure.random.implementation = null
+	ssl.trustmanager.algorithm = PKIX
+	ssl.truststore.certificates = null
+	ssl.truststore.location = /app/rcvry/shells/config/cacorp.jks
+	ssl.truststore.password = [hidden]
+	ssl.truststore.type = JKS
+	transaction.timeout.ms = 60000
+	transactional.id = null
+	value.serializer = class org.apache.kafka.common.serialization.StringSerializer
+
+        LOGGER: org.apache.kafka.clients.producer.KafkaProducer
+            INFO : [Producer clientId=cyber_batch] Instantiated an idempotent producer.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Starting to initialize OAuth configuration
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Look for OAuthConfiguration property file.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword getConfigurationFileProperties
+INFO: Starting to load OAuth properties from property file.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword getConfigurationFileProperties
+INFO: Env var not found, using the default path.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword getConfigurationFileProperties
+INFO: Loading properties from OAUTH_SERVER_PROP_FILE
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword getConfigurationFileProperties
+INFO: Finished loading configuration properties from property file.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Configure the OAuth server unsecure server
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Configure the OAuth server base Uri
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+WARNING: Found: https://autenticainthml.redecorp.br
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Configure the OAuth server token endpoint path.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+WARNING: Found: /ms_oauth/oauth2/endpoints/vivooauthservice/tokens
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Configure the OAuth server introspection endpoint path.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Configure the OAuth server scopes
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+WARNING: Found: ServiceAccount.Profile
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Configure the OAuth server username.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+WARNING: Found: svc-cyber3
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Configure the OAuth server password.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+WARNING: Found: Vivo@2023
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Configure the OAuth server ClientID.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+WARNING: Found: 5747b9b57c9946fc9771ec2075ef6a93
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Configure the OAuth server ClientSecret.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+WARNING: Found: GVaFeLMBWc1
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Client GrantType OK
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Configure the OAuth server ClientKeystorePath.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Client keystore path OK
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Configure the OAuth server ClientKeystorePasswd.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Client keystore password OK
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword <init>
+INFO: Finished initializing OAuth configuration
+        LOGGER: br.com.ppware.kafka.callback.OAuthAuthenticateCallbackHandler
+            INFO : [OAuthAuthenticateCallbackHandler] Starting to configure OAuth authentication callback handler.
+            INFO : Validate method parameters.
+            INFO : [OAuthAuthenticateCallbackHandler] OAUTH configuration done!
+            INFO : [OAuthAuthenticateCallbackHandler] Starting to handle auth callbacks.
+            INFO : [OAuthAuthenticateCallbackHandler] Check to see if handler has been configured.
+            INFO : Loop through all of the callbacks looking for OAuth bearer token callbacks.
+            INFO : Check the type of callback.
+            INFO : Callback of type: org.apache.kafka.common.security.oauthbearer.OAuthBearerTokenCallback 
+            INFO : [OAuthAuthenticateCallbackHandler] Callback found to handle this authentication, processing.
+        LOGGER: br.com.ppware.kafka.callback.OAuthAuthenticateLoginCallbackHandler
+            INFO : Starting to handle OAuth bearer token login callback.
+            INFO : Validate method parameters.
+            INFO : Inicio no processo de autenticação no KAFKA com Oauth
+            INFO : Acquire access token for OAuth bearer token callback.
+        LOGGER: br.com.ppware.security.handler.OAuthPasswordServiceImpl
+            INFO : Starting to request access token from OAuth server.
+            INFO : Send Form request to the OAuth server.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword getTokenPath
+INFO: Endpoint: https://autenticainthml.redecorp.br/ms_oauth/oauth2/endpoints/vivooauthservice/tokens
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword getPostParameters
+INFO: Send access token request to the OAuth server.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfigurationPassword getPostParameters
+INFO: postParameters: grant_type=password&scope=ServiceAccount.Profile&username=svc-cyber3&password=Vivo@2023
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthUtils createBasicAuthorizationHeader
+INFO: Starting to create basic authorization header value.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfiguration generateBasicAuthHeader
+INFO: Send access token request to the OAuth server.
+Oct 20, 2023 4:09:06 PM br.com.ppware.security.config.OAuthConfiguration generateBasicAuthHeader
+INFO: BasicAuthorizationHeader: Basic NTc0N2I5YjU3Yzk5NDZmYzk3NzFlYzIwNzVlZjZhOTM6R1ZhRmVMTUJXYzE=
+            INFO : Starting to make HTTP call, Url: https://autenticainthml.redecorp.br/ms_oauth/oauth2/endpoints/vivooauthservice/tokens.
+            INFO : callTime: 1697828946932
+            INFO : Validate method parameters.
+            INFO : Configure SSL context to allow unsecured connections if configured.
+            INFO : Send POST request, Url: https://autenticainthml.redecorp.br/ms_oauth/oauth2/endpoints/vivooauthservice/tokens.
+23/10/20 16:09:07
+    THREAD: eventos-producer-017
+        LOGGER: br.com.ppware.security.handler.OAuthPasswordServiceImpl
+            INFO : Starting Secured connection.
+            INFO : TrustManager set!
+            INFO : Token request Sent! https://autenticainthml.redecorp.br/ms_oauth/oauth2/endpoints/vivooauthservice/tokens
+            INFO : Check to see if the response was successful, responseCode: 200.
+Oct 20, 2023 4:09:07 PM br.com.ppware.security.config.OAuthUtils handleJsonResponse
+INFO: Starting to convert HTTP JSON response into a key value pairs.
+Oct 20, 2023 4:09:07 PM br.com.ppware.security.config.OAuthUtils handleJsonResponse
+INFO: Validate method parameters.
+Oct 20, 2023 4:09:07 PM br.com.ppware.security.config.OAuthUtils handleJsonResponse
+INFO: Read the HTTP response into a string.
+Oct 20, 2023 4:09:07 PM br.com.ppware.security.config.OAuthUtils handleJsonResponse
+INFO: Parse JSON string into a key value pairs.
+Oct 20, 2023 4:09:07 PM br.com.ppware.security.config.OAuthUtils handleJsonResponse
+INFO: Finished converting HTTP JSON response into a key value pairs
+            INFO : The response was successful, parse to json into a key value pairs
+            INFO : Response size: 4
+            INFO : Access token response is not null, create a token. [expires_in, token_type, refresh_token, access_token]
+            INFO : Access token expiresIn: 3600
+            INFO : Finished requesting access token from OAuth server.
+        LOGGER: br.com.ppware.kafka.callback.OAuthAuthenticateLoginCallbackHandler
+            INFO : Access token was returned, set the access token on the OAuth bearer token callback.
+            INFO : [OAuthAuthenticateCallbackHandler] Access token was returned, set the access token on the OAuth bearer token callback.
+            INFO : [OAuthAuthenticateCallbackHandler] expiresIn - 1697832546932
+            INFO : [OAuthAuthenticateCallbackHandler] principalName - svc-cyber3
+        LOGGER: br.com.ppware.kafka.callback.OAuthAuthenticateCallbackHandler
+            INFO : [OAuthAuthenticateCallbackHandler] Finished handling OAuth bearer token login callbacks.
+            INFO : [OAuthAuthenticateCallbackHandler] Starting to handle auth callbacks.
+            INFO : [OAuthAuthenticateCallbackHandler] Check to see if handler has been configured.
+            INFO : Loop through all of the callbacks looking for OAuth bearer token callbacks.
+            INFO : Check the type of callback.
+            INFO : Callback of type: org.apache.kafka.common.security.auth.SaslExtensionsCallback 
+            INFO : [OAuthAuthenticateCallbackHandler] Callback is not a OAuthBearerTokenCallback: org.apache.kafka.common.security.auth.SaslExtensionsCallback@65c5a4bf
+            INFO : [OAuthAuthenticateCallbackHandler] Finished handling OAuth bearer token login callbacks.
+        LOGGER: org.apache.kafka.common.security.oauthbearer.internals.expiring.ExpiringCredentialRefreshingLogin
+            INFO : Successfully logged in.
+    THREAD: kafka-expiring-relogin-thread-svc-cyber3
+        LOGGER: org.apache.kafka.common.security.oauthbearer.internals.expiring.ExpiringCredentialRefreshingLogin
+            INFO : [Principal=:svc-cyber3]: Expiring credential re-login thread started.
+            INFO : [Principal=svc-cyber3]: Expiring credential valid from Fri Oct 20 16:09:06 BRT 2023 to Fri Oct 20 17:09:06 BRT 2023
+            INFO : [Principal=:svc-cyber3]: Expiring credential re-login sleeping until: Fri Oct 20 16:58:20 BRT 2023
+    THREAD: eventos-producer-017
+        LOGGER: org.apache.kafka.clients.producer.ProducerConfig
+            WARN : These configurations '[group.id]' were supplied but are not used yet.
+        LOGGER: org.apache.kafka.common.utils.AppInfoParser
+            INFO : Kafka version: 3.4.0
+            INFO : Kafka commitId: 2e1947d240607d53
+            INFO : Kafka startTimeMs: 1697828947445
+        LOGGER: br.com.ppware.kafka.config.KafkaClientConfiguration
+            INFO : Finished initializing Online kafka producer configuration
+        LOGGER: br.com.ppware.ep017.App
+            INFO : Criando Json Smart-Bill somente com as informações gerais (headers)
+            INFO : *******************************************************************************************************
+            INFO : INICIANDO EVENTOS PRODUCER 017
+            INFO : Iniciando ciclo de coletas ao banco...
+        LOGGER: br.com.ppware.ep017.dao.IfxdateDAO
+            INFO : Coletando data ciclo
+            INFO : SQL = SELECT RCVRY.IFXDATE FROM DUAL
+            INFO : Query executada com sucesso
+            INFO : Convertendo string em data...
+            INFO : Data do ciclo obtida: 2023-08-22
+            INFO : Data ciclo finalizada
+        LOGGER: br.com.ppware.ep017.App
+            INFO : LOTE DE COLETA #1
+        LOGGER: br.com.ppware.ep017.dao.AgrhdrDAO
+            INFO : Coletando cada boleto pago, por contrato, no dia 2023-08-22
+            INFO : JPQL = select agrhdr.AHID, sum(agrhist.HAINTAMT), sum(agrhist.HAEXPAMT), max(agpmtdet.APDETID), agpmtdet.APDUEDT, agpmtdet.APAMT, agrhdr.AHID, agrhdr.AHACCT, agrhdr.AHACCTCOB, agrhdr.AHACCTG, agrhdr.AHDESCAMT, agrhdr.AHDT, agrhdr.AHFORMAENVIO, agrhdr.AHINTAMT, agrhdr.AHPRD, agrhdr.AHSTATUS, agrhdr.AHTOTPMT, agrhdr.AHTPENVIO from rcvry.AGRHDR agrhdr inner join rcvry.AGPMTDET agpmtdet on (agrhdr.AHID=agpmtdet.APAHID) inner join rcvry.TB_PAGTO_BOLETO tbpagtobol on (agpmtdet.APAHID=tbpagtobol.PBNUMACORDO and agpmtdet.APDETID=tbpagtobol.PBNUMPARC) inner join rcvry.AGR_HIST agrhist on (agrhdr.AHID=agrhist.HAID) where agpmtdet.APFLAG='C' and tbpagtobol.PBDTCICLO=2023-08-22 and upper(agrhdr.AHTPENVIO)=upper('Boleto/Boleto') and agrhdr.AHSTATUS='A' group by agrhdr.AHID, agrhdr.AHACCTG, agrhdr.AHACCT, agrhdr.AHTPENVIO, agrhdr.AHFORMAENVIO, agrhdr.AHTOTPMT, agrhdr.AHINTAMT, agrhdr.AHSTATUS, agrhdr.AHACCTCOB, agrhdr.AHDT, agrhdr.AHPRD, agrhdr.AHDESCAMT, agpmtdet.APDUEDT, agpmtdet.APAMT order by agrhdr.AHID
+        LOGGER: br.com.ppware.ep017.App
+            WARN : Nenhum acordo disponível para ser coletado
+            INFO : *******************************************************************************************************
+            INFO : FINALIZANDO JSON SMART-BILL
+            INFO : Preenchendo sessão 'GATILHO'...
+            INFO : SmartBillGatilhoDTO: DATA_DE_GERACAO_ARQUIVO=20231020, HORA_DE_GERACAO_ARQUIVO=1609041, SISTEMA_ORIGEM=Cyber, QUANTIDADE_DE_BOLETOS=0
+            INFO : Preenchendo sessão 'EMPRESA_CABECALHO'...
+        LOGGER: br.com.ppware.ep017.dao.TbEmpBoletoDAO
+            INFO : Consultando TB_EMP_BOLETO pelo EBCODEMP
+            INFO : JPQL = select tbempbolet.EBID, tbempbolet.EBACEITE, tbempbolet.EBCARTEIRA, tbempbolet.EBCODEMP, tbempbolet.EBCONTBOL, tbempbolet.EBDVAGENCIA, tbempbolet.EBDVCONTA, tbempbolet.EBEMPCNPJ, tbempbolet.EBEMPCNPJF, tbempbolet.EBEMPEND, tbempbolet.EBEMPNOME, tbempbolet.EBENDBAIRRO, tbempbolet.EBENDCEP, tbempbolet.EBENDCOMP, tbempbolet.EBENDIE, tbempbolet.EBENDLOG, tbempbolet.EBENDMUNIC, tbempbolet.EBENDNUM, tbempbolet.EBENDUF, tbempbolet.EBFXCONTFIM, tbempbolet.EBFXCONTINI, tbempbolet.EBINST1, tbempbolet.EBINST2, tbempbolet.EBINST3, tbempbolet.EBINST4, tbempbolet.EBINST5, tbempbolet.EBLOCAL1, tbempbolet.EBLOCAL2, tbempbolet.EBNUMAGENCIA, tbempbolet.EBNUMCONTA, tbempbolet.EBNUMCONV, tbempbolet.EBTIPODOC from rcvry.TB_EMP_BOLETO tbempbolet where tbempbolet.EBCODEMP=9999
+            INFO : Query executada com sucesso
+            INFO : TbEmpBoleto: EBID=0, EBCODEMP=9999, EBEMPNOME=Telefonica Brasil S.A., EBEMPCNPJ=02558157000162, EBNUMAGENCIA=null, EBDVAGENCIA=null, EBNUMCONTA=null, EBDVCONTA=null, EBINST1=null, EBINST2=null, EBINST3=null, EBINST4=null, EBINST5=null, EBFXCONTINI=null, EBFXCONTFIM=null, EBCONTBOL=null, EBTIPODOC=null, EBACEITE=null, EBLOCAL1=null, EBLOCAL2=null, EBNUMCONV=null, EBCARTEIRA=null, EBEMPEND=Av. Ayrton Senna, 2200 - Sala 101, EBEMPCNPJF=02558157001487, EBENDBAIRRO=Barra da Tijuca, EBENDCEP=22775003, EBENDCOMP=null, EBENDUF=RJ, EBENDMUNIC=Rio de Janeiro, EBENDNUM=null, EBENDIE=77452443, EBENDLOG=null
+        LOGGER: br.com.ppware.ep017.App
+            INFO : SmartBillHeaderDTO: EBEMPCNPJF=02.558.157/0014-87, EBEMPCNPJ=02.558.157/0001-62, EBENDBAIRRO=Barra da Tijuca, EBENDCEP=22775-003, EBENDCOMP=null, EBENDUF=RJ, EBENDLOG=null, EBENDMUNIC=Rio de Janeiro, EBEMPEND=Av. Ayrton Senna, 2200 - Sala 101, EBENDNUM=null, EBENDIE=77452443, EBEMPNOME=Telefonica Brasil S.A.
+            INFO : Inserindo sessões 'GATILHO' e 'EMPRESA_CABECALHO' no Json Smart-Bill
+            INFO : {	    "CNPJ_FILIAL": "02.558.157/0014-87",	    "CNPJ_MATRIZ": "02.558.157/0001-62",	    "ENDERECO_BAIRRO": "Barra da Tijuca",	    "ENDERECO_CEP": "22775-003",	    "ENDERECO_COMPLEMENTO": "",	    "ENDERECO_ESTADO": "RJ",	    "ENDERECO_LOGRADOURO": "",	    "ENDERECO_MUNICIPIO": "Rio de Janeiro",	    "ENDERECO_NOME_DO_LOGRADOURO": "Av. Ayrton Senna, 2200 - Sala 101",	    "ENDERECO_NUMERO": "",	    "INSCRICAO_ESTADUAL": "77452443",	    "RAZAO_SOCIAL": "Telefonica Brasil S.A."	  }
+            INFO : Json Smart-Bill 100% pronto
+            INFO : *******************************************************************************************************
+            INFO : FINALIZANDO APLICAÇÃO
+            INFO : Total de acordos obtidos = 0
+            INFO : Total de parcelas enviadas ao Hub-Pagamento via Kafka = 0
+            INFO : Total de parcelas serializadas para integração Smart-Bill = 0
+            INFO : Encerrando recursos da aplicação...
+        LOGGER: org.apache.kafka.clients.producer.KafkaProducer
+            INFO : [Producer clientId=cyber_batch] Closing the Kafka producer with timeoutMillis = 9223372036854775807 ms.
+    THREAD: kafka-producer-network-thread | cyber_batch
+        LOGGER: org.apache.kafka.clients.Metadata
+            INFO : [Producer clientId=cyber_batch] Cluster ID: 2HrE6SMZQwGrIsfdMTOjWQ
+        LOGGER: org.apache.kafka.clients.producer.internals.TransactionManager
+            INFO : [Producer clientId=cyber_batch] ProducerId set to 9146 with epoch 0
+    THREAD: kafka-expiring-relogin-thread-svc-cyber3
+        LOGGER: org.apache.kafka.common.security.oauthbearer.internals.expiring.ExpiringCredentialRefreshingLogin
+            INFO : [Principal=:svc-cyber3]: Expiring credential re-login thread has been interrupted and will exit.
+    THREAD: eventos-producer-017
+        LOGGER: org.apache.kafka.common.metrics.Metrics
+            INFO : Metrics scheduler closed
+            INFO : Closing reporter org.apache.kafka.common.metrics.JmxReporter
+            INFO : Metrics reporters closed
+        LOGGER: org.apache.kafka.common.utils.AppInfoParser
+            INFO : App info kafka.producer for cyber_batch unregistered
+        LOGGER: br.com.ppware.ep017.App
+            INFO : Duração total: 3760 milissegundos
+            INFO : *******************************************************************************************************
+            INFO : ENCERRADO EVENTOS PRODUCER 017
+            INFO : *******************************************************************************************************

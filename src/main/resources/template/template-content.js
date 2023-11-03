@@ -219,8 +219,7 @@ const AllTabelasTestecase = [
 ];
 
 function testeConteudo() {
-    return (
-        `
+    return (`
  Aplicação Java para rotina diária batch com a finalidade de consultar a tabela EVENTOS_WEB e dela preencher as tabelas temporárias e encaminhar mensagem via Kafka ao Hub de Pagamentos
  23/05/24 18:04:03
      THREAD: eventos-web-017
@@ -505,6 +504,4 @@ function testeConteudo() {
              INFO : ******************************
              INFO : ENCERRANDO EVENTOS WEB 017
              INFO : ******************************
-`
-    );
-}
+`)}

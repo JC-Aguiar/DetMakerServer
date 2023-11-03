@@ -1,24 +1,85 @@
 package br.com.ppw.dma;
 
+import br.com.ppw.dma.config.DatabaseConfig;
+import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
 import br.com.ppw.dma.job.JobService;
 import br.com.ppw.dma.net.ConectorSftp;
+import br.com.ppw.dma.pipeline.PipelineRelatorioDTO;
+import br.com.ppw.dma.relatorio.RelatorioHistoricoDTO;
 import br.com.ppw.dma.system.Arquivos;
 import br.com.ppw.dma.util.ComandoSql;
+import br.com.ppw.dma.util.HtmlDet;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static br.com.ppw.dma.DetMakerApplication.RELOGIO;
 import static br.com.ppw.dma.util.FormatString.dividirValores;
 
 @Slf4j
 public class BasicTest {
+
+    @Test
+    public void testeGerandoHtmlDetUnificado() throws IOException, URISyntaxException {
+        val dataHoraHoje = OffsetDateTime.now(RELOGIO);
+        val evidenciasDTO = List.of(
+            EvidenciaInfoDTO.builder()
+                .job("cy3_rem_notif.ksh")
+                .jobDescricao("Processa REMESSA NOTIFICACOES REGULATORIAS PARA SMARTBILL")
+                .data(dataHoraHoje.minusSeconds(32548))
+                .sucesso(true)
+                .ordem(0)
+                .argumentos("20230822")
+                .queries(List.of("SELECT * FROM SEQUENCIA s WHERE TPARQ='B023'"))
+                .tabelasPreJob(List.of("[#1] TPARQ=B023, SEQ=169"))
+                .tabelasPosJob(List.of("[#1] TPARQ=B023, SEQ=170"))
+                .logs(List.of("""
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
+                    Integer sit amet justo sit amet lacus faucibus viverra. 
+                    
+                    Nunc nisi neque, volutpat vitae vulputate et, interdum et enim. 
+                    Morbi ac quam tempus, consequat dolor et, tincidunt felis. Pellentesque pulvinar suscipit mauris sed dapibus. Nulla convallis leo eu eleifend euismod. Aliquam in ultricies libero. Nam tincidunt felis augue, eu mattis erat commodo at.
+                    Curabitur eleifend iaculis metus, vitae varius nisl dignissim accumsan. 
+                    
+                    In ut nisi leo. Sed facilisis vitae libero in ultrices. Integer elit ante, efficitur sit amet aliquet eget, dapibus nec mauris. Donec luctus ut tellus vitae mollis. Cras tempus libero eu facilisis scelerisque. Nam in viverra tellus. Nulla auctor justo quis dolor rutrum, a faucibus enim fermentum. Nullam posuere leo tortor, at laoreet purus tristique ut. Proin at quam elit. Aliquam sed est suscipit, dapibus nibh eget, dapibus nunc. Praesent pellentesque libero eget lobortis euismod. Duis commodo eu ante et dapibus. Praesent mollis consectetur diam sed volutpat. Nunc non vehicula arcu.
+                    
+                    Vivamus at tempus elit. Suspendisse vitae sollicitudin magna. 
+                    Sed varius diam sit amet porttitor pulvinar. Donec felis ipsum, finibus ac vulputate vel, fermentum vitae diam. Duis aliquam pharetra orci et sagittis. Proin tincidunt ex a laoreet dictum. Nulla non ante bibendum, molestie ante in, hendrerit arcu. 
+                    
+                    Praesent pellentesque, lacus sed consectetur convallis, mi est facilisis eros, id eleifend leo ipsum nec velit. Duis finibus erat at velit porta sollicitudin.
+                    """))
+                .logsNome(List.of("cyb_encrypt_20230621_011223.log"))
+                .build()
+        );
+        val relatorioDto = RelatorioHistoricoDTO.builder()
+            .nomeProjeto("Teste Unitário DET-MAKER")
+            .nomeAtividade("testeGerandoHtmlDetUnificado")
+            .configuracao("Nenhuma")
+            .dataInicio(dataHoraHoje.minusMinutes(3))
+            .dataFim(dataHoraHoje)
+            .evidencias(evidenciasDTO)
+            .sucesso(false)
+            .build();
+        val pipelineRelatorio = new PipelineRelatorioDTO(
+            "Teste 01",
+            "Tentando criar documento DET com HTML, CSS e JS unificados",
+            relatorioDto);
+        val dbConfig = new DatabaseConfig();
+        dbConfig.setDbAmbiente("DEV");
+        dbConfig.setDbSistema("Vivo Cyber 3");
+        HtmlDet.gerarNovoDet(pipelineRelatorio, dbConfig);
+    }
 
     @Test
     public void testeDeColetaGenericaAoBanco() {

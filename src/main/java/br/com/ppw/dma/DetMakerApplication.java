@@ -9,6 +9,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
+import java.io.File;
 import java.time.Clock;
 import java.time.Duration;
 
@@ -19,7 +20,12 @@ import java.time.Duration;
 @EnableAspectJAutoProxy(exposeProxy = true, proxyTargetClass = true)
 public class DetMakerApplication {
 
-	public static final String DIR_RECURSOS = "temp/";
+	public static final String DIR_RECURSOS = "temp/"
+		.replace("/", File.separator);
+	public static final String DIR_PIPELINE = DIR_RECURSOS+"pipeline/"
+		.replace("/", File.separator);
+	public static final String DIR_JOBS = DIR_RECURSOS+"jobs/"
+		.replace("/", File.separator);
 	public static final Clock RELOGIO = Clock.tick(Clock.systemDefaultZone(), Duration.ofMillis(1));
 
 	public static void main(String[] args) throws DiretorioSemPermissaoException {
