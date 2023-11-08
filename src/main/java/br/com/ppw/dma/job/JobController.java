@@ -5,11 +5,9 @@ import br.com.ppw.dma.evidencia.EvidenciaController;
 import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
 import br.com.ppw.dma.master.MasterController;
 import br.com.ppw.dma.master.MasterRequestDTO;
-import br.com.ppw.dma.pipeline.Pipeline;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.hibernate.service.spi.ServiceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -22,11 +20,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-import static br.com.ppw.dma.util.FormatString.LINHA_HORINZONTAL;
 import static br.com.ppw.dma.util.FormatString.dividirValores;
 
 @RestController
@@ -115,26 +111,22 @@ public class JobController extends MasterController
     //TODO: mover para AspectJ, para tornar padrão em todos os serviços
     @PostMapping(value = "execute/stack")
     public ResponseEntity<?> executeJobs(@RequestBody List<JobExecuteDTO> jobsExecute) {
-        val serviceId = "$" + Instant.now().toEpochMilli();
-        log.info("Iniciando Serviço {} {}{}", serviceId, LINHA_HORINZONTAL, LINHA_HORINZONTAL);
-
-        val evidenciasDto = executeJobsCore(jobsExecute)
+        val evidenciasDto = executeJobsAndGetEvidencias(jobsExecute)
             .stream()
             .map(env -> evidenciaController.parseToResponseDto(env, env.getOrdem()))
             .toList();
         val sucesso = evidenciasDto.stream().anyMatch(EvidenciaInfoDTO::getSucesso);
-
-        log.info("Encerrando Serviço {} {}{}", serviceId, LINHA_HORINZONTAL, LINHA_HORINZONTAL);
         if(sucesso) return ResponseEntity.ok(evidenciasDto);
         return ResponseEntity.internalServerError().body(evidenciasDto);
     }
 
-    public List<Evidencia> executeJobsCore(List<JobExecuteDTO> jobsExecute) {
+    public List<Evidencia> executeJobsAndGetEvidencias(List<JobExecuteDTO> jobsExecute) {
         //TODO: separar a Evidência do Resumo, onde o Resumo contêm as informações da execução
         //  (aonde teve sucesso e aonde teve falha)
         //Será convertido o JobExecuteDTO para JobExecutePOJO, inserindo nele a entidade Job via ID.
         //Também será gerado JobInfoDTO com base na entidade. DTO responsável pela execução dos comandos
         //de forma correta e organizada no terminal SFTP
+        log.info("Iniciando rotina da execução de Jobs");
         val jobsPojo = jobsExecute.stream()
             .map(this::createPojo)
             .filter(Optional::isPresent)

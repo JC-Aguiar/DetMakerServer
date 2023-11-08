@@ -1,6 +1,7 @@
 package br.com.ppw.dma.pipeline;
 
 import br.com.ppw.dma.job.JobExecuteDTO;
+import br.com.ppw.dma.user.UserInfoDTO;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -15,6 +16,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PipelineNovaExecDTO extends PipelineNovaDTO {
 
+    UserInfoDTO userInfo;
     List<JobExecuteDTO> jobs;
 
 }

@@ -1,28 +1,37 @@
 package br.com.ppw.dma.pipeline;
 
+import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
+import br.com.ppw.dma.evidencia.EvidenciaService;
 import br.com.ppw.dma.execFile.ExecFile;
 import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.job.JobController;
 import br.com.ppw.dma.job.JobExecuteDTO;
 import br.com.ppw.dma.master.MasterController;
+import br.com.ppw.dma.relatorio.RelatorioHistoricoDTO;
 import br.com.ppw.dma.relatorio.RelatorioInfoDTO;
 import br.com.ppw.dma.relatorio.RelatorioService;
+import br.com.ppw.dma.user.UserInfoDTO;
 import br.com.ppw.dma.util.ComandoSql;
-import jakarta.validation.constraints.NotNull;
+import br.com.ppw.dma.util.HtmlDet;
+import jakarta.validation.constraints.NotBlank;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static br.com.ppw.dma.util.FormatString.LINHA_HORINZONTAL;
+import static br.com.ppw.dma.util.FormatString.LINHA_HIFENS;
 
 @Slf4j
 @RestController
@@ -33,16 +42,19 @@ public class PipelineController extends MasterController<
     private final PipelineService pipelineService;
     private final JobController jobController;
     private final RelatorioService relatorioService;
+    private final EvidenciaService evidenciaService;
 
     public PipelineController(
         @Autowired PipelineService pipelineService,
         @Autowired JobController jobController,
-        @Autowired RelatorioService relatorioService) {
+        @Autowired RelatorioService relatorioService,
+        @Autowired EvidenciaService evidenciaService) {
         //--------------------------------------------
         super(pipelineService);
         this.pipelineService = pipelineService;
         this.jobController = jobController;
         this.relatorioService = relatorioService;
+        this.evidenciaService = evidenciaService;
     }
 
     @GetMapping(value = "ping")
@@ -52,23 +64,18 @@ public class PipelineController extends MasterController<
 
     @PostMapping(value = "new")
     public ResponseEntity<?> newPipeline(@RequestBody PipelineNovaDTO novaPipeline) {
-        val serviceId = "$" + Instant.now().toEpochMilli();
-        log.info("Iniciando Serviço {} {}{}", serviceId, LINHA_HORINZONTAL, LINHA_HORINZONTAL);
-
-        val pipeline = proxy().newPipelineCore(novaPipeline);
-
-        log.info("Encerrando Serviço {} {}{}", serviceId, LINHA_HORINZONTAL, LINHA_HORINZONTAL);
+        val pipeline = proxy().createNewByPipelineNovaDTO(novaPipeline);
         val mensgem = "Pipeline '" +pipeline.getNome()+ "' criada com sucesso.";
         return ResponseEntity.ok(mensgem);
     }
 
     @PostMapping(value = "run/new")
-    public ResponseEntity<?> runNewPipeline(@RequestBody PipelineNovaExecDTO novaPipeline) {
-        val serviceId = "$" + Instant.now().toEpochMilli();
-        log.info("Iniciando Serviço {} {}{}", serviceId, LINHA_HORINZONTAL, LINHA_HORINZONTAL);
-
-        val pipeline = proxy().newPipelineCore(novaPipeline);
-        val evidencias = jobController.executeJobsCore(novaPipeline.getJobs());
+    public ResponseEntity<?> runNewPipeline(@RequestBody PipelineNovaExecDTO novaPipeline)
+    throws IOException, URISyntaxException {
+        val pipeline = pipelineService
+            .getPipelineByName(novaPipeline.getPipeline().getNome())
+            .orElseGet(() -> proxy().createNewByPipelineNovaExecDTO(novaPipeline));
+        val evidencias = jobController.executeJobsAndGetEvidencias(novaPipeline.getJobs());
         val parametrosDosJobs = novaPipeline.getJobs()
             .stream()
             .map(JobExecuteDTO::getArgumentos)
@@ -78,19 +85,70 @@ public class PipelineController extends MasterController<
             pipeline,
             evidencias,
             parametrosDosJobs);
+        val evidenciasDto = evidencias.stream()
+            .map(ev -> evidenciaService.parseToResponseDto(ev, ev.getOrdem()))
+            .toList();
+        val dataInicio = evidenciasDto.stream()
+            .map(EvidenciaInfoDTO::getData)
+            .min(OffsetDateTime::compareTo)
+            .orElse(null);
+        val dataFim = evidenciasDto.stream()
+            .map(EvidenciaInfoDTO::getData)
+            .max(OffsetDateTime::compareTo)
+            .orElse(null);
+        val sucesso = evidenciasDto.stream()
+            .allMatch(EvidenciaInfoDTO::getSucesso);
 
-        log.info("Encerrando Serviço {} {}{}", serviceId, LINHA_HORINZONTAL, LINHA_HORINZONTAL);
-        val mensgem = "";
-        return ResponseEntity.ok(mensgem);
+        log.info("Montando RelatorioHistoricoDTO.");
+        val relatorioHistorico = RelatorioHistoricoDTO.builder()
+            .nomeAtividade(relatorio.getNomeAtividade())
+            .nomeProjeto(relatorio.getNomeProjeto())
+            .configuracao(relatorio.getConfiguracao())
+            .evidencias(evidenciasDto)
+            .dataInicio(dataInicio)
+            .dataFim(dataFim)
+            .sucesso(sucesso)
+            .build();
+        log.info(relatorioHistorico.toString());
+
+        log.info("Montando PipelineRelatorioDTO.");
+        val pipelineRelatorio = new PipelineRelatorioDTO(
+            novaPipeline.getPipeline().getNome(),
+            novaPipeline.getPipeline().getDescricao(),
+            relatorioHistorico);
+        log.info(pipelineRelatorio.toString());
+
+        return retornarNovoDet(pipelineRelatorio, List.of(novaPipeline.getUserInfo()));
     }
 
-    @PostMapping(value = "run/again")
-    public ResponseEntity<?> runPipelineAgain(@RequestBody @NotNull String nome) {
-        val serviceId = "$" + Instant.now().toEpochMilli();
-        log.info("Iniciando Serviço {} {}{}", serviceId, LINHA_HORINZONTAL, LINHA_HORINZONTAL);
+    private ResponseEntity<?> retornarNovoDet(
+            @NonNull PipelineRelatorioDTO pipelineRelatorio,
+            @NonNull List<UserInfoDTO> userInfo)
+    throws IOException, URISyntaxException {
+        val det = HtmlDet.gerarNovoDet(pipelineRelatorio, userInfo);
+        val mensgem = "Pipeline executada com sucesso. Novo DET foi gerado e salvo localmente.";
 
+        log.debug("Criando objeto Resource para arquivo no caminho '{}'.", det.getAbsolutePath());
+        final Resource fileResource = new FileSystemResource(det.getAbsolutePath());
+
+        log.debug("Configurando cabeçalho da resposta, usando propriedade 'attachment/{}'.", det.getName());
+        val headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.setContentDispositionFormData("attachment", det.getName());
+
+        // Retorna a resposta com o arquivo
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(fileResource);
+    }
+
+    @GetMapping(value = "run/again/{nome}")
+    public ResponseEntity<?> runPipelineAgain(
+        @PathVariable @NotBlank String nome)
+    throws IOException, URISyntaxException {
         log.info("Etapa 1: remontando última execução da Pipeline '{}'.", nome);
-        val pipeline = pipelineService.getPipelineByName(nome);
+        val pipeline = pipelineService.getPipelineByName(nome)
+            .orElseThrow();
         val relatorio = relatorioService.findMostRecentFromPipeline(pipeline);
         val jobsExecDto = relatorio.getEvidencias()
             .stream()
@@ -128,9 +186,11 @@ public class PipelineController extends MasterController<
         jobsExecDto.forEach(dto -> log.info(dto.toString()));
         log.info("Remontagem da pipeline finalizada");
 
+        log.info(LINHA_HIFENS);
         log.info("Etapa 2: reexecutando os Jobs da Pipeline '{}'.", nome);
-        val novasEvidencias = jobController.executeJobsCore(jobsExecDto);
+        val novasEvidencias = jobController.executeJobsAndGetEvidencias(jobsExecDto);
 
+        log.info(LINHA_HIFENS);
         log.info("Etapa 3: salvando novo Relatório para a Pipeline '{}'.", nome);
         val parametrosDosJobs = jobsExecDto.stream()
             .map(JobExecuteDTO::getArgumentos)
@@ -145,29 +205,42 @@ public class PipelineController extends MasterController<
             novasEvidencias,
             parametrosDosJobs);
 
-        log.info("Etapa 4: gerando documento DET localmente.");
+        log.info(LINHA_HIFENS);
+        log.info("Etapa 4: coletando informações para montar DET.");
+        val evidenciasDto = novasEvidencias.stream()
+            .map(ev -> evidenciaService.parseToResponseDto(ev, ev.getOrdem()))
+            .toList();
+        val dataInicio = evidenciasDto.stream()
+            .map(EvidenciaInfoDTO::getData)
+            .min(OffsetDateTime::compareTo)
+            .orElse(null);
+        val dataFim = evidenciasDto.stream()
+            .map(EvidenciaInfoDTO::getData)
+            .max(OffsetDateTime::compareTo)
+            .orElse(null);
+        val sucesso = evidenciasDto.stream()
+            .allMatch(EvidenciaInfoDTO::getSucesso);
+        val relatorioHistorico = RelatorioHistoricoDTO.builder()
+            .nomeAtividade(relatorio.getNomeAtividade())
+            .nomeProjeto(relatorio.getNomeProjeto())
+            .configuracao(relatorio.getConfiguracao())
+            .evidencias(evidenciasDto)
+            .dataInicio(dataInicio)
+            .dataFim(dataFim)
+            .sucesso(sucesso)
+            .build();
+        val pipelineRelatorio = new PipelineRelatorioDTO(
+            pipeline.getNome(),
+            pipeline.getDescricao(),
+            relatorioHistorico);
 
-
-        log.info("Etapa 5: anexando documento DET na resposta.");
-        val arquivoNome = "";
-        val diretorio = "";
-        val filePath = diretorio + arquivoNome;
-        log.debug("Criando objeto Resource, usando o caminho '{}'.", filePath);
-        val fileResource = new FileSystemResource(filePath);
-
-        log.debug("Configurando cabeçalho da resposta para arquivo '{}'.", arquivoNome);
-        val headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDispositionFormData("attachment", arquivoNome);
-
-        log.info("Encerrando Serviço {} {}{}", serviceId, LINHA_HORINZONTAL, LINHA_HORINZONTAL);
-        val mensgem = "";
-        return ResponseEntity.ok()
-            .headers(headers)
-            .body(fileResource);
+        log.info(LINHA_HIFENS);
+        log.info("Etapa 5: gerando documento DET localmente.");
+        return retornarNovoDet(
+            pipelineRelatorio, List.of(new UserInfoDTO())); //TODO: implementar parâmetro userInfoDTO
     }
 
-    public Pipeline newPipelineCore(PipelineNovaDTO novaPipeline) {
+    public Pipeline createNewByPipelineNovaDTO(PipelineNovaDTO novaPipeline) {
         log.info("Convertendo DTO em Entidade.");
         val pipeline = new Pipeline();
         pipeline.setNome(novaPipeline.getPipeline().getNome());
@@ -175,7 +248,8 @@ public class PipelineController extends MasterController<
         return pipelineService.persist(pipeline);
     }
 
-    public Pipeline newPipelineCore(PipelineNovaExecDTO novaPipeline) {
+    public Pipeline createNewByPipelineNovaExecDTO(PipelineNovaExecDTO novaPipeline) {
+        log.info("Criando nova Pipeline '{}'.", novaPipeline);
         log.info("Obtendo todos os Jobs listados no DTO.");
         val jobIds = novaPipeline.getJobs()
             .stream()
@@ -188,11 +262,7 @@ public class PipelineController extends MasterController<
         log.info("Total de {} Jobs encontrados:", jobs.size());
         log.info(" - {}", jobsNome);
 
-        log.info("Convertendo Pipeline: de DTO em Entidade.");
-        val pipeline = new Pipeline();
-        pipeline.setNome(novaPipeline.getPipeline().getNome());
-        pipeline.setDescricao(novaPipeline.getPipeline().getDescricao());
-        pipeline.setJobs(jobs);
+        val pipeline = pipelineService.parsePipelineNovaExecDTO(novaPipeline, jobs);
         return pipelineService.persist(pipeline);
     }
 

@@ -1,6 +1,5 @@
 package br.com.ppw.dma.config;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -16,6 +15,7 @@ import javax.sql.DataSource;
 @Getter
 @Setter
 @Slf4j
+@ToString
 @Configuration
 @PropertySource("classpath:db-config.properties")
 public class DatabaseConfig {
@@ -38,12 +38,15 @@ public class DatabaseConfig {
     @Value("${db.schema}")
     private String dbSchema;
 
+    public static BancoAmbiente ambienteInfo;
+
     public record BancoAmbiente(String sistema, String nome) { }
 
     @Bean
     public BancoAmbiente getAmbiente() {
-        log.info("Sistema: {}. Ambiente: {}. Schema: {}.", dbSistema, dbAmbiente, dbSchema);
-        return new BancoAmbiente(dbSistema, dbAmbiente);
+        log.info("Sistema: {}. Ambiente: {}.", dbSistema, dbAmbiente);
+        ambienteInfo = new BancoAmbiente(dbSistema, dbAmbiente);
+        return ambienteInfo;
     }
 
     @Bean

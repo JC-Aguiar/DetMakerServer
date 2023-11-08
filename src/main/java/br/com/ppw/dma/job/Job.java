@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-import static br.com.ppw.dma.util.FormatString.refinarTexto;
+import static br.com.ppw.dma.util.FormatString.refinarCelula;
 import static jakarta.persistence.FetchType.LAZY;
 
 
@@ -165,14 +165,14 @@ public class Job implements MasterEntity<Long> {
      * @return {@link Job} esse mesmo objeto
      */
     public Job refinarCampos() {
-        executarAposJob = refinarTexto(executarAposJob);
-        programa = refinarTexto(programa);
-        tabelas = refinarTexto(tabelas);
-        parametros = refinarTexto(parametros);
-        descricaoParametros = refinarTexto(descricaoParametros);
-        mascaraEntrada = refinarTexto(mascaraEntrada);
-        mascaraSaida = refinarTexto(mascaraSaida);
-        mascaraLog = refinarTexto(mascaraLog);
+        executarAposJob = refinarCelula(executarAposJob);
+        programa = refinarCelula(programa);
+        tabelas = refinarCelula(tabelas);
+        parametros = refinarCelula(parametros);
+        descricaoParametros = refinarCelula(descricaoParametros);
+        mascaraEntrada = refinarCelula(mascaraEntrada);
+        mascaraSaida = refinarCelula(mascaraSaida);
+        mascaraLog = refinarCelula(mascaraLog);
         return this;
     }
 
