@@ -3,7 +3,7 @@ package br.com.ppw.dma.job;
 import br.com.ppw.dma.evidencia.EvidenciaService;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.net.ConectorSftp;
-import br.com.ppw.dma.pipeline.Pipeline;
+import br.com.ppw.dma.net.FileManager;
 import br.com.ppw.dma.system.Arquivos;
 import br.com.ppw.dma.system.ExcelXLSX;
 import br.com.ppw.dma.util.ResultadoSql;
@@ -27,7 +27,6 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static br.com.ppw.dma.DetMakerApplication.DIR_RECURSOS;
 import static br.com.ppw.dma.util.FormatString.*;
@@ -165,7 +164,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
         JobDto.setMascaraLog(listaMascarasLog);
         try {
             log.info("{}: Tentando converter 'Data de Atualização' da planilha para o DTO.", registro);
-            val data = refinarTexto(jobPojo.getDataAtualizacao());
+            val data = refinarCelula(jobPojo.getDataAtualizacao());
             JobDto.setDataAtualizacao(LocalDate.parse(data, CONVERSOR_DATA_SCHEDULE));
             log.info("{}: Conversão realizada com sucesso.", registro);
         }
@@ -203,24 +202,29 @@ public class JobService extends MasterService<Long, Job, JobService> {
                 log.error("Comando não executado com sucesso.");
             }
             log.info("Obtendo log mais recente pós-execução");
-            val logsDepois = downloadMaisRecente(jobDto, path);
+            val logsDepois = logsAntes.stream()
+                .map(this::downloadMaisRecente)
+                .map(FileManager::latestModified)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toList();
 
             log.info("Consultando tabelas pós-execução.");
             val tabelasDepois = extrairBanco(pojo.getTabelas());
             pojo.setTabelas(
                 evidenciaSerive.extractTablePosJob(pojo.getTabelas()));
 
-            log.info("Comparando logs para anexar como evidência.");
-            val logEvidencia = getLogMaisRecente(logsAntes, logsDepois);
-            if(logEvidencia.isEmpty()) {
-                //throw new RuntimeException("Nenhum arquivo de log disponível para esse job.");
-                log.warn("Nenhum arquivo de log disponível para Job id {}.", pojo.getJob().getId());
-            }
-            else {
-                log.info("Logs coletados como Evidência: ");
-                logEvidencia.forEach(this::printArquivo);
-            }
-            pojo.addEvidencias(logEvidencia);
+            //log.info("Comparando logs para anexar como evidência.");
+            //val logEvidencia = logsDepois.
+            //if(logEvidencia.isEmpty()) {
+            //    //throw new RuntimeException("Nenhum arquivo de log disponível para esse job.");
+            //    log.warn("Nenhum arquivo de log disponível para Job id {}.", pojo.getJob().getId());
+            //}
+            //else {
+            //    log.info("Logs coletados como Evidência: ");
+            //    logEvidencia.forEach(this::printArquivo);
+            //}
+            pojo.addEvidencias(logsDepois);
             pojo.setSucesso(true);
         }
         catch(Exception e) {
@@ -247,58 +251,70 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: Javadoc
-    public List<File> getLogMaisRecente(@NonNull List<File> logs1, @NonNull List<File> logs2) {
-        log.info("Lista 1 possuí {} log(s). Lista 2 possuí {} log(s).", logs1.size(), logs2.size());
-        val maiorTamanho = Math.max(logs1.size(), logs2.size());
-        val listaLogs = new ArrayList<File>();
-
-        for(int i = 0; i < maiorTamanho; i++) {
-            val file1 = logs1.size() > i ? logs1.get(i) : null;
-            val file2 = logs2.size() > i ? logs2.get(i) : null;
-            long lastModified1 = file1 == null ? Long.MAX_VALUE : file1.lastModified();
-            long lastModified2 = file2 == null ? Long.MAX_VALUE : file2.lastModified();
-            val arquivoMaisRecente = (lastModified1 > lastModified2) ? file1 : file2;
-            listaLogs.add(arquivoMaisRecente);
-        }
-        return listaLogs;
-    }
+//    public List<File> getLogMaisRecente(@NonNull List<List<File>> logsPre, @NonNull List<List<File>> logsPos) {
+//        log.info("Lista pré-job possuí {} log(s). Lista pós-job possuí {} log(s).",
+//            logsPre.size(), logsPos.size());
+//        val maiorLista = Math.max(logsPre.size(), logsPos.size());
+//        val listaLogs = new ArrayList<File>();
+//
+//        for(int i = 0; i < maiorLista; i++) {
+//            val maiorQuantidadeAnexos = Math.max(logsPre.get(i).size(), logsPos.get(i).size());
+//
+//
+//            for(int j = 0; j < maiorQuantidadeAnexos; j++) {
+//                val file1 = logsPre.size() > i ? logsPre.get(i) : null;
+//                val file2 = logsPos.size() > i ? logsPos.get(i) : null;
+//                long lastModified1 = file1 == null ? Long.MAX_VALUE : file1.lastModified();
+//                long lastModified2 = file2 == null ? Long.MAX_VALUE : file2.lastModified();
+//                val arquivoMaisRecente = (lastModified1 > lastModified2) ? file1 : file2;
+//                listaLogs.add(arquivoMaisRecente);
+//            }
+//        }
+//        return listaLogs;
+//    }
 
     //TODO: Javadoc
-    private List<File> downloadMaisRecente(JobInfoDTO jobInfo, Path path) {
+    private List<FileManager> downloadMaisRecente(@NonNull JobInfoDTO jobInfo, @NonNull Path path) {
         val logsNome = jobInfo.pathLog().toArray(new String[0]);
         log.info(Arrays.toString(logsNome));
 
         log.debug("Realizando cada download para cada log informado pelo Job.");
-        val sucessos = sftp.downloadMaisRecente(path, logsNome);
-        if(sucessos > 0)
-            log.info("Total de downloads: " + sucessos);
-        else {
+        val arquivosObtidos = sftp.downloadMaisRecente(path, logsNome);
+        if(!arquivosObtidos.isEmpty())
+            log.info("Total de downloads: {}", arquivosObtidos.size());
+        else
             log.warn("Nenhum download realizado com sucesso.");
-            return List.of();
-        }
-        log.debug("Buscando pelo log mais recente, nos downloads, para cada máscara de log.");
-        final List<File> arquivosMaisRecentes = Stream.of(logsNome)
-            .map(log -> log.split("/*")[0])
-            .map(log -> Arquivos.loadArquivos(path, log)
-                .stream()
-                .max(Comparator.comparing(File::lastModified))
-                .orElse(null))
-            .filter(Objects::nonNull)
-            .peek(this::printArquivo)
-            .toList();
+        return arquivosObtidos;
+        //log.debug("Buscando pelo log mais recente, nos downloads, para cada máscara de log.");
+        //final List<File> arquivosMaisRecentes = Stream.of(logsNome)
+        //    .map(log -> log.split("/*")[0])
+        //    .map(log -> Arquivos.loadArquivos(path, log)
+        //        .stream()
+        //        .max(Comparator.comparing(File::lastModified))
+        //        .orElse(null))
+        //    .filter(Objects::nonNull)
+        //    .peek(this::printArquivo)
+        //    .toList();
 
         //Resultado final
-        if(!arquivosMaisRecentes.isEmpty()) return arquivosMaisRecentes;
-        log.warn("Nenhum arquivo de log disponível agora para esse job.");
-        return List.of();
+        //if(!arquivosMaisRecentes.isEmpty()) return arquivosMaisRecentes;
+        //log.warn("Nenhum arquivo de log disponível agora para esse job.");
+        //return List.of();
     }
 
-    //TODO: Javadoc
-    public void printArquivo(@NonNull File arquivo) {
-        if(!arquivo.exists()) return;
-        val data = new Date(arquivo.lastModified());
-        val peso = (double) arquivo.length() / 1000;
-        log.info("\t > [{}] {} ({} Kbs)", data, arquivo.getName(), peso);
+    private FileManager downloadMaisRecente(@NonNull FileManager fileManager) {
+        val logNome = fileManager.getReference();
+        log.info(logNome);
+
+        log.debug("Realizando cada download para cada log informado pelo Job.");
+        val arquivosObtidos = sftp.downloadMaisRecente(fileManager.getPath(), logNome);
+        if (!arquivosObtidos.isEmpty()) {
+            log.info("Total de downloads: {}", arquivosObtidos.size());
+            arquivosObtidos.forEach(fileManager::addFile);
+        }
+        else log.warn("Nenhum download realizado com sucesso.");
+        return fileManager;
     }
+
 
 }

@@ -210,6 +210,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
                 val preJob = tabela.getTabelasPreJob();
                 val execQuery = ExecQuery.builder()
                     .evidencia(evidencia)
+                    .jobNome(jobPojo.getJob().getNome())
                     .tabelaNome(tabela.getTabela())
                     .query(tabela.getSqlCompleta())
                     .resultado(proxy().parseTableToString(preJob))
@@ -226,6 +227,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
                 val posJob = tabela.getTabelasPosJob();
                 val execQuery = ExecQuery.builder()
                     .evidencia(evidencia)
+                    .jobNome(jobPojo.getJob().getNome())
                     .tabelaNome(tabela.getTabela())
                     .query(tabela.getSqlCompleta())
                     .resultado(proxy().parseTableToString(posJob))
@@ -241,6 +243,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             .map(carga -> {
                 val execFile = ExecFile.builder()
                     .evidencia(evidencia)
+                    .jobNome(jobPojo.getJob().getNome())
                     .arquivoNome(carga.getName())
                     .arquivo(lerArquivo(carga))
                     .build();
@@ -255,6 +258,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             .map(carga -> {
                 val execFile = ExecFile.builder()
                     .evidencia(evidencia)
+                    .jobNome(jobPojo.getJob().getNome())
                     .arquivoNome(carga.getName())
                     .arquivo(lerArquivo(carga))
                     .build();
@@ -351,6 +355,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
     public EvidenciaInfoDTO parseToResponseDto(@NonNull Evidencia evidencia, @NonNull Integer ordem) {
         log.info("Convertendo entidade Evidência para DTO de resposta");
 
+        //TODO: refatorar para otimizar a iteração nas listas durante preenchimento do EvidenciaInfoDTO
         val dto = EvidenciaInfoDTO.builder()
                 .job(evidencia.getJob().getNome())
                 .jobDescricao(evidencia.getJob().getDescricao())
@@ -377,6 +382,10 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
                 .logs(evidencia.getLogs()
                     .stream()
                     .map(ExecFile::getArquivo)
+                    .toList())
+                .logsNome(evidencia.getLogs()
+                    .stream()
+                    .map(ExecFile::getArquivoNome)
                     .toList())
                 .saidas(evidencia.getSaidas()
                     .stream()

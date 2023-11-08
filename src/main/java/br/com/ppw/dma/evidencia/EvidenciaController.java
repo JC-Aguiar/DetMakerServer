@@ -53,6 +53,7 @@ public class EvidenciaController extends MasterController
     }
 
     public List<Evidencia> gerarEvidencias(@NonNull List<JobExecutePOJO> jobsPojo) {
+        log.info("Iniciando rotina para gerar Evidências.");
         val listaEvidencias = new ArrayList<Evidencia>();
         for(val jobPojo : jobsPojo) {
             try {

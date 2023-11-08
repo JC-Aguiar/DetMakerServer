@@ -59,7 +59,7 @@ function TabelaTestcase(
         const props = {
             id: 'list-group-item',
             className: 'btn btn-outline-primary py-0 px-1 me-2 ',
-            onClick: () => abrirAnexo(listaAnexos[index])
+            onClick: () => abrirAnexo(nome, listaAnexos[index])
         };
         const te1 = React.createElement( 'div', props, nome+"\n");
         anexosTotais.push(te1);
@@ -143,11 +143,13 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 //==========================================================================================================
 //=========================== Lógica para anexar e abrir evidências de texto ===============================
-function abrirAnexo(conteudo) {
-    const linhas = conteudo.split("\n");
-    const textoFormatado = linhas.join("<br>").replace("\t", '&nbsp;&nbsp;&nbsp;&nbsp;')
+function abrirAnexo(nome, conteudo) {
+    const bytes = Uint8Array.from(atob(conteudo), c => c.charCodeAt(0));
+    const decodificador = new TextDecoder('utf-8');
+    conteudo = decodificador.decode(bytes);
+
     const newWindow = window.open('', '_blank');
-    newWindow?.document.write(`<pre>${textoFormatado}</pre>`);
+    newWindow?.document.write(`<head><title>${nome}</title></head><pre>${conteudo}</pre>`);
     newWindow?.document.close();
 }
 function abrirNovaAba(conteudo) {

@@ -128,15 +128,15 @@ public class BasicTest {
         log.info("logsAntes: '{}'", logAntesString);
         log.info("logsDepois: '{}'", logDepoisString);
         log.info("Comparando logs para anexar como evidência.");
-        val logEvidencia = service.getLogMaisRecente(logsAntes, logsDepois);
-        if(logEvidencia.isEmpty()) {
-            //throw new RuntimeException("Nenhum arquivo de log disponível para esse job.");
-            log.warn("Nenhum arquivo de log disponível");
-        }
-        else {
-            log.info("Logs coletados como Evidência: ");
-            logEvidencia.forEach(service::printArquivo);
-        }
+//        val logEvidencia = service.getLogMaisRecente(logsAntes, logsDepois);
+//        if(logEvidencia.isEmpty()) {
+//            //throw new RuntimeException("Nenhum arquivo de log disponível para esse job.");
+//            log.warn("Nenhum arquivo de log disponível");
+//        }
+//        else {
+//            log.info("Logs coletados como Evidência: ");
+//            logEvidencia.forEach(service::printArquivo);
+//        }
     }
 
 

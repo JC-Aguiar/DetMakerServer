@@ -22,11 +22,15 @@ public class DetMakerApplication {
 
 	public static final String DIR_RECURSOS = "temp/"
 		.replace("/", File.separator);
-	public static final String DIR_PIPELINE = DIR_RECURSOS+"pipeline/"
+
+	public static final String DIR_PIPELINE = DIR_RECURSOS + "pipeline/"
 		.replace("/", File.separator);
-	public static final String DIR_JOBS = DIR_RECURSOS+"jobs/"
+
+	public static final String DIR_JOBS = DIR_RECURSOS + "jobs/"
 		.replace("/", File.separator);
+
 	public static final Clock RELOGIO = Clock.tick(Clock.systemDefaultZone(), Duration.ofMillis(1));
+
 
 	public static void main(String[] args) throws DiretorioSemPermissaoException {
 		log.info("Preparando servidor do DET-MAKER");

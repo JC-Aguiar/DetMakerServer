@@ -12,10 +12,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.system.TipoPermissao.*;
@@ -233,5 +230,28 @@ public class Arquivos {
             log.warn(e.getMessage());
         }
         return arquivoString.toString();
+    }
+    
+    public static boolean validarCaminho(@NotBlank String caminho) {
+        if(caminho.contains(" ")) {
+            log.warn("O caminho '{}' é inválido: possui espaços em branco", caminho);
+            return false;
+        }
+        if(!caminho.contains(".")) {
+            log.warn("O caminho '{}' é inválido: não possui o caractere '.'", caminho);
+            return false;
+        }
+        if(!caminho.contains("/")) {
+            log.warn("O caminho '{}' é inválido: não possui o caractere '/'", caminho);
+            return false;
+        }
+        return true;
+    }
+
+    public static void printInfo(File file) {
+        if (file == null) return;
+        val data = new Date(file.lastModified());
+        val peso = (double) file.length() / 1000;
+        log.info("\t > [{}] {} ({} Kbs)", data, file.getName(), peso);
     }
 }

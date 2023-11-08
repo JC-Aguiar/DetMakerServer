@@ -1,5 +1,6 @@
 package br.com.ppw.dma.net;
 
+import br.com.ppw.dma.system.Arquivos;
 import com.jcraft.jsch.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
@@ -16,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -110,31 +112,34 @@ public class ConectorSftp extends Uploader {
     }
 
     //TODO: Javadoc
-    public int download(@NonNull Path pathLocal, @NonNull String...dirArquivosRemotos) {
-        int sucessos = 0;
+    public List<File> download(@NonNull Path pathLocal, @NonNull String...dirArquivosRemotos) {
         Session session = null;
         Channel channel = null;
         ChannelSftp sftpChannel = null;
         val pathLocalAbsoluto = pathLocal.toFile().getAbsolutePath();
+        val arquivosObtidos = new ArrayList<File>();
         
         log.info("Estabelecendo conexão SFTP.");
         log.info("Quantidade de arquivos remotos para baixar: " + Arrays.stream(dirArquivosRemotos).count());
         log.info("Diretório local de destino: " + pathLocalAbsoluto);
-        Arrays.stream(dirArquivosRemotos).forEach(
-            arquivoRemoto -> log.info("Arquivo: " + arquivoRemoto)
-        );
+        log.info("Arquivos para download:");
+        Arrays.stream(dirArquivosRemotos).forEach(log::info);
         try {
             session = iniciarSessao();
             channel = session.openChannel("sftp");
             channel.connect();
             sftpChannel = (ChannelSftp) channel;
+            //val regex = "^(?!.*\\s)[^\\s]*\\.[^\\s/]*(/[^\\s/]*)*$";
 
             log.info("Iniciando downloads...");
             for(val arquivoRemoto : dirArquivosRemotos) {
+                if(!Arquivos.validarCaminho(arquivoRemoto)) continue;
                 try {
-                    log.info("Realizando download do arquivo: " + arquivoRemoto);
+                    log.info("Realizando download do arquivo: '{}'.", arquivoRemoto);
                     sftpChannel.get(arquivoRemoto, pathLocalAbsoluto);
-                    sucessos += 1;
+
+                    val arquivoNome = arquivoRemoto.split("/");
+                    arquivosObtidos.add(new File(pathLocalAbsoluto, arquivoNome[arquivoNome.length-1]));
                     log.info("Download do arquivo '{}' realizado com sucesso.", arquivoRemoto);
                 }
                 catch(SftpException e) {
@@ -151,10 +156,13 @@ public class ConectorSftp extends Uploader {
             if(channel != null) channel.disconnect();
             if(session != null) session.disconnect();
         }
-        if(sucessos > 0) log.info("Quantidade de downloads: " + sucessos);
-        else log.warn("Nenhum arquivo foi baixado com sucesso.");
-        return sucessos;
+        if(!arquivosObtidos.isEmpty())
+            log.info("Quantidade de downloads: {},", arquivosObtidos.size());
+        else
+            log.warn("Nenhum arquivo foi baixado com sucesso.");
+
         //TODO: print das informações do arquivo no diretório local
+        return arquivosObtidos;
     }
 
     //TODO: Javadoc
@@ -261,29 +269,34 @@ public class ConectorSftp extends Uploader {
     }
 
     //TODO: Javadoc
-    public int downloadMaisRecente(Path pathLocal, String...dirArquivosRemotos) {
-        return Stream.of(dirArquivosRemotos)
-            .mapToInt(dir -> listarArquivoDownload(dir, pathLocal))
-            .sum();
+    public List<FileManager> downloadMaisRecente(Path pathLocal, String...dirArquivosRemotos) {
+        val downloads = Stream.of(dirArquivosRemotos)
+            .map(dir -> listarArquivoDownload(dir, pathLocal))
+            .toList();
+//        return new DownloadManager(downloads);
+        return downloads;
     }
 
     //TODO: Javadoc
-    private int listarArquivoDownload(String dirArquivoNome, Path pathLocal) {
+    private FileManager listarArquivoDownload(String dirArquivoNome, Path pathLocal) {
+        val fileManager = new FileManager(dirArquivoNome, pathLocal);
         try {
             final List<String> listaArquivos = comando("ls -t " + dirArquivoNome + " | head -1");
             if(listaArquivos.isEmpty()) {
-                log.warn("Nenhum arquivo encontrado para '{}'", dirArquivoNome);
-                return 0;
+                log.warn("Nenhum arquivo encontrado para '{}'.", dirArquivoNome);
+                return fileManager;
             }
-            //Por algum motivo estranho o nome dos arquivos retornam com sufixo '\r' e pode causar problemas.
+            //Por algum motivo estranho o nome dos arquivos retornam concatenados com '\r' e pode causar problemas.
             val arquivoMaisRecente = listaArquivos.get(0).replace("\r", "");
-            return download(pathLocal, arquivoMaisRecente);
+            download(pathLocal, arquivoMaisRecente).forEach(file -> {
+                fileManager.addFile(dirArquivoNome, file);
+            });
         }
         catch(IOException e) {
-            log.error("Erro ao tentar fechar leitor remoto do arquivo '{}': {}",
+            log.error("Erro ao tentar fechar leitor remoto do arquivo '{}': {}.",
                 dirArquivoNome, e.getMessage());
-            return 0;
         }
+        return fileManager;
     }
     
 }

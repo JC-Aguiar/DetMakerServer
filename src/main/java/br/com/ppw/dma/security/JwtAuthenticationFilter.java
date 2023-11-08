@@ -8,13 +8,17 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.log4j.Log4j2;
+import lombok.val;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+
+import static br.com.ppw.dma.util.FormatString.LINHA_HORINZONTAL;
 
 @Log4j2(topic = "JWT AUTHENTICATION FILTER")
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -39,6 +43,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
         HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
     throws ServletException, IOException {
+        val serviceId = "$" + Instant.now().toEpochMilli();
+        log.info("Iniciando Serviço {} {}{}", serviceId, LINHA_HORINZONTAL, LINHA_HORINZONTAL);
+
         final String uri = request.getRequestURI();
         final List<String> path = Arrays.stream(uri.split("/"))
             .filter(s -> !s.isBlank())
@@ -57,7 +64,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if(restrictedAccess) { throw e; }
             else { log.warn(e.getLocalizedMessage()); }
         }
-        finally { filterChain.doFilter(request, response); }
+        finally {
+            filterChain.doFilter(request, response);
+            log.info("Encerrando Serviço {} {}{}", serviceId, LINHA_HORINZONTAL, LINHA_HORINZONTAL);
+        }
     }
 
     private void authenticateToken(HttpServletRequest request)

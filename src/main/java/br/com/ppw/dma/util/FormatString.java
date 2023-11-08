@@ -35,7 +35,7 @@ public final class FormatString {
     public static String valorVazio(String texto) {
         if(texto == null || texto.isEmpty()) return "";
 
-        val textoRefinado = refinarTexto(texto);
+        val textoRefinado = refinarCelula(texto);
         val textoSemConteudo = INDICADORES_NULOS
             .stream()
             .anyMatch(ind -> ind.equalsIgnoreCase(textoRefinado));
@@ -48,13 +48,27 @@ public final class FormatString {
      * @param texto {@link String} a ser refinada
      * @return {@link String} refinada
      */
-    public static String refinarTexto(String texto) {
+    public static String refinarCelula(String texto) {
         return texto.replace("'", "")
             .replace("[", "")
             .replace("]", "")
             .replace("\"", "")
             .trim();
     }
+
+    public static String refinarTextoJavascript(String texto) {
+        if(texto == null) return "``";
+        return texto.replace("`", "\\`")
+            .replace("\\", "\\\\`")
+            .replace("\n", "<br>")
+            .trim();
+    }
+
+    public static String javascriptString(String texto) {
+        if(texto == null) return "``";
+        return "`" + refinarTextoJavascript(texto) +  "`";
+    }
+
 
     /**
      * Método destinado a tratar textos que possam representar mais de um valor (uma lista). Esse tratmento
@@ -67,7 +81,7 @@ public final class FormatString {
         if(valor == null || valor.isEmpty()) return new ArrayList<>();
 
         //Adicionando um indicador no final para garantir que textos sem indicadores fiquem OK
-        val valorRefinado = refinarTexto(valor)
+        val valorRefinado = refinarCelula(valor)
             .replace("\n", ";")
             .replace(", ", ";")
             .concat(";");
@@ -81,7 +95,7 @@ public final class FormatString {
 
     //TODO: criar throw customizado
     public static String extrairMascara(String mascara) {
-        String textoRefinado = refinarTexto(mascara);
+        String textoRefinado = refinarCelula(mascara);
         for(val ind : INDICADORES_CORINGA) {
             if(textoRefinado.toUpperCase().contains(ind.toUpperCase()))
                 textoRefinado = textoRefinado.replace(ind.toUpperCase(), "*");
