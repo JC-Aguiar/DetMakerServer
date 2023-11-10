@@ -50,8 +50,9 @@ public class FileManager {
             log.warn("Não existem 2 logs (antes e depois) disponíveis para se comparar.");
             return Optional.empty();
         }
+        //Ordenando arquivos elos mais recentes primeiro
         val mostRecentOnes = this.files.stream()
-            .sorted(Comparator.comparing(File::lastModified))
+            .sorted(Comparator.comparing(File::lastModified).reversed())
             .limit(2)
             .toList();
         if(mostRecentOnes.get(0).lastModified() == mostRecentOnes.get(1).lastModified()) {

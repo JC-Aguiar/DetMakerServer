@@ -50,35 +50,95 @@ window.onload = function () {
 //===========================================================================================================
 //============================ Criando modelo de tabela dos test-cases com React ============================
 function TabelaTestcase(
-    titulo, nome, descricao, preCondicoes, expectativa,
-    resultadoFinal, status, responsavel, data, listaAnexos, listaNomes) {
+    evidenciaId, nome, descricao, preCondicoes, expectativa, resultado, parametros,
+    revisor, data, queries, tabelasNome, tabelasPreJob, tabelasPosJob,
+    logsConteudo, logsNome, cargasConteudo, cargasNome, saidasConteudo, saidasNome) {
     //-------------------------------------------------------------------
-    //Anexos
+    //Lista dos anexos
     const anexosTotais = [];
-    listaNomes.forEach((nome, index) => {
+    //Preenchendo anexos de tabelas por query
+    queries.forEach((query, index) => {
+        const nomePreJob = `Tabela ${tabelasNome[index]} antes` + '\n';
+        const nomePosJob = `Tabela ${tabelasNome[index]} depois` + '\n';
+        const propsPreJob = {
+            id: 'list-group-item',
+            className: 'btn btn-outline-primary py-0 px-1 me-2 ',
+            onClick: () => abrirAnexo(nomePreJob, tabelasPreJob[index])
+        };
+        const propsPosJob = {
+            id: 'list-group-item',
+            className: 'btn btn-outline-primary py-0 px-1 me-2 ',
+            onClick: () => abrirAnexo(nomePosJob, tabelasPosJob[index])
+        };
+        const bancoInfo = React.createElement( 'div', {},
+            React.createElement( 'h5', { className: 'fw-bold' }, tabelasNome[index]),
+            React.createElement( 'p', { className: 'my-0 px-2 py-0 small font-monospace bg-light' }, query + '\n'),
+            React.createElement( 'div', propsPreJob, nomePreJob),
+            React.createElement( 'div', propsPosJob, nomePosJob)
+        );
+        anexosTotais.push(bancoInfo);
+    })
+    //Preenchendo anexos de logs
+    logsNome.forEach((nome, index) => {
+        const sessao = index === 0 ? React.createElement( 'h5', {className: 'fw-bold mt-3'}, "LOGS") : null;
         const props = {
             id: 'list-group-item',
             className: 'btn btn-outline-primary py-0 px-1 me-2 ',
-            onClick: () => abrirAnexo(nome, listaAnexos[index])
+            onClick: () => abrirAnexo(nome, logsConteudo[index])
         };
-        const te1 = React.createElement( 'div', props, nome+"\n");
-        anexosTotais.push(te1);
+        const logInfo = React.createElement( 'div', {},
+            sessao,
+            React.createElement( 'div', props, nome+"\n")
+        );
+        anexosTotais.push(logInfo);
     })
-    //Tabelas
+    //Preenchendo anexos de cargas
+    cargasNome.forEach((nome, index) => {
+        const sessao = index === 0 ? React.createElement( 'h5', {className: 'fw-bold mt-3'}, "CARGAS") : null;
+        const props = {
+            id: 'list-group-item',
+            className: 'btn btn-outline-primary py-0 px-1 me-2 ',
+            onClick: () => abrirAnexo(nome, cargasConteudo[index])
+        };
+        const cargaInfo = React.createElement( 'div', {},
+            sessao,
+            React.createElement( 'div', props, nome+"\n")
+        );
+        anexosTotais.push(cargaInfo);
+    })
+    //Preenchendo anexos de saídas
+    saidasNome.forEach((nome, index) => {
+        const sessao = index === 0 ? React.createElement( 'h5', {className: 'fw-bold mt-3'}, "SAÍDAS") : null;
+        const props = {
+            id: 'list-group-item',
+            className: 'btn btn-outline-primary py-0 px-1 me-2 ',
+            onClick: () => abrirAnexo(nome, saidasConteudo[index])
+        };
+        const saidaInfo = React.createElement( 'div', {},
+            sessao,
+            React.createElement( 'div', props, nome+"\n")
+        );
+        anexosTotais.push(saidaInfo);
+    })
+    //Gerando tabela Testcase
     return React.createElement('div', { className: 'table-responsive' },
-        React.createElement('h3', { id: titulo, className: 'pt-3' }, titulo),
+        React.createElement('h3', { id: evidenciaId, className: 'pt-3' }, evidenciaId),
         React.createElement('table', { className: 'table table-light table-striped m-0 mb-5 text-start' },
             React.createElement('tbody', null,
                 React.createElement('tr', null,
-                    React.createElement('th', null, 'Nome do Caso de Teste'),
+                    React.createElement('th', null, 'Nome do Job'),
                     React.createElement('td', null, nome)
                 ),
                 React.createElement('tr', null,
-                    React.createElement('th', null, 'Descrição do Caso de Teste'),
+                    React.createElement('th', null, 'Descrição do Job'),
                     React.createElement('td', null, descricao)
                 ),
                 React.createElement('tr', null,
-                    React.createElement('th', null, 'Descrição das Pré-Condições'),
+                    React.createElement('th', null, 'Parâmetros do Job'),
+                    React.createElement('td', null, parametros)
+                ),
+                React.createElement('tr', null,
+                    React.createElement('th', null, 'Pré-Condições'),
                     React.createElement('td', null, preCondicoes)
                 ),
                 React.createElement('tr', null,
@@ -86,23 +146,19 @@ function TabelaTestcase(
                     React.createElement('td', null, expectativa)
                 ),
                 React.createElement('tr', null,
-                    React.createElement('th', null, 'Resultados Obtidos'),
-                    React.createElement('td', null, resultadoFinal)
+                    React.createElement('th', null, 'Resultado Obtido'),
+                    React.createElement('td', null, resultado)
                 ),
                 React.createElement('tr', null,
-                    React.createElement('th', null, 'Projeto/PP - Situação Atual\nINC/PBI/PKE - Detalhe da Falha\nWO - Detalhe da Solicitação'),
-                    React.createElement('td', null, status)
-                ),
-                React.createElement('tr', null,
-                    React.createElement('th', null, 'Responsável pelo Teste'),
-                    React.createElement('td', null, responsavel)
+                    React.createElement('th', null, 'Revisor'),
+                    React.createElement('td', null, revisor)
                 ),
                 React.createElement('tr', null,
                     React.createElement('th', null, 'Data do Teste'),
                     React.createElement('td', null, data)
                 ),
                 React.createElement('tr', null,
-                    React.createElement('th', null, 'Anexo/Caminho da Evidência'),
+                    React.createElement('th', null, 'Anexos de Evidência'),
                     React.createElement('td', null, anexosTotais)
                 )
             )

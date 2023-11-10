@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Data
@@ -13,6 +14,8 @@ import java.util.List;
 @NoArgsConstructor
 @EqualsAndHashCode
 public class EvidenciaInfoDTO implements MasterResponseDTO {
+
+    Long id;
     String job;
     @JsonIgnore String jobDescricao;
     @JsonIgnore OffsetDateTime data;
@@ -20,34 +23,44 @@ public class EvidenciaInfoDTO implements MasterResponseDTO {
     Integer ordem;
     String argumentos;
     List<String> queries;
+    List<String> tabelasNome;
     List<String> tabelasPreJob;
     List<String> tabelasPosJob;
-    List<String> logs;
-    List<String> logsNome;
-    List<String> cargas;
-    List<String> cargasNome;
-    List<String> saidas;
-    List<String> saidasNome;
+    List<AnexoInfoDTO> logs;
+    List<AnexoInfoDTO> cargas;
+    List<AnexoInfoDTO> saidas;
+
+    public List<String> getTabelas() {
+        final List<String> listaFinal = new ArrayList<>();
+        listaFinal.addAll(tabelasPreJob);
+        listaFinal.addAll(tabelasPosJob);
+        return listaFinal;
+    }
+
+    public List<AnexoInfoDTO> getAnexos() {
+        final List<AnexoInfoDTO> listaFinal = new ArrayList<>();
+        listaFinal.addAll(logs);
+        listaFinal.addAll(cargas);
+        listaFinal.addAll(saidas);
+        return listaFinal;
+    }
 
     @Override
     public String toString() {
         return "EvidenciaInfoDTO(" +
-                "job='" + job + '\'' +
-                ", jobDescricao='" + jobDescricao + '\'' +
-                ", data=" + data +
-                ", sucesso=" + sucesso +
-                ", ordem=" + ordem +
-                ", argumentos='" + argumentos + '\'' +
-                ", queries=" + queries +
-                ", tabelasPreJob=" + getResumoTabelasPreJob() +
-                ", tabelasPosJob=" + getResumoTabelasPosJob() +
-                ", logs=" + getResumoLogs() +
-                ", logsNome=" + logsNome +
-                ", cargas=" + cargas +
-                ", cargasNome=" + cargasNome +
-                ", saidas=" + saidas +
-                ", saidasNome=" + saidasNome +
-                ')';
+            "job='" + job + '\'' +
+            ", jobDescricao='" + jobDescricao + '\'' +
+            ", data=" + data +
+            ", sucesso=" + sucesso +
+            ", ordem=" + ordem +
+            ", argumentos='" + argumentos + '\'' +
+            ", queries=" + queries +
+            ", tabelasPreJob=" + getResumoTabelasPreJob() +
+            ", tabelasPosJob=" + getResumoTabelasPosJob() +
+            ", logs=" + getResumoLogs() +
+            ", cargas=" + cargas +
+            ", saidas=" + saidas +
+            ')';
     }
 
     private String getResumoTabelasPreJob() {
@@ -69,11 +82,22 @@ public class EvidenciaInfoDTO implements MasterResponseDTO {
     }
 
     private String getResumoLogs() {
-        val tamanho = logs.size();
-        val peso = logs.stream()
-            .map(String::getBytes)
-            .mapToLong(bytes -> bytes.length)
-            .sum();
+        return getResumo(logs);
+    }
+
+    private String getResumoCargas() {
+        return getResumo(cargas);
+    }
+
+    private String getResumoSaidas() {
+        return getResumo(saidas);
+    }
+
+    private String getResumo(@NonNull List<AnexoInfoDTO> anexos) {
+        val tamanho = anexos.size();
+        val peso = anexos.stream()
+                .mapToLong(AnexoInfoDTO::getPeso)
+                .sum();
         return String.format("[quantidade=%d, peso=%dKbs]", tamanho, peso);
     }
 }

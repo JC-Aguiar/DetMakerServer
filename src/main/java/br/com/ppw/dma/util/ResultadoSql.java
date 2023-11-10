@@ -1,21 +1,26 @@
 package br.com.ppw.dma.util;
 
+import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 @Getter
-@ToString
-@Builder
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ResultadoSql extends ComandoSql {
 
-     final List<Map<String, Object>> tabelasPreJob = new ArrayList<>();
-     final List<Map<String, Object>> tabelasPosJob = new ArrayList<>();
+     static final String SEPARADOR_COLUNA = "||";
+     //static final String SEPARADOR_CAMPOS = "-";
+
+     boolean consultaPosJob = false;
+     final List<List<Object>> resultadoPreJob = new ArrayList<>();
+     final List<List<Object>> resultadoPosJob = new ArrayList<>();
+
 
      public ResultadoSql(@NonNull ComandoSql cmdSql) {
           setCampos(cmdSql.getCampos());
@@ -23,24 +28,53 @@ public class ResultadoSql extends ComandoSql {
           setFiltros(cmdSql.getFiltros());
      }
 
-     public ResultadoSql addResultadoPreJob(Map<String, Object> resultado) {
-          this.tabelasPreJob.add(resultado);
+     public ResultadoSql fecharConsultaPreJob() {
+          consultaPosJob = true;
           return this;
      }
 
-     public ResultadoSql addResultadoPreJob(List<Map<String, Object>> resultado) {
-          this.tabelasPreJob.addAll(resultado);
-          return this;
+     public String getResumoPreJob() {
+          return getResumo(resultadoPreJob);
      }
 
-     public ResultadoSql addResultadoPosJob(Map<String, Object> resultado) {
-          this.tabelasPosJob.add(resultado);
-          return this;
+     public String getResumoPosJob() {
+          return getResumo(resultadoPosJob);
      }
 
-     public ResultadoSql addResultadoPosJob(List<Map<String, Object>> resultado) {
-          this.tabelasPosJob.addAll(resultado);
-          return this;
+     private String getResumo(@NonNull List<List<Object>> conteudo) {
+          final List<List<?>> tabela = new ArrayList<>();
+          tabela.add(getCampos());
+          tabela.addAll(conteudo);
+          return FormatString.tabelaParaString(tabela);
      }
-    
+
+     public void addResultado(Map<String, Object> resultado) {
+          val tamanho = getCampos().size();
+          val novoRegistro = new ArrayList<>(Collections.nCopies(tamanho, null));
+          resultado.forEach((campo, valor) -> {
+               val index = getCampos().indexOf(campo);
+               if(index == -1) return;
+               novoRegistro.set(index, valor);
+          });
+          if(!consultaPosJob) resultadoPreJob.add(novoRegistro);
+          else resultadoPosJob.add(novoRegistro);
+     }
+
+     @Override
+     public String toString() {
+          return "ResultadoSql(" +
+             "campos=" + getCampos() +
+             ", tabela='" + getTabela() + '\'' +
+             ", filtros='" + getFiltros() + '\'' +
+             ", rownumLimit=" + getRownumLimit() +
+             ", consultaPosJob=" + consultaPosJob +
+             ", resultadoPreJob=" + getResumoRegistros(resultadoPreJob) +
+             ", resultadoPosJob=" + getResumoRegistros(resultadoPosJob) +
+             ')';
+     }
+
+     private String getResumoRegistros(@NotEmpty List<List<Object>> registros) {
+          return String.format("[registros=%d]", registros.size());
+     }
+
 }

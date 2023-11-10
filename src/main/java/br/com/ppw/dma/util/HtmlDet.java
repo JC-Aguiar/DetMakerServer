@@ -1,6 +1,7 @@
 package br.com.ppw.dma.util;
 
 import br.com.ppw.dma.DetMakerApplication;
+import br.com.ppw.dma.evidencia.AnexoInfoDTO;
 import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
 import br.com.ppw.dma.pipeline.PipelineRelatorioDTO;
 import br.com.ppw.dma.system.Arquivos;
@@ -10,7 +11,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.NonNull;
 import lombok.val;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -23,10 +23,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.DetMakerApplication.RELOGIO;
-import static br.com.ppw.dma.config.DatabaseConfig.BancoAmbiente;
 import static br.com.ppw.dma.config.DatabaseConfig.ambienteInfo;
 import static br.com.ppw.dma.util.FormatString.javascriptString;
-import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
 
 public abstract class HtmlDet {
 
@@ -71,6 +69,7 @@ public abstract class HtmlDet {
     //Padrão de exibição de datas no DET
     public static final DateTimeFormatter PADRAO_DATA = DateTimeFormatter.ofPattern("YYYY/MM/dd HH:mm:ss");
 
+    //TODO: javadoc
     public static File gerarNovoDet(
         @NonNull PipelineRelatorioDTO pipelineRelatorio,
         @NotEmpty List<UserInfoDTO> userInfo)
@@ -134,43 +133,92 @@ public abstract class HtmlDet {
             CAMPO_DETALHES_AMBIENTE   + javascriptString(ambiente)            + "; \n";
         val listaTestecases = new ArrayList<String>();
 
-        //Gerando script JS das Testecase
+        //Preparando script JS das Testecase
         int countEvidencias = 0;
-        int countLogs = 0;
-        val anexosConteudoENome = new HashMap<String, String>(); //<function-name, file-name>
-        val functionsAnexos = new HashMap<String, String>();     //<function-name, function-code>
-        val evidencias = pipelineRelatorio.getRelatorio().getEvidencias();
-        for(val evidencia : evidencias) {
-            for(val log : evidencia.getLogs()) {
-                countLogs += 1;
-                val nomeArquivo = evidencia.getLogsNome().size() >= countLogs-1 ?
-                    evidencia.getLogsNome().get(countLogs-1) : "LOG-SEM-NOME.log";
-                val nomeAnexo = "conteudoAnexo" + countLogs + "()";
-                val funcAnexo = gerarFunctionTestcaseAnexo(nomeAnexo, log);
-                functionsAnexos.put(nomeAnexo, funcAnexo);
-                anexosConteudoENome.put(nomeAnexo, nomeArquivo);
+        int countAnexos = 0;
+        int countTabelas = 0;
+        val tabelasPreJobFunction = new HashMap<String, String>();  // K:function-name, V:function-code
+        val tabelasPosJobFunction = new HashMap<String, String>();  // K:function-name, V:function-code
+        val logsConteudoENome = new HashMap<String, String>();      // K:function-name, V:file-name
+        val logsFunction = new HashMap<String, String>();           // K:function-name, V:function-code
+        val cargasConteudoENome = new HashMap<String, String>();    // K:function-name, V:file-name
+        val cargasFunction = new HashMap<String, String>();         // K:function-name, V:function-code
+        val saidasConteudoENome = new HashMap<String, String>();    // K:function-name, V:file-name
+        val saidasFunction = new HashMap<String, String>();         // K:function-name, V:function-code
+        val evidenciasDto = pipelineRelatorio.getRelatorio().getEvidencias();
+        for(val evidenciaDto : evidenciasDto) {
+            for(val conteudo : evidenciaDto.getTabelasPreJob()) {
+                countTabelas += 1;
+                val nomeFunction = "conteudoTabela" + countTabelas + "()";
+                val codeFunction = gerarFunctionTestcaseAnexo(nomeFunction, conteudo);
+                tabelasPreJobFunction.put(nomeFunction, codeFunction);
+            }
+            for(val conteudo : evidenciaDto.getTabelasPosJob()) {
+                countTabelas += 1;
+                val nomeFunction = "conteudoTabela" + countTabelas + "()";
+                val codeFunction = gerarFunctionTestcaseAnexo(nomeFunction, conteudo);
+                tabelasPosJobFunction.put(nomeFunction, codeFunction);
+            }
+            for(val infoDto : evidenciaDto.getLogs()) {
+                countAnexos += 1;
+                val nomeArquivo = infoDto.nome();
+                val nomeFunction = "conteudoAnexo" + countAnexos + "()";
+                val codeFunction = gerarFunctionTestcaseAnexo(nomeFunction, infoDto.conteudo());
+                logsConteudoENome.put(nomeFunction, nomeArquivo);
+                logsFunction.put(nomeFunction, codeFunction);
+            }
+            for(val infoDto : evidenciaDto.getCargas()) {
+                countAnexos += 1;
+                val nomeArquivo = infoDto.nome();
+                val nomeFunction = "conteudoAnexo" + countAnexos + "()";
+                val codeFunction = gerarFunctionTestcaseAnexo(nomeFunction, infoDto.conteudo());
+                cargasConteudoENome.put(nomeFunction, nomeArquivo);
+                cargasFunction.put(nomeFunction, codeFunction);
+            }
+            for(val infoDto : evidenciaDto.getSaidas()) {
+                countAnexos += 1;
+                val nomeArquivo = infoDto.nome();
+                val nomeFunction = "conteudoAnexo" + countAnexos + "()";
+                val codeFunction = gerarFunctionTestcaseAnexo(nomeFunction, infoDto.conteudo());
+                saidasConteudoENome.put(nomeFunction, nomeArquivo);
+                saidasFunction.put(nomeFunction, codeFunction);
             }
             countEvidencias += 1;
-            val nomeDoTeste = "Teste"; //TODO
             val executarApos = countEvidencias <= 1 ?
-                "" : "Executar após job " +evidencias.get(countEvidencias-1).getJob();
-            val resultado = evidencia.getSucesso() ? "Aprovado" : "Reprovado";
+                "" : "Executar após job " +evidenciasDto.get(countEvidencias-1).getJob();
+            val expectativa = "Sucesso";            //TODO: implementar melhoria PÓS-MVP
+            val resultado = evidenciaDto.getSucesso() ? "Sucesso" : "Falha";
+            val anexosNome = logsConteudoENome.values().stream().toList();
+            val anexosTipo = evidenciaDto.getAnexos()
+                .stream()
+                .map(AnexoInfoDTO::tipo)
+                .toList();
 
             //String que contêm um elemento do array dentro do script JS
-            val camposTestecase = preencherTestcase(
-                "TU" +countEvidencias,
-                nomeDoTeste,
-                evidencia.getJobDescricao(),
-                executarApos,
-                "Sucesso",
-                resultado,
-                "(a completar)",
-                "(a completar)",
-                evidencia.getData().format(PADRAO_DATA),
-                functionsAnexos.keySet().stream().toList(),
-                anexosConteudoENome.values().stream().toList());
+            val camposTestecase = preencherTestcase(                //Parâmetros da function 'TabelaTestcase'
+                "EVIDÊNCIA ID " + evidenciaDto.getId(),             //titulo
+                evidenciaDto.getJob(),                              //nome
+                evidenciaDto.getJobDescricao(),                     //descricao
+                executarApos,                                       //preCondicoes
+                expectativa,                                        //expectativa
+                resultado,                                          //resultado
+                "(a completar)",                                    //status
+                "(a completar)",                                    //responsavel
+                evidenciaDto.getData().format(PADRAO_DATA),         //data
+                evidenciaDto.getQueries(),                          //queries
+                evidenciaDto.getTabelasNome(),                      //tabelasNome
+                tabelasPreJobFunction.keySet().stream().toList(),   //tabelasPreJob
+                tabelasPreJobFunction.keySet().stream().toList(),   //tabelasPosJob
+                logsFunction.keySet().stream().toList(),            //logsConteudo
+                logsConteudoENome.values().stream().toList(),       //logsNome
+                cargasFunction.keySet().stream().toList(),          //cargasConteudo
+                cargasConteudoENome.values().stream().toList(),     //cargasNome
+                saidasFunction.keySet().stream().toList(),          //saidasConteudo
+                saidasConteudoENome.values().stream().toList()      //saidasNome
+            );
             listaTestecases.add(camposTestecase);
         }
+        //Gerando script JS das Testecase
         val scriptTestecase = CAMPO_TABELAS_TESTECASE.replace(
             "${var}", String.join(", ", listaTestecases)
         ) + "\n";
@@ -186,7 +234,9 @@ public abstract class HtmlDet {
             scriptIdentificacao +
             scriptDetalhamento +
             scriptTestecase +
-            String.join("\n\n", functionsAnexos.values()) +
+            String.join("\n\n", logsFunction.values()) +
+            String.join("\n\n", tabelasPreJobFunction.values()) +
+            String.join("\n\n", tabelasPosJobFunction.values()) +
             "\n</script>";
         val conteudoCss = "<style>\n" +
             Arquivos.lerArquivo(arquivoCss) +
@@ -229,25 +279,33 @@ public abstract class HtmlDet {
     }
 
     public static String preencherTestcase(
-        String titulo, String nome, String descricao, String preCondicoes,
-        String expectativa, String resultadoFinal, String status, String responsavel,
-        String data, List<String> listaAnexosVar, List<String> listaNomes){
+        String evidenciaId, String nome, String descricao, String preCondicoes,
+        String expectativa, String resultado, String parametros, String revisor,
+        String data, List<String> queries, List<String> tabelasNome,
+        List<String> tabelasPreJob, List<String>  tabelasPosJob,
+        List<String> logsConteudo, List<String> logsNome, List<String> cargasConteudo,
+        List<String> cargasNome, List<String> saidasConteudo, List<String> saidasNome){
         //--------------------------------------------------------------------------
-        listaNomes = listaNomes.stream()
-            .map(FormatString::javascriptString)
-            .toList();
         return "TabelaTestcase("
-            + javascriptString(titulo)          + ", "
-            + javascriptString(nome)            + ", "
-            + javascriptString(descricao)       + ", "
-            + javascriptString(preCondicoes)    + ", "
-            + javascriptString(expectativa)     + ", "
-            + javascriptString(resultadoFinal)  + ", "
-            + javascriptString(status)          + ", "
-            + javascriptString(responsavel)     + ", "
-            + javascriptString(data)            + ", "
-            + listaAnexosVar                    + ", "
-            + listaNomes
+            + javascriptString(evidenciaId)     + ", "  //evidenciaId
+            + javascriptString(nome)            + ", "  //nome
+            + javascriptString(descricao)       + ", "  //descricao
+            + javascriptString(preCondicoes)    + ", "  //preCondicoes
+            + javascriptString(expectativa)     + ", "  //expectativa
+            + javascriptString(resultado)       + ", "  //resultado
+            + javascriptString(parametros)      + ", "  //parametros
+            + javascriptString(revisor)         + ", "  //revisor
+            + javascriptString(data)            + ", "  //data
+            + javascriptString(queries)         + ", "  //queries
+            + javascriptString(tabelasNome)     + ", "  //tabelasNome
+            + tabelasPreJob                     + ", "  //tabelasPreJob
+            + tabelasPosJob                     + ", "  //tabelasPosJob
+            + logsConteudo                      + ", "  //logsConteudo
+            + javascriptString(logsNome)        + ", "  //logsNome
+            + cargasConteudo                    + ", "  //cargasConteudo
+            + javascriptString(cargasNome)      + ", "  //cargasNome
+            + saidasConteudo                    + ", "  //saidasConteudo
+            + javascriptString(saidasNome)              //saidasNome
             + ")";
     }
 

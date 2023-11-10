@@ -17,16 +17,20 @@ public class ComandoSql {
     private List<String> campos;
     private String tabela;
     private String filtros;
+    private int rownumLimit = 50;
 
     public ComandoSql(@NotBlank String tabela) {
         this.tabela = tabela;
     }
 
     public String getSqlCompleta() {
-        if(semTabela()) return "Tabela ainda não definida para esta instância";
+        if(semTabela()) throw new RuntimeException("Tabela não definida.");
+
         return "SELECT " + getSqlCampos() +
             " FROM " + tabela +
-            getSqlFiltros();
+            getSqlFiltros() +
+            (semFiltros() ? " WHERE " : " AND ") +
+            " ROWNUM <= " + rownumLimit;
     }
 
     public boolean semCampos() {
