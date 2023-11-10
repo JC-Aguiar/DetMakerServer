@@ -7,17 +7,13 @@ import br.com.ppw.dma.execQuery.ExecQueryService;
 import br.com.ppw.dma.job.JobExecutePOJO;
 import br.com.ppw.dma.master.MasterOracleDAO;
 import br.com.ppw.dma.master.MasterService;
-import br.com.ppw.dma.system.Arquivos;
-import br.com.ppw.dma.util.CampoSql;
 import br.com.ppw.dma.util.ComandoSql;
-import br.com.ppw.dma.util.LinhaSql;
 import br.com.ppw.dma.util.ResultadoSql;
 import com.google.gson.Gson;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,10 +26,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Blob;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.system.Arquivos.lerArquivo;
 
@@ -92,8 +85,8 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
                 log.warn(e.getMessage());
                 return null;
             }})
-        .filter(Objects::nonNull)
-        .toList();
+            .filter(Objects::nonNull)
+            .toList();
 
         log.info("Total de comandos SQL realizados: {}.", extracoes.size());
         return extracoes;
@@ -102,21 +95,20 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
     //TODO: javadoc
     public ResultadoSql extractTablePreJob(@NonNull ComandoSql cmdSql) {
         log.info("Realizando extração pré-job da tabela '{}'.", cmdSql.getTabela());
-        val resultado = extractTable(cmdSql);
-        return new ResultadoSql(cmdSql).addResultadoPreJob(resultado);
+        return extractTable(cmdSql);
     }
 
     //TODO: javadoc
     public List<ResultadoSql> extractTablePosJob(@NonNull List<ResultadoSql> resultadoSqls) {
         val extracoes = resultadoSqls.stream().map(sql -> {
-                try {
-                    return extractTablePosJob(sql);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                    log.warn(e.getMessage());
-                    return null;
-                }})
+            try {
+                return extractTablePosJob(sql);
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+                log.warn(e.getMessage());
+                return null;
+            }})
             .filter(Objects::nonNull)
             .toList();
 
@@ -127,17 +119,20 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
     //TODO: javadoc
     public ResultadoSql extractTablePosJob(@NonNull ResultadoSql resultSql) {
         log.info("Realizando extração pós-job da tabela '{}'.", resultSql.getTabela());
-        val resultado = extractTable(resultSql);
-        return resultSql.addResultadoPosJob(resultado);
+        return extractTable(resultSql);
     }
 
     //TODO: javadoc
-    private List<Map<String, Object>> extractTable(@NonNull ComandoSql comandoSql) {
+    private ResultadoSql extractTable(@NonNull ComandoSql comandoSql) {
         validateInputs(comandoSql);
-        val campos = checkFieldValues(comandoSql);
-        return oracleDao.getFieldAndValuesFromTable(
-            campos, comandoSql.getTabela(), comandoSql.getFiltros()
-        );
+        val resultadoSql = new ResultadoSql(comandoSql);
+        return oracleDao.getFieldAndValuesFromTable(resultadoSql);
+    }
+
+    //TODO: javadoc
+    private ResultadoSql extractTable(@NonNull ResultadoSql resultadoSql) {
+        validateInputs(resultadoSql);
+        return oracleDao.getFieldAndValuesFromTable(resultadoSql);
     }
 
     //TODO: criar exception própria
@@ -150,13 +145,6 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         if(!camposValidos || !tabelaValida || !filtroValido) {
             throw new RuntimeException("A queries informada contêm comandos DDL não permitidos.");
         }
-    }
-
-    public List<String> checkFieldValues(@NonNull ComandoSql sql) {
-        List<String> campos = null;
-        if(sql.semCampos()) campos = oracleDao.getFieldsFromTable(sql.getTabela());
-        else campos = sql.getCampos();
-        return campos;
     }
 
     //TODO: javadoc
@@ -207,13 +195,13 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         val queriesPreJob = jobPojo.getTabelas()
             .stream()
             .map(tabela -> {
-                val preJob = tabela.getTabelasPreJob();
+                val preJob = tabela.getResultadoPreJob();
                 val execQuery = ExecQuery.builder()
                     .evidencia(evidencia)
                     .jobNome(jobPojo.getJob().getNome())
                     .tabelaNome(tabela.getTabela())
                     .query(tabela.getSqlCompleta())
-                    .resultado(proxy().parseTableToString(preJob))
+                    .resultado(tabela.getResumoPreJob())
                     .build();
                 return execQueryService.persist(execQuery);
             })
@@ -224,13 +212,13 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         val queriesPosJob = jobPojo.getTabelas()
             .stream()
             .map(tabela -> {
-                val posJob = tabela.getTabelasPosJob();
+                val posJob = tabela.getResultadoPosJob();
                 val execQuery = ExecQuery.builder()
                     .evidencia(evidencia)
                     .jobNome(jobPojo.getJob().getNome())
                     .tabelaNome(tabela.getTabela())
                     .query(tabela.getSqlCompleta())
-                    .resultado(proxy().parseTableToString(posJob))
+                    .resultado(tabela.getResumoPosJob())
                     .build();
                 return execQueryService.persist(execQuery);
             })
@@ -282,59 +270,48 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
 
     //TODO: javadoc
     //TODO: ainda necessário?
-    public EvidenciaInfoDTO createEvidenciaDto(@NonNull JobExecutePOJO pilhaDTO) {
-        log.info("Gerando EvidenciaInfoDTO com base na JobExecutePOJO:");
-        log.info(pilhaDTO.toString());
+//    public EvidenciaInfoDTO createEvidenciaDto(@NonNull JobExecutePOJO executePojo) {
+//        log.info("Gerando EvidenciaInfoDTO com base na JobExecutePOJO:");
+//        log.info(executePojo.toString());
+//
+//        val evidencia = EvidenciaInfoDTO.builder()
+//            .job(executePojo.getJobInfo().getNome())
+//            .jobDescricao(executePojo.getJobInfo().getDescricao())
+//            .data(executePojo.getDataInicio())
+//            .sucesso(executePojo.isSucesso())
+//            .ordem(executePojo.getOrdem())
+//            .argumentos(executePojo.getParametro())
+//            .queries(executePojo.getTabelas()
+//                .stream()
+//                .map(ResultadoSql::getSqlCompleta)
+//                .toList())
+//            .tabelasPreJob(executePojo.getTabelas()
+//                .stream()
+//                .map(ResultadoSql::getResumoPreJob)
+//                .toList())
+//            .tabelasPosJob(executePojo.getTabelas()
+//                .stream()
+//                .map(ResultadoSql::getResumoPosJob)
+//                .toList())
+//            .cargas(executePojo.getCargas()
+//                .stream()
+//                .map(AnexoInfoDTO::tipoCarga)
+//                .toList())
+//            .logs(executePojo.getLogs()
+//                .stream()
+//                .map(AnexoInfoDTO::tipoLog)
+//                .toList())
+//            .saidas(executePojo.getProdutos()
+//                .stream()
+//                .map(AnexoInfoDTO::tipoProduto)
+//                .toList())
+//            .build();
+//
+//        log.info("EvidenciaInfoDTO gerada:");
+//        log.info(evidencia.toString());
+//        return evidencia;
+//    }
 
-        val evidencia = EvidenciaInfoDTO.builder()
-            .job(pilhaDTO.getJobInfo().getNome())
-            .jobDescricao(pilhaDTO.getJobInfo().getDescricao())
-            .data(pilhaDTO.getDataInicio())
-            .sucesso(pilhaDTO.isSucesso())
-            .ordem(pilhaDTO.getOrdem())
-            .argumentos(pilhaDTO.getParametro())
-            .queries(pilhaDTO.getTabelas()
-                .stream()
-                .map(ResultadoSql::getSqlCompleta)
-                .toList())
-            .cargas(pilhaDTO.getCargas()
-                .stream()
-                .map(Arquivos::lerArquivo)
-                .toList())
-            .logs(pilhaDTO.getLogs()
-                .stream()
-                .map(Arquivos::lerArquivo)
-                .toList())
-            .saidas(pilhaDTO.getProdutos()
-                .stream()
-                .map(Arquivos::lerArquivo)
-                .toList())
-            .build();
-
-        log.info("EvidenciaInfoDTO gerada:");
-        log.info(evidencia.toString());
-        return evidencia;
-    }
-
-    public String parseTableToString(@NonNull List<Map<String, Object>> tabelaLinhas) {
-        //return new ObjectMapper().writeValueAsString(table);
-        val index = new AtomicLong(1);
-        val tabelaObj = tabelaLinhas.stream()
-            .map(linha -> {
-                val linhaSql = new LinhaSql(index.getAndAdd(1));
-                linha.keySet()
-                    .stream()
-                    .map(campo -> new CampoSql(campo, linha.get(campo)))
-                    .forEach(linhaSql::addCampo);
-                return linhaSql;
-            })
-            .map(LinhaSql::toString)
-            .collect(Collectors.joining("\n"));
-        log.info(tabelaObj);
-        return tabelaObj;
-    }
-
-    @SneakyThrows
     public File parseBlobToFile(@NonNull Blob blob, @NotBlank String filePath){
         try(InputStream inputStream = blob.getBinaryStream()) {
             log.info("Lendo os dados do Blob como uma String.");
@@ -349,6 +326,9 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
                 log.info("Arquivo salvo com sucesso.");
             }
         }
+        catch(Exception e) {
+            log.warn("Falha ao tentar interpretar Blob: {}", e.getMessage());
+        }
         return new File(filePath);
     }
 
@@ -357,6 +337,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
 
         //TODO: refatorar para otimizar a iteração nas listas durante preenchimento do EvidenciaInfoDTO
         val dto = EvidenciaInfoDTO.builder()
+                .id(evidencia.getId())
                 .job(evidencia.getJob().getNome())
                 .jobDescricao(evidencia.getJob().getDescricao())
                 .data(evidencia.getDataInicio())
@@ -366,6 +347,10 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
                 .queries(evidencia.getBancoPreJob()
                     .stream()
                     .map(ExecQuery::getQuery)
+                    .toList())
+                .tabelasNome(evidencia.getBancoPosJob()
+                    .stream()
+                    .map(ExecQuery::getTabelaNome)
                     .toList())
                 .tabelasPreJob(evidencia.getBancoPreJob()
                     .stream()
@@ -377,19 +362,15 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
                     .toList())
                 .cargas(evidencia.getCargas()
                     .stream()
-                    .map(ExecFile::getArquivo)
+                    .map(ef -> AnexoInfoDTO.tipoCarga(ef.getArquivoNome(), ef.getArquivo()))
                     .toList())
                 .logs(evidencia.getLogs()
                     .stream()
-                    .map(ExecFile::getArquivo)
-                    .toList())
-                .logsNome(evidencia.getLogs()
-                    .stream()
-                    .map(ExecFile::getArquivoNome)
+                    .map(ef -> AnexoInfoDTO.tipoLog(ef.getArquivoNome(), ef.getArquivo()))
                     .toList())
                 .saidas(evidencia.getSaidas()
                     .stream()
-                    .map(ExecFile::getArquivo)
+                    .map(ef -> AnexoInfoDTO.tipoProduto(ef.getArquivoNome(), ef.getArquivo()))
                     .toList())
                 .build();
 

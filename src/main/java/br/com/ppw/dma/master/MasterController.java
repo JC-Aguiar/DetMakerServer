@@ -2,7 +2,6 @@ package br.com.ppw.dma.master;
 
 import br.com.ppw.dma.util.ConsoleLogAspect;
 import br.com.ppw.dma.util.FormatString;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import org.modelmapper.ModelMapper;
@@ -12,12 +11,9 @@ import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -59,13 +55,13 @@ public abstract class MasterController<
     public void printInfo() {
         final String initMessage = String.format(
             "Entity: %s - Request DTO: %s - Response DTO: %s",
-            FormatString.subString(this.entityClass.getTypeName(), "\\." ),
-            FormatString.subString(this.requestClass.getTypeName(), "\\."),
-            FormatString.subString(this.responseClass.getTypeName(), "\\."));
+            FormatString.lastSubstring(this.entityClass.getTypeName(), "\\." ),
+            FormatString.lastSubstring(this.requestClass.getTypeName(), "\\."),
+            FormatString.lastSubstring(this.responseClass.getTypeName(), "\\."));
         final String endpointsMessage = endpointsGet
             .values()
             .stream()
-            .map(txt -> FormatString.subString(txt.getName(), "//."))
+            .map(txt -> FormatString.lastSubstring(txt.getName(), "//."))
             .collect(Collectors.joining(", "));
         ConsoleLogAspect.LOGGER.info(initMessage);
         ConsoleLogAspect.LOGGER.info("Endpoints(GET): " + endpointsMessage);

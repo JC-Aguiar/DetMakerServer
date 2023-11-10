@@ -1,6 +1,7 @@
 package br.com.ppw.dma.execFile;
 
 import br.com.ppw.dma.evidencia.Evidencia;
+import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -14,7 +15,6 @@ import static jakarta.persistence.FetchType.LAZY;
 
 @Getter
 @Setter
-@ToString
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -51,6 +51,23 @@ public class ExecFile {
     // Conteúdo do arquivo pós-execução
     String arquivo;
 
+    @Override
+    public String toString() {
+        return "ExecFile{" +
+            "id=" + id +
+            ", evidencia=" + evidencia +
+            ", jobNome='" + jobNome + '\'' +
+            ", tipo='" + tipo + '\'' +
+            ", arquivoNome='" + arquivoNome + '\'' +
+            ", arquivo=" + getResumoArquivo() +
+            '}';
+    }
+
+    private String getResumoArquivo() {
+        val tamanho = FormatString.contarSubstring(arquivo, "\n");
+        val peso = arquivo.getBytes().length;
+        return String.format("[registros=%d, peso=%dKbs]", tamanho, peso);
+    }
 
     @Override
     public final boolean equals(Object o) {

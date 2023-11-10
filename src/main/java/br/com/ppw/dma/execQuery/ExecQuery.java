@@ -1,6 +1,7 @@
 package br.com.ppw.dma.execQuery;
 
 import br.com.ppw.dma.evidencia.Evidencia;
+import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -16,7 +17,6 @@ import static jakarta.persistence.FetchType.LAZY;
 
 @Getter
 @Setter
-@ToString
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -58,6 +58,24 @@ public class ExecQuery {
     // Conteúdo da tabela extraída
     String resultado;
 
+    @Override
+    public String toString() {
+        return "ExecQuery{" +
+            "id=" + id +
+            ", evidencia=" + evidencia +
+            ", jobNome='" + jobNome + '\'' +
+            ", contexto='" + contexto + '\'' +
+            ", tabelaNome='" + tabelaNome + '\'' +
+            ", query='" + query + '\'' +
+            ", resultado=" + getResumoResultado() +
+            '}';
+    }
+
+    private String getResumoResultado() {
+        val tamanho = FormatString.contarSubstring(resultado, "\n");
+        val peso = resultado.getBytes().length;
+        return String.format("[registros=%d, peso=%dKbs]", tamanho, peso);
+    }
 
     @Override
     public final boolean equals(Object o) {
