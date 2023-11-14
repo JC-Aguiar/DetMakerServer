@@ -8,8 +8,6 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
 
-import java.io.File;
-import java.sql.Blob;
 import java.util.Objects;
 
 import static jakarta.persistence.FetchType.LAZY;
@@ -42,10 +40,6 @@ public class ExecQuery {
     // Nome do job que gerou essa query
     String jobNome;
 
-    @Column(name = "CONTEXTO", length = 10)
-    // Informação para contextualizar se a query foi pré-job ou pós-job
-    String contexto;
-
     @Column(name = "TABELA_NOME", length = 150, nullable = false)
     // Nome da tabela usada na queries
     String tabelaNome;
@@ -54,9 +48,13 @@ public class ExecQuery {
     // SQL usada na evidência desse queries pós-execução
     String query;
 
-    @Column(name = "RESULTADO", columnDefinition = "CLOB", nullable = false)
+    @Column(name = "RESULTADO_PRE_JOB", columnDefinition = "CLOB", nullable = false)
     // Conteúdo da tabela extraída
-    String resultado;
+    String resultadoPreJob;
+
+    @Column(name = "RESULTADO_POS_JOB", columnDefinition = "CLOB", nullable = false)
+    // Conteúdo da tabela extraída
+    String resultadoPosJob;
 
     @Override
     public String toString() {
@@ -64,15 +62,15 @@ public class ExecQuery {
             "id=" + id +
             ", evidencia=" + evidencia +
             ", jobNome='" + jobNome + '\'' +
-            ", contexto='" + contexto + '\'' +
             ", tabelaNome='" + tabelaNome + '\'' +
             ", query='" + query + '\'' +
-            ", resultado=" + getResumoResultado() +
+            ", resultadoPreJob=" + getResumoResultado(resultadoPreJob) +
+            ", resultadoPosJob=" + getResumoResultado(resultadoPosJob) +
             '}';
     }
 
-    private String getResumoResultado() {
-        val tamanho = FormatString.contarSubstring(resultado, "\n");
+    private String getResumoResultado(@NonNull String resultado) {
+        val tamanho = FormatString.contarSubstring(resultadoPreJob, "\n");
         val peso = resultado.getBytes().length;
         return String.format("[registros=%d, peso=%dKbs]", tamanho, peso);
     }

@@ -1,32 +1,17 @@
 package br.com.ppw.dma;
 
-import br.com.ppw.dma.config.DatabaseConfig;
-import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
 import br.com.ppw.dma.job.JobService;
-import br.com.ppw.dma.net.ConectorSftp;
-import br.com.ppw.dma.pipeline.PipelineRelatorioDTO;
-import br.com.ppw.dma.relatorio.RelatorioHistoricoDTO;
-import br.com.ppw.dma.system.Arquivos;
-import br.com.ppw.dma.user.UserInfoDTO;
 import br.com.ppw.dma.util.ComandoSql;
-import br.com.ppw.dma.util.HtmlDet;
 import br.com.ppw.dma.util.ResultadoSql;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static br.com.ppw.dma.DetMakerApplication.RELOGIO;
 import static br.com.ppw.dma.util.FormatString.LINHA_HIFENS;
 import static br.com.ppw.dma.util.FormatString.dividirValores;
 
@@ -92,7 +77,7 @@ public class BasicTest {
 //            .telefone("(13) 988465656")
 //            .build());
 //
-//        HtmlDet.gerarNovoDet(pipelineRelatorio, dbConfig, usersInfo);
+//        DetHtml.gerarNovoDet(pipelineRelatorio, dbConfig, usersInfo);
 //    }
 
     @Test

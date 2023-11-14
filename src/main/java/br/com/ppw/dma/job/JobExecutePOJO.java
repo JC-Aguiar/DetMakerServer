@@ -22,11 +22,11 @@ public class JobExecutePOJO implements MasterResponseDTO {
     Job job;
     JobInfoDTO jobInfo;
     Integer ordem;
-    List<String> argumentos = new ArrayList<>();
+    String argumentos;
     List<ResultadoSql> tabelas = new ArrayList<>();
     List<File> logs = new ArrayList<>();
     List<File> cargas = new ArrayList<>();
-    List<File> produtos = new ArrayList<>();
+    List<File> saidas = new ArrayList<>();
     boolean sucesso = false;
     OffsetDateTime dataInicio;
     OffsetDateTime dataFim;
@@ -52,33 +52,13 @@ public class JobExecutePOJO implements MasterResponseDTO {
         return this;
     }
 
-    public JobExecutePOJO addArgumentos(String arg) {
-        argumentos.add(arg);
-        return this;
-    }
-
-    public JobExecutePOJO addArgumentos(@NonNull List<String> args) {
-        argumentos.addAll(args);
-        return this;
-    }
-
-    public JobExecutePOJO limparArgumentos() {
-        argumentos.clear();
-        return this;
-    }
-
-    public JobExecutePOJO addEvidencias(@NonNull File arquivo) {
+    public JobExecutePOJO addLogs(@NonNull File arquivo) {
         logs.add(arquivo);
         return this;
     }
 
-    public JobExecutePOJO addEvidencias(@NonNull List<File> arquivo) {
+    public JobExecutePOJO addLogs(@NonNull List<File> arquivo) {
         logs.addAll(arquivo);
-        return this;
-    }
-
-    public JobExecutePOJO limparEvidencias() {
-        logs.clear();
         return this;
     }
 
@@ -92,45 +72,17 @@ public class JobExecutePOJO implements MasterResponseDTO {
         return this;
     }
 
-    public JobExecutePOJO limparCargas() {
-        cargas.clear();
-        return this;
-    }
-
     public JobExecutePOJO addProdutos(@NonNull File arquivo) {
-        produtos.add(arquivo);
+        saidas.add(arquivo);
         return this;
     }
 
     public JobExecutePOJO addProdutos(@NonNull List<File> arquivo) {
-        produtos.addAll(arquivo);
+        saidas.addAll(arquivo);
         return this;
-    }
-
-    public JobExecutePOJO limparProdutos() {
-        produtos.clear();
-        return this;
-    }
-
-    public String getParametro() {
-        return String.join(" ", argumentos);
-    }
-
-    public String getQuer() {
-        return String.join(" ", argumentos);
     }
 
     public String comandoShell() {
-        return "ksh "
-            .concat(jobInfo.pathShell())
-            .concat(" ")
-            .concat(getParametro());
-    }
-
-    public String pathLog() {
-        return "ksh "
-            .concat(jobInfo.pathShell())
-            .concat(" ")
-            .concat(getParametro());
+        return "ksh " + jobInfo.pathShell() + " " + argumentos;
     }
 }

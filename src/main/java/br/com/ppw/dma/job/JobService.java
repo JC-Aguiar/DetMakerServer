@@ -178,6 +178,8 @@ public class JobService extends MasterService<Long, Job, JobService> {
     //TODO: javadoc
     public JobExecutePOJO executarPilha(@NonNull JobExecutePOJO pojo) {
         val jobDto = pojo.getJobInfo();
+        final List<FileManager> logsAntes = new ArrayList<>();
+        final List<File> logsDepois = new ArrayList<>();
         try {
             pojo.setDataInicio(OffsetDateTime.now());
             log.info("Preparando diretório para evidências do Job id {}.", pojo.getJob().getId());
@@ -189,43 +191,45 @@ public class JobService extends MasterService<Long, Job, JobService> {
             //TODO: mover o ConectorSftp para outro escopo, a fim de não ser necessário múltiplas instâncias
             //TODO: obter e tratar corretamente o IP, PORTA, USUÁRIO E SENHA
 
-            log.info("Obtendo log mais recente pré-execução.");
-            val logsAntes = downloadMaisRecente(jobDto, path);
-
-            log.info("Consultando tabelas pré-execução.");
-            pojo.setTabelas(
-                evidenciaSerive.extractTablePreJob(pojo.getTabelas()));
-
-            log.info("Executando Job.");
-            if(sftp.comando(pojo.comandoShell()).isEmpty()) {
-                //throw new RuntimeException("Comando não executado com sucesso.");
-                log.error("Comando não executado com sucesso.");
+            if(!jobDto.getMascaraLog().isEmpty()) {
+                log.info("Obtendo log mais recente pré-execução.");
+                logsAntes.addAll(downloadMaisRecente(jobDto, path));
             }
-            log.info("Obtendo log mais recente pós-execução");
-            val logsDepois = logsAntes.stream()
-                .map(this::downloadMaisRecente)
-                .map(FileManager::latestModified)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toList();
+            if(!pojo.getTabelas().isEmpty()) {
+                log.info("Consultando tabelas pré-execução.");
+                pojo.setTabelas(
+                    evidenciaSerive.extractTablePreJob(pojo.getTabelas()));
+            }
+            log.info("Executando Job.");
+            val jobResultado = sftp.comando(pojo.comandoShell());
 
-            log.info("Consultando tabelas pós-execução.");
-            val tabelasDepois = extrairBanco(pojo.getTabelas());
-            pojo.setTabelas(
-                evidenciaSerive.extractTablePosJob(pojo.getTabelas()));
+            log.info("Criando arquivo do log obtido no terminal.");
+            final File terminalLog = Arquivos.criarEscrever(
+                DIR_RECURSOS,
+                jobNome + "_terminal_log.txt",
+                String.join("\n", jobResultado.getConsoleLog())
+            );
+            log.info("Caminho do log do terminal: {}", terminalLog.getAbsolutePath());
 
-            //log.info("Comparando logs para anexar como evidência.");
-            //val logEvidencia = logsDepois.
-            //if(logEvidencia.isEmpty()) {
-            //    //throw new RuntimeException("Nenhum arquivo de log disponível para esse job.");
-            //    log.warn("Nenhum arquivo de log disponível para Job id {}.", pojo.getJob().getId());
-            //}
-            //else {
-            //    log.info("Logs coletados como Evidência: ");
-            //    logEvidencia.forEach(this::printArquivo);
-            //}
-            pojo.addEvidencias(logsDepois);
-            pojo.setSucesso(true);
+            if(!logsAntes.isEmpty()) {
+                log.info("Obtendo log mais recente pós-execução");
+                logsDepois.addAll(
+                    logsAntes.stream()
+                        .map(this::downloadMaisRecente)
+                        .map(FileManager::latestModified)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .toList()
+                );
+            }
+            if(!pojo.getTabelas().isEmpty()) {
+                log.info("Consultando tabelas pós-execução.");
+                pojo.setTabelas(
+                    evidenciaSerive.extractTablePosJob(pojo.getTabelas()));
+            }
+            pojo.addLogs(terminalLog);
+            pojo.addLogs(logsDepois);
+            pojo.setSucesso(jobResultado.getExitCode() == 0);
         }
         catch(Exception e) {
             //TODO: melhorar tratamento. É preciso validar e informar:
@@ -304,7 +308,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
 
     private FileManager downloadMaisRecente(@NonNull FileManager fileManager) {
         val logNome = fileManager.getReference();
-        log.info(logNome);
+        log.debug("Consultando por '{}':", logNome);
 
         log.debug("Realizando cada download para cada log informado pelo Job.");
         val arquivosObtidos = sftp.downloadMaisRecente(fileManager.getPath(), logNome);
