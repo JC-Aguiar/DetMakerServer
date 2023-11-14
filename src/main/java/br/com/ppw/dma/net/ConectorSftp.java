@@ -1,6 +1,7 @@
 package br.com.ppw.dma.net;
 
 import br.com.ppw.dma.system.Arquivos;
+import br.com.ppw.dma.system.ExitCodes;
 import com.jcraft.jsch.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
@@ -17,7 +18,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -166,12 +166,13 @@ public class ConectorSftp extends Uploader {
     }
 
     //TODO: Javadoc
-    public List<String> comando(String comando) throws IOException {
+    public TerminalManager comando(String comando) throws IOException {
         log.info("Estabelecendo conexão SFTP.");
         log.info("Executando comando: " + comando);
         Session session = null;
         ChannelExec channelExec = null;
         InputStream in = null;
+        val terminal = new TerminalManager();
         try {
             val properties = getShellProperties();
             val comandoFull = properties.keySet()
@@ -191,8 +192,7 @@ public class ConectorSftp extends Uploader {
             in = channelExec.getInputStream();
 
             //Lendo resultado exibido no servidor remoto
-            log.info(LINHA_HIFENS + LINHA_HIFENS);
-            val retorno = new ArrayList<String>();
+            log.debug(LINHA_HIFENS + LINHA_HIFENS);
             val tmp = new byte[1024];
             while(true) {
                 while(in.available() > 0) {
@@ -200,27 +200,29 @@ public class ConectorSftp extends Uploader {
                     if(i < 0) break;
                     val linhas = new String(tmp, 0, i).split("\n");
                     Stream.of(linhas).forEach(linha -> {
-                        retorno.add(linha);
-                        log.info(linha);
+                        terminal.addPrintedLine(linha);
+                        log.debug("(TERMINAL) {}", linha);
                     });
                 }
                 if(channelExec.isClosed()) {
                     if(in.available() > 0) continue;
-                    log.info(LINHA_HIFENS + LINHA_HIFENS);
-                    log.info("Código de retorno: " + channelExec.getExitStatus());
+                    log.debug(LINHA_HIFENS + LINHA_HIFENS);
+                    terminal.setExitCode(channelExec.getExitStatus());
+                    log.info("Código de retorno: " + terminal.getExitCode());
+                    log.info(ExitCodes.getDescriptionFromCode(terminal.getExitCode()));
                     break;
                 }
-                try { Thread.sleep(1000); }
-                catch(Exception ee) { }
+                //try { Thread.sleep(1000); }
+                //catch(Exception ee) { }
             }
-            log.info(LINHA_HIFENS + LINHA_HIFENS);
-            log.info("Comando '{}' executado com sucesso.", comando);
-            return retorno;
+            //log.info(LINHA_HIFENS + LINHA_HIFENS);
+            return terminal;
         }
-        catch(JSchException | IOException e) {
-            e.printStackTrace();
-            log.error("Erro ao tentar executar o comando '{}'.", comando);
-            return List.of();
+        catch(JSchException e) {
+            //e.printStackTrace();
+            //log.error("Erro ao tentar executar o comando '{}'.", comando);
+            throw new RuntimeException("Erro ao tentar executar o comando '" +comando+ "': " +e.getMessage());
+            //return terminal;
         }
         finally {
             if(session != null) session.disconnect();
@@ -281,7 +283,7 @@ public class ConectorSftp extends Uploader {
     private FileManager listarArquivoDownload(String dirArquivoNome, Path pathLocal) {
         val fileManager = new FileManager(dirArquivoNome, pathLocal);
         try {
-            final List<String> listaArquivos = comando("ls -t " + dirArquivoNome + " | head -1");
+            val listaArquivos = comando("ls -t " + dirArquivoNome + " | head -1").getConsoleLog();
             if(listaArquivos.isEmpty()) {
                 log.warn("Nenhum arquivo encontrado para '{}'.", dirArquivoNome);
                 return fileManager;

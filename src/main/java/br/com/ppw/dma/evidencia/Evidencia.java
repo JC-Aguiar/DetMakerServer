@@ -69,15 +69,9 @@ public class Evidencia implements MasterEntity<Long> {
 
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "BANCO_PRE_JOB")
+    @Column(name = "BANCO")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    List<ExecQuery> bancoPreJob = new ArrayList<>();
-
-    @ToString.Exclude
-    @JsonManagedReference
-    @Column(name = "BANCO_POS_JOB")
-    @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    List<ExecQuery> bancoPosJob = new ArrayList<>();
+    List<ExecQuery> banco = new ArrayList<>();
 
     @ToString.Exclude
     @JsonManagedReference

@@ -14,9 +14,6 @@ import java.util.Map;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ResultadoSql extends ComandoSql {
 
-     static final String SEPARADOR_COLUNA = "||";
-     //static final String SEPARADOR_CAMPOS = "-";
-
      boolean consultaPosJob = false;
      final List<List<Object>> resultadoPreJob = new ArrayList<>();
      final List<List<Object>> resultadoPosJob = new ArrayList<>();

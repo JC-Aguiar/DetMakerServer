@@ -58,8 +58,8 @@ public class EvidenciaController extends MasterController
         for(val jobPojo : jobsPojo) {
             try {
                 val ordem = jobPojo.getOrdem();
-                val envidencia = evidenciaService.createEvidencia(jobPojo);
-                listaEvidencias.add(envidencia);
+                val evidencia = evidenciaService.createEvidencia(jobPojo);
+                listaEvidencias.add(evidencia);
             }
             catch(Exception e) {
                 e.printStackTrace();

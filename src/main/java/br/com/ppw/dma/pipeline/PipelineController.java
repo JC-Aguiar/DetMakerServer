@@ -1,5 +1,6 @@
 package br.com.ppw.dma.pipeline;
 
+import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
 import br.com.ppw.dma.evidencia.EvidenciaService;
 import br.com.ppw.dma.execFile.ExecFile;
@@ -12,7 +13,7 @@ import br.com.ppw.dma.relatorio.RelatorioInfoDTO;
 import br.com.ppw.dma.relatorio.RelatorioService;
 import br.com.ppw.dma.user.UserInfoDTO;
 import br.com.ppw.dma.util.ComandoSql;
-import br.com.ppw.dma.util.HtmlDet;
+import br.com.ppw.dma.util.DetHtml;
 import jakarta.validation.constraints.NotBlank;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -72,22 +73,33 @@ public class PipelineController extends MasterController<
     @PostMapping(value = "run/new")
     public ResponseEntity<?> runNewPipeline(@RequestBody PipelineNovaExecDTO novaPipeline)
     throws IOException, URISyntaxException {
+        //Coleta ou cria Pipeline
         val pipeline = pipelineService
             .getPipelineByName(novaPipeline.getPipeline().getNome())
             .orElseGet(() -> proxy().createNewByPipelineNovaExecDTO(novaPipeline));
+
+        //Executa os Jobs e obtêm as evidências
         val evidencias = jobController.executeJobsAndGetEvidencias(novaPipeline.getJobs());
+
+        //Coleta todos os parâmetros de entrada dos Jobs
         val parametrosDosJobs = novaPipeline.getJobs()
             .stream()
             .map(JobExecuteDTO::getArgumentos)
             .collect(Collectors.joining(" "));
+
+        //Cria e salva novo relatório
         val relatorio = relatorioService.buildAndPersist(
             novaPipeline.getRelatorio(),
             pipeline,
             evidencias,
             parametrosDosJobs);
+
+        //Convertendo Evidencia para DTO
         val evidenciasDto = evidencias.stream()
             .map(ev -> evidenciaService.parseToResponseDto(ev, ev.getOrdem()))
             .toList();
+
+        //Obtendo demais dados (hora e status)
         val dataInicio = evidenciasDto.stream()
             .map(EvidenciaInfoDTO::getData)
             .min(OffsetDateTime::compareTo)
@@ -111,22 +123,21 @@ public class PipelineController extends MasterController<
             .build();
         log.info(relatorioHistorico.toString());
 
-        log.info("Montando PipelineRelatorioDTO.");
+        log.info("Anexando RelatorioHistoricoDTO no PipelineRelatorioDTO.");
         val pipelineRelatorio = new PipelineRelatorioDTO(
             novaPipeline.getPipeline().getNome(),
             novaPipeline.getPipeline().getDescricao(),
             relatorioHistorico);
         log.info(pipelineRelatorio.toString());
 
-        return retornarNovoDet(pipelineRelatorio, List.of(novaPipeline.getUserInfo()));
+        return proxy().retornarNovoDet(pipelineRelatorio, List.of(novaPipeline.getUserInfo()));
     }
 
     private ResponseEntity<?> retornarNovoDet(
-            @NonNull PipelineRelatorioDTO pipelineRelatorio,
-            @NonNull List<UserInfoDTO> userInfo)
+        @NonNull PipelineRelatorioDTO pipelineRelatorio,
+        @NonNull List<UserInfoDTO> userInfo)
     throws IOException, URISyntaxException {
-        val det = HtmlDet.gerarNovoDet(pipelineRelatorio, userInfo);
-        val mensgem = "Pipeline executada com sucesso. Novo DET foi gerado e salvo localmente.";
+        val det = new DetHtml(pipelineRelatorio, userInfo).getDocumento();
 
         log.debug("Criando objeto Resource para arquivo no caminho '{}'.", det.getAbsolutePath());
         final Resource fileResource = new FileSystemResource(det.getAbsolutePath());
@@ -152,34 +163,7 @@ public class PipelineController extends MasterController<
         val relatorio = relatorioService.findMostRecentFromPipeline(pipeline);
         val jobsExecDto = relatorio.getEvidencias()
             .stream()
-            .map(ev -> {
-                val id = ev.getId();
-                val comandosSql = ev.getBancoPosJob()
-                    .stream()
-                    .map(q -> new ComandoSql(q.getTabelaNome()))
-                    .toList();
-                val comandoSqlString = comandosSql.stream()
-                    .map(ComandoSql::getTabela)
-                        .collect(Collectors.joining(", "));
-                log.info("Tablas usadas pela Evidência ID {}: {}.", id, comandoSqlString);
-
-                val cargas = ev.getCargas()
-                    .stream()
-                    .map(ExecFile::getArquivo)
-                    .toList();
-                val cargasString = comandosSql.stream()
-                    .map(ComandoSql::getTabela)
-                    .collect(Collectors.joining("\n\t"));
-                log.info("Cargas usadas nessa Evidência ID {}: \n\t{}", id, cargasString);
-
-                return JobExecuteDTO.builder()
-                    .id(ev.getJob().getId())
-                    .ordem(ev.getOrdem())
-                    .argumentos(ev.getArgumentos())
-                    .queries(comandosSql)
-                    .cargas(cargas)
-                    .build();
-            })
+            .map(this::evidenciaParaJobExecuteDto)
             .toList();
 
         log.info("Total de JobExecDTO's montados: {}.", jobsExecDto.size());
@@ -199,7 +183,7 @@ public class PipelineController extends MasterController<
         relatorioDto.setNomeAtividade(relatorio.getNomeAtividade());
         relatorioDto.setNomeProjeto(relatorio.getNomeProjeto());
         relatorioDto.setConfiguracao(relatorioDto.getConfiguracao());
-        val novoRelatorio = relatorioService.buildAndPersist(
+        relatorioService.buildAndPersist(
             relatorioDto,
             pipeline,
             novasEvidencias,
@@ -235,9 +219,36 @@ public class PipelineController extends MasterController<
             relatorioHistorico);
 
         log.info(LINHA_HIFENS);
-        log.info("Etapa 5: gerando documento DET localmente.");
+        log.info("Etapa 5: gerando documento DET.");
         return retornarNovoDet(
             pipelineRelatorio, List.of(new UserInfoDTO())); //TODO: implementar parâmetro userInfoDTO
+    }
+
+    public JobExecuteDTO evidenciaParaJobExecuteDto(@NonNull Evidencia evidencia) {
+            val id = evidencia.getId();
+            val comandosSql = evidencia.getBanco()
+                .stream()
+                .map(q -> new ComandoSql(q.getTabelaNome()))
+                .toList();
+            val comandoSqlString = comandosSql.stream()
+                .map(ComandoSql::getTabela)
+                .collect(Collectors.joining(", "));
+            log.info("Tablas usadas pela Evidência ID {}: {}.", id, comandoSqlString);
+
+            val cargas = evidencia.getCargas()
+                .stream()
+                .map(ExecFile::getArquivo)
+                .toList();
+            log.info("Cargas usadas na Evidência ID {}:", id);
+            cargas.forEach(c -> log.info(" - {}", c));
+
+            return JobExecuteDTO.builder()
+                .id(evidencia.getJob().getId())
+                .ordem(evidencia.getOrdem())
+                .argumentos(evidencia.getArgumentos())
+                .queries(comandosSql)
+                .cargas(cargas)
+                .build();
     }
 
     public Pipeline createNewByPipelineNovaDTO(PipelineNovaDTO novaPipeline) {
@@ -249,7 +260,7 @@ public class PipelineController extends MasterController<
     }
 
     public Pipeline createNewByPipelineNovaExecDTO(PipelineNovaExecDTO novaPipeline) {
-        log.info("Criando nova Pipeline '{}'.", novaPipeline);
+        log.info("Criando nova Pipeline '{}'.", novaPipeline.getPipeline().getNome());
         log.info("Obtendo todos os Jobs listados no DTO.");
         val jobIds = novaPipeline.getJobs()
             .stream()

@@ -141,7 +141,6 @@ public class JobController extends MasterController
             .size();
         log.info("Total de Jobs com sucesso: {}.", sucessos);
 
-        //TODO: comentar etapas abaixo
         return evidenciaController.gerarEvidencias(jobsPojo);
     }
 
@@ -161,6 +160,7 @@ public class JobController extends MasterController
             val jobPojo = getModelMapper().map(dto, JobExecutePOJO.class);
             jobPojo.setJob(job);
             jobPojo.setJobInfo(jobInfo);
+            jobPojo.setArgumentos(dto.getArgumentos());
             jobPojo.addComandoSql(dto.getQueries());
             log.info(jobPojo.toString());
 

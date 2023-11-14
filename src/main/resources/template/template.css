@@ -11,15 +11,9 @@ th {
     width: 16em;
 }
 
-teste-1-nome
-teste-1-descricao
-teste-1-pre-config
-teste-1-expectativa
-teste-1-resultado
-teste-1-status
-teste-1-responsavel
-teste-1-data
-teste-1-anexos
+.dropdown-menu {
+    min-width: 500px;
+}
 
 #identificacao-geral {
     height: 0;

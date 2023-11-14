@@ -60,7 +60,6 @@ public final class FormatString {
         if(texto == null) return "``";
         return texto.replace("`", "\\`")
             .replace("\\", "\\\\`")
-            .replace("\n", "<br>")
             .trim();
     }
 

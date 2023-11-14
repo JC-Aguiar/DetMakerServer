@@ -71,7 +71,7 @@ function TabelaTestcase(
             onClick: () => abrirAnexo(nomePosJob, tabelasPosJob[index])
         };
         const bancoInfo = React.createElement( 'div', {},
-            React.createElement( 'h5', { className: 'fw-bold' }, tabelasNome[index]),
+            React.createElement( 'h5', { className: 'fw-bold mt-3' }, tabelasNome[index]),
             React.createElement( 'p', { className: 'my-0 px-2 py-0 small font-monospace bg-light' }, query + '\n'),
             React.createElement( 'div', propsPreJob, nomePreJob),
             React.createElement( 'div', propsPosJob, nomePosJob)
@@ -122,12 +122,12 @@ function TabelaTestcase(
     })
     //Gerando tabela Testcase
     return React.createElement('div', { className: 'table-responsive' },
-        React.createElement('h3', { id: evidenciaId, className: 'pt-3' }, evidenciaId),
+        React.createElement('h3', { id: evidenciaId, className: 'pt-3' }, nome),
         React.createElement('table', { className: 'table table-light table-striped m-0 mb-5 text-start' },
             React.createElement('tbody', null,
                 React.createElement('tr', null,
-                    React.createElement('th', null, 'Nome do Job'),
-                    React.createElement('td', null, nome)
+                    React.createElement('th', null, 'Evidência ID'),
+                    React.createElement('td', null, evidenciaId)
                 ),
                 React.createElement('tr', null,
                     React.createElement('th', null, 'Descrição do Job'),
@@ -176,9 +176,9 @@ document.addEventListener('DOMContentLoaded', function () {
     //Criando Menu-Links
     let testesLinks = [];
     AllTabelasTestecase.forEach(function (element, index) {
-        let testeId = AllTabelasTestecase[index].props.children[0].props.id;
-        let testeNome = "-" + testeId;
-        testesLinks.push(React.createElement('a', { id: testeNome, className: 'dropdown-item' }, testeNome));
+        let jobNome = element.props.children[0].props.children;
+        let linkNome = (index+1) + "." + jobNome;
+        testesLinks.push(React.createElement('a', { id: linkNome, className: 'dropdown-item' }, linkNome));
     });
     //Renderizando Menu-Links
     ReactDOM.render(
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', function () {
     //Vinculando Tabelas x Menu-Links
     testesLinks.forEach(function (element, index) {
         let testeId = AllTabelasTestecase[index].props.children[0].props.id;
-        let testeNome = "-" + testeId;
+        let testeNome = testesLinks[index].props.id;
         const tituloTeste = document.getElementById(testeId);
         const menuTeste = document.getElementById(testeNome);
         menuTeste.addEventListener("click", (event) => {

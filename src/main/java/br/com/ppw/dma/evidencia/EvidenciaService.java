@@ -25,6 +25,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Blob;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -172,6 +173,10 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
                 .job(jobPojo.getJob())
                 .sucesso(jobPojo.isSucesso())
                 .ordem(jobPojo.getOrdem())
+                .argumentos(jobPojo.getArgumentos())
+                .dataInicio(jobPojo.getDataInicio())
+                .dataFim(jobPojo.getDataFim())
+                .sucesso(jobPojo.isSucesso())
                 .build()
         );
         evidenciaDao.flush();
@@ -191,34 +196,18 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             .toList();
 
         if(!jobPojo.getTabelas().isEmpty())
-            log.info("Criando novos registros ExecQuery para cada uma das consultas pre-execução.");
-        val queriesPreJob = jobPojo.getTabelas()
+            log.info("Criando novos registros ExecQuery para cada resultado no banco (pré e pós Job).");
+        val banco = jobPojo.getTabelas()
             .stream()
             .map(tabela -> {
-                val preJob = tabela.getResultadoPreJob();
                 val execQuery = ExecQuery.builder()
                     .evidencia(evidencia)
                     .jobNome(jobPojo.getJob().getNome())
                     .tabelaNome(tabela.getTabela())
                     .query(tabela.getSqlCompleta())
-                    .resultado(tabela.getResumoPreJob())
-                    .build();
-                return execQueryService.persist(execQuery);
-            })
-            .toList();
-
-        if(!jobPojo.getTabelas().isEmpty())
-            log.info("Criando novos registros ExecQuery para cada uma das consultas pós-execução.");
-        val queriesPosJob = jobPojo.getTabelas()
-            .stream()
-            .map(tabela -> {
-                val posJob = tabela.getResultadoPosJob();
-                val execQuery = ExecQuery.builder()
-                    .evidencia(evidencia)
-                    .jobNome(jobPojo.getJob().getNome())
-                    .tabelaNome(tabela.getTabela())
-                    .query(tabela.getSqlCompleta())
-                    .resultado(tabela.getResumoPosJob())
+                    .resultadoPreJob(tabela.getResumoPreJob())
+                    .resultadoPosJob(tabela.getResumoPosJob())
+                    //TODO: ?informações da pipeline?
                     .build();
                 return execQueryService.persist(execQuery);
             })
@@ -239,9 +228,9 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             })
             .toList();
 
-        if(!jobPojo.getProdutos().isEmpty())
+        if(!jobPojo.getSaidas().isEmpty())
             log.info("Criando novos registros ExecFile para cada uma das saídas produzidas.");
-        val saidas = jobPojo.getProdutos()
+        val saidas = jobPojo.getSaidas()
             .stream()
             .map(carga -> {
                 val execFile = ExecFile.builder()
@@ -254,63 +243,13 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             })
             .toList();
 
-        //execFileService...flush?
-        //execQueryService...flush?
-
-        log.info("Relacionando Evidência com os anexos (ExecFile e ExecQuery).");
+        log.info("Atualizando Evidência ID {} com os anexos (ExecFile e ExecQuery).", evidencia.getId());
         evidencia.setCargas(cargas);
-        evidencia.setBancoPreJob(queriesPreJob);
-        evidencia.setBancoPosJob(queriesPosJob);
+        evidencia.setBanco(banco);
         evidencia.setLogs(logs);
         evidencia.setSaidas(saidas);
-        evidencia.setDataInicio(jobPojo.getDataInicio());
-        evidencia.setDataFim(jobPojo.getDataFim());
         return evidencia;
     }
-
-    //TODO: javadoc
-    //TODO: ainda necessário?
-//    public EvidenciaInfoDTO createEvidenciaDto(@NonNull JobExecutePOJO executePojo) {
-//        log.info("Gerando EvidenciaInfoDTO com base na JobExecutePOJO:");
-//        log.info(executePojo.toString());
-//
-//        val evidencia = EvidenciaInfoDTO.builder()
-//            .job(executePojo.getJobInfo().getNome())
-//            .jobDescricao(executePojo.getJobInfo().getDescricao())
-//            .data(executePojo.getDataInicio())
-//            .sucesso(executePojo.isSucesso())
-//            .ordem(executePojo.getOrdem())
-//            .argumentos(executePojo.getParametro())
-//            .queries(executePojo.getTabelas()
-//                .stream()
-//                .map(ResultadoSql::getSqlCompleta)
-//                .toList())
-//            .tabelasPreJob(executePojo.getTabelas()
-//                .stream()
-//                .map(ResultadoSql::getResumoPreJob)
-//                .toList())
-//            .tabelasPosJob(executePojo.getTabelas()
-//                .stream()
-//                .map(ResultadoSql::getResumoPosJob)
-//                .toList())
-//            .cargas(executePojo.getCargas()
-//                .stream()
-//                .map(AnexoInfoDTO::tipoCarga)
-//                .toList())
-//            .logs(executePojo.getLogs()
-//                .stream()
-//                .map(AnexoInfoDTO::tipoLog)
-//                .toList())
-//            .saidas(executePojo.getProdutos()
-//                .stream()
-//                .map(AnexoInfoDTO::tipoProduto)
-//                .toList())
-//            .build();
-//
-//        log.info("EvidenciaInfoDTO gerada:");
-//        log.info(evidencia.toString());
-//        return evidencia;
-//    }
 
     public File parseBlobToFile(@NonNull Blob blob, @NotBlank String filePath){
         try(InputStream inputStream = blob.getBinaryStream()) {
@@ -334,45 +273,34 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
 
     public EvidenciaInfoDTO parseToResponseDto(@NonNull Evidencia evidencia, @NonNull Integer ordem) {
         log.info("Convertendo entidade Evidência para DTO de resposta");
+        List<String> queries = new ArrayList<>();
+        List<String> tabelasNome = new ArrayList<>();
+        List<String> bancoPreJob = new ArrayList<>();
+        List<String> bancoPosJob = new ArrayList<>();
 
+        for(val execQuery : evidencia.getBanco()) {
+            queries.add(execQuery.getQuery());
+            tabelasNome.add(execQuery.getTabelaNome());
+            bancoPreJob.add(execQuery.getResultadoPreJob());
+            bancoPosJob.add(execQuery.getResultadoPosJob());
+        }
         //TODO: refatorar para otimizar a iteração nas listas durante preenchimento do EvidenciaInfoDTO
         val dto = EvidenciaInfoDTO.builder()
-                .id(evidencia.getId())
-                .job(evidencia.getJob().getNome())
-                .jobDescricao(evidencia.getJob().getDescricao())
-                .data(evidencia.getDataInicio())
-                .sucesso(evidencia.getSucesso())
-                .ordem(ordem)
-                .argumentos(evidencia.getArgumentos())
-                .queries(evidencia.getBancoPreJob()
-                    .stream()
-                    .map(ExecQuery::getQuery)
-                    .toList())
-                .tabelasNome(evidencia.getBancoPosJob()
-                    .stream()
-                    .map(ExecQuery::getTabelaNome)
-                    .toList())
-                .tabelasPreJob(evidencia.getBancoPreJob()
-                    .stream()
-                    .map(ExecQuery::getResultado)
-                    .toList())
-                .tabelasPosJob(evidencia.getBancoPosJob()
-                    .stream()
-                    .map(ExecQuery::getResultado)
-                    .toList())
-                .cargas(evidencia.getCargas()
-                    .stream()
-                    .map(ef -> AnexoInfoDTO.tipoCarga(ef.getArquivoNome(), ef.getArquivo()))
-                    .toList())
-                .logs(evidencia.getLogs()
-                    .stream()
-                    .map(ef -> AnexoInfoDTO.tipoLog(ef.getArquivoNome(), ef.getArquivo()))
-                    .toList())
-                .saidas(evidencia.getSaidas()
-                    .stream()
-                    .map(ef -> AnexoInfoDTO.tipoProduto(ef.getArquivoNome(), ef.getArquivo()))
-                    .toList())
-                .build();
+            .id(evidencia.getId())
+            .job(evidencia.getJob().getNome())
+            .jobDescricao(evidencia.getJob().getDescricao())
+            .data(evidencia.getDataInicio())
+            .sucesso(evidencia.getSucesso())
+            .ordem(ordem)
+            .argumentos(evidencia.getArgumentos())
+            .queries(queries)
+            .tabelasNome(tabelasNome)
+            .tabelasPreJob(bancoPreJob)
+            .tabelasPosJob(bancoPosJob)
+            .cargas(AnexoInfoDTO.tipoCarga(evidencia.getCargas()))
+            .logs(AnexoInfoDTO.tipoLog(evidencia.getLogs()))
+            .saidas(AnexoInfoDTO.tipoProduto(evidencia.getSaidas()))
+            .build();
 
         log.info(dto.toString());
         return dto;
