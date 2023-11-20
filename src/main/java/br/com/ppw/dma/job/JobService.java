@@ -6,7 +6,8 @@ import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.net.FileManager;
 import br.com.ppw.dma.system.Arquivos;
 import br.com.ppw.dma.system.ExcelXLSX;
-import br.com.ppw.dma.util.ResultadoSql;
+import br.com.ppw.dma.util.FormatDate;
+import br.com.ppw.dma.configQuery.ResultadoSql;
 import com.google.gson.Gson;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -61,6 +62,10 @@ public class JobService extends MasterService<Long, Job, JobService> {
         return dao.findByNome(nome);
     }
 
+    public List<Job> findByNome(@NonNull List<String> nomes) {
+        return dao.findByNomeIn(nomes);
+    }
+
     public List<Job> persistAll(List<Job> jobs) {
         return jobs.stream()
             .map(this::persist)
@@ -110,8 +115,6 @@ public class JobService extends MasterService<Long, Job, JobService> {
             .getJobsPOJO()
             .stream()
             .map(Job -> refinarCampos(Job, planilhaNome, arquivoNome))
-//            .peek(Job -> Job.setNomeArquivo(arquivoNome))
-//            .peek(Job -> Job.setNomePlanilha(planilhaNome))
             .collect(Collectors.toList());
     }
 
@@ -204,10 +207,13 @@ public class JobService extends MasterService<Long, Job, JobService> {
             val jobResultado = sftp.comando(pojo.comandoShell());
 
             log.info("Criando arquivo do log obtido no terminal.");
+            val nomeLogTerminal = jobNome + "_terminal_log" + FormatDate.fileNameStyle() + ".txt";
+            val conteudoLogTerminal = String.join("\n", jobResultado.getConsoleLog());
+            val diretorioLogTerminal = path.toAbsolutePath().toString();
             final File terminalLog = Arquivos.criarEscrever(
-                DIR_RECURSOS,
-                jobNome + "_terminal_log.txt",
-                String.join("\n", jobResultado.getConsoleLog())
+                diretorioLogTerminal,
+                nomeLogTerminal,
+                conteudoLogTerminal
             );
             log.info("Caminho do log do terminal: {}", terminalLog.getAbsolutePath());
 
@@ -255,29 +261,6 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: Javadoc
-//    public List<File> getLogMaisRecente(@NonNull List<List<File>> logsPre, @NonNull List<List<File>> logsPos) {
-//        log.info("Lista pré-job possuí {} log(s). Lista pós-job possuí {} log(s).",
-//            logsPre.size(), logsPos.size());
-//        val maiorLista = Math.max(logsPre.size(), logsPos.size());
-//        val listaLogs = new ArrayList<File>();
-//
-//        for(int i = 0; i < maiorLista; i++) {
-//            val maiorQuantidadeAnexos = Math.max(logsPre.get(i).size(), logsPos.get(i).size());
-//
-//
-//            for(int j = 0; j < maiorQuantidadeAnexos; j++) {
-//                val file1 = logsPre.size() > i ? logsPre.get(i) : null;
-//                val file2 = logsPos.size() > i ? logsPos.get(i) : null;
-//                long lastModified1 = file1 == null ? Long.MAX_VALUE : file1.lastModified();
-//                long lastModified2 = file2 == null ? Long.MAX_VALUE : file2.lastModified();
-//                val arquivoMaisRecente = (lastModified1 > lastModified2) ? file1 : file2;
-//                listaLogs.add(arquivoMaisRecente);
-//            }
-//        }
-//        return listaLogs;
-//    }
-
-    //TODO: Javadoc
     private List<FileManager> downloadMaisRecente(@NonNull JobInfoDTO jobInfo, @NonNull Path path) {
         val logsNome = jobInfo.pathLog().toArray(new String[0]);
         log.info(Arrays.toString(logsNome));
@@ -289,21 +272,6 @@ public class JobService extends MasterService<Long, Job, JobService> {
         else
             log.warn("Nenhum download realizado com sucesso.");
         return arquivosObtidos;
-        //log.debug("Buscando pelo log mais recente, nos downloads, para cada máscara de log.");
-        //final List<File> arquivosMaisRecentes = Stream.of(logsNome)
-        //    .map(log -> log.split("/*")[0])
-        //    .map(log -> Arquivos.loadArquivos(path, log)
-        //        .stream()
-        //        .max(Comparator.comparing(File::lastModified))
-        //        .orElse(null))
-        //    .filter(Objects::nonNull)
-        //    .peek(this::printArquivo)
-        //    .toList();
-
-        //Resultado final
-        //if(!arquivosMaisRecentes.isEmpty()) return arquivosMaisRecentes;
-        //log.warn("Nenhum arquivo de log disponível agora para esse job.");
-        //return List.of();
     }
 
     private FileManager downloadMaisRecente(@NonNull FileManager fileManager) {

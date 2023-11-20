@@ -1,8 +1,8 @@
 package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.master.MasterResponseDTO;
-import br.com.ppw.dma.util.ComandoSql;
-import br.com.ppw.dma.util.ResultadoSql;
+import br.com.ppw.dma.configQuery.ComandoSql;
+import br.com.ppw.dma.configQuery.ResultadoSql;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;

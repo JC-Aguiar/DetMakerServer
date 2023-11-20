@@ -34,7 +34,7 @@ public class PipelineService extends MasterService<Long, Pipeline, PipelineServi
         return pipeline;
     }
 
-    public Optional<Pipeline> getPipelineByName(@NotNull String nome) {
+    public Optional<Pipeline> getByName(@NotNull String nome) {
         log.info("Consultando pela Pipeline '{}'.", nome);
         val pipeline = Optional.ofNullable(dao.findAllByNome(nome));
         if(pipeline.isPresent())
@@ -44,7 +44,7 @@ public class PipelineService extends MasterService<Long, Pipeline, PipelineServi
         return pipeline;
     }
 
-    public boolean checkPipelineByName(@NotNull String nome) {
+    public boolean checkByName(@NotNull String nome) {
         log.info("Validando se a Pipeline '{}' existe no banco.", nome);
         val resutlado = dao.existsByNome(nome);
         log.info("Resultado: {}.", resutlado);

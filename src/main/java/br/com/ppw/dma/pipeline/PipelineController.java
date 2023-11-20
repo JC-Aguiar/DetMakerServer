@@ -1,5 +1,6 @@
 package br.com.ppw.dma.pipeline;
 
+import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
 import br.com.ppw.dma.evidencia.EvidenciaService;
@@ -8,11 +9,11 @@ import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.job.JobController;
 import br.com.ppw.dma.job.JobExecuteDTO;
 import br.com.ppw.dma.master.MasterController;
+import br.com.ppw.dma.master.MasterRequestDTO;
 import br.com.ppw.dma.relatorio.RelatorioHistoricoDTO;
 import br.com.ppw.dma.relatorio.RelatorioInfoDTO;
 import br.com.ppw.dma.relatorio.RelatorioService;
 import br.com.ppw.dma.user.UserInfoDTO;
-import br.com.ppw.dma.util.ComandoSql;
 import br.com.ppw.dma.util.DetHtml;
 import jakarta.validation.constraints.NotBlank;
 import lombok.NonNull;
@@ -30,6 +31,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatString.LINHA_HIFENS;
@@ -38,7 +40,7 @@ import static br.com.ppw.dma.util.FormatString.LINHA_HIFENS;
 @RestController
 @RequestMapping("pipeline")
 public class PipelineController extends MasterController<
-    Long, Pipeline, PipelineNovaDTO, PipelineInfoDTO, PipelineController> {
+    Long, Pipeline, MasterRequestDTO, PipelineInfoDTO, PipelineController> {
 
     private final PipelineService pipelineService;
     private final JobController jobController;
@@ -63,19 +65,12 @@ public class PipelineController extends MasterController<
         return ResponseEntity.ok("pong");
     }
 
-    @PostMapping(value = "new")
-    public ResponseEntity<?> newPipeline(@RequestBody PipelineNovaDTO novaPipeline) {
-        val pipeline = proxy().createNewByPipelineNovaDTO(novaPipeline);
-        val mensgem = "Pipeline '" +pipeline.getNome()+ "' criada com sucesso.";
-        return ResponseEntity.ok(mensgem);
-    }
 
     @PostMapping(value = "run/new")
-    public ResponseEntity<?> runNewPipeline(@RequestBody PipelineNovaExecDTO novaPipeline)
+    public ResponseEntity<?> runNewPipeline(@NonNull @RequestBody PipelineNovaExecDTO novaPipeline)
     throws IOException, URISyntaxException {
         //Coleta ou cria Pipeline
-        val pipeline = pipelineService
-            .getPipelineByName(novaPipeline.getPipeline().getNome())
+        val pipeline = getAndUpdate(novaPipeline.getPipeline())
             .orElseGet(() -> proxy().createNewByPipelineNovaExecDTO(novaPipeline));
 
         //Executa os Jobs e obtêm as evidências
@@ -158,7 +153,7 @@ public class PipelineController extends MasterController<
         @PathVariable @NotBlank String nome)
     throws IOException, URISyntaxException {
         log.info("Etapa 1: remontando última execução da Pipeline '{}'.", nome);
-        val pipeline = pipelineService.getPipelineByName(nome)
+        val pipeline = pipelineService.getByName(nome)
             .orElseThrow();
         val relatorio = relatorioService.findMostRecentFromPipeline(pipeline);
         val jobsExecDto = relatorio.getEvidencias()
@@ -251,14 +246,6 @@ public class PipelineController extends MasterController<
                 .build();
     }
 
-    public Pipeline createNewByPipelineNovaDTO(PipelineNovaDTO novaPipeline) {
-        log.info("Convertendo DTO em Entidade.");
-        val pipeline = new Pipeline();
-        pipeline.setNome(novaPipeline.getPipeline().getNome());
-        pipeline.setDescricao(novaPipeline.getPipeline().getDescricao());
-        return pipelineService.persist(pipeline);
-    }
-
     public Pipeline createNewByPipelineNovaExecDTO(PipelineNovaExecDTO novaPipeline) {
         log.info("Criando nova Pipeline '{}'.", novaPipeline.getPipeline().getNome());
         log.info("Obtendo todos os Jobs listados no DTO.");
@@ -277,5 +264,24 @@ public class PipelineController extends MasterController<
         return pipelineService.persist(pipeline);
     }
 
+    public Optional<Pipeline> getAndUpdate(PipelineInfoDTO pipelineInfo) {
+        val pipeline = pipelineService.getByName(pipelineInfo.getNome());
+        if(pipeline.isEmpty()) return pipeline;
+
+        log.info("Validando se a Pipeline precisa ser atualizada.");
+        val pipelineInfoBanco = pipeline.get();
+        val novaDescricao = pipelineInfoBanco.atualizarDescricao(pipelineInfo);
+        val novosJobs = pipelineInfoBanco.atualizarJobs(pipelineInfo);
+
+        if(novaDescricao || novosJobs) {
+            log.info("A Pipeline precisa ser atualizada.");
+            if(novaDescricao)
+                pipelineInfoBanco.setDescricao(pipelineInfo.getDescricao());
+            if(novosJobs)
+                pipelineInfoBanco.setJobs(jobController.getAllByNomes(pipelineInfo.getJobs()));
+            pipelineService.persist(pipelineInfoBanco);
+        }
+        return pipeline;
+    }
 
 }

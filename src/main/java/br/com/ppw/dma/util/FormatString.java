@@ -7,6 +7,7 @@ import lombok.val;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -61,6 +62,17 @@ public final class FormatString {
         return texto.replace("`", "\\`")
             .replace("\\", "\\\\`")
             .trim();
+    }
+
+    public static List<String> obterVariaveis(@NotBlank String texto) {
+        String regex = "\\$\\{(.*?)\\}";
+        val resultado = new ArrayList<String>();
+        val pattern = Pattern.compile(regex);
+        val matcher = pattern.matcher(texto);
+        while(matcher.find()) {
+            resultado.add(matcher.group(1));
+        }
+        return resultado;
     }
 
     public static List<String> javascriptString(List<String> texto) {
