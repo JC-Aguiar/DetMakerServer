@@ -19,14 +19,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static br.com.ppw.dma.DetMakerApplication.RELOGIO;
 import static br.com.ppw.dma.config.DatabaseConfig.ambienteInfo;
+import static br.com.ppw.dma.util.FormatDate.FORMAL_STYLE;
 import static br.com.ppw.dma.util.FormatString.javascriptString;
 
 @Slf4j
@@ -37,7 +34,7 @@ public class DetHtml {
     int countEvidencias = 0;
     int countTabelas = 0;
     int countAnexos = 0;
-    final String dataHoraHoje = LocalDateTime.now(RELOGIO).format(PADRAO_DATA);
+    final String dataHoraHoje = FormatDate.formalStyle();
     final Map<String, String> tabelasPreJobMap = new HashMap<>();       // K:function-name, V:function-code
     final Map<String, String> tabelasPosJobMap = new HashMap<>();       // K:function-name, V:function-code
     final Map<String, String> logsMap = new HashMap<>();                // K:function-name, V:file-name
@@ -59,19 +56,21 @@ public class DetHtml {
 
     //Campos de Identificação
     public static final String CAMPO_ASSINATURA = "const assinatura = ";
-    public static final String CAMPO_ASSINATURA_VALOR = "Documento gerado automaticamente pela " +
-        "aplicação DET-MAKER v";
     public static final String CAMPO_ATIVIDADE_NOME = "const atividadeNome = ";
     public static final String CAMPO_PROJETO_ID = "const projetoId = ";
     public static final String CAMPO_PROJETO_NOME = "const projetoNome = ";
     public static final String CAMPO_TESTE_TIPO = "const testeTipo = ";
-    public static final String CAMPO_TESTE_TIPO_VALOR = "Teste Unitário";
     public static final String CAMPO_TESTE_SISTEMA = "const testeSistema = ";
     public static final String CAMPO_USER_NOME = "const userNome = ";
     public static final String CAMPO_USER_CARGO = "const userCargo = ";
     public static final String CAMPO_USER_EMPRESA = "const userEmpresa = ";
     public static final String CAMPO_USER_EMAIL = "const userEmail = ";
     public static final String CAMPO_USER_PHONE = "const userPhone = ";
+
+    //Valores de Identificação
+    public static final String VALOR_TESTE_TIPO = "Teste Unitário";
+    public static final String VALOR_ASSINATURA = "Documento gerado automaticamente pela " +
+        "aplicação DET-MAKER v";
 
     //Campos de Detalhamento dos Testes
     public static final String CAMPO_DETALHES_PIPELINE = "const detalhesModulos = ";
@@ -83,8 +82,6 @@ public class DetHtml {
     //Campo contendo lista das Evolução dos Tabelas
     public static final String CAMPO_TABELAS_TESTECASE = "const AllTabelasTestecase = [${var}];";
 
-    //Padrão de exibição de datas no DET
-    public static final DateTimeFormatter PADRAO_DATA = DateTimeFormatter.ofPattern("YYYY/MM/dd HH:mm:ss");
 
     //TODO: javadoc
     public DetHtml(
@@ -104,7 +101,7 @@ public class DetHtml {
         log.info("Projeto ID: '{}'.  Projeto Nome: '{}'.", projetoId, projetoNome);
 
         //IDENTIFICAÇÃO 2)SOBRE OS TESTES
-        val testeTipo = CAMPO_TESTE_TIPO_VALOR;
+        val testeTipo = VALOR_TESTE_TIPO;
         val testeSistema = ambienteInfo.sistema();
         log.info("Tipo de Teste: '{}'.  Sistema: '{}'.", testeTipo, testeSistema);
 
@@ -118,7 +115,7 @@ public class DetHtml {
 
         //DADOS DO DET
         val atividade = pipelineRelatorio.getRelatorio().getNomeAtividade();
-        val assinatura = CAMPO_ASSINATURA_VALOR + "1.0<br>" + dataHoraHoje;
+        val assinatura = VALOR_ASSINATURA + "1.0<br>" + dataHoraHoje;
         log.info("Atividade: '{}'.  Assinatura: '{}'.", atividade, assinatura);
 
         //DETALHAMENTO DOS TESTES
@@ -188,7 +185,7 @@ public class DetHtml {
                 resultado,                                          //resultado
                 evidenciaDto.getArgumentos(),                       //parametros
                 "(completar)",                                      //revisor
-                evidenciaDto.getData().format(PADRAO_DATA),         //data
+                evidenciaDto.getData().format(FORMAL_STYLE),        //data
                 evidenciaDto.getQueries(),                          //queries
                 evidenciaDto.getTabelasNome(),                      //tabelasNome
                 tabelasPreJobMap.keySet().stream().toList(),        //tabelasPreJob
@@ -244,9 +241,7 @@ public class DetHtml {
             .replace(" ", "_")
             .replace(".", "_");
         val diretorioFinal = DetMakerApplication.DIR_PIPELINE + direotrioNome + File.separator;
-        val dataHoraDet = dataHoraHoje.replace("/", "")
-            .replace(":", "")
-            .replace(" ", "_");
+        val dataHoraDet = FormatDate.fileNameStyle();
         val arquivoNome = "DET_" +
             String.join("_", projeto) + "_" +
             dataHoraDet +

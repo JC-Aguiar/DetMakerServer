@@ -1,7 +1,7 @@
 package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.master.MasterRequestDTO;
-import br.com.ppw.dma.util.ComandoSql;
+import br.com.ppw.dma.configQuery.ComandoSql;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -21,5 +21,15 @@ public class JobExecuteDTO implements MasterRequestDTO {
    List<ComandoSql> queries = new ArrayList<>();
    List<String> cargas = new ArrayList<>();
    //TODO: precisa da informação da pipeline?
+
+   public JobExecuteDTO addQuery(@NonNull ComandoSql query) {
+      this.queries.add(query);
+      return this;
+   }
+
+   public JobExecuteDTO addQuery(@NonNull List<ComandoSql> queries) {
+      this.queries.addAll(queries);
+      return this;
+   }
 
 }

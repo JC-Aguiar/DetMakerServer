@@ -136,13 +136,13 @@ public class Arquivos {
         log.trace("Novo diretório gerado com sucesso");
         return novoArquivo;
     }
-    
+
     //TODO: javadoc
     public static File criarEscrever(String dirEntrada, String nome, String linha)
-    throws IOException {
+            throws IOException {
         criarDiretorio(dirEntrada);
         val arquivo = criar(dirEntrada, nome).orElseThrow(
-            () -> new RuntimeException("Algo inesperado impediu a criação do arquivo '" + nome + "'"));
+                () -> new RuntimeException("Algo inesperado impediu a criação do arquivo '" + nome + "'"));
         escreverArquivo(arquivo, linha);
         return arquivo;
     }

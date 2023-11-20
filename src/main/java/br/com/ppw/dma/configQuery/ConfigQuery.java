@@ -1,6 +1,7 @@
 package br.com.ppw.dma.configQuery;
 
 import br.com.ppw.dma.job.Job;
+import br.com.ppw.dma.master.MasterEntity;
 import br.com.ppw.dma.pipeline.Pipeline;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
@@ -23,7 +24,7 @@ import static jakarta.persistence.FetchType.LAZY;
 @Entity(name = "PPW_CONFIG_QUERY")
 @Table(name = "PPW_CONFIG_QUERY")
 @SequenceGenerator(name = "SEQ_CONFIG_QUERY_ID", sequenceName = "RCVRY.SEQ_CONFIG_QUERY_ID", allocationSize = 1)
-public class ConfigQuery {
+public class ConfigQuery implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CONFIG_QUERY_ID")
@@ -44,18 +45,17 @@ public class ConfigQuery {
     // ID do job relacionado com essa configuração de queries
     Job job;
 
-    @Column(name = "TABELA_NOME", length = 150)
+    @Column(name = "TABELA_NOME", length = 50)
     // Nome da tabela usada na queries
     String tabelaNome;
 
-    @Column(name = "QUERIES", length = 900)
+    @Column(name = "SQL", length = 900)
     // SQL usada na evidência desse queries pré e pós-execução
-    // Exemplo: SELECT * FROM EVENTOS_WEB WHERE EVACCT='${CONTRATO}' AND EVDTPROC=TO_DATE('${DATA}', 'YYYYY-MM-DD')
-    String queries;
+    // Exemplo: SELECT * FROM EVENTOS_WEB WHERE ${EVACCT} IN (${string[]}) AND ${EVDTPROC}=${date(DD-MM-YYYYY)}
+    String sql;
 
     @Column(name = "DESCRICAO", length = 500)
     // Informações sobre como preencher a SQL
-    // Exemplo: ${CONTRATO}=Código do contrato; ${DATA}=Data do ciclo (YYYYY-MM-DD);
     String descricao;
 
 

@@ -7,8 +7,9 @@ import br.com.ppw.dma.execQuery.ExecQueryService;
 import br.com.ppw.dma.job.JobExecutePOJO;
 import br.com.ppw.dma.master.MasterOracleDAO;
 import br.com.ppw.dma.master.MasterService;
-import br.com.ppw.dma.util.ComandoSql;
-import br.com.ppw.dma.util.ResultadoSql;
+import br.com.ppw.dma.configQuery.ComandoSql;
+import br.com.ppw.dma.configQuery.ResultadoSql;
+import br.com.ppw.dma.util.ValidadorSQL;
 import com.google.gson.Gson;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -125,40 +126,13 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
 
     //TODO: javadoc
     private ResultadoSql extractTable(@NonNull ComandoSql comandoSql) {
-        validateInputs(comandoSql);
         val resultadoSql = new ResultadoSql(comandoSql);
-        return oracleDao.getFieldAndValuesFromTable(resultadoSql);
+        return oracleDao.getAllInfoFromTable(resultadoSql);
     }
 
     //TODO: javadoc
     private ResultadoSql extractTable(@NonNull ResultadoSql resultadoSql) {
-        validateInputs(resultadoSql);
-        return oracleDao.getFieldAndValuesFromTable(resultadoSql);
-    }
-
-    //TODO: criar exception própria
-    //TODO: javadoc
-    public void validateInputs(@NonNull ComandoSql sql) {
-        log.info("Validando valores preenchidos para campos, tabela e filtros.");
-        boolean camposValidos = validateQuery(sql.getCampos());
-        boolean tabelaValida = validateQuery(sql.getTabela());
-        boolean filtroValido = validateQuery(sql.getFiltros());
-        if(!camposValidos || !tabelaValida || !filtroValido) {
-            throw new RuntimeException("A queries informada contêm comandos DDL não permitidos.");
-        }
-    }
-
-    //TODO: javadoc
-    public boolean validateQuery(String query) {
-        if(query == null || query.trim().isEmpty()) return true;
-        String ddlPattern = "(?i)\\b(create|alter|drop|truncate|rename)\\b";
-        return !query.matches(".*" + ddlPattern + ".*");
-    }
-
-    //TODO: javadoc
-    public boolean validateQuery(List<String> campos) {
-        if(campos == null || campos.isEmpty()) return true;
-        return campos.stream().allMatch(this::validateQuery);
+        return oracleDao.getAllInfoFromTable(resultadoSql);
     }
 
     //TODO: javadoc
@@ -205,8 +179,8 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
                     .jobNome(jobPojo.getJob().getNome())
                     .tabelaNome(tabela.getTabela())
                     .query(tabela.getSqlCompleta())
-                    .resultadoPreJob(tabela.getResumoPreJob())
-                    .resultadoPosJob(tabela.getResumoPosJob())
+                    .resultadoPreJob(tabela.resumoPreJob())
+                    .resultadoPosJob(tabela.resumoPosJob())
                     //TODO: ?informações da pipeline?
                     .build();
                 return execQueryService.persist(execQuery);

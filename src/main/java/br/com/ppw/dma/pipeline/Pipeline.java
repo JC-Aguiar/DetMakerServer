@@ -9,8 +9,10 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static jakarta.persistence.FetchType.LAZY;
 
@@ -48,6 +50,19 @@ public class Pipeline implements MasterEntity<Long> {
     // IDs dos jobs relacionados a essa pipeline
     List<Job> jobs = new ArrayList<>();
 
+
+    public boolean atualizarDescricao(@NonNull PipelineInfoDTO pipelineInfo) {
+        return !this.descricao.trim().equals(pipelineInfo.getDescricao().trim());
+    }
+
+    public boolean atualizarJobs(@NonNull PipelineInfoDTO pipelineInfo) {
+        val thisJobs = this.jobs.stream()
+            .map(Job::getNome)
+            .collect(Collectors.joining(", "));
+        val otherJobs = String.join(", ", pipelineInfo.getJobs());
+
+        return !thisJobs.equals(otherJobs);
+    }
 
     @Override
     public final boolean equals(Object o) {

@@ -1,10 +1,11 @@
 package br.com.ppw.dma.job;
 
+import br.com.ppw.dma.configQuery.ComandoSql;
+import br.com.ppw.dma.configQuery.ConfigQueryController;
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.evidencia.EvidenciaController;
 import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
 import br.com.ppw.dma.master.MasterController;
-import br.com.ppw.dma.master.MasterRequestDTO;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -29,19 +31,22 @@ import static br.com.ppw.dma.util.FormatString.dividirValores;
 @RequestMapping("job")
 @Slf4j
 public class JobController extends MasterController
-    <Long, Job, MasterRequestDTO, JobInfoDTO, JobController> {
+    <Long, Job, JobExecuteDTO, JobInfoDTO, JobController> {
 
     private final JobService jobService;
     private final EvidenciaController evidenciaController;
+    private final ConfigQueryController queryController;
     public static final String PLANILHA_NOME = "DIÁRIA";
 
     public JobController(
         @Autowired JobService jobService,
-        @Autowired EvidenciaController evidenciaController) {
+        @Autowired EvidenciaController evidenciaController,
+        @Autowired ConfigQueryController queryController) {
         //----------------------------------------------------
         super(jobService);
         this.jobService = jobService;
         this.evidenciaController = evidenciaController;
+        this.queryController = queryController;
     }
 
     @GetMapping(value = "ping")
@@ -50,25 +55,33 @@ public class JobController extends MasterController
     }
 
     @Override
-    public ResponseEntity<Page<JobInfoDTO>> getAll(int page, int itens) {
+    public ResponseEntity<Page<JobConfigDTO>> getAll(int page, int itens) {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("id").ascending());
         final Page<Job> entitiesPage = jobService.findAll(pageConfig);
-        final Page<JobInfoDTO> responsePage = entitiesPage.map(this::converterJobEmDto);
-        return new ResponseEntity<>(responsePage, HttpStatus.OK);
+        final Page<JobConfigDTO> responsePage = entitiesPage.map(this::criarJobConfigDto);
+        return ResponseEntity.ok(responsePage);
+    }
+
+    //@PostMapping(value = "ping")
+    public List<Job> getAllByNomes(@NonNull List<String> nomes) {
+        return jobService.findByNome(nomes);
     }
 
     //TODO: javadoc
-    //TODO: criar novo controlar para ter essa responsabilidade
+    //TODO: criar novo controlar para ter essa responsabilidade?
     @PostMapping(value = "open/xlsx")
-    public ResponseEntity<List<JobInfoDTO>> openXlsx(
+    public ResponseEntity<List<JobConfigDTO>> openXlsx(
         @RequestParam("file") final MultipartFile file)
     throws IOException {
         log.info("Acionando leitura de arquivo Excel XLSX.");
         val xlsx = jobService.lerXlsx(file);
         val jobsDto = jobService.mapExcelToJobDto(xlsx, PLANILHA_NOME);
-
         log.info("Total de jobs mapeados da planilha: {}.", jobsDto.size());
-        return ResponseEntity.ok(jobsDto);
+
+        val configJobDto = jobsDto.stream()
+            .map(this::criarJobConfigDto)
+            .toList();
+        return ResponseEntity.ok(configJobDto);
     }
 
     //TODO: javadoc
@@ -108,7 +121,6 @@ public class JobController extends MasterController
     }
 
     //TODO: javadoc
-    //TODO: mover para AspectJ, para tornar padrão em todos os serviços
     @PostMapping(value = "execute/stack")
     public ResponseEntity<?> executeJobs(@RequestBody List<JobExecuteDTO> jobsExecute) {
         val evidenciasDto = executeJobsAndGetEvidencias(jobsExecute)
@@ -120,7 +132,8 @@ public class JobController extends MasterController
         return ResponseEntity.internalServerError().body(evidenciasDto);
     }
 
-    public List<Evidencia> executeJobsAndGetEvidencias(List<JobExecuteDTO> jobsExecute) {
+    //TODO: javadoc
+    public List<Evidencia> executeJobsAndGetEvidencias(@NonNull List<JobExecuteDTO> jobsExecute) {
         //TODO: separar a Evidência do Resumo, onde o Resumo contêm as informações da execução
         //  (aonde teve sucesso e aonde teve falha)
         //Será convertido o JobExecuteDTO para JobExecutePOJO, inserindo nele a entidade Job via ID.
@@ -152,16 +165,16 @@ public class JobController extends MasterController
             log.info("Job encontrado:");
             log.info(job.toString());
 
-            log.info("Criando objeto JobInfoDTO de execução.");
-            val jobInfo = converterJobEmDto(job);
-            log.info(jobInfo.toString());
+            val jobInfo = converterEmJobInfoDto(job);
 
             log.info("Agrupando objetos dentro do JobExecutePOJO.");
-            val jobPojo = getModelMapper().map(dto, JobExecutePOJO.class);
+            val jobPojo =new JobExecutePOJO();
             jobPojo.setJob(job);
             jobPojo.setJobInfo(jobInfo);
+            jobPojo.setOrdem(dto.getOrdem());
             jobPojo.setArgumentos(dto.getArgumentos());
             jobPojo.addComandoSql(dto.getQueries());
+            //TODO: add cargas!
             log.info(jobPojo.toString());
 
             return Optional.of(jobPojo);
@@ -173,7 +186,7 @@ public class JobController extends MasterController
     }
 
     //TODO: javadoc
-    private JobInfoDTO converterJobEmDto(@NonNull Job job) {
+    private JobInfoDTO converterEmJobInfoDto(@NonNull Job job) {
         log.info("Convertendo Job para JobInfoDTO.");
         val jobDto = getModelMapper().map(job, JobInfoDTO.class);
         jobDto.setParametros(dividirValores(job.getParametros()));
@@ -186,6 +199,44 @@ public class JobController extends MasterController
         log.info("Conversão realizada com sucesso.");
         log.info("{}", jobDto);
         return jobDto;
+    }
+
+    //TODO: javadoc
+    private JobConfigDTO criarJobConfigDto(@NonNull Job job) {
+        log.info("Criando JobConfigDTO com base no Job {} '{}'.", job.getId(), job.getNome());
+        val infoDto = converterEmJobInfoDto(job);
+        return criarJobConfigDto(infoDto);
+    }
+
+    //TODO: javadoc
+    private JobConfigDTO criarJobConfigDto(@NonNull JobInfoDTO infoDto) {
+        final List<ComandoSql> queries = new ArrayList<>();
+        try {
+            queries.addAll(
+                queryController.getAllByJob(infoDto.getId()).getBody()
+            );
+        }
+        catch(Exception e) {
+            log.warn(e.getMessage());
+        }
+
+        log.info("Verificando se alguma ConfigQuery está pendente.");
+        log.info("ConfigQuery tabelas: {}.", queries.size());
+        log.info("Job tabelas: {}.", infoDto.getTabelas().size());
+        infoDto.getTabelas()
+            .stream()
+            .filter(tabela -> queries.stream().noneMatch(query -> query.getTabela().trim().equals(tabela)))
+            .peek(tabela -> log.info("Tabela '{}' pendente de ConfigQuery.", tabela))
+            .map(ComandoSql::new)
+            .forEach(queries::add);
+
+        val configDto = new JobConfigDTO();
+        configDto.setJob(infoDto);
+        configDto.addQuery(queries);
+
+        log.info("ConfigQuery montada com sucesso.");
+        log.info(configDto.toString());
+        return configDto;
     }
 
     @DeleteMapping(value = "all")

@@ -1,13 +1,11 @@
 package br.com.ppw.dma.evidencia;
 
-import br.com.ppw.dma.execFile.ExecFile;
-import br.com.ppw.dma.execQuery.ExecQuery;
 import br.com.ppw.dma.job.JobExecutePOJO;
 import br.com.ppw.dma.master.MasterController;
 import br.com.ppw.dma.master.MasterRequestDTO;
 import br.com.ppw.dma.master.MasterResponseDTO;
-import br.com.ppw.dma.util.ComandoSql;
-import br.com.ppw.dma.util.ResultadoSql;
+import br.com.ppw.dma.configQuery.ComandoSql;
+import br.com.ppw.dma.configQuery.ResultadoSql;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -57,7 +55,6 @@ public class EvidenciaController extends MasterController
         val listaEvidencias = new ArrayList<Evidencia>();
         for(val jobPojo : jobsPojo) {
             try {
-                val ordem = jobPojo.getOrdem();
                 val evidencia = evidenciaService.createEvidencia(jobPojo);
                 listaEvidencias.add(evidencia);
             }
