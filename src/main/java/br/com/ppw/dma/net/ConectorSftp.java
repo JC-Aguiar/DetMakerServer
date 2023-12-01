@@ -10,9 +10,11 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -123,7 +125,7 @@ public class ConectorSftp extends Uploader {
         log.info("Quantidade de arquivos remotos para baixar: " + Arrays.stream(dirArquivosRemotos).count());
         log.info("Diretório local de destino: " + pathLocalAbsoluto);
         log.info("Arquivos para download:");
-        Arrays.stream(dirArquivosRemotos).forEach(log::info);
+        Arrays.stream(dirArquivosRemotos).forEach(info -> log.info(" - {}", info));
         try {
             session = iniciarSessao();
             channel = session.openChannel("sftp");
@@ -156,10 +158,7 @@ public class ConectorSftp extends Uploader {
             if(channel != null) channel.disconnect();
             if(session != null) session.disconnect();
         }
-        if(!arquivosObtidos.isEmpty())
-            log.info("Quantidade de downloads: {},", arquivosObtidos.size());
-        else
-            log.warn("Nenhum arquivo foi baixado com sucesso.");
+        if(arquivosObtidos.isEmpty()) log.warn("Nenhum arquivo foi baixado com sucesso.");
 
         //TODO: print das informações do arquivo no diretório local
         return arquivosObtidos;
@@ -172,6 +171,8 @@ public class ConectorSftp extends Uploader {
         Session session = null;
         ChannelExec channelExec = null;
         InputStream in = null;
+        InputStream err = null;
+        val outputBuffer = new ByteArrayOutputStream();
         val terminal = new TerminalManager();
         try {
             val properties = getShellProperties();
@@ -183,39 +184,41 @@ public class ConectorSftp extends Uploader {
                 .concat(comando);
 
             session = iniciarSessao();
+            session.setTimeout(36000);  //timeout de conexão ao ambiente
             channelExec = (ChannelExec) session.openChannel("exec");
             channelExec.setCommand(comandoFull);
             channelExec.setPty(true);
-            channelExec.setErrStream(System.err, true);
-            channelExec.setOutputStream(System.err, true);
-            channelExec.connect();  // sugestão de timeout: 5000
+            channelExec.setErrStream(outputBuffer, true);
+            channelExec.setOutputStream(outputBuffer, true);
+            channelExec.connect(4000); //timeout para tentativa de conexão
             in = channelExec.getInputStream();
+            err = channelExec.getExtInputStream();
 
             //Lendo resultado exibido no servidor remoto
-            log.debug(LINHA_HIFENS + LINHA_HIFENS);
-            val tmp = new byte[1024];
+//            log.debug(LINHA_HIFENS + LINHA_HIFENS);
             while(true) {
                 while(in.available() > 0) {
-                    int i = in.read(tmp, 0, 1024);
-                    if(i < 0) break;
-                    val linhas = new String(tmp, 0, i).split("\n");
-                    Stream.of(linhas).forEach(linha -> {
-                        terminal.addPrintedLine(linha);
-                        log.debug("(TERMINAL) {}", linha);
-                    });
+                    outputBuffer.write(in.readAllBytes());
+                }
+                while(err.available() > 0) {
+                    outputBuffer.write(err.readAllBytes());
                 }
                 if(channelExec.isClosed()) {
-                    if(in.available() > 0) continue;
-                    log.debug(LINHA_HIFENS + LINHA_HIFENS);
+                    if ((in.available() > 0) || (err.available() > 0)) continue;
+
+//                    log.debug(LINHA_HIFENS + LINHA_HIFENS);
                     terminal.setExitCode(channelExec.getExitStatus());
                     log.info("Código de retorno: " + terminal.getExitCode());
                     log.info(ExitCodes.getDescriptionFromCode(terminal.getExitCode()));
                     break;
                 }
-                //try { Thread.sleep(1000); }
-                //catch(Exception ee) { }
+                try { Thread.sleep(500); }
+                catch(Exception ignore) {}
             }
-            //log.info(LINHA_HIFENS + LINHA_HIFENS);
+            for(val linha : outputBuffer.toString(StandardCharsets.UTF_8).split("\n")) {
+                log.info("(TERMINAL) {}", linha); //TODO: mover para debug?
+                terminal.addPrintedLine(linha);
+            }
             return terminal;
         }
         catch(JSchException e) {
@@ -228,6 +231,7 @@ public class ConectorSftp extends Uploader {
             if(session != null) session.disconnect();
             if(channelExec != null) channelExec.disconnect();
             if(in != null) in.close();
+            outputBuffer.close();
         }
     }
 
@@ -272,11 +276,10 @@ public class ConectorSftp extends Uploader {
 
     //TODO: Javadoc
     public List<FileManager> downloadMaisRecente(Path pathLocal, String...dirArquivosRemotos) {
-        val downloads = Stream.of(dirArquivosRemotos)
+        return Stream.of(dirArquivosRemotos)
             .map(dir -> listarArquivoDownload(dir, pathLocal))
             .toList();
 //        return new DownloadManager(downloads);
-        return downloads;
     }
 
     //TODO: Javadoc
@@ -290,6 +293,7 @@ public class ConectorSftp extends Uploader {
             }
             //Por algum motivo estranho o nome dos arquivos retornam concatenados com '\r' e pode causar problemas.
             val arquivoMaisRecente = listaArquivos.get(0).replace("\r", "");
+            log.info("Arquivo mais recente: '{}'", arquivoMaisRecente);
             download(pathLocal, arquivoMaisRecente).forEach(file -> {
                 fileManager.addFile(dirArquivoNome, file);
             });

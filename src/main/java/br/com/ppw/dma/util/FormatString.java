@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 import lombok.val;
 
-import java.math.BigDecimal;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -55,6 +54,26 @@ public final class FormatString {
             .replace("]", "")
             .replace("\"", "")
             .trim();
+    }
+
+    /**
+     * Método para tratar e formar textos, a fim de estarem compatíveis aos padrões de nomes de arquivo para
+     * Windows e Linux
+     * @param input {@link String}
+     * @return {@link String} texto formatado
+     */
+    public static String nomeParaArquivo(String input) {
+        //Remove caracteres inválidos para nomes de arquivo
+        String textoFormatado = input.replaceAll("[\\\\/:*?\"<>|]", "");
+
+        //Limita o tamanho máximo do nome do arquivo para 255 caracteres (limite do Windows)
+        int maxFileNameLength = 255;
+        if(textoFormatado.length() > maxFileNameLength)
+            textoFormatado = textoFormatado.substring(0, maxFileNameLength);
+
+        //Remove pontos finais ou espaços em branco no final do nome do arquivo
+        return textoFormatado.replaceAll("[.\\s]+$", "")
+            .replace(" ", "_");
     }
 
     public static String refinarTextoJavascript(String texto) {
@@ -291,27 +310,6 @@ public final class FormatString {
         final int start = text.indexOf(charSequenceStart);
         final int end = text.indexOf(charSequenceEnd);
         return text.substring(start, end);
-    }
-
-    public static int stringToInt(String text) throws NumberFormatException {
-        text = text.replace(',', '.');
-        int valor = Integer.parseInt(text);
-        if(valor < 0) { throw new NumberFormatException("Valor negativo."); }
-        return valor;
-    }
-
-    public static double stringToDouble(String text) throws NumberFormatException {
-        text = text.replace(',', '.');
-        double valor = Double.parseDouble(text);
-        if(valor < 0) { throw new NumberFormatException("Valor negativo."); }
-        return valor;
-    }
-
-    public static BigDecimal stringToBigInt(String text) throws NumberFormatException {
-        text = text.replace(',', '.');
-        double valor = Double.parseDouble(text);
-        if(valor < 0) { throw new NumberFormatException("Valor negativo."); }
-        return BigDecimal.valueOf(valor);
     }
 
 }

@@ -1,5 +1,6 @@
 package br.com.ppw.dma.job;
 
+import br.com.ppw.dma.configQuery.ResultadoSql;
 import br.com.ppw.dma.evidencia.EvidenciaService;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.net.ConectorSftp;
@@ -7,7 +8,6 @@ import br.com.ppw.dma.net.FileManager;
 import br.com.ppw.dma.system.Arquivos;
 import br.com.ppw.dma.system.ExcelXLSX;
 import br.com.ppw.dma.util.FormatDate;
-import br.com.ppw.dma.configQuery.ResultadoSql;
 import com.google.gson.Gson;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -26,7 +26,10 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.DetMakerApplication.DIR_RECURSOS;
@@ -181,7 +184,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
     //TODO: javadoc
     public JobExecutePOJO executarPilha(@NonNull JobExecutePOJO pojo) {
         val jobDto = pojo.getJobInfo();
-        final List<FileManager> logsAntes = new ArrayList<>();
+        final List<FileManager> logs = new ArrayList<>();
         final List<File> logsDepois = new ArrayList<>();
         try {
             pojo.setDataInicio(OffsetDateTime.now());
@@ -194,9 +197,33 @@ public class JobService extends MasterService<Long, Job, JobService> {
             //TODO: mover o ConectorSftp para outro escopo, a fim de não ser necessário múltiplas instâncias
             //TODO: obter e tratar corretamente o IP, PORTA, USUÁRIO E SENHA
 
+            //log.info("Máscaras de log do Job:");
+            //val pathsLog = jobDto.pathLog().toArray(new String[0]);
+            //log.info(String.join(", ", pathsLog));
+//
+            //new FileManager()[jobDto.getMascaraLog().size()];
+            //val downloads = Arrays.stream(pathsLog)
+            //    .map(p -> new FileManager())
+            //    .toList();
+//
+            //downloadMaisRecente(jobDto, path)
+
+            //sftp.downloadMaisRecente(path, pathsLog);
+            //(Path pathLocal, String...dirArquivosRemotos) {
+            //    return Stream.of(dirArquivosRemotos)
+            //            .map(dir -> listarArquivoDownload(dir, pathLocal))
+            //            .toList();
+//
+            //return Stream.of(dirArquivosRemotos)
+            //        .map(dir -> listarArquivoDownload(dir, pathLocal))
+            //        .toList();
+//
+            //String dirArquivoNome, Path pathLocal
+            //val fileManager = new FileManager(dirArquivoNome, pathLocal)
+
             if(!jobDto.getMascaraLog().isEmpty()) {
                 log.info("Obtendo log mais recente pré-execução.");
-                logsAntes.addAll(downloadMaisRecente(jobDto, path));
+                logs.addAll(downloadMaisRecente(path, jobDto));
             }
             if(!pojo.getTabelas().isEmpty()) {
                 log.info("Consultando tabelas pré-execução.");
@@ -207,7 +234,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
             val jobResultado = sftp.comando(pojo.comandoShell());
 
             log.info("Criando arquivo do log obtido no terminal.");
-            val nomeLogTerminal = jobNome + "_terminal_log" + FormatDate.fileNameStyle() + ".txt";
+            val nomeLogTerminal = gerarNomeLogTerminal(jobNome);
             val conteudoLogTerminal = String.join("\n", jobResultado.getConsoleLog());
             val diretorioLogTerminal = path.toAbsolutePath().toString();
             final File terminalLog = Arquivos.criarEscrever(
@@ -217,15 +244,10 @@ public class JobService extends MasterService<Long, Job, JobService> {
             );
             log.info("Caminho do log do terminal: {}", terminalLog.getAbsolutePath());
 
-            if(!logsAntes.isEmpty()) {
-                log.info("Obtendo log mais recente pós-execução");
-                logsDepois.addAll(
-                    logsAntes.stream()
-                        .map(this::downloadMaisRecente)
-                        .map(FileManager::latestModified)
-                        .filter(Optional::isPresent)
-                        .map(Optional::get)
-                        .toList()
+            if(!logs.isEmpty()) {
+                log.info("Obtendo log mais recente pós-execução.");
+                downloadMaisRecente(path, jobDto).forEach(fm ->
+                    logs.forEach(log -> log.addFile(fm))
                 );
             }
             if(!pojo.getTabelas().isEmpty()) {
@@ -234,7 +256,13 @@ public class JobService extends MasterService<Long, Job, JobService> {
                     evidenciaSerive.extractTablePosJob(pojo.getTabelas()));
             }
             pojo.addLogs(terminalLog);
-            pojo.addLogs(logsDepois);
+            logs.stream()
+                .peek(fl -> log.info("Comparando arquivos para obter o mais recente."))
+                .map(FileManager::latestModified)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(pojo::addLogs);
+//            pojo.addLogs(logsDepois);
             pojo.setSucesso(jobResultado.getExitCode() == 0);
         }
         catch(Exception e) {
@@ -261,7 +289,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: Javadoc
-    private List<FileManager> downloadMaisRecente(@NonNull JobInfoDTO jobInfo, @NonNull Path path) {
+    private List<FileManager> downloadMaisRecente(@NonNull Path path, @NonNull JobInfoDTO jobInfo) {
         val logsNome = jobInfo.pathLog().toArray(new String[0]);
         log.info(Arrays.toString(logsNome));
 
@@ -288,5 +316,8 @@ public class JobService extends MasterService<Long, Job, JobService> {
         return fileManager;
     }
 
+    private String gerarNomeLogTerminal(@NonNull String jobNome) {
+        return jobNome + "_terminal_info_" + FormatDate.fileNameStyle() + ".log";
+    }
 
 }

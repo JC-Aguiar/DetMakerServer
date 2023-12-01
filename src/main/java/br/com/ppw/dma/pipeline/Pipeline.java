@@ -19,7 +19,6 @@ import static jakarta.persistence.FetchType.LAZY;
 
 @Getter
 @Setter
-@ToString
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_PIPELINE")
@@ -40,7 +39,6 @@ public class Pipeline implements MasterEntity<Long> {
     // Nome da pipeline
     String descricao;
 
-    @ToString.Exclude
     @JsonBackReference
     @Column(name = "JOBS")
     @ManyToMany(fetch = LAZY)
@@ -51,15 +49,15 @@ public class Pipeline implements MasterEntity<Long> {
     List<Job> jobs = new ArrayList<>();
 
 
-    public boolean atualizarDescricao(@NonNull PipelineInfoDTO pipelineInfo) {
-        return !this.descricao.trim().equals(pipelineInfo.getDescricao().trim());
+    public boolean atualizarDescricao(@NonNull String descricao) {
+        return !this.descricao.trim().equals(descricao.trim());
     }
 
-    public boolean atualizarJobs(@NonNull PipelineInfoDTO pipelineInfo) {
+    public boolean atualizarJobs(@NonNull  List<String> jobs) {
         val thisJobs = this.jobs.stream()
             .map(Job::getNome)
             .collect(Collectors.joining(", "));
-        val otherJobs = String.join(", ", pipelineInfo.getJobs());
+        val otherJobs = String.join(", ", jobs);
 
         return !thisJobs.equals(otherJobs);
     }
@@ -82,5 +80,18 @@ public class Pipeline implements MasterEntity<Long> {
     @Override
     public final int hashCode() {
         return getClass().hashCode();
+    }
+
+    @Override
+    public String toString() {
+        val jobsString = jobs.stream()
+            .map(job -> "(" +job.getId()+ ") " +job.getNome())
+            .collect(Collectors.joining(", "));
+        return "Pipeline{" +
+            "id=" + id +
+            ", nome='" + nome + '\'' +
+            ", descricao='" + descricao + '\'' +
+            ", jobs=[" + jobsString + "]" +
+            '}';
     }
 }

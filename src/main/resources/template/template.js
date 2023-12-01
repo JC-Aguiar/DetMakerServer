@@ -41,21 +41,51 @@ window.onload = function () {
     document.getElementById("user-phone-1").innerHTML = userPhone;
 
     //Texto dos detalhes dos testes
-    document.getElementById("modulos").innerHTML = detalhesModulos;
-    document.getElementById("parametros").innerHTML = detalhesParametros;
-    document.getElementById("dados").innerHTML = detalhesDados;
-    document.getElementById("configuracao").innerHTML = detalhesConfig;
-    document.getElementById("ambiente").innerHTML = detalhesAmbiente;
+    document.getElementById("modulos").innerHTML = detalhesModulos.replaceAll("\n" , "<br/>");
+    document.getElementById("parametros").innerHTML = detalhesParametros.replaceAll("\n" , "<br/>");
+    document.getElementById("dados").innerHTML = detalhesDados.replaceAll("\n" , "<br/>");
+    document.getElementById("configuracao").innerHTML = detalhesConfig.replaceAll("\n" , "<br/>");
+    document.getElementById("ambiente").innerHTML = detalhesAmbiente.replaceAll("\n" , "<br/>");
+}
+//======================================= Controle de estatística =======================================
+const resultadosTotais = [];
+const gerarEstatisticas = () => {
+    let aprovados = 0;
+    let reprovados = 0;
+    let parciais = 0;
+    resultadosTotais.forEach((resultado, index) => {
+        if (resultado === "Reprovado") reprovados++;
+        else if (resultado === "Parcial") parciais++;
+        else if (resultado === "Aprovado") aprovados++;
+    });
+    let aprovadosPorcent = Math.round((aprovados * 100) / resultadosTotais.length);
+    let reprovadosPorcent = Math.round((reprovados * 100) / resultadosTotais.length);
+    let parciaisPorcent = Math.round((parciais * 100) / resultadosTotais.length);
+
+    const elementos = [];
+    if (aprovados > 0)
+        elementos.push({ valor: `Jobs Aprovados: ${aprovados} (${aprovadosPorcent}%)`, cor: 'bg-primary' });
+    if (parciais > 0)
+        elementos.push({ valor: `Jobs Parciais: ${parciais} (${parciaisPorcent}%)`, cor: 'bg-secondary' });
+    if (reprovados > 0)
+        elementos.push({ valor: `Jobs Reprovados: ${reprovados} (${reprovadosPorcent}%)`, cor: 'bg-warning' });
+
+    const itensStatus = elementos.map((item, index) =>
+        React.createElement('span', { key: index, className: `me-2 badge bg-opacity-75 ${item.cor}` }, item.valor)
+    );
+
+    return React.createElement('h5', { className: 'py-0 my-0' }, itensStatus);
 }
 //===========================================================================================================
 //============================ Criando modelo de tabela dos test-cases com React ============================
 function TabelaTestcase(
-    evidenciaId, nome, descricao, preCondicoes, expectativa, resultado, parametros,
+    evidenciaId, nome, descricao, requisitos, comentario, resultado, parametros,
     revisor, data, queries, tabelasNome, tabelasPreJob, tabelasPosJob,
     logsConteudo, logsNome, cargasConteudo, cargasNome, saidasConteudo, saidasNome) {
     //-------------------------------------------------------------------
     //Lista dos anexos
     const anexosTotais = [];
+    resultadosTotais.push(resultado);
     //Preenchendo anexos de tabelas por query
     queries.forEach((query, index) => {
         const nomePreJob = `Tabela ${tabelasNome[index]} antes` + '\n';
@@ -138,12 +168,12 @@ function TabelaTestcase(
                     React.createElement('td', null, parametros)
                 ),
                 React.createElement('tr', null,
-                    React.createElement('th', null, 'Pré-Condições'),
-                    React.createElement('td', null, preCondicoes)
+                    React.createElement('th', null, 'Requisitos'),
+                    React.createElement('td', null, requisitos)
                 ),
                 React.createElement('tr', null,
-                    React.createElement('th', null, 'Resultado Esperado'),
-                    React.createElement('td', null, expectativa)
+                    React.createElement('th', null, 'Data do Teste'),
+                    React.createElement('td', null, data)
                 ),
                 React.createElement('tr', null,
                     React.createElement('th', null, 'Resultado Obtido'),
@@ -154,8 +184,8 @@ function TabelaTestcase(
                     React.createElement('td', null, revisor)
                 ),
                 React.createElement('tr', null,
-                    React.createElement('th', null, 'Data do Teste'),
-                    React.createElement('td', null, data)
+                    React.createElement('th', null, 'Notas do Revisor'),
+                    React.createElement('td', null, comentario)
                 ),
                 React.createElement('tr', null,
                     React.createElement('th', null, 'Anexos de Evidência'),
@@ -173,12 +203,17 @@ document.addEventListener('DOMContentLoaded', function () {
         React.createElement('div', null, AllTabelasTestecase),
         document.getElementById('tabela-testes')
     );
+    //Renderizando Estatística
+    ReactDOM.render(
+        React.createElement('div', null, gerarEstatisticas()),
+        document.getElementById('estatistica')
+    );
     //Criando Menu-Links
     let testesLinks = [];
     AllTabelasTestecase.forEach(function (element, index) {
         let jobNome = element.props.children[0].props.children;
         let linkNome = (index+1) + "." + jobNome;
-        testesLinks.push(React.createElement('a', { id: linkNome, className: 'dropdown-item' }, linkNome));
+        testesLinks.push(React.createElement('a', { id: linkNome, key: index, className: 'dropdown-item' }, linkNome));
     });
     //Renderizando Menu-Links
     ReactDOM.render(

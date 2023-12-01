@@ -18,7 +18,6 @@ import java.util.Map;
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
-    //TODO: implements WebMvcConfigurer
 
 //    @Autowired
 //    private AuthenticationService authService;
@@ -45,27 +44,22 @@ public class WebSecurityConfig {
     //SERVER SECURITY CONFIGURATION
     @Bean
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
-//        val jwtAuthFilter = new JwtAuthenticationFilter(jwtAuthService);
-
-        //Define regras de autorização, csrf, configurações rest e login JWT
-        http.authorizeRequests()
-            //.requestMatchers(PROTECTED_DOMAINS.get("adm")).hasAnyAuthority("ADMIN")
-            //.requestMatchers(PROTECTED_DOMAINS.get("profile")).hasAnyAuthority("USER")
-//            .requestMatchers( HttpMethod.POST, "/login").permitAll()
-            .anyRequest().permitAll()
-            .and()
+        //val jwtAuthFilter = new JwtAuthenticationFilter(jwtAuthService);
+        http.authorizeHttpRequests(auth -> {
+                auth.anyRequest().permitAll();
+            })
             .csrf().disable()
             .cors().disable()
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-//            .and()
-//            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            //.and()
+            //.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         //Defining defaults: unauthorised page + change password page
-        http.exceptionHandling().accessDeniedPage("/error/denied").and()
-            .passwordManagement(manager -> manager.changePasswordPage("/password"));
-
+        //http.exceptionHandling().accessDeniedPage("/error/denied").and()
+        //    .passwordManagement(manager -> manager.changePasswordPage("/password"));
         return http.build();
     }
+
 
     //AUTHENTICATION LOGIC
 //    @Bean
@@ -86,12 +80,12 @@ public class WebSecurityConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                registry.addMapping("/**")
-                    .allowedOrigins("http://localhost:3000")
-                    .allowedMethods("GET", "POST", "PUT", "DELETE")
-                    .allowedHeaders("*")
-                    .allowCredentials(true)
-                    .maxAge(3600);
+            registry.addMapping("/**")
+                .allowedOrigins("http://localhost:3000")
+                .allowedMethods("GET", "POST", "PUT", "DELETE")
+                .allowedHeaders("*")
+                .allowCredentials(true)
+                .maxAge(3600);
             }
         };
     }
