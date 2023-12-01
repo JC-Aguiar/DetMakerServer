@@ -120,17 +120,16 @@ public class JobController extends MasterController
         return ResponseEntity.ok(mensagem);
     }
 
-    //TODO: javadoc
-    @PostMapping(value = "execute/stack")
-    public ResponseEntity<?> executeJobs(@RequestBody List<JobExecuteDTO> jobsExecute) {
-        val evidenciasDto = executeJobsAndGetEvidencias(jobsExecute)
-            .stream()
-            .map(env -> evidenciaController.parseToResponseDto(env, env.getOrdem()))
-            .toList();
-        val sucesso = evidenciasDto.stream().anyMatch(EvidenciaInfoDTO::getSucesso);
-        if(sucesso) return ResponseEntity.ok(evidenciasDto);
-        return ResponseEntity.internalServerError().body(evidenciasDto);
-    }
+//    @PostMapping(value = "execute/stack")
+//    public ResponseEntity<List<EvidenciaInfoDTO>> executeJobs(@RequestBody List<JobExecuteDTO> jobsExecute) {
+//        val evidenciasDto = executeJobsAndGetEvidencias(jobsExecute)
+//            .stream()
+//            .map(env -> new EvidenciaInfoDTO(env, env.getOrdem()))
+//            .toList();
+//        val sucesso = evidenciasDto.stream().anyMatch(EvidenciaInfoDTO::getSucesso);
+//        if(sucesso) return ResponseEntity.ok(evidenciasDto);
+//        return ResponseEntity.accepted().body(evidenciasDto);
+//    }
 
     //TODO: javadoc
     public List<Evidencia> executeJobsAndGetEvidencias(@NonNull List<JobExecuteDTO> jobsExecute) {
@@ -219,7 +218,6 @@ public class JobController extends MasterController
         catch(Exception e) {
             log.warn(e.getMessage());
         }
-
         log.info("Verificando se alguma ConfigQuery está pendente.");
         log.info("ConfigQuery tabelas: {}.", queries.size());
         log.info("Job tabelas: {}.", infoDto.getTabelas().size());
@@ -234,7 +232,7 @@ public class JobController extends MasterController
         configDto.setJob(infoDto);
         configDto.addQuery(queries);
 
-        log.info("ConfigQuery montada com sucesso.");
+        log.info("JobConfigDto montado com sucesso.");
         log.info(configDto.toString());
         return configDto;
     }

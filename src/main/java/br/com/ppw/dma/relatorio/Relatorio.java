@@ -34,24 +34,36 @@ public class Relatorio implements MasterEntity<Long> {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_RELATORIO_ID")
     Long id;
 
-    @Column(name = "NOME_ATIVIDADE", length = 300)
+    @Column(name = "ID_PROJETO", length = 7, nullable = false, updatable = false)
+    String idProjeto = "N/A";
+
+    @Column(name = "NOME_PROJETO", length = 200, nullable = false, updatable = false)
+    String nomeProjeto = "Anônimo";
+
+    @Column(name = "NOME_ATIVIDADE", length = 300, updatable = false)
     String nomeAtividade;
 
-    @Column(name = "NOME_PROJETO", length = 200)
-    String nomeProjeto;
-
-    @Column(name = "PARAMETROS", length = 500)
+    @Column(name = "PARAMETROS", length = 500, updatable = false)
     String parametros;
 
-    @Column(name = "CONFIG", length = 500)
-    String configuracao;
+    @Column(name = "CONSIDERACOES", length = 500, updatable = false)
+    String consideracoes;
+
+    @Column(name = "TESTE_TIPO", length = 10, updatable = false)
+    TiposDeTeste testeTipo;
+
+    @Column(name = "SISTEMA", length = 25, nullable = false, updatable = false)
+    String sistema;
+
+    @Column(name = "AMBIENTE", length = 20, nullable = false, updatable = false)
+    String ambiente;
 
     @Convert(converter = NumericBooleanConverter.class)
-    @Column(name = "SUCESSO")
+    @Column(name = "SUCESSO", nullable = false, updatable = false)
     Boolean sucesso;
 
     @JsonManagedReference
-    @Column(name = "EVIDENCIA")
+    @Column(name = "EVIDENCIA", nullable = false, updatable = false)
     @OneToMany(fetch = LAZY)
     @ToString.Exclude
     // IDs das evidências que compõem esse relatório
@@ -60,16 +72,28 @@ public class Relatorio implements MasterEntity<Long> {
     @ToString.Exclude
     @JsonBackReference
     @ManyToOne(fetch = LAZY)
-    @JoinColumn(name = "PIPELINE_ID", referencedColumnName = "ID")
+    @JoinColumn(name = "PIPELINE_ID", referencedColumnName = "ID", nullable = false, updatable = false)
     // ID da pipeline que executou esse relatório
     Pipeline pipeline;
 
-    @Column(name = "DATA_INICIO", columnDefinition = "DATE")
+    @Column(name = "DATA_INICIO", columnDefinition = "DATE", nullable = false, updatable = false)
     OffsetDateTime dataInicio;
 
-    @Column(name = "DATA_FIM", columnDefinition = "DATE")
+    @Column(name = "DATA_FIM", columnDefinition = "DATE", nullable = false, updatable = false)
     OffsetDateTime dataFim;
 
+
+    public void setIdProjeto(final String idProjeto) {
+        if(idProjeto != null) this.idProjeto = idProjeto;
+    }
+
+    public void setNomeProjeto(final String nomeProjeto) {
+        if(nomeProjeto != null) this.nomeProjeto = nomeProjeto;
+    }
+
+    public void setTesteTipo(final TiposDeTeste testeTipo) {
+        if(testeTipo != null) this.testeTipo = testeTipo;
+    }
 
     @Override
     public final boolean equals(Object o) {

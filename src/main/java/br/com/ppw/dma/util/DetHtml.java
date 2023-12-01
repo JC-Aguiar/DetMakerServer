@@ -3,26 +3,27 @@ package br.com.ppw.dma.util;
 import br.com.ppw.dma.DetMakerApplication;
 import br.com.ppw.dma.evidencia.AnexoInfoDTO;
 import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
-import br.com.ppw.dma.pipeline.PipelineRelatorioDTO;
+import br.com.ppw.dma.pipeline.DetDTO;
 import br.com.ppw.dma.system.Arquivos;
 import br.com.ppw.dma.user.UserInfoDTO;
-import com.sun.tools.javac.Main;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ResourceLoader;
 
+import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static br.com.ppw.dma.config.DatabaseConfig.ambienteInfo;
 import static br.com.ppw.dma.util.FormatDate.FORMAL_STYLE;
 import static br.com.ppw.dma.util.FormatString.javascriptString;
 
@@ -31,6 +32,7 @@ public class DetHtml {
 
     //Atributos
     @Getter final File documento;
+    ResourceLoader resourceLoader;
     int countEvidencias = 0;
     int countTabelas = 0;
     int countAnexos = 0;
@@ -68,9 +70,8 @@ public class DetHtml {
     public static final String CAMPO_USER_PHONE = "const userPhone = ";
 
     //Valores de Identificação
-    public static final String VALOR_TESTE_TIPO = "Teste Unitário";
     public static final String VALOR_ASSINATURA = "Documento gerado automaticamente pela " +
-        "aplicação DET-MAKER v";
+        "aplicação DET-MAKER " + DetMakerApplication.getAppVersion();
 
     //Campos de Detalhamento dos Testes
     public static final String CAMPO_DETALHES_PIPELINE = "const detalhesModulos = ";
@@ -85,27 +86,13 @@ public class DetHtml {
 
     //TODO: javadoc
     public DetHtml(
-        @NonNull PipelineRelatorioDTO pipelineRelatorio,
+        @NonNull ResourceLoader resourceLoader,
+        @NonNull DetDTO dto,
         @NotEmpty List<UserInfoDTO> userInfo)
     throws IOException, URISyntaxException {
         log.info("Criando novo relatório DET.");
 
-        //IDENTIFICAÇÃO 1) SOBRE O PROJETO
-        val projeto = pipelineRelatorio.getRelatorio()
-            .getNomeProjeto()
-            .replace("-", " ")
-            .replace("_", " ")
-            .split(" ");
-        val projetoId = projeto[0];
-        val projetoNome = projeto.length > 1 ? projeto[1] : projeto[0];
-        log.info("Projeto ID: '{}'.  Projeto Nome: '{}'.", projetoId, projetoNome);
-
-        //IDENTIFICAÇÃO 2)SOBRE OS TESTES
-        val testeTipo = VALOR_TESTE_TIPO;
-        val testeSistema = ambienteInfo.sistema();
-        log.info("Tipo de Teste: '{}'.  Sistema: '{}'.", testeTipo, testeSistema);
-
-        //IDENTIFICAÇÃO 3) SOBRE OS ENVOLVIDOS
+        this.resourceLoader = resourceLoader;
         val userNome = userInfo.size() > 0 ? userInfo.get(0).getNome() : ""; //TODO
         val userPapel = userInfo.size() > 0 ? userInfo.get(0).getPapel() : ""; //TODO
         val userEmpresa = userInfo.size() > 0 ? userInfo.get(0).getEmpresa() : ""; //TODO
@@ -114,54 +101,46 @@ public class DetHtml {
         //TODO: log.info()
 
         //DADOS DO DET
-        val atividade = pipelineRelatorio.getRelatorio().getNomeAtividade();
-        val assinatura = VALOR_ASSINATURA + "1.0<br>" + dataHoraHoje;
-        log.info("Atividade: '{}'.  Assinatura: '{}'.", atividade, assinatura);
+        val assinatura = VALOR_ASSINATURA + "<br/>" + dataHoraHoje;
+        log.debug("Assinatura: '{}'.", assinatura);
 
         //DETALHAMENTO DOS TESTES
-        val parametrosDaPipeline = pipelineRelatorio.getRelatorio()
+        val parametrosDaPipeline = dto.getRelatorio()
             .getEvidencias()
             .stream()
             .sorted(Comparator.comparing(EvidenciaInfoDTO::getOrdem))
-            .map(ev -> ev.getJob() +" "+ ev.getArgumentos())
-            .map(txt -> txt.replace("null", ""))
+            .map(ev -> "ksh " +ev.getJob()+ " " +ev.getArgumentos())
+            .map(txt -> txt.replace(" null", ""))
             .collect(Collectors.joining("\n"));
-        val dadosTeste = pipelineRelatorio.getPipelineDescricao();
-        val configuracao = pipelineRelatorio.getRelatorio().getConfiguracao();
-        val ambiente = ambienteInfo.nome();
-        log.info("Parâmetros da Pipeline: {}.", parametrosDaPipeline.replace("\n", " "));
-        log.info("Dados do Teste: {}.", dadosTeste.replace("\n", " "));
-        log.info("Configuração: {}.", configuracao.replace("\n", " "));
-        log.info("Ambiente: '{}'.", ambiente);
 
         log.debug("Criando scripts JS a serem inseridos no HTML.");
         val listaTestecases = new ArrayList<String>();
         val scriptIdentificacao =
-            CAMPO_ASSINATURA     + javascriptString(assinatura)   + "; \n" +
-            CAMPO_ATIVIDADE_NOME + javascriptString(atividade)    + "; \n" +
-            CAMPO_PROJETO_ID     + javascriptString(projetoId)    + "; \n" +
-            CAMPO_PROJETO_NOME   + javascriptString(projetoNome)  + "; \n" +
-            CAMPO_TESTE_TIPO     + javascriptString(testeTipo)    + "; \n" +
-            CAMPO_TESTE_SISTEMA  + javascriptString(testeSistema) + "; \n" +
-            CAMPO_USER_NOME      + javascriptString(userNome)     + "; \n" +
-            CAMPO_USER_CARGO     + javascriptString(userPapel)    + "; \n" +
-            CAMPO_USER_EMPRESA   + javascriptString(userEmpresa)  + "; \n" +
-            CAMPO_USER_EMAIL     + javascriptString(userEmail)    + "; \n" +
-            CAMPO_USER_PHONE     + javascriptString(userTelefone) + "; \n";
+            CAMPO_ASSINATURA     + javascriptString(assinatura)                         + "; \n" +
+            CAMPO_PROJETO_ID     + javascriptString(dto.relatorio().getIdProjeto())     + "; \n" +
+            CAMPO_PROJETO_NOME   + javascriptString(dto.relatorio().getNomeProjeto())   + "; \n" +
+            CAMPO_ATIVIDADE_NOME + javascriptString(dto.relatorio().getNomeAtividade()) + "; \n" +
+            CAMPO_TESTE_TIPO     + javascriptString(dto.relatorio().getTesteTipo())     + "; \n" +
+            CAMPO_TESTE_SISTEMA  + javascriptString(dto.relatorio().getSistema())       + "; \n" +
+            CAMPO_USER_NOME      + javascriptString(userNome)                           + "; \n" +
+            CAMPO_USER_CARGO     + javascriptString(userPapel)                          + "; \n" +
+            CAMPO_USER_EMPRESA   + javascriptString(userEmpresa)                        + "; \n" +
+            CAMPO_USER_EMAIL     + javascriptString(userEmail)                          + "; \n" +
+            CAMPO_USER_PHONE     + javascriptString(userTelefone)                       + "; \n";
         log.debug("Script-Identificacao:");
         Arrays.stream(scriptIdentificacao.split("\n")).forEach(log::debug);
 
         val scriptDetalhamento =
-            CAMPO_DETALHES_PIPELINE   + javascriptString(pipelineRelatorio.pipelineNome()) + "; \n" +
-            CAMPO_DETALHES_PARAMETROS + javascriptString(parametrosDaPipeline) + "; \n" +
-            CAMPO_DETALHES_DADOS      + javascriptString(dadosTeste)          + "; \n" +
-            CAMPO_DETALHES_CONFIG     + javascriptString(configuracao)        + "; \n" +
-            CAMPO_DETALHES_AMBIENTE   + javascriptString(ambiente)            + "; \n";
+            CAMPO_DETALHES_PIPELINE   + javascriptString(dto.pipelineNome())                    + "; \n" +
+            CAMPO_DETALHES_PARAMETROS + javascriptString(parametrosDaPipeline)                  + "; \n" +
+            CAMPO_DETALHES_DADOS      + javascriptString(dto.getPipelineDescricao())            + "; \n" +
+            CAMPO_DETALHES_CONFIG     + javascriptString(dto.getRelatorio().getConsideracoes())  + "; \n" +
+            CAMPO_DETALHES_AMBIENTE   + javascriptString(dto.relatorio().getAmbiente())         + "; \n";
         log.debug("Script-Detalhamento:");
         Arrays.stream(scriptDetalhamento.split("\n")).forEach(log::debug);
 
         //Preenchendo o script 'listaTestecases'
-        val evidenciasDto = pipelineRelatorio.getRelatorio().getEvidencias();
+        val evidenciasDto = dto.getRelatorio().getEvidencias();
         log.info("Total de Evidências: {}.", evidenciasDto.size());
         for(val evidenciaDto : evidenciasDto) {
             countEvidencias += 1;
@@ -170,10 +149,10 @@ public class DetHtml {
             evidenciaDto.getLogs().forEach(this::atualizarLogsMap);
             evidenciaDto.getCargas().forEach(this::atualizarCargasMap);
             evidenciaDto.getSaidas().forEach(this::atualizarSaidasMap);
-            val executarApos = countEvidencias < 2 ?
-                "" : "Executar após job " +evidenciasDto.get(countEvidencias-2).getJob();
-            val expectativa = "Sucesso";            //TODO: implementar melhoria PÓS-MVP
-            val resultado = evidenciaDto.getSucesso() ? "Sucesso" : "Falha";
+            val executarApos = (countEvidencias < 2) ?
+                ("") : ("Executar após job " + evidenciasDto.get(countEvidencias-2).getJob());
+            val expectativa = evidenciaDto.getComentario();
+            val resultado = evidenciaDto.getResultado();
 
             //String que contêm um elemento do array dentro do script JS
             val camposTestecase = preencherTestcase(                //Parâmetros da function 'TabelaTestcase'
@@ -184,8 +163,8 @@ public class DetHtml {
                 expectativa,                                        //expectativa
                 resultado,                                          //resultado
                 evidenciaDto.getArgumentos(),                       //parametros
-                "(completar)",                                      //revisor
-                evidenciaDto.getData().format(FORMAL_STYLE),        //data
+                evidenciaDto.getRevisor(),                          //revisor
+                evidenciaDto.getDataInicio().format(FORMAL_STYLE),  //data
                 evidenciaDto.getQueries(),                          //queries
                 evidenciaDto.getTabelasNome(),                      //tabelasNome
                 tabelasPreJobMap.keySet().stream().toList(),        //tabelasPreJob
@@ -220,7 +199,7 @@ public class DetHtml {
 
         //Unificando arquivos CSS e JS no HTML
         val conteudoJs = "<script>\n" +
-            Arquivos.lerArquivo(arquivoJs) +
+            arquivoJs + //Arquivos.lerArquivo(arquivoJs) +
             scriptIdentificacao +
             scriptDetalhamento +
             scriptTestecase +
@@ -229,31 +208,42 @@ public class DetHtml {
             String.join("\n\n", tabelasPosJobMap.values()) +
             "\n</script>";
         val conteudoCss = "<style>\n" +
-            Arquivos.lerArquivo(arquivoCss) +
+            arquivoCss + //Arquivos.lerArquivo(arquivoCss) +
             "\n</style>";
-        val conteudoHtml = Arquivos.lerArquivo(arquivoHtml)
+        val conteudoHtml = arquivoHtml//Arquivos.lerArquivo(arquivoHtml)
             .replace(TAG_JS, conteudoJs)
             .replace(TAG_CSS, conteudoCss);
 
         //Criando arquivo local
         //TODO: cria método que refina nomes para diretórios e arquivos
-        val direotrioNome = pipelineRelatorio.pipelineNome()
+        val direotrioNome = dto.pipelineNome()
             .replace(" ", "_")
             .replace(".", "_");
         val diretorioFinal = DetMakerApplication.DIR_PIPELINE + direotrioNome + File.separator;
+        val idPorjeto = FormatString.nomeParaArquivo(dto.relatorio().getIdProjeto());
+        val nomePorjeto = FormatString.nomeParaArquivo(dto.relatorio().getNomeProjeto());
+        val nomeAtividade = FormatString.nomeParaArquivo(dto.relatorio().getNomeAtividade());
         val dataHoraDet = FormatDate.fileNameStyle();
-        val arquivoNome = "DET_" +
-            String.join("_", projeto) + "_" +
-            dataHoraDet +
-            ".html";
+        val arquivoNome = "DET_" +idPorjeto+ "_" +nomePorjeto+ "_" +nomeAtividade+ "_" +dataHoraDet+ ".html";
         documento = Arquivos.criarEscrever(diretorioFinal, arquivoNome, conteudoHtml);
     }
 
-    private static File carregarRecurso(@NotBlank String arquivoNome)
-    throws FileNotFoundException, URISyntaxException {
-        val recurso = Optional.ofNullable(Main.class.getClassLoader().getResource(arquivoNome))
-            .orElseThrow(() -> new FileNotFoundException("Não foi possível localizar recurso " +arquivoNome));
-        return new File(recurso.toURI());
+    private String carregarRecurso(@NotBlank String arquivoNome) throws IOException {
+        val recurso = resourceLoader.getResource("classpath:" + arquivoNome);
+        val conteudo = new StringBuilder();
+
+        try (val in = new InputStreamReader(recurso.getInputStream(), StandardCharsets.UTF_8);
+             val reader = new BufferedReader(in)) {
+            //-------------------------------------------------------------------------------
+            String line;
+            while((line = reader.readLine()) != null) {
+                conteudo.append(line).append(System.lineSeparator());
+            }
+        }
+        return conteudo.toString();
+        //val recurso = Optional.ofNullable(Main.class.getClassLoader().getResource(arquivoNome))
+        //    .orElseThrow(() -> new FileNotFoundException("Não foi possível localizar recurso " +arquivoNome));
+        //return new File(recurso.toURI());
     }
 
     public static String gerarFunctionTestcaseAnexo(String nomeVariavel, String conteudoAnexo) {
@@ -296,7 +286,7 @@ public class DetHtml {
     private void atualizarAnexoMap(@NonNull Map<String, String> mapa, @NonNull AnexoInfoDTO anexo) {
         countAnexos += 1;
         val nomeArquivo = anexo.nome();
-        val nomeFunction = "conteudoLog" + countAnexos + "()";
+        val nomeFunction = "conteudoAnexo" + countAnexos + "()";
         val codeFunction = gerarFunctionTestcaseAnexo(nomeFunction, anexo.conteudo());
         mapa.put(nomeFunction, nomeArquivo);
         functionToAdd.put(nomeFunction, codeFunction);

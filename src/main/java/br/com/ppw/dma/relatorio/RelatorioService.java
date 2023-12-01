@@ -10,10 +10,13 @@ import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
+
+import static br.com.ppw.dma.config.DatabaseConfig.ambienteInfo;
 
 @Service
 @Slf4j
@@ -33,6 +36,13 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
         log.info("Total de Relatórios identificados: {}.", relatorios.size());
         relatorios.forEach(r -> log.info(r.toString()));
         return relatorios;
+    }
+
+    public Relatorio salvarRelatorioRevisado(@NonNull RelatorioRevisadoDTO dto) {
+        log.info("Atualizando campo 'considerações' do Relatório ID {}", dto.getId());
+        val relatorio = findById(dto.getId());
+        relatorio.setConsideracoes(dto.getConsideracoes());
+        return persist(relatorio);
     }
 
     public Relatorio findMostRecentFromPipeline(@NonNull Pipeline pipeline) {
@@ -76,16 +86,23 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
             .max(OffsetDateTime::compareTo)
             .orElse(null);
 
-        var relatorio = new Relatorio();
-        relatorio.setNomeAtividade(dto.getNomeAtividade());
-        relatorio.setNomeProjeto(dto.getNomeProjeto());
-        relatorio.setConfiguracao(dto.getConfiguracao());
-        relatorio.setPipeline(pipeline);
-        relatorio.setEvidencias(evidencias);
-        relatorio.setParametros(parametros);
-        relatorio.setDataInicio(dataInicio);
-        relatorio.setDataFim(dataFim);
+        var relatorio = Relatorio.builder()
+            .nomeAtividade(dto.getNomeAtividade())
+            .consideracoes(dto.getConsideracoes())
+            .sistema(ambienteInfo.sistema())
+            .ambiente(ambienteInfo.nome())
+            .pipeline(pipeline)
+            .evidencias(evidencias)
+            .parametros(parametros)
+            .dataInicio(dataInicio)
+            .dataFim(dataFim)
+            .build();
 
+        relatorio.setIdProjeto(dto.getIdProjeto());
+        relatorio.setNomeProjeto(dto.getNomeProjeto());
+        relatorio.setTesteTipo(
+            TiposDeTeste.identificar(dto.getTesteTipo()).orElse(null)
+        );
         relatorio = persist(relatorio);
         return relatorio;
     }

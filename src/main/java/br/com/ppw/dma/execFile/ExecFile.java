@@ -8,8 +8,10 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
 
+import java.io.File;
 import java.util.Objects;
 
+import static br.com.ppw.dma.system.Arquivos.lerArquivo;
 import static jakarta.persistence.FetchType.LAZY;
 
 
@@ -40,8 +42,8 @@ public class ExecFile {
     String jobNome;
 
     @Column(name = "TIPO", length = 10)
-    // Informação para descrever se o arquivo é do tipo 'entrada', 'saída', 'log' ou 'terminal'
-    String tipo;
+    // Informação para descrever se o arquivo é do tipo 'carga', 'saída' ou 'log'
+    TipoExecFile tipo;
 
     @Column(name = "ARQUIVO_NOME", length = 200, nullable = false)
     // Nome desse arquivo pós-execução
@@ -50,6 +52,7 @@ public class ExecFile {
     @Column(name = "ARQUIVO", columnDefinition = "CLOB", nullable = false)
     // Conteúdo do arquivo pós-execução
     String arquivo;
+
 
     @Override
     public String toString() {

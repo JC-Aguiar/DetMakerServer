@@ -2,26 +2,30 @@ package br.com.ppw.dma;
 
 import br.com.ppw.dma.configQuery.FiltroSql;
 import br.com.ppw.dma.job.JobService;
-import br.com.ppw.dma.configQuery.ComandoSql;
-import br.com.ppw.dma.configQuery.ResultadoSql;
+import br.com.ppw.dma.net.ConectorSftp;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
+import org.springframework.util.ResourceUtils;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.Properties;
+import java.util.jar.Attributes;
+import java.util.jar.JarFile;
+import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
-import static br.com.ppw.dma.util.FormatString.LINHA_HIFENS;
 import static br.com.ppw.dma.util.FormatString.dividirValores;
 
 @Slf4j
@@ -69,7 +73,7 @@ public class BasicTest {
 //            .sucesso(false)
 //            .build();
 //
-//        val pipelineRelatorio = new PipelineRelatorioDTO(
+//        val pipelineRelatorio = new DetDTO(
 //            "Teste 01",
 //            "Tentando criar documento DET com HTML, CSS e JS unificados",
 //            relatorioDto);
@@ -180,6 +184,42 @@ public class BasicTest {
 //    }
 
     @Test
+    public void testeObterVersaoNoManifest() {
+        val impVersion = getClass().getPackage().getImplementationVersion();
+        log.info("Version: {}", impVersion);
+    }
+
+    @Test
+    public void testeValidarExecucaoEmIdea() {
+        val classPath = System.getProperty("java.class.path");
+        log.info("ClassPath:");
+        Arrays.stream(classPath.split(";")).forEach(cp -> log.info(" - {}", cp));
+
+        val resultado = classPath.toLowerCase().contains("idea") || classPath.toLowerCase().contains("eclipse");
+        log.info("Executando em IDEA: {}", resultado);
+    }
+
+    @Test
+    public void testeObtendoRecursosInternos() throws IOException {
+        val recurso = ResourceUtils.getFile("classpath:template/template.html");
+        log.info("Recurso: {}", recurso);
+    }
+
+    @Test
+    public void testeVerificarExecucaoEmIdea() {
+        val idea = System.getProperty("idea.launcher.port");
+        log.info("IDEA Marker: {}", idea);
+    }
+
+    @Test
+    public void testeComandoListagemSftp() throws IOException {
+        val sftp = ConectorSftp.conectar("10.129.164.206", 22, "rcvry", "Ppw@1022");
+        val arquivoPath = "/app/rcvry/cy3/log/EVENTOS_PRODUCER_017_*_*.log";
+        val listaArquivos = sftp.comando("ls -t " + arquivoPath + " | head -1").getConsoleLog();
+        listaArquivos.forEach(log::info);
+    }
+
+    @Test
     public void dividirStringEmLista() {
         val tabelas = "TB_TEMP_CARGA_4P, TB_CONTROLE_SEQ, TB_ARQENTRADA";
         val listaTabelas = dividirValores(tabelas);
@@ -240,6 +280,46 @@ public class BasicTest {
             .stream()
             .map(FiltroSql::toString)
             .forEach(log::info);
+    }
+
+    @Test
+    public void testeGetMavenProps() {
+        try {
+            //val jar = "C:\\Users\\joao.aguiar\\Workspace\\AGUIAR\\Det-Maker-Api\\target\\det-maker-api-v1.12.Beta.jar";
+            val path = "C:\\Users\\joao.aguiar\\Workspace\\AGUIAR\\Det-Maker-Api\\target";
+            val jarName = "det-maker-.*\\.jar";
+            log.info("Path: {}", path);
+            log.info("JarName: {}", jarName);
+
+            val files = Optional.ofNullable(
+                new File(path).listFiles((dir, name) -> name.matches(jarName)))
+                .orElseThrow();
+            val jar = Arrays.stream(files)
+                .findFirst()
+                .orElseThrow();
+
+            JarFile jarFile = new JarFile(jar);
+            Manifest manifest = jarFile.getManifest();
+            Attributes attributes = manifest.getMainAttributes();
+            String version = attributes.getValue("Implementation-Version");
+            log.info("Versão da aplicação: {}", version);
+            jarFile.close();
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Test
+    public void testeDiferencaDeDatas() {
+        val dataInicio = OffsetDateTime.now();
+        val dataFim = dataInicio.plusHours(1);
+        log.info("Data início: {}", dataInicio);
+        log.info("Data fim: {}", dataFim);
+
+        val duracao = Duration.between(dataInicio.toInstant(), dataFim.toInstant());
+        log.info("Duração em segundos: {}", duracao.getSeconds());
+        log.info("Duração em milésimos: {}", duracao.getSeconds() * 1000);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package br.com.ppw.dma.evidencia;
 
 import br.com.ppw.dma.execFile.ExecFile;
+import br.com.ppw.dma.execFile.TipoExecFile;
 import br.com.ppw.dma.execQuery.ExecQuery;
 import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.master.MasterEntity;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.Where;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.type.NumericBooleanConverter;
 
@@ -63,26 +65,29 @@ public class Evidencia implements MasterEntity<Long> {
 
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "CARGAS")
-    @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    List<ExecFile> cargas = new ArrayList<>();
-
-    @ToString.Exclude
-    @JsonManagedReference
-    @Column(name = "BANCO")
+    @Column(name = "BANCO_ID")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     List<ExecQuery> banco = new ArrayList<>();
 
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "LOGS")
+    @Column(name = "CARGAS_ID")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
+    @Where(clause = "tipo = 'carga'")
+    List<ExecFile> cargas = new ArrayList<>();
+
+    @ToString.Exclude
+    @JsonManagedReference
+    @Column(name = "LOG_ID")
+    @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
+    @Where(clause = "tipo = 'log'")
     List<ExecFile> logs = new ArrayList<>();
 
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "SAIDAS")
+    @Column(name = "SAIDA_ID")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
+    @Where(clause = "tipo = 'saída'")
     List<ExecFile> saidas = new ArrayList<>();
 
     @Convert(converter = NumericBooleanConverter.class)
@@ -94,6 +99,21 @@ public class Evidencia implements MasterEntity<Long> {
 
     @Column(name = "DATA_FIM", columnDefinition = "DATE")
     OffsetDateTime dataFim;
+
+    @Column(name = "REVISOR", columnDefinition = "VARCHAR2(100)")
+    String resivor;
+
+    @Column(name = "DATA_REVISAO", columnDefinition = "DATE")
+    OffsetDateTime dataRevisao;
+
+    @Column(name = "REQUISITOS", columnDefinition = "VARCHAR2(500)")
+    String requisitos;
+
+    @Column(name = "COMENTARIO", columnDefinition = "VARCHAR2(280)")
+    String comentario;
+
+    @Column(name = "RESULTADO", columnDefinition = "VARCHAR2(10)")
+    TipoEvidenciaResultado resultado;
 
 
     @Override

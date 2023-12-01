@@ -5,14 +5,16 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>br.com.jcaguiar</groupId>
 	<artifactId>det-maker-api</artifactId>
-	<version>v1.11.Beta</version>
+	<version>v1.14.Beta</version>
 	<name>DetMakerApi</name>
+<!--	<packaging>war</packaging>-->
 	<description>
 		API back-end para o sistema Det-Maker usando Java 16 com Spring-Boot,
 		Spring Data, Spring Security, Spring OAP, com JJWT e banco H2 em arquivo local
 	</description>
 
 	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>17</java.version>
 	</properties>
 
@@ -45,21 +47,25 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-webflux</artifactId>
 		</dependency>
-        <!-- Spring-Boot Devtools -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-oauth2-client</artifactId>
+		</dependency>
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.boot</groupId>-->
+<!--			<artifactId>spring-boot-starter-tomcat</artifactId>-->
+<!--			<scope>provided</scope>-->
+<!--		</dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
-            <version>2.6.3</version>
-<!--            <scope>runtime</scope>-->
-<!--            <optional>true</optional>-->
+            <version>3.0.11</version>
         </dependency>
-		<!-- Spring-Boot Test -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-		<!-- Spring Security -->
 		<dependency>
 			<groupId>org.springframework.security</groupId>
 			<artifactId>spring-security-test</artifactId>
@@ -181,7 +187,10 @@
     </dependencies>
 
 	<build>
+		<!-- Necessidade para deploy no Tomcat -->
+<!--		<finalName>${artifactId}</finalName> -->
 		<plugins>
+			<!-- Compilador Spring -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -194,6 +203,7 @@
 					</excludes>
 				</configuration>
 			</plugin>
+			<!-- Compilador Java -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -203,6 +213,18 @@
                     <compilerArgs>--enable-preview</compilerArgs>
                 </configuration>
             </plugin>
+		<!-- Compilador Assembly -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<configuration>
+					<archive>
+						<manifest>
+							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+						</manifest>
+					</archive>
+				</configuration>
+			</plugin>
         </plugins>
 	</build>
 

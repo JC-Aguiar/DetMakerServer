@@ -57,7 +57,7 @@ public class FileManager {
             .toList();
         if(mostRecentOnes.get(0).lastModified() == mostRecentOnes.get(1).lastModified()) {
             log.warn("Ambos os 2 logs (antes e depois) possuem a mesma data de modificação.");
-            log.warn("Isso indica que algo de errado ocorreu. Nenhum arquivo de log será disponibilziado.");
+            log.warn("Isso indica que algo de errado ocorreu. Nenhum arquivo de log será disponibilizado.");
             return Optional.empty();
         }
         return Optional.of(mostRecentOnes.get(0));

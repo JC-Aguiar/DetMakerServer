@@ -2,6 +2,7 @@ package br.com.ppw.dma.evidencia;
 
 import br.com.ppw.dma.execFile.ExecFile;
 import br.com.ppw.dma.execFile.ExecFileService;
+import br.com.ppw.dma.execFile.TipoExecFile;
 import br.com.ppw.dma.execQuery.ExecQuery;
 import br.com.ppw.dma.execQuery.ExecQueryService;
 import br.com.ppw.dma.job.JobExecutePOJO;
@@ -30,6 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static br.com.ppw.dma.execFile.TipoExecFile.*;
 import static br.com.ppw.dma.system.Arquivos.lerArquivo;
 
 @Service
@@ -155,20 +157,6 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         );
         evidenciaDao.flush();
 
-        if(!jobPojo.getCargas().isEmpty())
-            log.info("Criando novos registros ExecFile para cada uma das cargas usadas.");
-        val cargas = jobPojo.getCargas()
-            .stream()
-            .map(carga -> {
-                val execFile = ExecFile.builder()
-                    .evidencia(evidencia)
-                    .arquivoNome(carga.getName())
-                    .arquivo(lerArquivo(carga))
-                    .build();
-                return execFileService.persist(execFile);
-            })
-            .toList();
-
         if(!jobPojo.getTabelas().isEmpty())
             log.info("Criando novos registros ExecQuery para cada resultado no banco (pré e pós Job).");
         val banco = jobPojo.getTabelas()
@@ -187,16 +175,33 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             })
             .toList();
 
-        if(!jobPojo.getLogs().isEmpty())
-            log.info("Criando novos registros ExecFile para cada umo dos logs obtidos.");
-        val logs = jobPojo.getLogs()
+        if(!jobPojo.getCargas().isEmpty())
+            log.info("Criando novos registros ExecFile para cada uma das cargas usadas.");
+        val cargas = jobPojo.getCargas()
             .stream()
             .map(carga -> {
                 val execFile = ExecFile.builder()
                     .evidencia(evidencia)
-                    .jobNome(jobPojo.getJob().getNome())
+                    .jobNome(evidencia.getJob().getNome())
+                    .tipo(CARGA)
                     .arquivoNome(carga.getName())
                     .arquivo(lerArquivo(carga))
+                    .build();
+                return execFileService.persist(execFile);
+            })
+            .toList();
+
+        if(!jobPojo.getLogs().isEmpty())
+            log.info("Criando novos registros ExecFile para cada umo dos logs obtidos.");
+        val logs = jobPojo.getLogs()
+            .stream()
+            .map(log -> {
+                val execFile = ExecFile.builder()
+                    .evidencia(evidencia)
+                    .jobNome(jobPojo.getJob().getNome())
+                    .tipo(LOG)
+                    .arquivoNome(log.getName())
+                    .arquivo(lerArquivo(log))
                     .build();
                 return execFileService.persist(execFile);
             })
@@ -206,20 +211,21 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             log.info("Criando novos registros ExecFile para cada uma das saídas produzidas.");
         val saidas = jobPojo.getSaidas()
             .stream()
-            .map(carga -> {
+            .map(saida -> {
                 val execFile = ExecFile.builder()
                     .evidencia(evidencia)
                     .jobNome(jobPojo.getJob().getNome())
-                    .arquivoNome(carga.getName())
-                    .arquivo(lerArquivo(carga))
+                    .tipo(SAIDA)
+                    .arquivoNome(saida.getName())
+                    .arquivo(lerArquivo(saida))
                     .build();
                 return execFileService.persist(execFile);
             })
             .toList();
 
         log.info("Atualizando Evidência ID {} com os anexos (ExecFile e ExecQuery).", evidencia.getId());
-        evidencia.setCargas(cargas);
         evidencia.setBanco(banco);
+        evidencia.setCargas(cargas);
         evidencia.setLogs(logs);
         evidencia.setSaidas(saidas);
         return evidencia;
@@ -245,38 +251,5 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         return new File(filePath);
     }
 
-    public EvidenciaInfoDTO parseToResponseDto(@NonNull Evidencia evidencia, @NonNull Integer ordem) {
-        log.info("Convertendo entidade Evidência para DTO de resposta");
-        List<String> queries = new ArrayList<>();
-        List<String> tabelasNome = new ArrayList<>();
-        List<String> bancoPreJob = new ArrayList<>();
-        List<String> bancoPosJob = new ArrayList<>();
 
-        for(val execQuery : evidencia.getBanco()) {
-            queries.add(execQuery.getQuery());
-            tabelasNome.add(execQuery.getTabelaNome());
-            bancoPreJob.add(execQuery.getResultadoPreJob());
-            bancoPosJob.add(execQuery.getResultadoPosJob());
-        }
-        //TODO: refatorar para otimizar a iteração nas listas durante preenchimento do EvidenciaInfoDTO
-        val dto = EvidenciaInfoDTO.builder()
-            .id(evidencia.getId())
-            .job(evidencia.getJob().getNome())
-            .jobDescricao(evidencia.getJob().getDescricao())
-            .data(evidencia.getDataInicio())
-            .sucesso(evidencia.getSucesso())
-            .ordem(ordem)
-            .argumentos(evidencia.getArgumentos())
-            .queries(queries)
-            .tabelasNome(tabelasNome)
-            .tabelasPreJob(bancoPreJob)
-            .tabelasPosJob(bancoPosJob)
-            .cargas(AnexoInfoDTO.tipoCarga(evidencia.getCargas()))
-            .logs(AnexoInfoDTO.tipoLog(evidencia.getLogs()))
-            .saidas(AnexoInfoDTO.tipoProduto(evidencia.getSaidas()))
-            .build();
-
-        log.info(dto.toString());
-        return dto;
-    }
 }
