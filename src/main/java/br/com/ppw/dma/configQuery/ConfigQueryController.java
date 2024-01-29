@@ -24,14 +24,14 @@ import java.util.NoSuchElementException;
 @Slf4j
 public class ConfigQueryController extends MasterController<Long, ConfigQuery, ConfigQueryController> {
 
-    private final ConfigQueryService service;
+    @Autowired
+    private ConfigQueryService service;
 
     @Autowired
     private AmbienteService ambienteService;
 
 
-    public ConfigQueryController(@Autowired ConfigQueryService service) {
-        //--------------------------------------
+    public ConfigQueryController(ConfigQueryService service) {
         super(service);
         this.service = service;
     }

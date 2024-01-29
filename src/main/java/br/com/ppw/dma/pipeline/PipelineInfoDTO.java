@@ -24,9 +24,11 @@ public class PipelineInfoDTO {
 
     public PipelineInfoDTO(@NonNull Pipeline pipeline) {
         this.id = pipeline.getId();
-        this.nome = pipeline.getProps().getNome();
+//        this.nome = pipeline.getProps().getNome();
+        this.nome = pipeline.getNome();
         this.descricao = pipeline.getDescricao();
-        this.clienteId = pipeline.getProps().getCliente().getId();
+//        this.clienteId = pipeline.getProps().getCliente().getId();
+        this.clienteId = pipeline.getCliente().getId();
         setJobs(pipeline.getJobs());
     }
 

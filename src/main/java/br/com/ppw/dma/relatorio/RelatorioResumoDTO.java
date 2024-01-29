@@ -31,7 +31,8 @@ public record RelatorioResumoDTO(
         return new RelatorioResumoDTO(
             relatorio.getId(),
             pipeline.getId(),
-            pipeline.getProps().getNome(),
+//            pipeline.getProps().getNome(),
+            pipeline.getNome(),
             relatorio.getIdProjeto(),
             relatorio.getNomeProjeto(),
             relatorio.getNomeAtividade(),

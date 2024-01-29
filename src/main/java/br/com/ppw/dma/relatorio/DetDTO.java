@@ -17,7 +17,8 @@ public record DetDTO(
             throw new RuntimeException("Relatório sem relacionamento com uma Evidência");
 
         return new DetDTO(
-            relatorio.getPipeline().getProps().getNome(),
+//            relatorio.getPipeline().getProps().getNome(),
+            relatorio.getPipeline().getNome(),
             relatorio.getPipeline().getDescricao(),
             new RelatorioHistoricoDTO(relatorio)
         );

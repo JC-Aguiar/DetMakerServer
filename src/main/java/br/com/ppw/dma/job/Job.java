@@ -1,9 +1,11 @@
 package br.com.ppw.dma.job;
 
+import br.com.ppw.dma.cliente.Cliente;
 import br.com.ppw.dma.configQuery.ConfigQuery;
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.master.MasterEntity;
 import br.com.ppw.dma.pipeline.Pipeline;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -26,22 +28,32 @@ import static jakarta.persistence.FetchType.LAZY;
 @AllArgsConstructor
 @Builder
 @ToString
-@Entity(name = "PPW_JOB")
-@Table(name = "PPW_JOB")
 @FieldDefaults(level = AccessLevel.PRIVATE)
+@Entity(name = "PPW_JOB")
+@Table(name = "PPW_JOB", uniqueConstraints = {@UniqueConstraint(columnNames = {"NOME", "CLIENTE_ID"})})
 @SequenceGenerator(name = "SEQ_JOB_ID", sequenceName = "RCVRY.SEQ_JOB_ID", allocationSize = 1)
 public class Job implements MasterEntity<Long> {
 
-    @Column(name = "ID", unique = true, nullable = false)
+    @Id
+//    @Column(name = "ID", unique = true, nullable = false)
+    @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_JOB_ID")
     // Identificador numérico do job
     Long id;
 
-    @EmbeddedId
-    // Chave composta do Job
-    JobProps props;
+//    @EmbeddedId
+//    // Chave composta do Job
+//    JobProps props;
 
-    @Column(name = "NOME", length = 100, unique = true, nullable = false)
+    @ToString.Exclude
+    @JsonBackReference
+    @ManyToOne(fetch = LAZY)
+    @JoinColumns( @JoinColumn(name = "CLIENTE_ID", referencedColumnName = "ID", nullable = false) )
+    // ID do cliente associado a este job
+    Cliente cliente;
+
+    //@Column(name = "NOME", length = 100, nullable = false)
+    @Column(name = "NOME", length = 100)
     // Nome da shell, serviço ou job
     String nome;
 
@@ -187,19 +199,15 @@ public class Job implements MasterEntity<Long> {
     public final boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy ?
-            ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass()
-            : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy ?
-            ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass()
-            : this.getClass();
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
         if (thisEffectiveClass != oEffectiveClass) return false;
         Job job = (Job) o;
-        return getProps() != null && Objects.equals(getProps(), job.getProps());
+        return getId() != null && Objects.equals(getId(), job.getId());
     }
 
     @Override
     public final int hashCode() {
-        return Objects.hash(props);
+        return getClass().hashCode();
     }
 }

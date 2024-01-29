@@ -13,6 +13,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.io.support.ResourcePatternUtils;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -28,24 +29,18 @@ import java.util.Properties;
 @SpringBootApplication
 @EnableWebMvc
 @EnableCaching
+@EnableJpaRepositories
 @EnableAspectJAutoProxy(exposeProxy = true, proxyTargetClass = true)
 public class DetMakerApplication {// extends SpringBootServletInitializer {
 
-	@Getter private static String appVersion;
-
-//	public static final String DIR_RECURSOS = "temp/"
-//		.replace("/", File.separator);
-//
-//	public static final String DIR_PIPELINE = DIR_RECURSOS + "pipeline/"
-//		.replace("/", File.separator);
-//
-//	public static final String DIR_JOBS = DIR_RECURSOS + "jobs/"
-//		.replace("/", File.separator);
+	@Getter
+	private static String appVersion;
 
 	@GetMapping("/")
 	public String home() {
 		return "Bem vindo ao DET-MAKER-SERVER";
 	}
+
 
 	public static void main(String[] args) throws DiretorioSemPermissaoException, IOException {
 		log.info("Obtendo metadados da aplicação DET-MAKER.");
