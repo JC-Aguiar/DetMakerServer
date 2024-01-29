@@ -205,7 +205,8 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         if(pipeline.isEmpty()) return pipeline;
 
         val pipelineBanco = pipeline.get();
-        val cliente = pipelineBanco.getProps().getCliente();
+//        val cliente = pipelineBanco.getProps().getCliente();
+        val cliente = pipelineBanco.getCliente();
         log.info("Comparando Pipelines.");
         log.info("Pipelines Usuário: {}", dto);
         log.info("Pipelines Banco: {}", pipelineBanco);

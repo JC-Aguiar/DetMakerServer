@@ -47,7 +47,8 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
     }
 
     public List<Relatorio> findAllFromPipeline(@NonNull Pipeline pipeline) {
-        log.info("Obtendo Relatórios no banco relacionados a Ambiente '{}'. ", pipeline.getProps().getNome());
+//        log.info("Obtendo Relatórios no banco relacionados a Ambiente '{}'. ", pipeline.getProps().getNome());
+        log.info("Obtendo Relatórios no banco relacionados a Ambiente '{}'. ", pipeline.getNome());
         val relatorios = dao.findAllByPipeline(pipeline);
         log.info("Total de Relatórios identificados: {}.", relatorios.size());
         relatorios.forEach(r -> log.info(r.toString()));

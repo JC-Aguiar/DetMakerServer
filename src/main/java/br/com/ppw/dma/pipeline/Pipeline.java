@@ -22,18 +22,31 @@ import static jakarta.persistence.FetchType.LAZY;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_PIPELINE")
-@Table(name = "PPW_PIPELINE")
+@Table(name = "PPW_PIPELINE", uniqueConstraints = {@UniqueConstraint(columnNames = {"NOME", "CLIENTE_ID"})})
 @SequenceGenerator(name = "SEQ_PIPELINE_ID", sequenceName = "RCVRY.SEQ_PIPELINE_ID", allocationSize = 1)
 public class Pipeline implements MasterEntity<Long> {
 
-    @Column(name = "ID", unique = true, nullable = false)
+//    @Column(name = "ID", unique = true, nullable = false)
+    @Id
+    @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_PIPELINE_ID")
     // Identificador numérico da pipeline
     Long id;
 
-    @EmbeddedId
-    // Chave composta da pipeline
-    PipelineProps props;
+//    @EmbeddedId
+//    // Chave composta da pipeline
+//    PipelineProps props;
+
+    @Column(name = "NOME", length = 200)
+    // Nome da pipeline
+    String nome;
+
+    @ToString.Exclude
+    @JsonBackReference
+    @ManyToOne(fetch = LAZY)
+    @JoinColumns( @JoinColumn(name = "CLIENTE_ID", referencedColumnName = "ID") )
+    // ID do Cliente associado a esta Pipeline
+    Cliente cliente; //TODO: precisa ser não-nulo
 
     @Column(name = "DESCRICAO", length = 500)
     // Nome da pipeline
@@ -54,9 +67,10 @@ public class Pipeline implements MasterEntity<Long> {
         @NonNull List<Job> jobs,
         @NonNull Cliente cliente) {
         //------------------------------------------------------------------
-        val props = new PipelineProps(dto.getNome(), cliente);
+//        val props = new PipelineProps(dto.getNome(), cliente);
         val pipeline = new Pipeline();
-        pipeline.setProps(props);
+        pipeline.setNome(dto.getNome());
+        pipeline.setCliente(cliente);
         pipeline.setDescricao(dto.getDescricao());
         pipeline.setJobs(jobs);
         return pipeline;
@@ -103,8 +117,8 @@ public class Pipeline implements MasterEntity<Long> {
             .collect(Collectors.joining(", "));
         return "Pipeline{" +
             "id=" + id +
-            ", nome='" + props.getNome() + '\'' +
-            ", cliente=" + props.getCliente() +
+            ", nome='" + nome + '\'' +
+            ", cliente=" + cliente +
             ", descricao='" + descricao + '\'' +
             ", jobs=[" + jobsString + "]" +
             '}';

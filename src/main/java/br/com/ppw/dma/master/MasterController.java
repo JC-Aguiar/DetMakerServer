@@ -1,15 +1,21 @@
 package br.com.ppw.dma.master;
 
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 public abstract class MasterController<ID, ENTITY extends MasterEntity, THIS extends MasterController> {
@@ -18,29 +24,17 @@ public abstract class MasterController<ID, ENTITY extends MasterEntity, THIS ext
     private final MasterService service;
 
     private final Type entityClass;
-
-    public final static ExampleMatcher MATCHER_ALL = ExampleMatcher
-        .matchingAll()
-        .withIgnoreNullValues()
-        .withIgnoreCase();
-
-    public final static ExampleMatcher MATCHER_ANY = ExampleMatcher
-        .matchingAny()
-        .withIgnoreNullValues()
-        .withIgnoreCase();
-
+    public final Map<String, Method> endpointsGet = new HashMap<>();
+    public final static ExampleMatcher MATCHER_ALL =
+        ExampleMatcher.matchingAll().withIgnoreNullValues().withIgnoreCase();
+    public final static ExampleMatcher MATCHER_ANY =
+        ExampleMatcher.matchingAny().withIgnoreNullValues().withIgnoreCase();
 
     // A constructor that will initialize the fields of the class.
     public MasterController(MasterService service) {
         this.service = service;
-        final Type[] types = ((ParameterizedType) getClass().getGenericSuperclass())
-            .getActualTypeArguments();
+        final Type[] types = ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments();
         this.entityClass = types[1];
-    }
-
-    @GetMapping(value = "ping")
-    public ResponseEntity<String> ping() {
-        return ResponseEntity.ok("pong");
     }
 
     /**
@@ -50,6 +44,18 @@ public abstract class MasterController<ID, ENTITY extends MasterEntity, THIS ext
      */
     public final THIS proxy() {
         return (THIS) AopContext.currentProxy();
+    }
+
+    //TODO: TESTE
+    public ResponseEntity<?> craftResponse(
+        @NotNull List<ENTITY> entityList,
+        @NotNull Pageable pageConfig) {
+        //-------------------------------------------------
+        final PageImpl<ENTITY> responsePage = new PageImpl(
+            entityList,
+            pageConfig,
+            entityList.size());
+        return new ResponseEntity<>(responsePage, HttpStatus.OK);
     }
 
     @GetMapping

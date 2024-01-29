@@ -34,7 +34,8 @@ public class RelatorioHistoricoDTO {
     public RelatorioHistoricoDTO(@NonNull Relatorio relatorio) {
         log.info("Convertendo Relatorio em RelatorioHistoricoDTO.");
         this.id = relatorio.getId();
-        this.pipeline = relatorio.getPipeline().getProps().getNome();
+//        this.pipeline = relatorio.getPipeline().getProps().getNome();
+        this.pipeline = relatorio.getPipeline().getNome();
         this.idProjeto = relatorio.getIdProjeto();
         this.nomeProjeto = relatorio.getNomeProjeto();
         this.nomeAtividade = relatorio.getNomeAtividade();
