@@ -1,10 +1,13 @@
 package br.com.ppw.dma.master;
 
+import br.com.ppw.dma.cliente.Cliente;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.util.ConsoleLog;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -18,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Service
+@Slf4j
 public abstract class MasterService<
     ID, ENTITY, THIS extends  MasterService> {
 
@@ -47,19 +51,26 @@ public abstract class MasterService<
     public Optional<ENTITY> addOne(@NotNull ENTITY entity) throws DuplicatedRecordException {
         try {
             return Optional.of(dao.save(entity));
-        } catch (ConstraintViolationException e) {
+        }
+        catch(ConstraintViolationException e) {
             throw new DuplicatedRecordException();
         }
     }
 
     // A method that returns an entity by id.
     public ENTITY findById(@Positive @NotNull ID id) {
-        return Optional
+        val record = Optional
             .ofNullable(dao.getById(id))
            .orElseThrow();
+        log.info("Registro encontrado no banco para ID {}:", id);
+        log.info(record.toString());
+        return record;
     }
 
-    // A proxy method that calls `pageCheck` method.
+    public List<ENTITY> findAll() {
+        return dao.findAll();
+    }
+
     public Page<ENTITY> findAll(@NotNull Pageable pageable) {
         return proxy().pageCheck(dao.findAll(pageable));
     }

@@ -1,7 +1,5 @@
 package br.com.ppw.dma.configQuery;
 
-import br.com.ppw.dma.master.MasterRequestDTO;
-import br.com.ppw.dma.master.MasterResponseDTO;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -11,7 +9,7 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ConfigQueryBasicDTO implements MasterRequestDTO, MasterResponseDTO {
+public class ConfigQueryBasicDTO {
 
     String tabelaNome;
     String sql;

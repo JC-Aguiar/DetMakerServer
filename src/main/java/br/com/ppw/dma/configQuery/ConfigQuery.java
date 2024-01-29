@@ -2,7 +2,6 @@ package br.com.ppw.dma.configQuery;
 
 import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.master.MasterEntity;
-import br.com.ppw.dma.pipeline.Pipeline;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -30,13 +29,6 @@ public class ConfigQuery implements MasterEntity<Long> {
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CONFIG_QUERY_ID")
     // Identificador numérico dessa queries pós-execução da evidência
     Long id;
-
-    @ToString.Exclude
-    @JsonBackReference
-    @ManyToOne(fetch = LAZY)
-    @JoinColumn(name = "PIPELINE_ID")
-    // ID da pipeline relacionada com essa configuração de queries
-    Pipeline pipeline;
 
     @ToString.Exclude
     @JsonBackReference

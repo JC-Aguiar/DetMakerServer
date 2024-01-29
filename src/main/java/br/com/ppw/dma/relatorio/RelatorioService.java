@@ -1,5 +1,6 @@
 package br.com.ppw.dma.relatorio;
 
+import br.com.ppw.dma.ambiente.Ambiente;
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.pipeline.Pipeline;
@@ -8,15 +9,17 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.NoSuchElementException;
 
-import static br.com.ppw.dma.config.DatabaseConfig.ambienteInfo;
+import static br.com.ppw.dma.util.FormatDate.RELOGIO;
 
 @Service
 @Slf4j
@@ -25,13 +28,26 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
     @Autowired
     private final RelatorioRepository dao;
 
+
     public RelatorioService(RelatorioRepository dao) {
         super(dao);
         this.dao = dao;
     }
 
+    public List<Relatorio> findAllByAmbiente(@NonNull Long ambienteId) {
+        val result = dao.findAllByAmbienteId(ambienteId);
+        if(result.isEmpty()) throw new NoSuchElementException();
+        return result;
+    }
+
+    public Page<Relatorio> findAllByAmbiente(@NonNull Pageable pageConfig, @NonNull Long ambienteId) {
+        val result = dao.findAllByAmbienteId(ambienteId, pageConfig);
+        if(result.isEmpty()) throw new NoSuchElementException();
+        return result;
+    }
+
     public List<Relatorio> findAllFromPipeline(@NonNull Pipeline pipeline) {
-        log.info("Obtendo Relatórios no banco relacionados a Pipeline '{}'. ", pipeline.getNome());
+        log.info("Obtendo Relatórios no banco relacionados a Ambiente '{}'. ", pipeline.getProps().getNome());
         val relatorios = dao.findAllByPipeline(pipeline);
         log.info("Total de Relatórios identificados: {}.", relatorios.size());
         relatorios.forEach(r -> log.info(r.toString()));
@@ -50,7 +66,7 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
 
         log.info("identificando Relatório mais recente");
         val relatorioMaisRecente = relatorios.stream()
-            .min(Comparator.comparing(Relatorio::getDataInicio))
+            .min(Comparator.comparing(Relatorio::getData))
             .orElseThrow();
 
         log.info("Relatório identificado:");
@@ -58,7 +74,7 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
         return relatorioMaisRecente;
     }
 
-//    public Relatorio cloneRelatorioFromPipeline(@NonNull Pipeline pipeline) {
+//    public Relatorio cloneRelatorioFromPipeline(@NonNull Ambiente pipeline) {
 //        val relatorio = findAllByPipeline(pipeline)
 //            .stream()
 //            .min(Comparator.comparing(Relatorio::getDataInicio))
@@ -71,12 +87,13 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
 
     @Transactional
     public Relatorio buildAndPersist(
+        @NotNull Ambiente ambiente,
         @NotNull RelatorioInfoDTO dto,
         @NotNull Pipeline pipeline,
         @NotNull List<Evidencia> evidencias,
         String parametros) {
         //--------------------------------------
-        log.info("Convertendo DTO em Entidade");
+        log.info("Convertendo Relatório DTO em Entidade.");
         val dataInicio = evidencias.stream()
             .map(Evidencia::getDataInicio)
             .min(OffsetDateTime::compareTo)
@@ -89,13 +106,12 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
         var relatorio = Relatorio.builder()
             .nomeAtividade(dto.getNomeAtividade())
             .consideracoes(dto.getConsideracoes())
-            .sistema(ambienteInfo.sistema())
-            .ambiente(ambienteInfo.nome())
+            .cliente(ambiente.getCliente().getNome())
+            .ambiente(ambiente)
             .pipeline(pipeline)
             .evidencias(evidencias)
             .parametros(parametros)
-            .dataInicio(dataInicio)
-            .dataFim(dataFim)
+            .data(OffsetDateTime.now(RELOGIO))
             .build();
 
         relatorio.setIdProjeto(dto.getIdProjeto());

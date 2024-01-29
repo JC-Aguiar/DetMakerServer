@@ -1,9 +1,9 @@
 package br.com.ppw.dma.evidencia;
 
 import br.com.ppw.dma.execFile.ExecFile;
-import br.com.ppw.dma.execFile.TipoExecFile;
 import br.com.ppw.dma.execQuery.ExecQuery;
 import br.com.ppw.dma.job.Job;
+import br.com.ppw.dma.job.JobExecutePOJO;
 import br.com.ppw.dma.master.MasterEntity;
 import br.com.ppw.dma.relatorio.Relatorio;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -101,7 +101,7 @@ public class Evidencia implements MasterEntity<Long> {
     OffsetDateTime dataFim;
 
     @Column(name = "REVISOR", columnDefinition = "VARCHAR2(100)")
-    String resivor;
+    String revisor;
 
     @Column(name = "DATA_REVISAO", columnDefinition = "DATE")
     OffsetDateTime dataRevisao;
@@ -115,6 +115,22 @@ public class Evidencia implements MasterEntity<Long> {
     @Column(name = "RESULTADO", columnDefinition = "VARCHAR2(10)")
     TipoEvidenciaResultado resultado;
 
+
+    public static Evidencia jobPojoExecutado(@NonNull JobExecutePOJO jobPojo) {
+        return Evidencia.builder()
+            .job(jobPojo.getJob())
+            .sucesso(jobPojo.isSucesso())
+            .ordem(jobPojo.getOrdem())
+            .argumentos(jobPojo.getArgumentos())
+            .dataInicio(jobPojo.getDataInicio())
+            .dataFim(jobPojo.getDataFim())
+            .sucesso(jobPojo.isSucesso())
+            .build();
+    }
+
+    public final boolean jaRevisada() {
+        return revisor != null && !revisor.isEmpty() && dataRevisao != null && resultado != null;
+    }
 
     @Override
     public final boolean equals(Object o) {

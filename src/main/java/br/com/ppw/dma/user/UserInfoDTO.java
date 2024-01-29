@@ -9,9 +9,11 @@ import lombok.experimental.FieldDefaults;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserInfoDTO {
+
     String nome;
     String papel;
     String empresa;
     String email;
     String telefone;
+
 }

@@ -8,11 +8,13 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.proxy.HibernateProxy;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 import static br.com.ppw.dma.util.FormatString.refinarCelula;
 import static jakarta.persistence.FetchType.LAZY;
@@ -27,13 +29,17 @@ import static jakarta.persistence.FetchType.LAZY;
 @Entity(name = "PPW_JOB")
 @Table(name = "PPW_JOB")
 @FieldDefaults(level = AccessLevel.PRIVATE)
-//@SequenceGenerator(name = "SEQ_JOB_ID", sequenceName = "RCVRY.SEQ_JOB_ID", allocationSize = 1)
+@SequenceGenerator(name = "SEQ_JOB_ID", sequenceName = "RCVRY.SEQ_JOB_ID", allocationSize = 1)
 public class Job implements MasterEntity<Long> {
 
-    @Id @Column(name = "ID")
-    // @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_JOB_ID")
+    @Column(name = "ID", unique = true, nullable = false)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_JOB_ID")
     // Identificador numérico do job
     Long id;
+
+    @EmbeddedId
+    // Chave composta do Job
+    JobProps props;
 
     @Column(name = "NOME", length = 100, unique = true, nullable = false)
     // Nome da shell, serviço ou job
@@ -152,11 +158,6 @@ public class Job implements MasterEntity<Long> {
     // IDs das pipelines relacionadas a este job
     List<Pipeline> pipelines = new ArrayList<>();
 
-//    @JsonManagedReference
-//    @Column(name = "PLANOS")
-//    @ManyToMany(fetch = LAZY, mappedBy = "jobs")
-//    // IDs dos planos relacionados a este job
-//    private Set<Plano> planos = new LinkedHashSet<>();
 
     /**
      * Método para após conversão da classe {@link JobInfoDTO}, para garantir que os campos que
@@ -180,5 +181,25 @@ public class Job implements MasterEntity<Long> {
         return evidencias.stream()
             .min(Comparator.comparing(Evidencia::getDataInicio))
             .orElseThrow();
+    }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ?
+            ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass()
+            : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ?
+            ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass()
+            : this.getClass();
+        if (thisEffectiveClass != oEffectiveClass) return false;
+        Job job = (Job) o;
+        return getProps() != null && Objects.equals(getProps(), job.getProps());
+    }
+
+    @Override
+    public final int hashCode() {
+        return Objects.hash(props);
     }
 }

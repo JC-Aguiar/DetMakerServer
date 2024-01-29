@@ -1,6 +1,5 @@
 package br.com.ppw.dma.exception;
 
-import br.com.ppw.dma.master.MasterResponseDTO;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -13,7 +12,7 @@ import java.time.LocalDateTime;
 
 @Getter
 @FieldDefaults(makeFinal = true, level = AccessLevel.PRIVATE)
-public class ErrorResponseDTO extends Throwable implements MasterResponseDTO {
+public class ErrorResponseDTO extends Throwable {
 
     LocalDateTime date = LocalDateTime.now();
     HttpStatus status;

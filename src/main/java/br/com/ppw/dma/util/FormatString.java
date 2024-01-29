@@ -23,7 +23,7 @@ public final class FormatString {
     public static final LinkedHashSet<String> INDICADORES_CORINGA = new LinkedHashSet<>(Arrays.asList(
         "{", "*", "AAAA_MM_DD", "DD_MM_AAAA", "AAAAMMDD", "DDMMAAAA", "AAAA_MM", "MM_AAAA", "AAAAMM", "MMAAAA",
         "AAAA", "AA_MM_DD", "DD_MM_AA", "AAMMDD", "DDMMAA", "AA_MM", "MM_AA", "AAMM", "MMAA", "HH_MM_SS",
-        "HHMMSS", "HHMM", "SSUBSET", "SUBSET", "NNNNN", "NNNN", "NNN"
+        "HHMMSS", "HHMM", "SUBSET", "NNNNN", "NNNN", "NNN"
     ));
 
     /**

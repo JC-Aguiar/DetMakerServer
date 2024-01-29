@@ -1,20 +1,21 @@
 package br.com.ppw.dma.job;
 
+import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
+import br.com.ppw.dma.ambiente.AmbienteService;
+import br.com.ppw.dma.cliente.Cliente;
+import br.com.ppw.dma.cliente.ClienteService;
 import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.configQuery.ConfigQueryController;
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.evidencia.EvidenciaController;
-import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
 import br.com.ppw.dma.master.MasterController;
+import br.com.ppw.dma.net.ConectorSftp;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -23,188 +24,135 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
-
-import static br.com.ppw.dma.util.FormatString.dividirValores;
 
 @RestController
 @RequestMapping("job")
 @Slf4j
-public class JobController extends MasterController
-    <Long, Job, JobExecuteDTO, JobInfoDTO, JobController> {
+public class JobController extends MasterController<Long, Job, JobController> {
 
     private final JobService jobService;
-    private final EvidenciaController evidenciaController;
-    private final ConfigQueryController queryController;
-    public static final String PLANILHA_NOME = "DIÁRIA";
 
-    public JobController(
-        @Autowired JobService jobService,
-        @Autowired EvidenciaController evidenciaController,
-        @Autowired ConfigQueryController queryController) {
-        //----------------------------------------------------
+    @Autowired
+    private ModelMapper mapper;
+
+    @Autowired
+    private EvidenciaController evidenciaController;
+
+    @Autowired
+    private ConfigQueryController queryController;
+
+    @Autowired
+    private ClienteService clienteService;
+
+    @Autowired
+    private AmbienteService ambienteService;
+
+
+    public JobController(@Autowired JobService jobService) {
         super(jobService);
         this.jobService = jobService;
-        this.evidenciaController = evidenciaController;
-        this.queryController = queryController;
     }
 
-    @GetMapping(value = "ping")
-    public ResponseEntity<String> ping() {
-        return ResponseEntity.ok("pong");
+    @GetMapping("cliente/{clienteId}")
+    public ResponseEntity<?> getAll( @PathVariable(name = "clienteId") Long clienteId) {
+        final List<JobInfoDTO> dtos = jobService.findAllByCliente(clienteId)
+            .stream()
+            .map(JobInfoDTO::converterJob)
+            .toList();
+        return ResponseEntity.ok(dtos);
     }
 
     @Override
-    public ResponseEntity<Page<JobConfigDTO>> getAll(int page, int itens) {
-        final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("id").ascending());
-        final Page<Job> entitiesPage = jobService.findAll(pageConfig);
-        final Page<JobConfigDTO> responsePage = entitiesPage.map(this::criarJobConfigDto);
+    public ResponseEntity<?> parseOne(Job entity) {
+        final JobInfoDTO dto = JobInfoDTO.converterJob(entity);
+        return ResponseEntity.ok(dto);
+    }
+
+    /**
+     * Método herdado do {@link MasterController} para conversão de Entidade para DTO
+     * @param jobs {@link Page} de {@link Job}s a converter
+     * @return {@link ResponseEntity} contendo uma {@link Page} de {@link JobInfoDTO}s
+     */
+    @Override
+    public ResponseEntity<Page<JobInfoDTO>> parseAll(Page<Job> jobs) {
+        final Page<JobInfoDTO> responsePage = jobs.map(JobInfoDTO::converterJob);
         return ResponseEntity.ok(responsePage);
     }
 
-    //@PostMapping(value = "ping")
-    public List<Job> getAllByNomes(@NonNull List<String> nomes) {
-        return jobService.findByNome(nomes);
+    public List<Job> findByClienteAndNome(@NonNull Cliente cliente, @NonNull List<String> nomes) {
+        log.info("Procurando Jobs do Cliente '{}' para os seguintes nomes: {}.",
+            cliente.getNome(), String.join(", ", nomes));
+
+        val jobs = jobService.findByClienteAndNome(cliente, nomes);
+        log.info("Total de Jobs encontrados: {}", jobs.size());
+        return jobs;
     }
 
     //TODO: javadoc
     //TODO: criar novo controlar para ter essa responsabilidade?
-    @PostMapping(value = "open/xlsx")
-    public ResponseEntity<List<JobConfigDTO>> openXlsx(
+    @PostMapping(value = "read/xlsx/planilha/{planilhaNome}/cliente/{clienteId}")
+    public ResponseEntity<List<JobInfoDTO>> readXlsx(
+        @PathVariable() String planilhaNome,
+        @PathVariable() Long clienteId,
         @RequestParam("file") final MultipartFile file)
     throws IOException {
-        log.info("Acionando leitura de arquivo Excel XLSX.");
-        val xlsx = jobService.lerXlsx(file);
-        val jobsDto = jobService.mapExcelToJobDto(xlsx, PLANILHA_NOME);
+        val cliente = clienteService.findById(clienteId);
+        log.info("Lendo arquivo Excel (formato xlsx) para Cliente '{}'.", cliente.getNome());
+        val excelX = jobService.lerXlsx(file);
+        val jobsDto = jobService.mapExcelToJobInfoDto(excelX, planilhaNome);
         log.info("Total de jobs mapeados da planilha: {}.", jobsDto.size());
 
-        val configJobDto = jobsDto.stream()
-            .map(this::criarJobConfigDto)
-            .toList();
-        return ResponseEntity.ok(configJobDto);
+        //val configJobDto = jobsDto.stream()
+        //    .map(this::criarJobConfigDto)
+        //    .toList();
+        return ResponseEntity.ok(jobsDto);
     }
 
     //TODO: javadoc
     @Transactional
-    @PostMapping(value = "save/all")
-    public ResponseEntity<?> saveJobs(@RequestBody List<JobInfoDTO> jobsDto) {
-        log.info("Salvando jobs no banco.");
+    @PostMapping(value = "save/all/cliente/{clienteId}")
+    public ResponseEntity<?> saveJobs(
+        @PathVariable() Long clienteId,
+        @NonNull @RequestBody List<JobInfoDTO> jobsDto) {
+        //----------------------------------------------------
         if(jobsDto.isEmpty()) {
-            return ResponseEntity.badRequest()
-                .body("A lista de jobs enviada está vazia   .");
+            return ResponseEntity.badRequest().body("A lista de Jobs enviada está vazia.");
         }
+        val cliente = clienteService.findById(clienteId);
+        log.info("Salvando jobs no banco.");
         int jobsSalvos = 0;
         for(val dto: jobsDto) {
             try {
+                log.debug(dto.toString());
                 log.info("Convertendo DTO em Entidade.");
-                log.info(dto.toString());
-                val jobEntidade = getModelMapper()
-                    .map(dto, Job.class)
-                    .refinarCampos();
-
+                val jobEntidade = mapper.map(dto, Job.class).refinarCampos();
                 jobService.persist(jobEntidade);
                 jobsSalvos++;
             }
             catch(Exception e) {
-                log.warn("Erro ao tentar salvar job [{}] {}: {}.",
-                    dto.getId(), dto.getNome(), e.getMessage());
+                log.warn("Erro ao tentar salvar Job ID {}: {}.", dto.getNome(), e.getMessage());
             }
         }
         val mensagem = "Total de jobs salvos: " +jobsSalvos+ ".";
         log.info(mensagem);
 
-        if(jobsSalvos == 0) {
-            return ResponseEntity.internalServerError()
+        if(jobsSalvos == 0)
+            return ResponseEntity
+                .internalServerError()
                 .body("Não foi possível salvar nenhum dos jobs enviados.");
-        }
         return ResponseEntity.ok(mensagem);
     }
 
-//    @PostMapping(value = "execute/stack")
-//    public ResponseEntity<List<EvidenciaInfoDTO>> executeJobs(@RequestBody List<JobExecuteDTO> jobsExecute) {
-//        val evidenciasDto = executeJobsAndGetEvidencias(jobsExecute)
-//            .stream()
-//            .map(env -> new EvidenciaInfoDTO(env, env.getOrdem()))
-//            .toList();
-//        val sucesso = evidenciasDto.stream().anyMatch(EvidenciaInfoDTO::getSucesso);
-//        if(sucesso) return ResponseEntity.ok(evidenciasDto);
-//        return ResponseEntity.accepted().body(evidenciasDto);
-//    }
-
+    //TODO: criar exception própria
     //TODO: javadoc
-    public List<Evidencia> executeJobsAndGetEvidencias(@NonNull List<JobExecuteDTO> jobsExecute) {
-        //TODO: separar a Evidência do Resumo, onde o Resumo contêm as informações da execução
-        //  (aonde teve sucesso e aonde teve falha)
-        //Será convertido o JobExecuteDTO para JobExecutePOJO, inserindo nele a entidade Job via ID.
-        //Também será gerado JobInfoDTO com base na entidade. DTO responsável pela execução dos comandos
-        //de forma correta e organizada no terminal SFTP
-        log.info("Iniciando rotina da execução de Jobs");
-        val jobsPojo = jobsExecute.stream()
-            .map(this::createPojo)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .map(jobService::executarPilha)
-            .toList();
-        log.info("Total de Jobs executados: {}.", jobsPojo.size());
-
-        val sucessos = jobsPojo.stream()
-            .filter(JobExecutePOJO::isSucesso)
-            .toList()
-            .size();
-        log.info("Total de Jobs com sucesso: {}.", sucessos);
-
+    public List<Evidencia> executeJobsAndGetEvidencias(
+        @NonNull AmbienteAcessoDTO banco,
+        @NonNull AmbienteAcessoDTO ftp,
+        @NonNull List<JobExecuteDTO> jobsExecute) {
+        //----------------------------------------------
+        val connFtp = ConectorSftp.conectar(ftp.getConexao(), ftp.getUsuario(), ftp.getSenha());
+        val jobsPojo = jobService.executarJobs(connFtp, banco, jobsExecute);
         return evidenciaController.gerarEvidencias(jobsPojo);
-    }
-
-    //TODO: javadoc
-    private Optional<JobExecutePOJO> createPojo(@NonNull JobExecuteDTO dto) {
-        try {
-            log.info("Buscando registro para Job id {}.", dto.getId());
-            val job = jobService.findById(dto.getId());
-            log.info("Job encontrado:");
-            log.info(job.toString());
-
-            val jobInfo = converterEmJobInfoDto(job);
-
-            log.info("Agrupando objetos dentro do JobExecutePOJO.");
-            val jobPojo =new JobExecutePOJO();
-            jobPojo.setJob(job);
-            jobPojo.setJobInfo(jobInfo);
-            jobPojo.setOrdem(dto.getOrdem());
-            jobPojo.setArgumentos(dto.getArgumentos());
-            jobPojo.addComandoSql(dto.getQueries());
-            //TODO: add cargas!
-            log.info(jobPojo.toString());
-
-            return Optional.of(jobPojo);
-        }
-        catch(Exception e) {
-            log.warn("Erro durante preparo do Job id {}: {}.", dto.getId(), e.getMessage());
-            return Optional.empty();
-        }
-    }
-
-    //TODO: javadoc
-    private JobInfoDTO converterEmJobInfoDto(@NonNull Job job) {
-        log.info("Convertendo Job para JobInfoDTO.");
-        val jobDto = getModelMapper().map(job, JobInfoDTO.class);
-        jobDto.setParametros(dividirValores(job.getParametros()));
-        jobDto.setTabelas(dividirValores(job.getTabelas()));
-        jobDto.setDescricaoParametros(dividirValores(job.getDescricaoParametros()));
-        jobDto.setMascaraEntrada(dividirValores(job.getMascaraEntrada()));
-        jobDto.setMascaraSaida(dividirValores(job.getMascaraSaida()));
-        jobDto.setMascaraLog(dividirValores(job.getMascaraLog()));
-
-        log.info("Conversão realizada com sucesso.");
-        log.info("{}", jobDto);
-        return jobDto;
-    }
-
-    //TODO: javadoc
-    private JobConfigDTO criarJobConfigDto(@NonNull Job job) {
-        log.info("Criando JobConfigDTO com base no Job {} '{}'.", job.getId(), job.getNome());
-        val infoDto = converterEmJobInfoDto(job);
-        return criarJobConfigDto(infoDto);
     }
 
     //TODO: javadoc
@@ -236,17 +184,4 @@ public class JobController extends MasterController
         log.info(configDto.toString());
         return configDto;
     }
-
-    @DeleteMapping(value = "all")
-    public ResponseEntity<String> deleteAll() {
-        try {
-            jobService.deleteAll();
-            return ResponseEntity.ok("Todos os jobs foram deletados com sucesso.");
-        }
-        catch(Exception e) {
-            log.warn(e.getMessage());
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
-    }
-
 }

@@ -1,5 +1,6 @@
 package br.com.ppw.dma.pipeline;
 
+import br.com.ppw.dma.cliente.Cliente;
 import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.master.MasterEntity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -9,7 +10,6 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -26,14 +26,14 @@ import static jakarta.persistence.FetchType.LAZY;
 @SequenceGenerator(name = "SEQ_PIPELINE_ID", sequenceName = "RCVRY.SEQ_PIPELINE_ID", allocationSize = 1)
 public class Pipeline implements MasterEntity<Long> {
 
-    @Id @Column(name = "ID")
+    @Column(name = "ID", unique = true, nullable = false)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_PIPELINE_ID")
     // Identificador numérico da pipeline
     Long id;
 
-    @Column(name = "NOME", length = 200, unique = true)
-    // Nome da pipeline
-    String nome;
+    @EmbeddedId
+    // Chave composta da pipeline
+    PipelineProps props;
 
     @Column(name = "DESCRICAO", length = 500)
     // Nome da pipeline
@@ -49,14 +49,28 @@ public class Pipeline implements MasterEntity<Long> {
     List<Job> jobs = new ArrayList<>();
 
 
+    public static Pipeline parseInfoDto(
+        @NonNull PipelineInfoDTO dto,
+        @NonNull List<Job> jobs,
+        @NonNull Cliente cliente) {
+        //------------------------------------------------------------------
+        val props = new PipelineProps(dto.getNome(), cliente);
+        val pipeline = new Pipeline();
+        pipeline.setProps(props);
+        pipeline.setDescricao(dto.getDescricao());
+        pipeline.setJobs(jobs);
+        return pipeline;
+    }
+
     public boolean atualizarDescricao(@NonNull String descricao) {
         return !this.descricao.trim().equals(descricao.trim());
     }
 
-    public boolean atualizarJobs(@NonNull  List<String> jobs) {
+    public boolean atualizarJobs(@NonNull List<String> jobs) {
         val thisJobs = this.jobs.stream()
             .map(Job::getNome)
             .collect(Collectors.joining(", "));
+
         val otherJobs = String.join(", ", jobs);
 
         return !thisJobs.equals(otherJobs);
@@ -74,7 +88,7 @@ public class Pipeline implements MasterEntity<Long> {
             this.getClass();
         if(thisEffectiveClass != oEffectiveClass) return false;
         Pipeline evidencia = (Pipeline) o;
-        return getId() != null && Objects.equals(getId(), evidencia.getId());
+        return this.getId() != null && Objects.equals(this.getId(), evidencia.getId());
     }
 
     @Override
@@ -89,7 +103,8 @@ public class Pipeline implements MasterEntity<Long> {
             .collect(Collectors.joining(", "));
         return "Pipeline{" +
             "id=" + id +
-            ", nome='" + nome + '\'' +
+            ", nome='" + props.getNome() + '\'' +
+            ", cliente=" + props.getCliente() +
             ", descricao='" + descricao + '\'' +
             ", jobs=[" + jobsString + "]" +
             '}';

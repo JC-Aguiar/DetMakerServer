@@ -1,5 +1,6 @@
 package br.com.ppw.dma.relatorio;
 
+import br.com.ppw.dma.ambiente.Ambiente;
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.master.MasterEntity;
 import br.com.ppw.dma.pipeline.Pipeline;
@@ -52,11 +53,8 @@ public class Relatorio implements MasterEntity<Long> {
     @Column(name = "TESTE_TIPO", length = 10, updatable = false)
     TiposDeTeste testeTipo;
 
-    @Column(name = "SISTEMA", length = 25, nullable = false, updatable = false)
-    String sistema;
-
-    @Column(name = "AMBIENTE", length = 20, nullable = false, updatable = false)
-    String ambiente;
+    @Column(name = "CLIENTE", length = 50, nullable = false, updatable = false)
+    String cliente;
 
     @Convert(converter = NumericBooleanConverter.class)
     @Column(name = "SUCESSO", nullable = false, updatable = false)
@@ -76,11 +74,15 @@ public class Relatorio implements MasterEntity<Long> {
     // ID da pipeline que executou esse relatório
     Pipeline pipeline;
 
-    @Column(name = "DATA_INICIO", columnDefinition = "DATE", nullable = false, updatable = false)
-    OffsetDateTime dataInicio;
+    @ToString.Exclude
+    @JsonBackReference
+    @ManyToOne(fetch = LAZY)
+    @JoinColumn(name = "AMBIENTE_ID", referencedColumnName = "ID", nullable = false, updatable = false)
+    // ID do ambiente que executou esse relatório
+    Ambiente ambiente;
 
-    @Column(name = "DATA_FIM", columnDefinition = "DATE", nullable = false, updatable = false)
-    OffsetDateTime dataFim;
+    @Column(name = "DATA", columnDefinition = "DATE", nullable = false, updatable = false)
+    OffsetDateTime data;
 
 
     public void setIdProjeto(final String idProjeto) {

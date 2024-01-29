@@ -1,6 +1,5 @@
 package br.com.ppw.dma.evidencia;
 
-import br.com.ppw.dma.master.MasterRequestDTO;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -10,7 +9,7 @@ import java.time.OffsetDateTime;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode
-public class EvidenciaRevisadaDTO implements MasterRequestDTO {
+public class EvidenciaRevisadaDTO {
 
     Long evidenciaId;
     String resivor;

@@ -1,7 +1,6 @@
 package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.configQuery.ComandoSql;
-import br.com.ppw.dma.master.MasterResponseDTO;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -14,7 +13,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class JobConfigDTO implements MasterResponseDTO {
+public class JobConfigDTO {
 
    Integer ordem = -1;
    JobInfoDTO job;

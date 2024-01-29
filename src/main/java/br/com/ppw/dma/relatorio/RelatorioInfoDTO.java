@@ -1,7 +1,5 @@
 package br.com.ppw.dma.relatorio;
 
-import br.com.ppw.dma.master.MasterRequestDTO;
-import br.com.ppw.dma.master.MasterResponseDTO;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,7 +9,7 @@ import lombok.experimental.FieldDefaults;
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class RelatorioInfoDTO implements MasterRequestDTO, MasterResponseDTO {
+public class RelatorioInfoDTO {
 
     String idProjeto;
     String nomeProjeto;
