@@ -46,7 +46,7 @@ public class Pipeline implements MasterEntity<Long> {
     @ManyToOne(fetch = LAZY)
     @JoinColumns( @JoinColumn(name = "CLIENTE_ID", referencedColumnName = "ID") )
     // ID do Cliente associado a esta Pipeline
-    Cliente cliente; //TODO: precisa ser não-nulo
+    Cliente cliente;
 
     @Column(name = "DESCRICAO", length = 500)
     // Nome da pipeline

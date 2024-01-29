@@ -28,23 +28,26 @@ import java.util.List;
 @RestController
 @RequestMapping("relatorio")
 public class RelatorioController extends MasterController<Long, Relatorio, RelatorioController> {
-    //MasterInfoDTO, RelatorioHistoricoDTO,
-
-    private final RelatorioService relatorioService;
-
-    @Autowired
-    private PipelineService pipelineService;
-
-    @Autowired
-    private EvidenciaController evidenciaController;
 
     @Autowired
     private ResourceLoader resourceLoader;
 
+    private RelatorioService relatorioService;
 
-    public RelatorioController(RelatorioService relatorioService){
+    private PipelineService pipelineService;
+
+    private EvidenciaController evidenciaController;
+
+
+    public RelatorioController(
+        @Autowired RelatorioService relatorioService,
+        @Autowired PipelineService pipelineService,
+        @Autowired EvidenciaController evidenciaController){
+        //--------------------------------------------------
         super(relatorioService);
         this.relatorioService = relatorioService;
+        this.pipelineService = pipelineService;
+        this.evidenciaController = evidenciaController;
     }
 
     @Override

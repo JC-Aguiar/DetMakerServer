@@ -30,27 +30,33 @@ import java.util.stream.Collectors;
 @RequestMapping("pipeline")
 public class PipelineController extends MasterController<Long, Pipeline, PipelineController> {
 
-    private final PipelineService pipelineService;
-
     @Autowired
     private ModelMapper mapper;
 
-    @Autowired
+    private PipelineService pipelineService;
+
     private ClienteService clienteService;
 
-    @Autowired
     private AmbienteService ambienteService;
 
-    @Autowired
     private JobController jobController;
 
-    @Autowired
     private RelatorioService relatorioService;
 
 
-    public PipelineController(@Autowired PipelineService pipelineService) {
+    public PipelineController(
+        @Autowired PipelineService pipelineService,
+        @Autowired ClienteService clienteService,
+        @Autowired AmbienteService ambienteService,
+        @Autowired JobController jobController,
+        @Autowired RelatorioService relatorioService) {
+        //--------------------------------------------
         super(pipelineService);
         this.pipelineService = pipelineService;
+        this.clienteService = clienteService;
+        this.ambienteService = ambienteService;
+        this.jobController = jobController;
+        this.relatorioService = relatorioService;
     }
 
     @GetMapping("cliente/{clienteId}")
