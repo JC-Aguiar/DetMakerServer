@@ -7,6 +7,7 @@ import java.util.Arrays;
 @Getter
 public enum ExitCodes {
 
+    //TODO:
     SUCCESS(0, "Success"),
     GENERAL_ERROR(1, "General Error"),
     MISUSE(2, "Misuse of Shell Built-in"),
@@ -14,7 +15,8 @@ public enum ExitCodes {
     INVALID_INPUT(4, "Invalid Input"),
     CONFIGURATION_ERROR(5, "Configuration Error"),
     CANNOT_EXECUTE(126, "Cannot Execute"),
-    USER_INTERRUPT(130, "User Interrupt");
+    USER_INTERRUPT(130, "User Interrupt"),
+    INCORRET_PARAMETERS(255, "Quantidade incorreta de parâmetros");
 
     public final int code;
     public final String description;

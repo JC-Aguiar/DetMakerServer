@@ -1,8 +1,6 @@
 package br.com.ppw.dma.pipeline;
 
 import br.com.ppw.dma.job.Job;
-import br.com.ppw.dma.master.MasterRequestDTO;
-import br.com.ppw.dma.master.MasterResponseDTO;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -16,11 +14,21 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class PipelineInfoDTO implements MasterRequestDTO, MasterResponseDTO {
+public class PipelineInfoDTO {
 
+    @NotNull Long id;
     @NotNull String nome;
     @NotNull String descricao;
-    List<String> jobs = new ArrayList<>();
+    @NotNull Long clienteId;
+    @NotNull List<String> jobs = new ArrayList<>();
+
+    public PipelineInfoDTO(@NonNull Pipeline pipeline) {
+        this.id = pipeline.getId();
+        this.nome = pipeline.getProps().getNome();
+        this.descricao = pipeline.getDescricao();
+        this.clienteId = pipeline.getProps().getCliente().getId();
+        setJobs(pipeline.getJobs());
+    }
 
     public void setJobs(List jobs) {
         if(jobs == null || jobs.isEmpty()) return;

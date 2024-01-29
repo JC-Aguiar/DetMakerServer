@@ -10,7 +10,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode
-public class MasterSummaryDTO<T> implements MasterRequestDTO {
+public class MasterSummaryDTO<T> {
 
     final List<T> saved = new ArrayList<>();
     final List<T> failed = new ArrayList<>();

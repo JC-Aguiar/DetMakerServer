@@ -32,15 +32,6 @@ public class ResultadoSql extends ComandoSql {
      }
 
      @JsonIgnore
-     public ResultadoSql reset() {
-          getCampos().clear();
-          resultadoPreJob.clear();
-          resultadoPosJob.clear();
-          consultaPosJob = false;
-          return this;
-     }
-
-     @JsonIgnore
      public ResultadoSql fecharConsultaPreJob() {
           consultaPosJob = true;
           return this;

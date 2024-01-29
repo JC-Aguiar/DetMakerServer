@@ -1,6 +1,5 @@
 package br.com.ppw.dma.evidencia;
 
-import br.com.ppw.dma.master.MasterResponseDTO;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @EqualsAndHashCode
-public class EvidenciaInfoDTO implements MasterResponseDTO {
+public class EvidenciaInfoDTO {
 
     Long id;
     String job;
@@ -76,7 +75,7 @@ public class EvidenciaInfoDTO implements MasterResponseDTO {
         this.cargas = AnexoInfoDTO.converterExecFile(evidencia.getCargas());
         this.logs = AnexoInfoDTO.converterExecFile(evidencia.getLogs());
         this.saidas = AnexoInfoDTO.converterExecFile(evidencia.getSaidas());
-        this.revisor = evidencia.getResivor();
+        this.revisor = evidencia.getRevisor();
         this.dataRevisao = evidencia.getDataRevisao();
         this.requisitos = evidencia.getRequisitos();
         this.comentario = evidencia.getComentario();

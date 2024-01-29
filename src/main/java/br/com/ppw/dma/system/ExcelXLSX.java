@@ -12,6 +12,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,11 +43,11 @@ public class ExcelXLSX {
             });
     }
 
-    public ExcelXLSX(@NotBlank String nomeArquivo, @NotNull File arquivo) throws IOException {
+    public ExcelXLSX(@NotBlank String nomeArquivo, @NotNull MultipartFile arquivo) throws IOException {
         this.nomeArquivo = nomeArquivo;
         log.info("Abrindo e lendo arquivo {}.", this.nomeArquivo);
 
-        try(val workbook = new XSSFWorkbook(Files.newInputStream(arquivo.toPath()))) {
+        try(val workbook = new XSSFWorkbook(arquivo.getInputStream())) {
             log.info("Workbook = '{}'", workbook);
             log.info("Iterando planilhas disponíveis.");
             workbook.forEach(planilha -> {

@@ -1,8 +1,9 @@
 package br.com.ppw.dma.pipeline;
 
-import br.com.ppw.dma.job.Job;
+import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.master.MasterService;
 import jakarta.validation.constraints.NotNull;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,18 +11,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @Service
 @Slf4j
-public class PipelineService extends MasterService<Long, Pipeline, PipelineService> {
+public class PipelineService extends MasterService<PipelineProps, Pipeline, PipelineService> {
 
     @Autowired
     private final PipelineRepository dao;
 
+
     public PipelineService(PipelineRepository dao) {
         super(dao);
         this.dao = dao;
+    }
+
+    public List<Pipeline> findAllByCliente(@NonNull Long clienteId) {
+        val result = dao.findAllByClienteId(clienteId);
+        if(result.isEmpty()) throw new NoSuchElementException();
+        return result;
     }
 
     @Transactional
@@ -34,9 +43,9 @@ public class PipelineService extends MasterService<Long, Pipeline, PipelineServi
         return pipeline;
     }
 
-    public Optional<Pipeline> getByName(@NotNull String nome) {
-        log.info("Consultando pela Pipeline '{}'.", nome);
-        val pipeline = Optional.ofNullable(dao.findAllByNome(nome));
+    public Optional<Pipeline> getUniqueOne(@NotNull String nome, @NotNull Long clienteId) {
+        log.info("Consultando Pipeline '{}', Cliente ID {}.", nome, clienteId);
+        val pipeline = Optional.ofNullable(dao.findByNomeAndCliente(nome, clienteId));
         if(pipeline.isPresent())
             log.info("Pipeline '{}' obtida com sucesso.", nome);
         else
@@ -44,23 +53,9 @@ public class PipelineService extends MasterService<Long, Pipeline, PipelineServi
         return pipeline;
     }
 
-    public boolean checkByName(@NotNull String nome) {
-        log.info("Validando se a Pipeline '{}' existe no banco.", nome);
-        val resutlado = dao.existsByNome(nome);
-        log.info("Resultado: {}.", resutlado);
-        return resutlado;
-    }
-
-    public Pipeline parsePipelineNovaExecDTO(
-            @NotNull PipelineNovaExecDTO novaPipeline,
-            @NotNull List<Job> jobs) {
-        //------------------------------------------------------------------
-        log.info("Convertendo Pipeline: de PipelineNovaExecDTO em Entidade.");
-        val pipeline = new Pipeline();
-        pipeline.setNome(novaPipeline.getPipeline().getNome());
-        pipeline.setDescricao(novaPipeline.getPipeline().getDescricao());
-        pipeline.setJobs(jobs);
-        return pipeline;
+    public void checkDuplicated(@NotNull String nome, @NotNull Long clienteId)
+    throws DuplicatedRecordException {
+        if(getUniqueOne(nome, clienteId).isPresent()) throw new DuplicatedRecordException();
     }
 
 }

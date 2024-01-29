@@ -1,17 +1,20 @@
 package br.com.ppw.dma.execFile;
 
 import br.com.ppw.dma.evidencia.Evidencia;
+import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
 
-import java.io.File;
 import java.util.Objects;
 
-import static br.com.ppw.dma.system.Arquivos.lerArquivo;
+import static br.com.ppw.dma.execFile.TipoExecFile.*;
+import static br.com.ppw.dma.execFile.TipoExecFile.CARGA;
+import static br.com.ppw.dma.execFile.TipoExecFile.LOG;
 import static jakarta.persistence.FetchType.LAZY;
 
 
@@ -54,6 +57,38 @@ public class ExecFile {
     String arquivo;
 
 
+    public static ExecFile montarEvidenciaCarga(@NonNull Evidencia evidencia, @NonNull RemoteFile carga) {
+        return ExecFile.montarEvidencia(evidencia, carga, CARGA);
+    }
+
+    public static ExecFile montarEvidenciaTerminal(@NonNull Evidencia evidencia, String conteudo) {
+        return ExecFile.builder()
+            .evidencia(evidencia)
+            .jobNome(evidencia.getJob().getNome())
+            .tipo(LOG)
+            .arquivoNome("Log exibido no terminal")
+            .arquivo(conteudo)
+            .build();
+    }
+
+    public static ExecFile montarEvidenciaLog(@NonNull Evidencia evidencia, @NonNull RemoteFile log) {
+        return ExecFile.montarEvidencia(evidencia,log, LOG);
+    }
+
+    public static ExecFile montarEvidenciaSaida(@NonNull Evidencia evidencia, @NonNull RemoteFile carga) {
+        return ExecFile.montarEvidencia(evidencia, carga, SAIDA);
+    }
+
+    private static ExecFile montarEvidencia(Evidencia evidencia, RemoteFile rf, TipoExecFile tipo) {
+        return ExecFile.builder()
+            .evidencia(evidencia)
+            .jobNome(evidencia.getJob().getNome())
+            .tipo(tipo)
+            .arquivoNome(rf.nome())
+            .arquivo(rf.conteudo())
+            .build();
+    }
+
     @Override
     public String toString() {
         return "ExecFile{" +
@@ -66,10 +101,11 @@ public class ExecFile {
             '}';
     }
 
+    //TODO: mover esse método para uma classe Utils
     private String getResumoArquivo() {
         val tamanho = FormatString.contarSubstring(arquivo, "\n");
         val peso = arquivo.getBytes().length;
-        return String.format("[registros=%d, peso=%dKbs]", tamanho, peso);
+        return String.format("[linhas=%d, peso=%dKbs]", tamanho, peso);
     }
 
     @Override

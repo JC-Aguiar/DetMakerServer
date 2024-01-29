@@ -1,54 +1,65 @@
 package br.com.ppw.dma.net;
 
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import jakarta.validation.constraints.NotBlank;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 
-@Data
 @Slf4j
-@NoArgsConstructor
+@Getter
+@ToString
+@EqualsAndHashCode
+//TODO: Javadoc
 public class DownloadManager {
+    final String reference;
+    final Optional<RemoteFile> preFile;
+    Optional<RemoteFile> postFile = Optional.empty();
+    String aviso = SEM_ARQUIVOS;
 
-    final List<FileManager> files = new ArrayList<>();
+    private static final String SEM_ARQUIVOS = "Nenhum arquivo coletado pré ou pós execução.";
+    private static final String ARQUIVO_POS_AUSENTE = "Nenhum arquivo pós-execução coletado.";
+    private static final String ARQUIVOS_SEMELHANTES = "Os arquivos pré e pós execução não são o mesmo, " +
+        "apesar da semelhança: ";
+    private static final String ARQUIVOS_DUPLICADOS = "Nenhum arquivo pós-execução identificado.";
 
 
-    public DownloadManager(@NonNull List<FileManager> files) {
-        this.files.addAll(files);
+    public DownloadManager(@NotBlank String reference, Optional<RemoteFile> preFile) {
+        this.reference = reference;
+        this.preFile = preFile;
+        if(this.preFile.isPresent()) aviso = ARQUIVO_POS_AUSENTE;
     }
 
-    public DownloadManager add(@NonNull List<FileManager> newFiles) {
-        newFiles.forEach(newFile -> {
-            boolean exists = false;
-            for(val file : this.files) {
-                if(file.reference.equals(newFile.reference)) {
-                    file.addFile(newFile);
-                    exists = true;
-                }
+    public void setPostFile(@NotBlank String reference, Optional<RemoteFile> file) {
+        if(file.isEmpty()) return;
+        if(!this.reference.equals(reference)) {
+            log.trace("Incompatibilidade no gerenciamento de arquivos: a referência não é a mesma.");
+            log.trace("Path-Reference atual: {}", this.reference);
+            log.trace("Path-Reference nova: {}", reference);
+            return;
+        }
+        postFile = file;
+        printFiles();
+
+        if(preFile.isPresent() && postFile.isPresent()) {
+            if(preFile.get().iguais(postFile.get())) {
+                aviso = ARQUIVOS_DUPLICADOS;
+                log.warn(aviso);
             }
-            if(!exists) this.files.add(newFile);
-        });
-        return this;
+            else {
+                val similaridade = postFile.get().statusSimilaridade(preFile.get());
+                aviso = similaridade.isEmpty() ? similaridade : ARQUIVOS_SEMELHANTES + similaridade;
+                log.info(aviso);
+            }
+        }
     }
 
-    public DownloadManager add(@NonNull FileManager file) {
-        this.files.add(file);
-        return this;
+    public void printFiles() {
+        log.info("\t - Referência: '{}'", reference);
+        log.info("\t - Arquivo pré-execução: {}", preFile);
+        log.info("\t - Arquivo pós-execução: {}", postFile);
     }
-
-    public List<File> latestModifiedFiles() {
-        return this.files.stream()
-            .map(FileManager::latestModified)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .toList();
-    }
-
-
 }

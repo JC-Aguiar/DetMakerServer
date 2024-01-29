@@ -1,6 +1,5 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.master.MasterRequestDTO;
 import br.com.ppw.dma.configQuery.ComandoSql;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -13,7 +12,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class JobExecuteDTO implements MasterRequestDTO {
+public class JobExecuteDTO {
 
    Long id;
    Integer ordem;

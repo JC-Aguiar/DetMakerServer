@@ -1,64 +1,117 @@
 package br.com.ppw.dma.master;
 
+import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.configQuery.ResultadoSql;
-import br.com.ppw.dma.util.ValidadorSQL;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
+import br.com.ppw.dma.util.SqlUtils;
 import jakarta.validation.constraints.NotBlank;
+import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.hibernate.Session;
-import org.hibernate.transform.AliasToEntityMapResultTransformer;
-import org.springframework.stereotype.Component;
+import org.hibernate.exception.SQLGrammarException;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
-@Component
 @Slf4j
-public class MasterOracleDAO {
+@AllArgsConstructor
+public class MasterOracleDAO implements AutoCloseable {
 
-    private static final String SQL_GET_FIELDS_FROM_TABLE =
-        "SELECT a.column_name " +
-        "FROM all_tab_columns a " +
-        "WHERE a.table_name = :tableName AND " +
-        "ROWNUM <= 125 " +
-        "ORDER BY COLUMN_ID ";
+    final String url;
+    final String username;
+    final String password;
+    final Connection conn;
 
-    @PersistenceContext
-    private EntityManager entityManager;
+    public MasterOracleDAO(@NonNull AmbienteAcessoDTO acessoBanco) throws SQLException {
+        url = acessoBanco.getConexao();
+        username = acessoBanco.getUsuario();
+        password = acessoBanco.getSenha();
+        log.info("Preparando conexão de banco:");
+        log.info(" - URL: '{}'", url);
+        log.info(" - USER: '{}'", username);
+        conn = DriverManager.getConnection(url, username, password);
+        log.info("Conexão realizada com sucesso.");
+    }
 
-    public List<String> getFieldsFromTable(@NotBlank String tableName) {
-        log.info("Acessando no banco os nomes dos campos da tabela '{}'.", tableName);
-        val session = entityManager.unwrap(Session.class);
-        val campos = session.createNativeQuery(SQL_GET_FIELDS_FROM_TABLE)
-            .setParameter("tableName", tableName)
-            .getResultList()
-            .stream()
-            .map(String::valueOf)
-            .toList();
-        log.info("Total de campos coletados da tabela '{}': {}.", tableName, campos.size());
-        return campos;
+    public List<String> getColsFromTable(@NotBlank String tableName)
+    throws SQLException {
+        log.info("Obtendo os nomes dos campos para a tabela '{}'.", tableName);
+        if(!SqlUtils.isSafeQuery(tableName)) {
+            throw new RuntimeException("A tabela informada é/contêm comandos DDL não permitidos.");
+        }
+        val listaColunas = new ArrayList<String>();
+        try(val statement = conn.createStatement()) {
+            val sql = sqlGetColsFromTable(tableName);
+            log.info("Executando SQL: {}", sql);
+
+            val resultSet = statement.executeQuery(sql);
+            val metaDados = resultSet.getMetaData();
+            int columnCount = metaDados.getColumnCount();
+            while(resultSet.next()) {
+                for(int i = 1; i <= columnCount; i++) {
+                    listaColunas.add(resultSet.getString(i));
+                }
+            }
+            log.info("Total de campos coletados da tabela '{}': {}.", tableName, listaColunas.size());
+            return listaColunas;
+        }
+    }
+
+    private static String sqlGetColsFromTable(@NotBlank String tableName) {
+            String sql = "SELECT a.column_name " +
+                    "FROM all_tab_columns a " +
+                    "WHERE a.table_name = '%s' " +
+                    "AND ROWNUM <= 125 " +
+                    "ORDER BY COLUMN_ID ";
+            return String.format(sql, tableName);
     }
 
     //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
-    public ResultadoSql getAllInfoFromTable(@NonNull ResultadoSql resultadoSql) {
+    public void validateQuery(@NonNull String sql) throws SQLGrammarException, SQLException {
+        log.info("Validando SQL: {}", sql);
+        if(!SqlUtils.isSafeQuery(sql)) {
+            throw new RuntimeException("A queries informada contêm comandos DDL não permitidos.");
+        }
+        try(val statement = conn.createStatement()) {
+            statement.setMaxRows(1);
+            statement.executeQuery(sql);
+        }
+        log.info("Validação aprovada.");
+    }
+
+    //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
+    public ResultadoSql getAllInfoFromTable(@NonNull ResultadoSql resultadoSql) throws SQLException {
         //Validações
         if(resultadoSql.semTabela()) throw new RuntimeException("Tabela não definida.");
         validateInputs(resultadoSql);
 
-        //Preparando execução
         val tableName = resultadoSql.getTabela();
-        val session = entityManager.unwrap(Session.class);
-        val sql = resultadoSql.getSqlCompleta();
-        val query = session.createNativeQuery(sql);
+        val extracao = new ArrayList<Map<String, Object>>();
+        try(val statement = conn.createStatement()) {
+            val sql = resultadoSql.getSqlCompleta();
+            val resultSet = statement.executeQuery(sql);
+            val metaDados = resultSet.getMetaData();
+            int columnCount = metaDados.getColumnCount();
 
-        //Configurando tipo de retorno para uma lista de mapas
-        query.setResultTransformer(AliasToEntityMapResultTransformer.INSTANCE);
-        final List<Map<String, Object>> extracao = query.getResultList();
+            while(resultSet.next()) {
+                val resultMap = new HashMap<String, Object>();
+
+                for(int i = 1; i <= columnCount; i++) {
+                    val coluna = metaDados.getColumnName(i);
+                    val valor = resultSet.getObject(i);
+                    resultMap.put(coluna, valor);
+                }
+                extracao.add(resultMap);
+            }
+        }
         if(extracao.isEmpty()) {
             log.info("Nenhum registro obtido na tabela '{}'",  tableName);
             return resultadoSql;
@@ -73,15 +126,12 @@ public class MasterOracleDAO {
             log.debug(" - Campos: {}", String.join(", ", resultadoSql.getCampos()));
         }
         //Adicionando os valores de cada registro para o ResultadoSql dessa mesma tabela
-        extracao.forEach(obj -> {
-            obj.values().forEach(v -> log.debug(" - Valores: {}", v));
-            resultadoSql.addResultado(obj);
-        });
-        return resultadoSql.fecharConsultaPreJob();
+        extracao.forEach(resultadoSql::addResultado);
+        return resultadoSql;
     }
 
-    public List<String> checkFields(@NonNull ComandoSql sql) {
-        if(sql.getCampos().isEmpty()) return getFieldsFromTable(sql.getTabela());
+    public List<String> checkFields(@NonNull ComandoSql sql) throws SQLException {
+        if(sql.getCampos().isEmpty()) return getColsFromTable(sql.getTabela());
         return sql.getCampos();
     }
 
@@ -94,27 +144,20 @@ public class MasterOracleDAO {
             .map(String::valueOf)
             .toList();
 
-//        boolean camposValidos = ValidadorSQL.isSafe(sql.getCampos());
-        boolean filtroValido = ValidadorSQL.isSafe(filtros);
-        boolean sqlValido = ValidadorSQL.isSafe(sql.getSql());
+        boolean filtroValido = SqlUtils.isSafeQuery(filtros);
+        boolean sqlValido = SqlUtils.isSafeQuery(sql.getSql());
         if(!filtroValido || !sqlValido) {
             throw new RuntimeException("A queries informada contêm comandos DDL não permitidos.");
         }
     }
 
-    //TODO: remover
-    public void teste() {
-        val session = entityManager.unwrap(Session.class);
-        val query = session.createNativeQuery("SELECT * FROM EVENTOS_WEB WHERE ROWNUM <= 50");
-        query.setResultTransformer(AliasToEntityMapResultTransformer.INSTANCE);
-        List<Map<String, Object>> results = query.getResultList();
-        if (!results.isEmpty()) {
-            Map<String, Object> firstRow = results.get(1);
-            Set<String> fieldNames = firstRow.keySet();
-            for (String fieldName : fieldNames) {
-                System.out.println("Campo consultado: " + fieldName);
-            }
+    @Override
+    public void close() {
+        try {
+            if(conn != null) conn.close();
+        }
+        catch(SQLException e) {
+            log.error("Erro inesperado ao tentar fechar conexão: {}", e.getMessage());
         }
     }
-
 }

@@ -1,12 +1,11 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.master.MasterResponseDTO;
 import br.com.ppw.dma.system.ShellPointer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
+import org.modelmapper.ModelMapper;
 
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -14,13 +13,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static br.com.ppw.dma.util.FormatString.extrairMascara;
-import static br.com.ppw.dma.util.FormatString.valorVazio;
+import static br.com.ppw.dma.util.FormatString.*;
 
 @Data
+@Slf4j
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class JobInfoDTO implements ShellPointer, MasterResponseDTO {
+public class JobInfoDTO implements ShellPointer {
 
     OffsetDateTime dataRegistro;
     Long id;
@@ -47,6 +46,22 @@ public class JobInfoDTO implements ShellPointer, MasterResponseDTO {
     LocalDate dataAtualizacao;
     String atualizadoPor;
 
+
+    public static JobInfoDTO converterJob(@NonNull Job job) {
+        log.info("Convertendo entidade Job.");
+
+        val jobDto = new ModelMapper().map(job, JobInfoDTO.class);
+        jobDto.setParametros(dividirValores(job.getParametros()));
+        jobDto.setTabelas(dividirValores(job.getTabelas()));
+        jobDto.setDescricaoParametros(dividirValores(job.getDescricaoParametros()));
+        jobDto.setMascaraEntrada(dividirValores(job.getMascaraEntrada()));
+        jobDto.setMascaraSaida(dividirValores(job.getMascaraSaida()));
+        jobDto.setMascaraLog(dividirValores(job.getMascaraLog()));
+
+        log.info("Conversão realizada com sucesso.");
+        log.info("{}", jobDto);
+        return jobDto;
+    }
 
     @JsonIgnore
     public String pathShell() {

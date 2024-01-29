@@ -18,7 +18,6 @@ public class ConfigQueryInfoDTO extends ConfigQueryBasicDTO {
     public ConfigQueryInfoDTO(@NonNull ConfigQuery configQuery) {
         super(configQuery);
         this.id = configQuery.getId();
-        this.pipeline = configQuery.getPipeline().getId();
         this.job = configQuery.getJob().getId();
     }
 

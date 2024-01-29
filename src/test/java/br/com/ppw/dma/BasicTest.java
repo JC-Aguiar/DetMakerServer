@@ -1,8 +1,10 @@
 package br.com.ppw.dma;
 
+import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.configQuery.FiltroSql;
 import br.com.ppw.dma.job.JobService;
 import br.com.ppw.dma.net.ConectorSftp;
+import br.com.ppw.dma.util.SqlUtils;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -190,6 +192,21 @@ public class BasicTest {
     }
 
     @Test
+    public void testeValidarQueryComDdl() {
+        String sql = "SELECT INSERT * FROM DELQUDA_1_CLI WHERE ROWNUM <= 50";
+        log.info("SQL: {}", sql);
+
+        boolean valido = SqlUtils.isSafeQuery(sql);
+        log.info("Valido: {}", valido);
+
+        sql = "SELECT * FROM DELQUDA_1_CLI WHERE ROWNUM <= 50";
+        log.info("SQL: {}", sql);
+
+        valido = SqlUtils.isSafeQuery(sql);
+        log.info("Valido: {}", valido);
+    }
+
+    @Test
     public void testeValidarExecucaoEmIdea() {
         val classPath = System.getProperty("java.class.path");
         log.info("ClassPath:");
@@ -213,8 +230,13 @@ public class BasicTest {
 
     @Test
     public void testeComandoListagemSftp() throws IOException {
-        val sftp = ConectorSftp.conectar("10.129.164.206", 22, "rcvry", "Ppw@1022");
+        val cliente = "Vivo";
+        val ftp = new AmbienteAcessoDTO(
+            "10.129.164.206:22",
+            "rcvry",
+            "Ppw@1022");
         val arquivoPath = "/app/rcvry/cy3/log/EVENTOS_PRODUCER_017_*_*.log";
+        val sftp = ConectorSftp.conectar(ftp.getConexao(), ftp.getUsuario(), ftp.getSenha());
         val listaArquivos = sftp.comando("ls -t " + arquivoPath + " | head -1").getConsoleLog();
         listaArquivos.forEach(log::info);
     }

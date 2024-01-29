@@ -3,8 +3,7 @@ package br.com.ppw.dma.util;
 import br.com.ppw.dma.DetMakerApplication;
 import br.com.ppw.dma.evidencia.AnexoInfoDTO;
 import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
-import br.com.ppw.dma.pipeline.DetDTO;
-import br.com.ppw.dma.system.Arquivos;
+import br.com.ppw.dma.relatorio.DetDTO;
 import br.com.ppw.dma.user.UserInfoDTO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -12,7 +11,6 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ResourceLoader;
 
 import java.io.BufferedReader;
@@ -24,14 +22,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static br.com.ppw.dma.util.FormatDate.FORMAL_STYLE;
+import static br.com.ppw.dma.util.FormatDate.BRASIL_STYLE;
 import static br.com.ppw.dma.util.FormatString.javascriptString;
 
 @Slf4j
 public class DetHtml {
 
     //Atributos
-    @Getter final File documento;
+    @Getter final byte[] documento;
+    @Getter final String documentoNome;
     ResourceLoader resourceLoader;
     int countEvidencias = 0;
     int countTabelas = 0;
@@ -121,7 +120,7 @@ public class DetHtml {
             CAMPO_PROJETO_NOME   + javascriptString(dto.relatorio().getNomeProjeto())   + "; \n" +
             CAMPO_ATIVIDADE_NOME + javascriptString(dto.relatorio().getNomeAtividade()) + "; \n" +
             CAMPO_TESTE_TIPO     + javascriptString(dto.relatorio().getTesteTipo())     + "; \n" +
-            CAMPO_TESTE_SISTEMA  + javascriptString(dto.relatorio().getSistema())       + "; \n" +
+            CAMPO_TESTE_SISTEMA  + javascriptString(dto.relatorio().getCliente())       + "; \n" +
             CAMPO_USER_NOME      + javascriptString(userNome)                           + "; \n" +
             CAMPO_USER_CARGO     + javascriptString(userPapel)                          + "; \n" +
             CAMPO_USER_EMPRESA   + javascriptString(userEmpresa)                        + "; \n" +
@@ -164,7 +163,7 @@ public class DetHtml {
                 resultado,                                          //resultado
                 evidenciaDto.getArgumentos(),                       //parametros
                 evidenciaDto.getRevisor(),                          //revisor
-                evidenciaDto.getDataInicio().format(FORMAL_STYLE),  //data
+                evidenciaDto.getDataInicio().format(BRASIL_STYLE),  //data
                 evidenciaDto.getQueries(),                          //queries
                 evidenciaDto.getTabelasNome(),                      //tabelasNome
                 tabelasPreJobMap.keySet().stream().toList(),        //tabelasPreJob
@@ -216,16 +215,12 @@ public class DetHtml {
 
         //Criando arquivo local
         //TODO: cria método que refina nomes para diretórios e arquivos
-        val direotrioNome = dto.pipelineNome()
-            .replace(" ", "_")
-            .replace(".", "_");
-        val diretorioFinal = DetMakerApplication.DIR_PIPELINE + direotrioNome + File.separator;
         val idPorjeto = FormatString.nomeParaArquivo(dto.relatorio().getIdProjeto());
         val nomePorjeto = FormatString.nomeParaArquivo(dto.relatorio().getNomeProjeto());
         val nomeAtividade = FormatString.nomeParaArquivo(dto.relatorio().getNomeAtividade());
         val dataHoraDet = FormatDate.fileNameStyle();
-        val arquivoNome = "DET_" +idPorjeto+ "_" +nomePorjeto+ "_" +nomeAtividade+ "_" +dataHoraDet+ ".html";
-        documento = Arquivos.criarEscrever(diretorioFinal, arquivoNome, conteudoHtml);
+        documentoNome = "DET_" +idPorjeto+ "_" +nomePorjeto+ "_" +nomeAtividade+ "_" +dataHoraDet+ ".html";
+        documento = conteudoHtml.getBytes();
     }
 
     private String carregarRecurso(@NotBlank String arquivoNome) throws IOException {

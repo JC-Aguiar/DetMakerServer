@@ -19,7 +19,7 @@ public class ExecQueryService {
 
     @Transactional
     public ExecQuery persist(@NotNull ExecQuery execQuery) {
-        log.info("Persistindo ExecFile no banco:");
+        log.info("Persistindo ExecQuery no banco:");
         log.info(execQuery.toString());
 
         execQuery = dao.save(execQuery);

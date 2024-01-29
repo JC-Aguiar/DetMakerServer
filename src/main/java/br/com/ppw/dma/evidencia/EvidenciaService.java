@@ -1,16 +1,15 @@
 package br.com.ppw.dma.evidencia;
 
+import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
+import br.com.ppw.dma.configQuery.ComandoSql;
+import br.com.ppw.dma.configQuery.ResultadoSql;
 import br.com.ppw.dma.execFile.ExecFile;
 import br.com.ppw.dma.execFile.ExecFileService;
-import br.com.ppw.dma.execFile.TipoExecFile;
 import br.com.ppw.dma.execQuery.ExecQuery;
 import br.com.ppw.dma.execQuery.ExecQueryService;
 import br.com.ppw.dma.job.JobExecutePOJO;
 import br.com.ppw.dma.master.MasterOracleDAO;
 import br.com.ppw.dma.master.MasterService;
-import br.com.ppw.dma.configQuery.ComandoSql;
-import br.com.ppw.dma.configQuery.ResultadoSql;
-import br.com.ppw.dma.util.ValidadorSQL;
 import com.google.gson.Gson;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -27,12 +26,10 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Blob;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import static br.com.ppw.dma.execFile.TipoExecFile.*;
-import static br.com.ppw.dma.system.Arquivos.lerArquivo;
 
 @Service
 @Slf4j
@@ -40,9 +37,6 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
 
     @Autowired
     private final EvidenciaRepository evidenciaDao;
-
-    @Autowired
-    private final MasterOracleDAO oracleDao;
 
     @Autowired
     private final ExecFileService execFileService;
@@ -55,14 +49,12 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
 
     public EvidenciaService(
         EvidenciaRepository evidenciaDao,
-        MasterOracleDAO oracleDao,
         ExecFileService execFileService,
         ExecQueryService execQueryService,
         Gson gson) {
         //---------------------------------------
         super(evidenciaDao);
         this.evidenciaDao = evidenciaDao;
-        this.oracleDao = oracleDao;
         this.execFileService = execFileService;
         this.execQueryService = execQueryService;
         this.gson = gson;
@@ -79,10 +71,14 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
     }
 
     //TODO: javadoc
-    public List<ResultadoSql> extractTablePreJob(@NotEmpty List<? extends ComandoSql> comandosSql) {
+    public List<ResultadoSql> extractTablePreJob(
+        @NotEmpty List<? extends ComandoSql> comandosSql,
+        @NonNull AmbienteAcessoDTO ambienteBanco) {
+        //---------------------------------------------------
         val extracoes = comandosSql.stream().map(cmdSql -> {
             try {
-                return extractTablePreJob(cmdSql);
+                log.info("Extraindo tabela '{}' pré-Job.", cmdSql.getTabela());
+                return extractTable(cmdSql, ambienteBanco);
             }
             catch(Exception e) {
                 e.printStackTrace();
@@ -96,17 +92,16 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         return extracoes;
     }
 
-    //TODO: javadoc
-    public ResultadoSql extractTablePreJob(@NonNull ComandoSql cmdSql) {
-        log.info("Realizando extração pré-job da tabela '{}'.", cmdSql.getTabela());
-        return extractTable(cmdSql);
-    }
 
     //TODO: javadoc
-    public List<ResultadoSql> extractTablePosJob(@NonNull List<ResultadoSql> resultadoSqls) {
-        val extracoes = resultadoSqls.stream().map(sql -> {
+    public List<ResultadoSql> extractTablePosJob(
+        @NonNull List<ResultadoSql> resultadoSqls,
+        @NonNull AmbienteAcessoDTO ambienteBanco) {
+        //---------------------------------------
+        val extracoes = resultadoSqls.stream().map(rSql -> {
             try {
-                return extractTablePosJob(sql);
+                log.info("Extraindo tabela '{}' pós-Job.", rSql.getTabela());
+                return extractTable(rSql, ambienteBanco);
             }
             catch(Exception e) {
                 e.printStackTrace();
@@ -121,20 +116,20 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
     }
 
     //TODO: javadoc
-    public ResultadoSql extractTablePosJob(@NonNull ResultadoSql resultSql) {
-        log.info("Realizando extração pós-job da tabela '{}'.", resultSql.getTabela());
-        return extractTable(resultSql);
+    private ResultadoSql extractTable(@NonNull ComandoSql comandoSql, @NonNull AmbienteAcessoDTO banco)
+    throws SQLException {
+        try(val masterDao = new MasterOracleDAO(banco)) {
+            return masterDao.getAllInfoFromTable(new ResultadoSql(comandoSql))
+                .fecharConsultaPreJob();
+        }
     }
 
     //TODO: javadoc
-    private ResultadoSql extractTable(@NonNull ComandoSql comandoSql) {
-        val resultadoSql = new ResultadoSql(comandoSql);
-        return oracleDao.getAllInfoFromTable(resultadoSql);
-    }
-
-    //TODO: javadoc
-    private ResultadoSql extractTable(@NonNull ResultadoSql resultadoSql) {
-        return oracleDao.getAllInfoFromTable(resultadoSql);
+    private ResultadoSql extractTable(@NonNull ResultadoSql resultadoSql, @NonNull AmbienteAcessoDTO banco)
+    throws SQLException {
+        try(val masterDao = new MasterOracleDAO(banco)) {
+            return masterDao.getAllInfoFromTable(resultadoSql);
+        }
     }
 
     //TODO: javadoc
@@ -142,85 +137,48 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
     public Evidencia createEvidencia(@NonNull JobExecutePOJO jobPojo) {
         log.info("Iniciando processo de geração de Evidência com base na JobExecutePOJO:");
         log.info(jobPojo.toString());
+        val logs = new ArrayList<ExecFile>();
 
         log.info("Criando novo registro da Evidência.");
-        val evidencia = persist(
-            Evidencia.builder()
-                .job(jobPojo.getJob())
-                .sucesso(jobPojo.isSucesso())
-                .ordem(jobPojo.getOrdem())
-                .argumentos(jobPojo.getArgumentos())
-                .dataInicio(jobPojo.getDataInicio())
-                .dataFim(jobPojo.getDataFim())
-                .sucesso(jobPojo.isSucesso())
-                .build()
-        );
+        val evidencia = persist(Evidencia.jobPojoExecutado(jobPojo));
         evidenciaDao.flush();
 
-        if(!jobPojo.getTabelas().isEmpty())
+        if (!jobPojo.getTabelas().isEmpty())
             log.info("Criando novos registros ExecQuery para cada resultado no banco (pré e pós Job).");
         val banco = jobPojo.getTabelas()
             .stream()
-            .map(tabela -> {
-                val execQuery = ExecQuery.builder()
-                    .evidencia(evidencia)
-                    .jobNome(jobPojo.getJob().getNome())
-                    .tabelaNome(tabela.getTabela())
-                    .query(tabela.getSqlCompleta())
-                    .resultadoPreJob(tabela.resumoPreJob())
-                    .resultadoPosJob(tabela.resumoPosJob())
-                    //TODO: ?informações da pipeline?
-                    .build();
-                return execQueryService.persist(execQuery);
-            })
+            .map(tabela -> ExecQuery.montarEvidencia(evidencia, tabela))
+            .map(execQueryService::persist)
             .toList();
 
-        if(!jobPojo.getCargas().isEmpty())
+        if (!jobPojo.getCargas().isEmpty())
             log.info("Criando novos registros ExecFile para cada uma das cargas usadas.");
         val cargas = jobPojo.getCargas()
             .stream()
-            .map(carga -> {
-                val execFile = ExecFile.builder()
-                    .evidencia(evidencia)
-                    .jobNome(evidencia.getJob().getNome())
-                    .tipo(CARGA)
-                    .arquivoNome(carga.getName())
-                    .arquivo(lerArquivo(carga))
-                    .build();
-                return execFileService.persist(execFile);
-            })
+            .map(carga -> ExecFile.montarEvidenciaCarga(evidencia, carga))
+            .map(execFileService::persist)
             .toList();
 
-        if(!jobPojo.getLogs().isEmpty())
-            log.info("Criando novos registros ExecFile para cada umo dos logs obtidos.");
-        val logs = jobPojo.getLogs()
+        if (!jobPojo.getLogs().isEmpty() || !jobPojo.getTerminal().isEmpty())
+            log.info("Criando novos registros ExecFile para cada um dos logs obtidos.");
+
+        final String terminalConteudo = jobPojo.getTerminalFormatado();
+        if (!terminalConteudo.isEmpty()) {
+            val execFileTerminal = ExecFile.montarEvidenciaTerminal(evidencia, terminalConteudo);
+            logs.add(execFileTerminal);
+        }
+        jobPojo.getLogs()
             .stream()
-            .map(log -> {
-                val execFile = ExecFile.builder()
-                    .evidencia(evidencia)
-                    .jobNome(jobPojo.getJob().getNome())
-                    .tipo(LOG)
-                    .arquivoNome(log.getName())
-                    .arquivo(lerArquivo(log))
-                    .build();
-                return execFileService.persist(execFile);
-            })
-            .toList();
+            .map(log -> ExecFile.montarEvidenciaLog(evidencia, log))
+            .map(execFileService::persist)
+            .forEach(logs::add);
 
-        if(!jobPojo.getSaidas().isEmpty())
+        if (!jobPojo.getSaidas().isEmpty())
             log.info("Criando novos registros ExecFile para cada uma das saídas produzidas.");
         val saidas = jobPojo.getSaidas()
             .stream()
-            .map(saida -> {
-                val execFile = ExecFile.builder()
-                    .evidencia(evidencia)
-                    .jobNome(jobPojo.getJob().getNome())
-                    .tipo(SAIDA)
-                    .arquivoNome(saida.getName())
-                    .arquivo(lerArquivo(saida))
-                    .build();
-                return execFileService.persist(execFile);
-            })
+            .map(saida -> ExecFile.montarEvidenciaSaida(evidencia, saida))
+            .map(execFileService::persist)
             .toList();
 
         log.info("Atualizando Evidência ID {} com os anexos (ExecFile e ExecQuery).", evidencia.getId());

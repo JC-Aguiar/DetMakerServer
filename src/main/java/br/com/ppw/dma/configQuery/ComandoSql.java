@@ -1,7 +1,5 @@
 package br.com.ppw.dma.configQuery;
 
-import br.com.ppw.dma.master.MasterRequestDTO;
-import br.com.ppw.dma.master.MasterResponseDTO;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -16,7 +14,7 @@ import java.util.List;
 @ToString
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ComandoSql implements MasterRequestDTO, MasterResponseDTO {
+public class ComandoSql {
 
     final List<String> campos= new ArrayList<>();
     String tabela;
@@ -56,6 +54,14 @@ public class ComandoSql implements MasterRequestDTO, MasterResponseDTO {
     public String getSqlCompleta() {
         if(semTabela()) throw new RuntimeException("Tabela não definida.");
         if(!dinamico) return sql;
+        if(filtros.isEmpty())
+            throw new RuntimeException("Não existem filtros declarados para se montar o SQL.");
+
+        val valoresPendentes = filtros.stream()
+            .map(FiltroSql::getValor)
+            .anyMatch(valor -> valor == null || valor.isEmpty());
+        if(valoresPendentes) throw new RuntimeException("Favor preencher todos os campos antes da query.");
+
         return FiltroSql.montarSql(sql, filtros);
     }
 

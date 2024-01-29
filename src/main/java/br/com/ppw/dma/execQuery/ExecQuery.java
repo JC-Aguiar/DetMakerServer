@@ -1,9 +1,11 @@
 package br.com.ppw.dma.execQuery;
 
+import br.com.ppw.dma.configQuery.ResultadoSql;
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
@@ -55,6 +57,19 @@ public class ExecQuery {
     @Column(name = "RESULTADO_POS_JOB", columnDefinition = "CLOB", nullable = false)
     // Conteúdo da tabela extraída
     String resultadoPosJob;
+
+
+    public static ExecQuery montarEvidencia(@NonNull Evidencia evidencia, @NonNull ResultadoSql tabela) {
+        return ExecQuery.builder()
+            .evidencia(evidencia)
+            .jobNome(evidencia.getJob().getNome())
+            .tabelaNome(tabela.getTabela())
+            .query(tabela.getSqlCompleta())
+            .resultadoPreJob(tabela.resumoPreJob())
+            .resultadoPosJob(tabela.resumoPosJob())
+            //TODO: ?informações da pipeline?
+            .build();
+    }
 
     @Override
     public String toString() {

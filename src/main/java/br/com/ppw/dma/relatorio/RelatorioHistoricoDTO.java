@@ -1,7 +1,6 @@
 package br.com.ppw.dma.relatorio;
 
 import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
-import br.com.ppw.dma.master.MasterResponseDTO;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class RelatorioHistoricoDTO implements MasterResponseDTO {
+public class RelatorioHistoricoDTO {
 
     Long id;
     String pipeline;
@@ -26,27 +25,25 @@ public class RelatorioHistoricoDTO implements MasterResponseDTO {
     String parametros;
     String dados;
     String testeTipo;
-    String sistema;
+    String cliente;
     String ambiente;
     final List<EvidenciaInfoDTO> evidencias = new ArrayList<>();
-    OffsetDateTime dataInicio;
-    OffsetDateTime dataFim;
+    OffsetDateTime data;
     Boolean sucesso;
 
     public RelatorioHistoricoDTO(@NonNull Relatorio relatorio) {
         log.info("Convertendo Relatorio em RelatorioHistoricoDTO.");
         this.id = relatorio.getId();
-        this.pipeline = relatorio.getPipeline().getNome();
+        this.pipeline = relatorio.getPipeline().getProps().getNome();
         this.idProjeto = relatorio.getIdProjeto();
         this.nomeProjeto = relatorio.getNomeProjeto();
         this.nomeAtividade = relatorio.getNomeAtividade();
         this.consideracoes = relatorio.getConsideracoes();
         this.parametros = relatorio.getParametros();
         this.dados = relatorio.getPipeline().getDescricao();
-        this.sistema = relatorio.getSistema();
-        this.ambiente = relatorio.getAmbiente();
-        this.dataInicio = relatorio.getDataInicio();
-        this.dataFim = relatorio.getDataFim();
+        this.cliente = relatorio.getCliente();
+        this.ambiente = relatorio.getAmbiente().getNome();
+        this.data = relatorio.getData();
         this.sucesso = relatorio.getSucesso();
         if(relatorio.getTesteTipo() != null)
             this.testeTipo = relatorio.getTesteTipo().nome;
