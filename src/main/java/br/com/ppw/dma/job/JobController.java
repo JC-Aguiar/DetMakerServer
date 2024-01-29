@@ -30,27 +30,33 @@ import java.util.List;
 @Slf4j
 public class JobController extends MasterController<Long, Job, JobController> {
 
-    private final JobService jobService;
-
     @Autowired
     private ModelMapper mapper;
 
-    @Autowired
+    private JobService jobService;
+
     private EvidenciaController evidenciaController;
 
-    @Autowired
     private ConfigQueryController queryController;
 
-    @Autowired
     private ClienteService clienteService;
 
-    @Autowired
     private AmbienteService ambienteService;
 
 
-    public JobController(@Autowired JobService jobService) {
+    public JobController(
+        @Autowired JobService jobService,
+        @Autowired EvidenciaController evidenciaController,
+        @Autowired ConfigQueryController queryController,
+        @Autowired ClienteService clienteService,
+        @Autowired AmbienteService ambienteService) {
+        //-------------------------------------
         super(jobService);
         this.jobService = jobService;
+        this.evidenciaController = evidenciaController;
+        this.queryController = queryController;
+        this.clienteService =  clienteService;
+        this.ambienteService = ambienteService;
     }
 
     @GetMapping("cliente/{clienteId}")

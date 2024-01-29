@@ -25,9 +25,9 @@ import java.util.stream.Collectors;
 @RequestMapping("evidencia")
 @Slf4j
 public class EvidenciaController extends MasterController<Long, Evidencia, EvidenciaController> {
-    //MasterInfoDTO, MasterResponseDTO
 
     private final EvidenciaService evidenciaService;
+
 
     public EvidenciaController(@Autowired EvidenciaService evidenciaService) {
         super(evidenciaService);
