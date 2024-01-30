@@ -1,5 +1,6 @@
 package br.com.ppw.dma.configQuery;
 
+import br.com.ppw.dma.execQuery.ExecQuery;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -35,6 +36,14 @@ public class ComandoSql {
         this.filtros.addAll(FiltroSql.identificar(configQuery.getSql()));
         this.sql = configQuery.getSql();
         this.descricao = configQuery.getDescricao();
+        if(!filtros.isEmpty()) this.dinamico = true;
+    }
+
+    public ComandoSql(@NonNull ExecQuery execQuery) {
+        this.tabela = execQuery.getTabelaNome();
+        this.filtros.addAll(FiltroSql.identificar(execQuery.getQuery()));
+        this.sql = execQuery.getQuery();
+        this.descricao = "";
         if(!filtros.isEmpty()) this.dinamico = true;
     }
 

@@ -18,6 +18,7 @@ import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatDate.RELOGIO;
 
@@ -34,13 +35,13 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
         this.dao = dao;
     }
 
-    public List<Relatorio> findAllByAmbiente(@NonNull Long ambienteId) {
-        val result = dao.findAllByAmbienteId(ambienteId);
+    public List<Relatorio> findAllByAmbiente(@NonNull Long clienteId) {
+        val result = dao.findAllByAmbienteId(clienteId);
         if(result.isEmpty()) throw new NoSuchElementException();
         return result;
     }
 
-    public Page<Relatorio> findAllByAmbiente(@NonNull Pageable pageConfig, @NonNull Long ambienteId) {
+    public Page<Relatorio> findAllByAmbiente(@NonNull Long ambienteId, @NonNull Pageable pageConfig) {
         val result = dao.findAllByAmbienteId(ambienteId, pageConfig);
         if(result.isEmpty()) throw new NoSuchElementException();
         return result;
@@ -88,37 +89,33 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
 
     @Transactional
     public Relatorio buildAndPersist(
+        @NotNull RelatorioInfoDTO relatorioDto,
         @NotNull Ambiente ambiente,
-        @NotNull RelatorioInfoDTO dto,
         @NotNull Pipeline pipeline,
-        @NotNull List<Evidencia> evidencias,
-        String parametros) {
+        @NotNull List<Evidencia> evidencias) {
         //--------------------------------------
-        log.info("Convertendo Relatório DTO em Entidade.");
-        val dataInicio = evidencias.stream()
-            .map(Evidencia::getDataInicio)
-            .min(OffsetDateTime::compareTo)
-            .orElse(null);
-        val dataFim = evidencias.stream()
-            .map(Evidencia::getDataFim)
-            .max(OffsetDateTime::compareTo)
-            .orElse(null);
+        //Coleta todos os parâmetros de entrada dos Jobs
+        log.debug("Coletando todos os parâmetros usados nos Jobs.");
+        val parametrosDosJobs = evidencias.stream()
+            .map(ev -> ev.getJob().getNome() +" "+ ev.getArgumentos())
+            .collect(Collectors.joining("\n"));
 
+        log.info("Convertendo Relatório DTO em Entidade.");
         var relatorio = Relatorio.builder()
-            .nomeAtividade(dto.getNomeAtividade())
-            .consideracoes(dto.getConsideracoes())
+            .nomeAtividade(relatorioDto.getNomeAtividade())
+            .consideracoes(relatorioDto.getConsideracoes())
             .cliente(ambiente.getCliente().getNome())
             .ambiente(ambiente)
             .pipeline(pipeline)
             .evidencias(evidencias)
-            .parametros(parametros)
+            .parametros(parametrosDosJobs)
             .data(OffsetDateTime.now(RELOGIO))
             .build();
 
-        relatorio.setIdProjeto(dto.getIdProjeto());
-        relatorio.setNomeProjeto(dto.getNomeProjeto());
+        relatorio.setIdProjeto(relatorioDto.getIdProjeto());
+        relatorio.setNomeProjeto(relatorioDto.getNomeProjeto());
         relatorio.setTesteTipo(
-            TiposDeTeste.identificar(dto.getTesteTipo()).orElse(null)
+            TiposDeTeste.identificar(relatorioDto.getTesteTipo()).orElse(null)
         );
         relatorio = persist(relatorio);
         return relatorio;

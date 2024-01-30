@@ -7,6 +7,7 @@ import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -47,7 +48,7 @@ public abstract class MasterController<ID, ENTITY extends MasterEntity, THIS ext
     }
 
     //TODO: TESTE
-    public ResponseEntity<?> craftResponse(
+    public ResponseEntity<?> craftPage(
         @NotNull List<ENTITY> entityList,
         @NotNull Pageable pageConfig) {
         //-------------------------------------------------
@@ -58,8 +59,8 @@ public abstract class MasterController<ID, ENTITY extends MasterEntity, THIS ext
         return new ResponseEntity<>(responsePage, HttpStatus.OK);
     }
 
-    @GetMapping
-    public ResponseEntity<?> getOne(@RequestParam(name = "id") ID id)
+    @GetMapping("id/{id}")
+    public ResponseEntity<?> getOne(@PathVariable(name = "id") ID id)
     throws NoSuchMethodException {
         final ENTITY entitie = (ENTITY) service.findById(id);
         return proxy().parseOne(entitie);

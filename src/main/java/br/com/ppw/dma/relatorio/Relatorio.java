@@ -39,7 +39,7 @@ public class Relatorio implements MasterEntity<Long> {
     String idProjeto = "N/A";
 
     @Column(name = "NOME_PROJETO", length = 200, nullable = false, updatable = false)
-    String nomeProjeto = "Anônimo";
+    String nomeProjeto = "Não Informado";
 
     @Column(name = "NOME_ATIVIDADE", length = 300, updatable = false)
     String nomeAtividade;

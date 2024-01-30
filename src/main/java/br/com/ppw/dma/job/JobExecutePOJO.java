@@ -3,11 +3,9 @@ package br.com.ppw.dma.job;
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.configQuery.ResultadoSql;
+import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.net.RemoteFile;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.time.OffsetDateTime;
@@ -34,6 +32,34 @@ public class JobExecutePOJO {
     OffsetDateTime dataFim;
     //TODO: precisa da informação da pipeline
     //TODO: adicionar método toString() manual para evitar de exibir conteúdos massivos
+
+
+    public JobExecutePOJO(
+        @NonNull Job job,
+        @NonNull JobExecuteDTO dto,
+        @NonNull AmbienteAcessoDTO banco) {
+        //----------------------------------------
+        setJob(job);
+        setJobInfo(JobInfoDTO.converterJob(job));
+        setOrdem(dto.getOrdem());
+        setArgumentos(dto.getArgumentos());
+        addComandoSql(dto.getQueries());
+        setBanco(banco);
+        //TODO: add cargas!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    }
+
+    public JobExecutePOJO(@NonNull Evidencia evidencia) {
+        setJob(evidencia.getJob());
+        setJobInfo(JobInfoDTO.converterJob(job));
+        setOrdem(evidencia.getOrdem());
+        setArgumentos(evidencia.getArgumentos());
+        val comandos = evidencia.getBanco()
+            .stream()
+            .map(ComandoSql::new)
+            .toList();
+        addComandoSql(comandos);
+        //TODO: add cargas!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    }
 
     public String getTerminalFormatado() {
         return String.join("\n", terminal).trim();

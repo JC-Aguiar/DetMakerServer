@@ -1,14 +1,14 @@
 package br.com.ppw.dma.pipeline;
 
+import br.com.ppw.dma.ambiente.Ambiente;
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.ambiente.AmbienteService;
 import br.com.ppw.dma.cliente.ClienteService;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
-import br.com.ppw.dma.job.Job;
-import br.com.ppw.dma.job.JobController;
-import br.com.ppw.dma.job.JobExecuteDTO;
+import br.com.ppw.dma.job.*;
 import br.com.ppw.dma.master.MasterController;
 import br.com.ppw.dma.relatorio.RelatorioHistoricoDTO;
+import br.com.ppw.dma.relatorio.RelatorioInfoDTO;
 import br.com.ppw.dma.relatorio.RelatorioService;
 import jakarta.validation.Valid;
 import lombok.NonNull;
@@ -18,8 +18,10 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -93,45 +95,51 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
      * <li>Coleta das Evidências de cada Job</li>
      * <li>Detalhamento do processo no Relatório</li>
      * </ol>
-     * @param execDTO {@link PipelineExecDTO} contendo as informações necessárias para execução.
+     * @param execDto {@link PipelineExecDTO} contendo as informações necessárias para execução.
      * @return {@link ResponseEntity} com o {@link RelatorioHistoricoDTO} do Relatório final.
      */
+    @Transactional
     @PostMapping(value = "run")
-    public ResponseEntity<RelatorioHistoricoDTO> runNewPipeline(
-        @NonNull @RequestBody PipelineExecDTO execDTO) {
-        //-------------------------------------------------------
-        //Coleta ou cria Ambiente
-        val pipeline = getAndUpdate(execDTO.getPipeline())
-            .orElseGet(() -> proxy().createNewPipeline(execDTO));
+    public ResponseEntity<RelatorioHistoricoDTO> updateAndRun(@RequestBody PipelineExecDTO execDto) {
+        val pipeline = getAndUpdate(execDto.getPipeline())
+            .orElseGet(() -> proxy().createNewPipeline(execDto));
+        val ambiente = ambienteService.findById(execDto.getAmbienteId());
+        val banco = AmbienteAcessoDTO.banco(ambiente);
 
-        //Executa os Jobs e obtêm as evidências
-        val ambiente = ambienteService.findById(execDTO.getAmbienteId());
+        log.debug("Preparando execução dos Jobs, convertendo os JobExecuteDTOs para JobExecutePOJOs.");
+        List<JobExecutePOJO> jobsPojo = execDto.getJobs()
+            .stream()
+            .map(dto -> {
+                val id = dto.getId();
+                log.info("Buscando registro para Job id {}.", id);
+                val job = ((JobService) jobController.getService()).findById(id);
+                log.info(job.toString());
+                return new JobExecutePOJO(job, dto, banco);
+            })
+            .toList();
+
+        return run(execDto.getRelatorio(), pipeline, ambiente, jobsPojo);
+    }
+
+    public ResponseEntity<RelatorioHistoricoDTO> run(
+        @NonNull RelatorioInfoDTO relatorioDto,
+        @NonNull Pipeline pipeline,
+        @NonNull Ambiente ambiente,
+        @NonNull List<JobExecutePOJO> jobsPojo) {
+        //-----------------------------------
         val banco = AmbienteAcessoDTO.banco(ambiente);
         val ftp = AmbienteAcessoDTO.ftp(ambiente);
-        val evidencias = jobController.executeJobsAndGetEvidencias(banco, ftp, execDTO.getJobs());
+        val evidencias = jobController.executeJobsAndGetEvidencias(banco, ftp, jobsPojo);
+        val relatorio = relatorioService.buildAndPersist(relatorioDto, ambiente, pipeline, evidencias);
 
-        //Coleta todos os parâmetros de entrada dos Jobs
-        val parametrosDosJobs = evidencias.stream()
-            .map(ev -> ev.getJob().getNome() +" "+ ev.getArgumentos())
-            .collect(Collectors.joining("\n"));
-
-        //Cria e salva novo relatório
-        val relatorio = relatorioService.buildAndPersist(
-            ambiente,
-            execDTO.getRelatorio(),
-            pipeline,
-            evidencias,
-            parametrosDosJobs
-        );
         log.info("Montando RelatorioHistoricoDTO.");
         val relatorioHistorico = new RelatorioHistoricoDTO(relatorio);
         log.info(relatorioHistorico.toString());
-
         return ResponseEntity.ok(relatorioHistorico);
     }
 
     @PostMapping(value = "new")
-    public ResponseEntity<?> nova(@Valid @RequestBody PipelineInfoDTO dto)
+    public ResponseEntity<?> createNew(@Valid @RequestBody PipelineInfoDTO dto)
     throws DuplicatedRecordException {
         log.debug("Iniciando validação contra duplicidade, conversão e persistência.");
         pipelineService.checkDuplicated(dto.getNome(), dto.getClienteId());
@@ -147,7 +155,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
     }
 
     @PostMapping(value = "update")
-    public ResponseEntity<String> atualizar(@NonNull @RequestBody PipelineInfoDTO pipeline) {
+    public ResponseEntity<String> update(@NonNull @RequestBody PipelineInfoDTO pipeline) {
         if(getAndUpdate(pipeline).isPresent())
             return ResponseEntity.ok("Pipeline atualizada");
 

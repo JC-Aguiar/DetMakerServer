@@ -19,11 +19,11 @@ import java.util.Optional;
 @Service
 public abstract class MasterService<ID, ENTITY, THIS extends  MasterService> {
 
-    @Autowired
-    private final JpaRepository<ENTITY, ID> dao;
+    private JpaRepository<ENTITY, ID> dao;
+
 
     // A constructor that injects the `dao` object.
-    public MasterService(JpaRepository dao) {
+    public MasterService(@Autowired JpaRepository dao) {
         this.dao = dao;
     }
 
