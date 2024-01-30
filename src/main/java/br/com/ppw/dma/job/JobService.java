@@ -10,7 +10,9 @@ import br.com.ppw.dma.system.ExcelXLSX;
 import com.google.gson.Gson;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.modelmapper.ModelMapper;
@@ -47,6 +49,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
     @Autowired
     private final JobRepository dao;
 
+    @Getter @Setter
     private ConectorSftp sftp;
 
     public static final DateTimeFormatter CONVERSOR_DATA_SCHEDULE = DateTimeFormatter
@@ -182,23 +185,9 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: javadoc
-    public List<JobExecutePOJO> executarJobs(
-        @NonNull ConectorSftp sftp,
-        @NonNull AmbienteAcessoDTO banco,
-        @NonNull List<JobExecuteDTO> jobsDto) {
-        //--------------------------------------
-        //TODO: separar a Evidência do Resumo, onde o Resumo contêm as informações da execução
-        //  (aonde teve sucesso e aonde teve falha)
-        //Será convertido o JobExecuteDTO para JobExecutePOJO, inserindo nele a entidade Job via ID.
-        //Também será gerado JobInfoDTO com base na entidade. DTO responsável pela execução dos comandos
-        //de forma correta e organizada no terminal SFTP
+    public List<JobExecutePOJO> executarJobs(@NonNull List<JobExecutePOJO> jobsDto) {
         log.info("Iniciando rotina da execução de Jobs");
-        this.sftp = sftp;
         val jobsPojo = jobsDto.stream()
-            .map(this::createPojo)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .peek(pojo -> pojo.setBanco(banco))
             .map(this::executarJobPojo)
             .toList();
         log.info("Total de Jobs executados: {}.", jobsPojo.size());
@@ -268,33 +257,6 @@ public class JobService extends MasterService<Long, Job, JobService> {
         }
         pojo.setDataFim(OffsetDateTime.now());
         return pojo;
-    }
-
-    //TODO: javadoc
-    private Optional<JobExecutePOJO> createPojo(@NonNull JobExecuteDTO dto) {
-        try {
-            log.info("Buscando registro para Job id {}.", dto.getId());
-            val job = findById(dto.getId());
-            log.info("Job encontrado:");
-            log.info(job.toString());
-
-            log.info("Agrupando objetos dentro do JobExecutePOJO.");
-            val jobInfo = JobInfoDTO.converterJob(job);
-            val jobPojo = new JobExecutePOJO();
-            jobPojo.setJob(job);
-            jobPojo.setJobInfo(jobInfo);
-            jobPojo.setOrdem(dto.getOrdem());
-            jobPojo.setArgumentos(dto.getArgumentos());
-            jobPojo.addComandoSql(dto.getQueries());
-            //TODO: add cargas!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            log.info(jobPojo.toString());
-
-            return Optional.of(jobPojo);
-        }
-        catch(Exception e) {
-            log.warn("Erro durante preparo do Job id {}: {}.", dto.getId(), e.getMessage());
-            return Optional.empty();
-        }
     }
 
 }

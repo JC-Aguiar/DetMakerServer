@@ -1,6 +1,7 @@
 package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.configQuery.ComandoSql;
+import br.com.ppw.dma.evidencia.Evidencia;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -20,6 +21,8 @@ public class JobExecuteDTO {
    List<ComandoSql> queries = new ArrayList<>();
    List<String> cargas = new ArrayList<>();
    //TODO: precisa da informação da pipeline?
+
+
 
    public JobExecuteDTO addQuery(@NonNull ComandoSql query) {
       this.queries.add(query);

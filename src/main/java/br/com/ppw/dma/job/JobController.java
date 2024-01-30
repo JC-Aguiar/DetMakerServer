@@ -154,10 +154,14 @@ public class JobController extends MasterController<Long, Job, JobController> {
     public List<Evidencia> executeJobsAndGetEvidencias(
         @NonNull AmbienteAcessoDTO banco,
         @NonNull AmbienteAcessoDTO ftp,
-        @NonNull List<JobExecuteDTO> jobsExecute) {
+        @NonNull List<JobExecutePOJO> jobsPojo) {
         //----------------------------------------------
+        log.debug("Iniciando conexão remota SFTP.");
         val connFtp = ConectorSftp.conectar(ftp.getConexao(), ftp.getUsuario(), ftp.getSenha());
-        val jobsPojo = jobService.executarJobs(connFtp, banco, jobsExecute);
+        jobService.setSftp(connFtp);
+
+        log.debug("Executando POJOs.");
+        jobsPojo = jobService.executarJobs(jobsPojo);
         return evidenciaController.gerarEvidencias(jobsPojo);
     }
 

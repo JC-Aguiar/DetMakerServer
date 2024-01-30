@@ -1,9 +1,10 @@
 package br.com.ppw.dma.relatorio;
 
+import br.com.ppw.dma.ambiente.AmbienteService;
 import br.com.ppw.dma.evidencia.Evidencia;
-import br.com.ppw.dma.evidencia.EvidenciaController;
+import br.com.ppw.dma.job.JobExecutePOJO;
 import br.com.ppw.dma.master.MasterController;
-import br.com.ppw.dma.pipeline.PipelineService;
+import br.com.ppw.dma.pipeline.PipelineController;
 import br.com.ppw.dma.user.UserInfoDTO;
 import br.com.ppw.dma.util.DetHtml;
 import lombok.NonNull;
@@ -13,7 +14,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -34,20 +38,20 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
 
     private RelatorioService relatorioService;
 
-    private PipelineService pipelineService;
+    private AmbienteService ambienteService;
 
-    private EvidenciaController evidenciaController;
+    private PipelineController pipelineController;
 
 
     public RelatorioController(
         @Autowired RelatorioService relatorioService,
-        @Autowired PipelineService pipelineService,
-        @Autowired EvidenciaController evidenciaController){
+        @Autowired AmbienteService ambienteService,
+        @Autowired PipelineController pipelineController){
         //--------------------------------------------------
         super(relatorioService);
         this.relatorioService = relatorioService;
-        this.pipelineService = pipelineService;
-        this.evidenciaController = evidenciaController;
+        this.ambienteService = ambienteService;
+        this.pipelineController = pipelineController;
     }
 
     @Override
@@ -90,7 +94,7 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
         //--------------------------------------------------------------
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("id").ascending());
         val dtos = relatorioService
-            .findAllByAmbiente(pageConfig, ambienteId)
+            .findAllByAmbiente(ambienteId, pageConfig)
             .map(RelatorioResumoDTO::converterEntidade);
         return ResponseEntity.ok(dtos);
     }
@@ -141,6 +145,21 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
         detUser.setEmpresa("PPW");
 
         return retornarNovoDet(det, List.of(detUser));
+    }
+
+    //TODO: javadoc
+    @Transactional
+    @GetMapping(value = "rerun/{id}")
+    public ResponseEntity<?> runAgain(@PathVariable long id) {
+        val relatorio = relatorioService.findById(id);
+        val pipeline = relatorio.getPipeline();
+        val ambiente = relatorio.getAmbiente();
+        val jobPojo = relatorio.getEvidencias()
+            .stream()
+            .map(JobExecutePOJO::new)
+            .toList();
+        val relatorioDto = new RelatorioInfoDTO(relatorio);
+        return pipelineController.run(relatorioDto, pipeline, ambiente, jobPojo);
     }
 
     private ResponseEntity<Resource> retornarNovoDet(

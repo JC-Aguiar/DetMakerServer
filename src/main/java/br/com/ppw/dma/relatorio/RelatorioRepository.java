@@ -16,10 +16,10 @@ public interface RelatorioRepository extends JpaRepository<Relatorio, Long> {
 
     List<Relatorio> findAllByPipeline(@NonNull Pipeline pipeline);
 
-    @Query(value = "SELECT * FROM PPW_PIPELINE p WHERE p.AMBIENTE_ID = :ambienteId", nativeQuery = true)
+    @Query(value = "SELECT * FROM PPW_RELATORIO p WHERE p.AMBIENTE_ID = :ambienteId", nativeQuery = true)
     List<Relatorio> findAllByAmbienteId(@NotNull Long ambienteId);
 
-    @Query(value = "SELECT * FROM PPW_PIPELINE p WHERE p.AMBIENTE_ID = :ambienteId", nativeQuery = true)
+    @Query(value = "SELECT * FROM PPW_RELATORIO p WHERE p.AMBIENTE_ID = :ambienteId", nativeQuery = true)
     Page<Relatorio> findAllByAmbienteId(@NotNull Long ambienteId, Pageable pageable);
 
 }

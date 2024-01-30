@@ -31,7 +31,7 @@ public class MasterOracleDAO implements AutoCloseable {
     final Connection conn;
 
     public MasterOracleDAO(@NonNull AmbienteAcessoDTO acessoBanco) throws SQLException {
-        url = acessoBanco.getConexao();
+        url = "jdbc:oracle:thin:@" + acessoBanco.getConexao();
         username = acessoBanco.getUsuario();
         password = acessoBanco.getSenha();
         log.info("Preparando conexão de banco:");
