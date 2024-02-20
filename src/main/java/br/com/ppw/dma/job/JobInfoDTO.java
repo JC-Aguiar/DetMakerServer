@@ -1,5 +1,6 @@
 package br.com.ppw.dma.job;
 
+import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.system.ShellPointer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
@@ -45,19 +46,26 @@ public class JobInfoDTO implements ShellPointer {
     String escalation;
     LocalDate dataAtualizacao;
     String atualizadoPor;
+    List<ComandoSql> queries = new ArrayList<>();
 
 
     public static JobInfoDTO converterJob(@NonNull Job job) {
         log.info("Convertendo entidade Job.");
-
         val jobDto = new ModelMapper().map(job, JobInfoDTO.class);
+        jobDto.setExecutarAposJob(dividirValores(job.getExecutarAposJob()));
+        jobDto.setPrograma(dividirValores(job.getPrograma()));
         jobDto.setParametros(dividirValores(job.getParametros()));
-        jobDto.setTabelas(dividirValores(job.getTabelas()));
         jobDto.setDescricaoParametros(dividirValores(job.getDescricaoParametros()));
+        jobDto.setTabelas(dividirValores(job.getTabelas()));
         jobDto.setMascaraEntrada(dividirValores(job.getMascaraEntrada()));
         jobDto.setMascaraSaida(dividirValores(job.getMascaraSaida()));
         jobDto.setMascaraLog(dividirValores(job.getMascaraLog()));
-
+        jobDto.setQueries(
+            job.getQueries()
+                .stream()
+                .map(ComandoSql::new)
+                .toList()
+        );
         log.info("Conversão realizada com sucesso.");
         log.info("{}", jobDto);
         return jobDto;

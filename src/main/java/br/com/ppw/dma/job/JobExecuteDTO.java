@@ -1,7 +1,6 @@
 package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.configQuery.ComandoSql;
-import br.com.ppw.dma.evidencia.Evidencia;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -9,7 +8,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@Builder
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
@@ -19,9 +17,9 @@ public class JobExecuteDTO {
    Integer ordem;
    String argumentos;
    List<ComandoSql> queries = new ArrayList<>();
-   List<String> cargas = new ArrayList<>();
+//   List<MultipartFile> cargas = new ArrayList<>();
+   List<JobCarga> cargas = new ArrayList<>();
    //TODO: precisa da informação da pipeline?
-
 
 
    public JobExecuteDTO addQuery(@NonNull ComandoSql query) {

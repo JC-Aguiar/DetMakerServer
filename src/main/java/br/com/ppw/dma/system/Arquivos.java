@@ -6,12 +6,11 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.springframework.util.FileCopyUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -248,10 +247,26 @@ public class Arquivos {
         return true;
     }
 
+//    public static Optional<File> parseMultipartFile(@NonNull MultipartFile mf) {
+//        try {
+//            val tmp = File.createTempFile(mf.getOriginalFilename(), null);
+//            FileCopyUtils.copy(mf.getInputStream(), new FileOutputStream(tmp));
+//            tmp.deleteOnExit();
+//            tmp.renameTo(Path.of(tmp.getParent(), mf.getOriginalFilename()).toFile());
+//            //mf.transferTo(tmp);
+//            return Optional.of(tmp);
+//        }
+//        catch(IOException e) {
+//            e.printStackTrace();
+//            return Optional.empty();
+//        }
+//    }
+
     public static void printInfo(File file) {
         if (file == null) return;
         val data = new Date(file.lastModified());
         val peso = (double) file.length() / 1000;
         log.info("\t > [{}] {} ({} Kbs)", data, file.getName(), peso);
     }
+
 }

@@ -20,7 +20,7 @@ public record RemoteFile(
 
 
     public static RemoteFile addFile(
-        @NotBlank String nome,
+        String nome,
         long tamanho,
         int dataCriacao,
         int dataModificacao,

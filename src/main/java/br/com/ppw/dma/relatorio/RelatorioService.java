@@ -76,17 +76,6 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
         return relatorioMaisRecente;
     }
 
-//    public Relatorio cloneRelatorioFromPipeline(@NonNull Ambiente pipeline) {
-//        val relatorio = findAllByPipeline(pipeline)
-//            .stream()
-//            .min(Comparator.comparing(Relatorio::getDataInicio))
-//            .orElseThrow();
-//        log.info("Criando novo Relatório clone ao ID {}.", relatorio.getId());
-//        val novoRelatorio = Relatorio.builder()
-//            .
-//            .build();
-//    }
-
     @Transactional
     public Relatorio buildAndPersist(
         @NotNull RelatorioInfoDTO relatorioDto,

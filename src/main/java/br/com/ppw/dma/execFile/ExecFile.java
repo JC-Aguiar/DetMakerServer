@@ -2,6 +2,7 @@ package br.com.ppw.dma.execFile;
 
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.net.RemoteFile;
+import br.com.ppw.dma.system.Arquivos;
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
@@ -9,8 +10,14 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
+import org.springframework.util.FileCopyUtils;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.Optional;
 
 import static br.com.ppw.dma.execFile.TipoExecFile.*;
 import static br.com.ppw.dma.execFile.TipoExecFile.CARGA;
@@ -57,8 +64,15 @@ public class ExecFile {
     String arquivo;
 
 
-    public static ExecFile montarEvidenciaCarga(@NonNull Evidencia evidencia, @NonNull RemoteFile carga) {
-        return ExecFile.montarEvidencia(evidencia, carga, CARGA);
+    public static ExecFile montarEvidenciaCarga(@NonNull Evidencia evidencia, @NonNull File carga) {
+        //return ExecFile.montarEvidencia(evidencia, carga, CARGA);
+        return ExecFile.builder()
+            .evidencia(evidencia)
+            .jobNome(evidencia.getJob().getNome())
+            .tipo(CARGA)
+            .arquivoNome(carga.getName())
+            .arquivo(Arquivos.lerArquivo(carga))
+            .build();
     }
 
     public static ExecFile montarEvidenciaTerminal(@NonNull Evidencia evidencia, String conteudo) {

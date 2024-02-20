@@ -1,6 +1,5 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.cliente.Cliente;
 import br.com.ppw.dma.evidencia.EvidenciaService;
 import br.com.ppw.dma.master.MasterService;
@@ -29,10 +28,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static br.com.ppw.dma.system.ExitCodes.SUCCESS;
 import static br.com.ppw.dma.util.FormatString.*;
 
 @Service
@@ -206,9 +203,17 @@ public class JobService extends MasterService<Long, Job, JobService> {
         val jobDto = pojo.getJobInfo();
         val banco = pojo.getBanco();
         val logs = new ArrayList<DownloadManager>();
+        val cargas = new ArrayList<File>();
+        val saidas = new ArrayList<DownloadManager>();
         pojo.setDataInicio(OffsetDateTime.now());
 
         try {
+            if(!jobDto.getMascaraEntrada().isEmpty()) {
+                log.info("Enviando os arquivos de carga a serem usadas na execução.");
+                cargas.addAll(
+                    sftp.upload(jobDto.getDiretorioEntrada(), pojo.getCargas())
+                );
+            }
             if(!jobDto.getMascaraLog().isEmpty()) {
                 log.info("Obtendo log mais recente pré-execução.");
                 logs.addAll(sftp.downloadMaisRecentePreJob(jobDto.pathLog()));
@@ -219,8 +224,19 @@ public class JobService extends MasterService<Long, Job, JobService> {
                     evidenciaSerive.extractTablePreJob(pojo.getTabelas(), banco)
                 );
             }
+            log.info("Obtendo o sha256 do Job.");
+            val sha256 = sftp.comando("sha256sum " + pojo.getJobInfo().pathShell() + " | cut -d ' ' -f1")
+                .getConsoleLog()
+                .stream()
+                .findFirst()
+                .orElse("");
+            pojo.setSha256(sha256);
+            log.info(" - sha256 obtido: '{}'.", sha256);
+
             log.info("Executando Job.");
             val terminalManager = sftp.comando(pojo.comandoShell());
+            pojo.setTerminal(terminalManager.getConsoleLog());
+            pojo.setExitCode(terminalManager.getExitCode());
 
             if(!logs.isEmpty()) {
                 log.info("Obtendo log mais recente pós-execução.");
@@ -232,30 +248,30 @@ public class JobService extends MasterService<Long, Job, JobService> {
                     evidenciaSerive.extractTablePosJob(pojo.getTabelas(), banco)
                 ) ;
             }
-            pojo.setTerminal(terminalManager.getConsoleLog());
-            logs.stream()
-                //.peek(fl -> log.info("Comparando arquivos para obter o mais recente."))
-                .map(DownloadManager::getPostFile)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .forEach(pojo::addLogs);
-            pojo.setSucesso(terminalManager.getExitCode() == SUCCESS.code);
-            //TODO: retornar não-sucesso para o front
+            if(!jobDto.getMascaraSaida().isEmpty()) {
+                log.info("Coletando as saídas geradas pela execução.");
+                saidas.addAll(sftp.downloadMaisRecentePreJob(jobDto.pathSaida()));
+            }
+
         }
+        //Anexando mensagens de exceções durante execução
         catch(Exception e) {
-            //TODO: melhorar tratamento. É preciso validar e informar:
-            // 1. Se o comando foi executado com sucesso
-            // 2. Se foi identificado log antes
-            // 3. Se foi identificado log depois
-            // 4. Se foi baixado log com sucesso
-            // 5. Se foi identificado registro no banco antes
-            // 6. Se foi identificado registro no banco depois
-            // 7. Se o comando SQL foi inválido
-            // 8. Se o comando SQL informado com declarações não permitidas (DELETE, DROP, etc)
-            log.error("Erro durante execução do Job [{}] {}: {}",
-            jobDto.getId(), jobDto.getNome(), e.getMessage());
+            log.error("Erro inesperado na execução do Job [{}] '{}'", jobDto.getId(), jobDto.getNome());
+            pojo.getErros().add(e.getMessage());
         }
+        //Anexando arquivos de log pós-execução e obtendo avisos de inconformidades
+        for(val gerenciador : logs) {
+            gerenciador.getPostFile().ifPresent(pojo::addLogs);
+            pojo.getErros().addAll(gerenciador.getAvisos());
+        }
+        //Anexando arquivos de saída e avisos de inconformidades
+        for(val gerenciador : saidas) {
+            gerenciador.getPreFile().ifPresent(pojo::addProdutos);
+            pojo.getErros().addAll(gerenciador.getAvisos());
+        }
+        //Finalizando com a data de encerramento e solicitando análise técnica do resultado
         pojo.setDataFim(OffsetDateTime.now());
+        pojo.analisarExecucao();
         return pojo;
     }
 

@@ -5,6 +5,7 @@ import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.job.JobExecutePOJO;
 import br.com.ppw.dma.master.MasterController;
 import br.com.ppw.dma.pipeline.PipelineController;
+import br.com.ppw.dma.system.FileSystemService;
 import br.com.ppw.dma.user.UserInfoDTO;
 import br.com.ppw.dma.util.DetHtml;
 import lombok.NonNull;
@@ -42,21 +43,25 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
 
     private PipelineController pipelineController;
 
+    private FileSystemService fileSystemService;
+
 
     public RelatorioController(
         @Autowired RelatorioService relatorioService,
         @Autowired AmbienteService ambienteService,
-        @Autowired PipelineController pipelineController){
+        @Autowired PipelineController pipelineController,
+        @Autowired FileSystemService fileSystemService){
         //--------------------------------------------------
         super(relatorioService);
         this.relatorioService = relatorioService;
         this.ambienteService = ambienteService;
         this.pipelineController = pipelineController;
+        this.fileSystemService = fileSystemService;
     }
 
     @Override
-    public ResponseEntity<?> parseOne(Relatorio entity) {
-        val dto = new RelatorioHistoricoDTO(entity);
+    public ResponseEntity<RelatorioResumoDTO> parseOne(Relatorio entity) {
+        val dto = RelatorioResumoDTO.converterEntidade(entity);
         return ResponseEntity.ok(dto);
     }
 
@@ -148,15 +153,29 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
     }
 
     //TODO: javadoc
+    //TODO: aplicar @Synchronized e testar.
+    //  Se funcionar, o timeout do front precisa ser atualizado com base na quantidade de espera na fila
     @Transactional
     @GetMapping(value = "rerun/{id}")
-    public ResponseEntity<?> runAgain(@PathVariable long id) {
+    public ResponseEntity<RelatorioHistoricoDTO> runAgain(@PathVariable long id) {
         val relatorio = relatorioService.findById(id);
         val pipeline = relatorio.getPipeline();
         val ambiente = relatorio.getAmbiente();
         val jobPojo = relatorio.getEvidencias()
             .stream()
-            .map(JobExecutePOJO::new)
+//            .map(JobExecutePOJO::new)
+            .map(ev -> {
+                log.info("Recriando execução da Evidência ID {}", ev.getId());
+                val pojo = new JobExecutePOJO(ev);
+                log.info("Convertendo registro ExecFile em arquivos temporários para envio SFTP.");
+                val cargas = ev.getCargas()
+                    .stream()
+                    .map(fileSystemService::store)
+                    .toList();
+                pojo.setCargas(cargas);
+                log.info(pojo.toString());
+                return pojo;
+            })
             .toList();
         val relatorioDto = new RelatorioInfoDTO(relatorio);
         return pipelineController.run(relatorioDto, pipeline, ambiente, jobPojo);
