@@ -2,12 +2,17 @@ package br.com.ppw.dma;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.configQuery.FiltroSql;
+import br.com.ppw.dma.configQuery.ResultadoSql;
 import br.com.ppw.dma.job.JobService;
 import br.com.ppw.dma.net.ConectorSftp;
+import br.com.ppw.dma.pipeline.PipelineExecDTO;
 import br.com.ppw.dma.util.SqlUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
+import org.modelmapper.ModelMapper;
 import org.springframework.util.ResourceUtils;
 
 import java.io.File;
@@ -19,10 +24,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.Properties;
+import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
@@ -184,6 +186,41 @@ public class BasicTest {
 //        comandoSql.setFiltros("SELECT * FROM EVENTOS_WEB ew WHERE EVTYPE='EV_BOLETO_CYBER_HUBPGTO' ORDER BY EVID");
 //        comandoSql.setTabela("EVENTOS_WEB");
 //    }
+
+    @Test
+    public void testarConversaoModelMapper_PipelineExecDTO() throws JsonProcessingException {
+        val json = "{\"clienteId\":1,\"ambienteId\":1,\"pipeline\":{\"id\":141,\"nome\":\"Carga Eventual de Produtos\",\"descricao\":\"\",\"clienteId\":1,\"jobs\":[\"cy3_ent_carga_ev_IE008.ksh\"]},\"relatorio\":{\"idProjeto\":\"IN1920\",\"nomeProjeto\":\"FENIX\",\"nomeAtividade\":\"Carga válida de produtos com validação mensal\",\"consideracoes\":\"\",\"testeTipo\":\"\"},\"userInfo\":{\"nome\":\"João Aguiar\",\"empresa\":\"Peopleware\",\"papel\":\"DEV\",\"email\":\"joao.aguiar@ppware.com.br\",\"telefone\":\"\"},\"jobs\":[{\"id\":300,\"ordem\":0,\"argumentos\":\"20230621 mensal\",\"queries\":[]}]}\n";
+        log.info("JSON:");
+        log.info(json);
+        val execDto = new ObjectMapper().readValue(json, PipelineExecDTO.class);
+        log.info("Conversão ModelMapper:");
+        log.info(execDto.toString());
+    }
+
+    @Test
+    public void testandoComparacaoDeListas() {
+        val tabelasSchedule = new ArrayList<String>();
+        tabelasSchedule.add("TB_ESTACORDO_FATURAS_CONTAS");
+        tabelasSchedule.add("TB_ESTACORDO_PARCELAS_CONTAS");
+        tabelasSchedule.add("TB_ESTACORDO_RATEIO_PAGTOS");
+        tabelasSchedule.add("EVENTOS_WEB");
+
+        val tabelasConsultadas = new ArrayList<String>();
+        tabelasConsultadas.add("DELQMST");
+        tabelasConsultadas.add("EVENTOS_WEB");
+
+        log.info("Tabelas na Schedule: {}", String.join(", ", tabelasSchedule));
+        log.info("Tabelas Consultadas: {}", String.join(", ", tabelasConsultadas));
+
+        val tabelasPendentes = new ArrayList<>(tabelasSchedule);
+        tabelasPendentes.removeAll(tabelasConsultadas);
+
+        val tabelasExtras = new ArrayList<>(tabelasConsultadas);
+        tabelasExtras.removeAll(tabelasSchedule);
+
+        log.info("Tabelas Pendentes de Consulta: {}", String.join(", ", tabelasPendentes));
+        log.info("Tabelas Consultadas em Adicional: {}", String.join(", ", tabelasExtras));
+    }
 
     @Test
     public void testeObterVersaoNoManifest() {

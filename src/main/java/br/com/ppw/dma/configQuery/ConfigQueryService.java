@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @Slf4j
@@ -29,6 +30,12 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
 
     public List<ConfigQuery> findAllByJobId(@NonNull Long id) {
         return configQueryDao.findAllByJobId(id);
+    }
+
+    public List<ConfigQuery> findAllByCliente(@NonNull Long clienteId) {
+        val result = configQueryDao.findAllByClienteId(clienteId);
+        if(result.isEmpty()) throw new NoSuchElementException();
+        return result;
     }
 
     public void validadeQuery(@NotBlank String sql, @NonNull AmbienteAcessoDTO acessoBanco)

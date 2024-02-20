@@ -76,7 +76,11 @@ public class Pipeline implements MasterEntity<Long> {
         return pipeline;
     }
 
-    public boolean atualizarDescricao(@NonNull String descricao) {
+    public boolean atualizarDescricao(String descricao) {
+        if(this.descricao == null)
+            return descricao == null;
+        if(descricao == null)
+            return this.descricao == null;
         return !this.descricao.trim().equals(descricao.trim());
     }
 

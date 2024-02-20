@@ -32,6 +32,7 @@ public class EvidenciaInfoDTO {
     List<AnexoInfoDTO> logs;
     List<AnexoInfoDTO> cargas;
     List<AnexoInfoDTO> saidas;
+    String analise;
     String revisor;
     OffsetDateTime dataRevisao;
     String requisitos;
@@ -75,6 +76,7 @@ public class EvidenciaInfoDTO {
         this.cargas = AnexoInfoDTO.converterExecFile(evidencia.getCargas());
         this.logs = AnexoInfoDTO.converterExecFile(evidencia.getLogs());
         this.saidas = AnexoInfoDTO.converterExecFile(evidencia.getSaidas());
+        this.analise = evidencia.getAnalise();
         this.revisor = evidencia.getRevisor();
         this.dataRevisao = evidencia.getDataRevisao();
         this.requisitos = evidencia.getRequisitos();

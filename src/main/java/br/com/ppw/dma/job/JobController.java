@@ -152,15 +152,14 @@ public class JobController extends MasterController<Long, Job, JobController> {
     //TODO: criar exception própria
     //TODO: javadoc
     public List<Evidencia> executeJobsAndGetEvidencias(
-        @NonNull AmbienteAcessoDTO banco,
         @NonNull AmbienteAcessoDTO ftp,
         @NonNull List<JobExecutePOJO> jobsPojo) {
         //----------------------------------------------
         log.debug("Iniciando conexão remota SFTP.");
-        val connFtp = ConectorSftp.conectar(ftp.getConexao(), ftp.getUsuario(), ftp.getSenha());
-        jobService.setSftp(connFtp);
+        val connSftp = ConectorSftp.conectar(ftp.getConexao(), ftp.getUsuario(), ftp.getSenha());
+        jobService.setSftp(connSftp);
 
-        log.debug("Executando POJOs.");
+        log.debug("Executando Jobs-Pojo.");
         jobsPojo = jobService.executarJobs(jobsPojo);
         return evidenciaController.gerarEvidencias(jobsPojo);
     }

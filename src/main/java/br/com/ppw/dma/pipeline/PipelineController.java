@@ -10,6 +10,7 @@ import br.com.ppw.dma.master.MasterController;
 import br.com.ppw.dma.relatorio.RelatorioHistoricoDTO;
 import br.com.ppw.dma.relatorio.RelatorioInfoDTO;
 import br.com.ppw.dma.relatorio.RelatorioService;
+import br.com.ppw.dma.system.FileSystemService;
 import jakarta.validation.Valid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -45,13 +47,16 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 
     private RelatorioService relatorioService;
 
+    private FileSystemService fileSystemService;
+
 
     public PipelineController(
         @Autowired PipelineService pipelineService,
         @Autowired ClienteService clienteService,
         @Autowired AmbienteService ambienteService,
         @Autowired JobController jobController,
-        @Autowired RelatorioService relatorioService) {
+        @Autowired RelatorioService relatorioService,
+        @Autowired FileSystemService fileSystemService) {
         //--------------------------------------------
         super(pipelineService);
         this.pipelineService = pipelineService;
@@ -59,6 +64,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         this.ambienteService = ambienteService;
         this.jobController = jobController;
         this.relatorioService = relatorioService;
+        this.fileSystemService = fileSystemService;
     }
 
     @GetMapping("cliente/{clienteId}")
@@ -98,26 +104,41 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
      * @param execDto {@link PipelineExecDTO} contendo as informações necessárias para execução.
      * @return {@link ResponseEntity} com o {@link RelatorioHistoricoDTO} do Relatório final.
      */
+    //TODO: aplicar @Synchronized e testar.
+    //  Se funcionar, o timeout do front precisa ser atualizado com base na quantidade de espera na fila
     @Transactional
     @PostMapping(value = "run")
-    public ResponseEntity<RelatorioHistoricoDTO> updateAndRun(@RequestBody PipelineExecDTO execDto) {
+    public ResponseEntity<RelatorioHistoricoDTO> updateAndRun(@Valid @RequestBody PipelineExecDTO execDto) {
         val pipeline = getAndUpdate(execDto.getPipeline())
             .orElseGet(() -> proxy().createNewPipeline(execDto));
         val ambiente = ambienteService.findById(execDto.getAmbienteId());
         val banco = AmbienteAcessoDTO.banco(ambiente);
 
+        //TODO: O looping abaixo deve ser um for manual.
+        //  Validar se o Job ID atual já não foi processado.
+        //  Evitar consultas desnecessárias no banco.
         log.debug("Preparando execução dos Jobs, convertendo os JobExecuteDTOs para JobExecutePOJOs.");
-        List<JobExecutePOJO> jobsPojo = execDto.getJobs()
+        final List<JobExecutePOJO> jobsPojo = execDto.getJobs()
             .stream()
             .map(dto -> {
                 val id = dto.getId();
                 log.info("Buscando registro para Job id {}.", id);
                 val job = ((JobService) jobController.getService()).findById(id);
                 log.info(job.toString());
-                return new JobExecutePOJO(job, dto, banco);
+
+                val cargas = new ArrayList<File>();
+                if(!dto.getCargas().isEmpty()) {
+                    log.info("Total de arquivos de carga: {}.", dto.getCargas());
+                    log.info("Salvando as cargas dos Jobs no diretório temporário.");
+                    dto.getCargas()
+                        .stream()
+                        .map(fileSystemService::store)
+                        .forEach(cargas::add);
+                }
+                else log.info("Nenhum arquivo de carga foi enviado.");
+                return new JobExecutePOJO(job, dto, banco, cargas);
             })
             .toList();
-
         return run(execDto.getRelatorio(), pipeline, ambiente, jobsPojo);
     }
 
@@ -127,9 +148,8 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         @NonNull Ambiente ambiente,
         @NonNull List<JobExecutePOJO> jobsPojo) {
         //-----------------------------------
-        val banco = AmbienteAcessoDTO.banco(ambiente);
         val ftp = AmbienteAcessoDTO.ftp(ambiente);
-        val evidencias = jobController.executeJobsAndGetEvidencias(banco, ftp, jobsPojo);
+        val evidencias = jobController.executeJobsAndGetEvidencias(ftp, jobsPojo);
         val relatorio = relatorioService.buildAndPersist(relatorioDto, ambiente, pipeline, evidencias);
 
         log.info("Montando RelatorioHistoricoDTO.");
@@ -137,6 +157,28 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         log.info(relatorioHistorico.toString());
         return ResponseEntity.ok(relatorioHistorico);
     }
+
+//    @Scope("dev")
+//    @PostMapping(value = "teste")
+//    public ResponseEntity<String> teste(@ModelAttribute JobExecuteDTO execDto) {
+//        val tempDir = System.getProperty("java.io.tmpdir");
+//        log.info("Diretório temporário: " + tempDir);
+//        log.info(execDto.toString());
+//        log.info("Gerando arquivos temporários:");
+//        execDto.getCargas().forEach(carga -> {
+//            log.info("- Nome: '{}' ({})", carga.getOriginalFilename(), carga.getSize());
+//            val temp = Arquivos.parseMultipartFile(carga);
+//            if(temp.isPresent()) {
+//                log.info("- Diretório Usado: {}", temp.get().getAbsolutePath());
+//                log.info("- Nome Gerado: {}", temp.get().getName());
+//                log.info("- Conteúdo Lido:");
+//                System.out.println(Arquivos.lerArquivo(temp.get()));
+//            }
+//            else
+//                log.warn("Não foi possível criar arquivo temporário");
+//        });
+//        return ResponseEntity.ok("Ok");
+//    }
 
     @PostMapping(value = "new")
     public ResponseEntity<?> createNew(@Valid @RequestBody PipelineInfoDTO dto)

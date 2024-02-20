@@ -1,12 +1,11 @@
 package br.com.ppw.dma.net;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 @Slf4j
@@ -16,21 +15,25 @@ import java.util.Optional;
 //TODO: Javadoc
 public class DownloadManager {
     final String reference;
-    final Optional<RemoteFile> preFile;
+    @Setter Optional<RemoteFile> preFile = Optional.empty();
     Optional<RemoteFile> postFile = Optional.empty();
-    String aviso = SEM_ARQUIVOS;
+    final List<String> avisos = new ArrayList<>();
 
-    private static final String SEM_ARQUIVOS = "Nenhum arquivo coletado pré ou pós execução.";
+    private static final String ARQUIVO_PRE_AUSENTE = "Nenhum arquivo coletado antes da execução.";
     private static final String ARQUIVO_POS_AUSENTE = "Nenhum arquivo pós-execução coletado.";
     private static final String ARQUIVOS_SEMELHANTES = "Os arquivos pré e pós execução não são o mesmo, " +
         "apesar da semelhança: ";
     private static final String ARQUIVOS_DUPLICADOS = "Nenhum arquivo pós-execução identificado.";
 
 
-    public DownloadManager(@NotBlank String reference, Optional<RemoteFile> preFile) {
+    public DownloadManager(String reference) {
         this.reference = reference;
-        this.preFile = preFile;
-        if(this.preFile.isPresent()) aviso = ARQUIVO_POS_AUSENTE;
+        if(reference == null || reference.isEmpty()) {
+            addAviso("Nenhuma referência de diretório/arquivo especificada para download.");
+        }
+        //this.preFile = preFile;
+        //if(this.preFile.isPresent()) avisos.add(ARQUIVO_POS_AUSENTE);
+        //else avisos.add(ARQUIVO_PRE_AUSENTE);
     }
 
     public void setPostFile(@NotBlank String reference, Optional<RemoteFile> file) {
@@ -46,15 +49,20 @@ public class DownloadManager {
 
         if(preFile.isPresent() && postFile.isPresent()) {
             if(preFile.get().iguais(postFile.get())) {
-                aviso = ARQUIVOS_DUPLICADOS;
-                log.warn(aviso);
+                //avisos = ARQUIVOS_DUPLICADOS;
+                log.warn(ARQUIVOS_DUPLICADOS);
             }
             else {
                 val similaridade = postFile.get().statusSimilaridade(preFile.get());
-                aviso = similaridade.isEmpty() ? similaridade : ARQUIVOS_SEMELHANTES + similaridade;
-                log.info(aviso);
+                //avisos = similaridade.isEmpty() ? similaridade : ARQUIVOS_SEMELHANTES + similaridade;
+                log.info(similaridade.isEmpty() ? similaridade : ARQUIVOS_SEMELHANTES + similaridade);
             }
         }
+    }
+
+    public void addAviso(@NonNull String mensagem) {
+        avisos.add(mensagem);
+        log.warn(mensagem);
     }
 
     public void printFiles() {

@@ -143,7 +143,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         val evidencia = persist(Evidencia.jobPojoExecutado(jobPojo));
         evidenciaDao.flush();
 
-        if (!jobPojo.getTabelas().isEmpty())
+        if(!jobPojo.getTabelas().isEmpty())
             log.info("Criando novos registros ExecQuery para cada resultado no banco (pré e pós Job).");
         val banco = jobPojo.getTabelas()
             .stream()
@@ -151,7 +151,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             .map(execQueryService::persist)
             .toList();
 
-        if (!jobPojo.getCargas().isEmpty())
+        if(!jobPojo.getCargas().isEmpty())
             log.info("Criando novos registros ExecFile para cada uma das cargas usadas.");
         val cargas = jobPojo.getCargas()
             .stream()
@@ -159,11 +159,11 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             .map(execFileService::persist)
             .toList();
 
-        if (!jobPojo.getLogs().isEmpty() || !jobPojo.getTerminal().isEmpty())
+        if(!jobPojo.getLogs().isEmpty() || !jobPojo.getTerminal().isEmpty())
             log.info("Criando novos registros ExecFile para cada um dos logs obtidos.");
 
         final String terminalConteudo = jobPojo.getTerminalFormatado();
-        if (!terminalConteudo.isEmpty()) {
+        if(!terminalConteudo.isEmpty()) {
             val execFileTerminal = ExecFile.montarEvidenciaTerminal(evidencia, terminalConteudo);
             logs.add(execFileTerminal);
         }
@@ -173,7 +173,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             .map(execFileService::persist)
             .forEach(logs::add);
 
-        if (!jobPojo.getSaidas().isEmpty())
+        if(!jobPojo.getSaidas().isEmpty())
             log.info("Criando novos registros ExecFile para cada uma das saídas produzidas.");
         val saidas = jobPojo.getSaidas()
             .stream()

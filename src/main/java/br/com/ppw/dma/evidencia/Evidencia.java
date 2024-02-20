@@ -63,6 +63,9 @@ public class Evidencia implements MasterEntity<Long> {
     @Column(name = "ARGUMENTOS", length = 300)
     String argumentos;
 
+    @Column(name = "ANALISE", length = 3000)
+    String analise;
+
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "BANCO_ID")
@@ -125,6 +128,7 @@ public class Evidencia implements MasterEntity<Long> {
             .dataInicio(jobPojo.getDataInicio())
             .dataFim(jobPojo.getDataFim())
             .sucesso(jobPojo.isSucesso())
+            .analise(jobPojo.getAnalise())
             .build();
     }
 

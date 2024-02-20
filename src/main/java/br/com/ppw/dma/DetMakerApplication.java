@@ -1,14 +1,18 @@
 package br.com.ppw.dma;
 
 import br.com.ppw.dma.exception.DiretorioSemPermissaoException;
-import br.com.ppw.dma.system.Arquivos;
+import br.com.ppw.dma.system.StorageProperties;
+import br.com.ppw.dma.system.StorageService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.cache.annotation.EnableCaching;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -16,10 +20,8 @@ import org.springframework.core.io.support.ResourcePatternUtils;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -31,7 +33,8 @@ import java.util.Properties;
 @EnableCaching
 @EnableJpaRepositories
 @EnableAspectJAutoProxy(exposeProxy = true, proxyTargetClass = true)
-public class DetMakerApplication {// extends SpringBootServletInitializer {
+@EnableConfigurationProperties(StorageProperties.class)
+public class DetMakerApplication { //extends SpringBootServletInitializer {
 
 	@Getter
 	private static String appVersion;
@@ -52,6 +55,14 @@ public class DetMakerApplication {// extends SpringBootServletInitializer {
 
 		log.info("Iniciando servidor do DET-MAKER");
 		SpringApplication.run(DetMakerApplication.class, args);
+	}
+
+	@Bean
+	CommandLineRunner init(StorageService storageService) {
+		return (args) -> {
+			storageService.deleteAll();
+			storageService.init();
+		};
 	}
 
 	private static void setAppVersion() throws IOException {
