@@ -50,8 +50,8 @@ public class MasterOracleDAO implements AutoCloseable {
         val listaColunas = new ArrayList<String>();
         try(val statement = conn.createStatement()) {
             val sql = sqlGetColsFromTable(tableName);
-            log.info("Executando SQL: {}", sql);
-
+            log.info("SQL: {}", sql);
+            log.info("Executando query.");
             val resultSet = statement.executeQuery(sql);
             val metaDados = resultSet.getMetaData();
             int columnCount = metaDados.getColumnCount();
@@ -66,37 +66,38 @@ public class MasterOracleDAO implements AutoCloseable {
     }
 
     private static String sqlGetColsFromTable(@NotBlank String tableName) {
-            String sql = "SELECT a.column_name " +
-                    "FROM all_tab_columns a " +
-                    "WHERE a.table_name = '%s' " +
-                    "AND ROWNUM <= 125 " +
-                    "ORDER BY COLUMN_ID ";
-            return String.format(sql, tableName);
+        String sql = "SELECT a.column_name " +
+                "FROM all_tab_columns a " +
+                "WHERE a.table_name = '%s' " +
+                "AND ROWNUM <= 125 " +
+                "ORDER BY COLUMN_ID ";
+        return String.format(sql, tableName);
     }
 
     //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
     public void validateQuery(@NonNull String sql) throws SQLGrammarException, SQLException {
-        log.info("Validando SQL: {}", sql);
-        if(!SqlUtils.isSafeQuery(sql)) {
-            throw new RuntimeException("A queries informada contêm comandos DDL não permitidos.");
-        }
+        log.info("SQL: {}", sql);
+        validateSql(sql);
+        log.info("Validando tabelas e colunas da query.");
         try(val statement = conn.createStatement()) {
             statement.setMaxRows(1);
             statement.executeQuery(sql);
         }
-        log.info("Validação aprovada.");
+        log.info("Query aprovada.");
     }
 
     //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
     public ResultadoSql getAllInfoFromTable(@NonNull ResultadoSql resultadoSql) throws SQLException {
-        //Validações
-        if(resultadoSql.semTabela()) throw new RuntimeException("Tabela não definida.");
-        validateInputs(resultadoSql);
-
+//        if(resultadoSql.semTabela()) throw new RuntimeException("Tabela não definida.");
+        log.info("Executando query '{}'.", resultadoSql.getTabela());
         val tableName = resultadoSql.getTabela();
         val extracao = new ArrayList<Map<String, Object>>();
+
         try(val statement = conn.createStatement()) {
             val sql = resultadoSql.getSqlCompleta();
+            log.info("SQL: {}", sql);
+            validateSql(sql);
+            log.info("Executando query.");
             val resultSet = statement.executeQuery(sql);
             val metaDados = resultSet.getMetaData();
             int columnCount = metaDados.getColumnCount();
@@ -112,11 +113,10 @@ public class MasterOracleDAO implements AutoCloseable {
                 extracao.add(resultMap);
             }
         }
-        if(extracao.isEmpty()) {
-            log.info("Nenhum registro obtido na tabela '{}'",  tableName);
-            return resultadoSql;
-        }
-        log.info("Total de registros na tabela '{}': {}.", tableName, extracao.size());
+        if(extracao.isEmpty())
+            log.info("Nenhum registro para a query '{}'.",  tableName);
+        else
+            log.info("Total de registros para a query '{}': {}.", tableName, extracao.size());
 
         //Adicionando os campos do primeiro registro para o ResultadoSql dessa mesma tabela
         if(resultadoSql.getCampos().isEmpty()) {
@@ -137,18 +137,12 @@ public class MasterOracleDAO implements AutoCloseable {
 
     //TODO: criar exception própria?
     //TODO: javadoc
-    public void validateInputs(@NonNull ComandoSql sql) {
-        log.info("Validando valores preenchidos nos filtros e no Sql base.");
-        val filtros = sql.getFiltros()
-            .stream()
-            .map(String::valueOf)
-            .toList();
-
-        boolean filtroValido = SqlUtils.isSafeQuery(filtros);
-        boolean sqlValido = SqlUtils.isSafeQuery(sql.getSql());
-        if(!filtroValido || !sqlValido) {
+    public void validateSql(@NonNull String sql) {
+        log.info("Validando comandos inválidos na query.");
+        if(!SqlUtils.isSafeQuery(sql)) {
             throw new RuntimeException("A queries informada contêm comandos DDL não permitidos.");
         }
+        log.info("Query aprovada.");
     }
 
     @Override
