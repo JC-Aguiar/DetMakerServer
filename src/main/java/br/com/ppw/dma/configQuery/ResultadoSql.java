@@ -16,6 +16,8 @@ public class ResultadoSql extends ComandoSql {
      boolean consultaPosJob = false;
      final List<List<Object>> resultadoPreJob = new ArrayList<>();
      final List<List<Object>> resultadoPosJob = new ArrayList<>();
+     boolean success = false;
+     String errorMessage;
 
 
      public ResultadoSql(@NonNull ComandoSql cmdSql) {
@@ -57,13 +59,6 @@ public class ResultadoSql extends ComandoSql {
 
      @JsonIgnore
      public void addResultado(Map<String, Object> resultado) {
-          //val tamanho = getCampos().size();
-          //val novoRegistro = new ArrayList<>(Collections.nCopies(tamanho, null));
-          //resultado.forEach((campo, valor) -> {
-          //     val index = getCampos().indexOf(campo);
-          //     if(index == -1) return;
-          //     novoRegistro.set(index, valor);
-          //});
           val novoRegistro = new ArrayList<>(resultado.values());
           if(!consultaPosJob) resultadoPreJob.add(novoRegistro);
           else resultadoPosJob.add(novoRegistro);
