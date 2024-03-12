@@ -65,14 +65,14 @@ public class ConectorSftp extends Uploader {
         return session;
     }
 
-    public List<File> upload(@NonNull String dirRemoto, @NonNull List<File> arquivos) {
+    public List<UploadManager> upload(@NonNull String dirRemoto, @NonNull List<File> arquivos) {
         return upload(dirRemoto, arquivos.toArray(new File[0]));
     }
 
     //TODO: Javadoc
     @Override
-    public List<File> upload(@NonNull String dirRemoto, @NonNull File...arquivos) {
-        val sucessos = new ArrayList<File>();
+    public List<UploadManager> upload(@NonNull String dirRemoto, @NonNull File...arquivos) {
+        val uploads = new ArrayList<UploadManager>();
         Session session = null;
         Channel channel = null;
         ChannelSftp sftpChannel = null;
@@ -80,26 +80,26 @@ public class ConectorSftp extends Uploader {
         log.info("Quantidade de arquivos locais a serem enviados: {}.", arquivos.length);
         log.info("Diretório remoto de destino: '{}'.", dirRemoto);
         Arrays.stream(arquivos).forEach(
-            arquivo -> log.info("Arquivo: " + arquivo.getAbsolutePath())
-        );
+            arquivo -> log.info("Arquivo: " + arquivo.getAbsolutePath()));
+
         try {
             session = iniciarSessao();
             channel = session.openChannel("sftp");
             channel.connect();
             sftpChannel = (ChannelSftp) channel;
+            UploadManager newUpload = null;
             for(val arq : arquivos) {
+                newUpload = new UploadManager(dirRemoto, arq);
                 try {
                     log.info("Realizando upload do arquivo '{}'.", arq.getAbsolutePath());
                     sftpChannel.put(arq.getAbsolutePath(), dirRemoto);
-                    log.info("Upload do arquivo '{}' realizado com sucesso.", arq.getName());
-                    sucessos.add(arq);
+                    newUpload.setStatus(UploadManagerStatus.SUCCESS);
                 }
                 catch(SftpException e) {
-                    log.error(
-                        "Erro ao tentar realizar upload do arquivo '{}': {}",
-                        arq.getName(), e.getMessage()
-                    );
+                    log.error("Erro ao tentar realizar upload do arquivo '{}': {}", arq.getName(), e.getMessage());
+                    newUpload.setStatus(UploadManagerStatus.NOT_FOUND);
                 }
+                uploads.add(newUpload);
             }
         }
         catch(Exception e) {
@@ -111,9 +111,15 @@ public class ConectorSftp extends Uploader {
             if(channel != null) channel.disconnect();
             if(session != null) session.disconnect();
         }
-        if(sucessos.size() > 0) log.info("Quantidade de uploads: " + sucessos);
+
+        val sucessos = uploads.stream()
+            .map(UploadManager::getStatus)
+            .filter(status -> status == UploadManagerStatus.SUCCESS)
+            .count();
+        if(sucessos > 0) log.info("Quantidade de uploads: " + sucessos);
         else log.warn("Nenhum arquivo foi enviado com sucesso.");
-        return sucessos;
+
+        return uploads;
     }
 
     //TODO: Javadoc
@@ -148,7 +154,6 @@ public class ConectorSftp extends Uploader {
                 while((linha = leitor.readLine()) != null) {
                     conteudo.append(linha).append("\n");
                 }
-
                 val arquivo = RemoteFile.addFile(
                     arquivoNome,
                     props.getSize(),
@@ -156,6 +161,7 @@ public class ConectorSftp extends Uploader {
                     props.getATime(),
                     conteudo.toString());
                 arquivosObtidos.add(arquivo);
+
                 log.info("Arquivo '{}' salvo em memória com sucesso.", arquivo.nome());
                 log.info(arquivo.toString());
             }
@@ -308,16 +314,16 @@ public class ConectorSftp extends Uploader {
         log.debug(" - {}", String.join(", ", arquivosRemotos));
 
         for(val arquivoRemoto : arquivosRemotos) {
-            val gerenciador = new DownloadManager(arquivoRemoto);
+            log.debug(" - {}", arquivoRemoto);
+            Optional<RemoteFile> arquivo;
             try {
-                gerenciador.setPreFile(listarArquivoDownload(arquivoRemoto));
+                arquivo = listarArquivoDownload(arquivoRemoto);
             }
             catch(OperacaoSftpException e) {
-                gerenciador.addAviso(e.getMessage());
+                arquivo = Optional.empty();
             }
-            totalDownloads.add(gerenciador);
+            totalDownloads.add(new DownloadManager(arquivoRemoto, arquivo));
         }
-
         if(!totalDownloads.isEmpty())
             log.info("Total de downloads pré-execução: {}", totalDownloads.size());
         else
@@ -332,15 +338,14 @@ public class ConectorSftp extends Uploader {
 
     public void downloadMaisRecentePosJob(DownloadManager...gerenciadores) {
         log.debug("Total de referências a coletar: {}.", gerenciadores.length);
-        for(val g : gerenciadores) log.debug(" - {}", g.reference);
 
         for(val gerenciador : gerenciadores) {
+            log.debug(" - {}", gerenciador.getReference());
             try {
-                val download = listarArquivoDownload(gerenciador.reference);
-                gerenciador.setPostFile(gerenciador.reference, download);
+                gerenciador.setPostFile(listarArquivoDownload(gerenciador.getReference()));
             }
             catch(OperacaoSftpException e) {
-                gerenciador.addAviso(e.getMessage());
+                gerenciador.setPostFile(Optional.empty());
             }
         }
         val sucessos = Arrays.stream(gerenciadores)

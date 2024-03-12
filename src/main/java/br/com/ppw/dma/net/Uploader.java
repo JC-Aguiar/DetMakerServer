@@ -18,5 +18,5 @@ public abstract class Uploader {
     String username;
     String password;
 
-    public abstract List<File> upload(String dirRemoto, File...arquivos);
+    public abstract List<UploadManager> upload(String dirRemoto, File...arquivos);
 }
