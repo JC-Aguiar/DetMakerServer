@@ -1,12 +1,14 @@
 package br.com.ppw.dma.security;
 
 
+import br.com.ppw.dma.config.RequestIdFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -50,9 +52,11 @@ public class WebSecurityConfig {
             })
             .csrf().disable()
             .cors().disable()
-            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-            //.and()
-            //.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+//            .and()
+//            .addFilterBefore(jwtAuthFilter, RequestIdFilter.class)
+//            .addFilterBefore(new RequestIdFilter(), UsernamePasswordAuthenticationFilter.class);
+            ;
 
         //Defining defaults: unauthorised page + change password page
         //http.exceptionHandling().accessDeniedPage("/error/denied").and()
@@ -90,10 +94,4 @@ public class WebSecurityConfig {
         };
     }
 
-    //CROSS-ORIGIN-RESOURCE-SHARING
-//    @Override
-//    public void addCorsMappings(CorsRegistry registry)
-//    {
-//        SUPPORTED_ORIGINS.forEach(registry::addMapping);
-//    }
 }

@@ -7,7 +7,8 @@
 	<artifactId>det-maker-api</artifactId>
 	<version>v1.15.Beta</version>
 	<name>DetMakerApi</name>
-	<!--	<packaging>war</packaging>-->
+<!--	<packaging>war</packaging>-->
+	<packaging>jar</packaging>
 	<description>
 		API back-end para o sistema Det-Maker usando Java 16 com Spring-Boot,
 		Spring Data, Spring Security, Spring OAP, com JJWT e banco H2 em arquivo local
@@ -51,11 +52,12 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-oauth2-client</artifactId>
 		</dependency>
-		<!--		<dependency>-->
-		<!--			<groupId>org.springframework.boot</groupId>-->
-		<!--			<artifactId>spring-boot-starter-tomcat</artifactId>-->
-		<!--			<scope>provided</scope>-->
-		<!--		</dependency>-->
+		<!-- Dependência necessária somente para deploy em servidor Tom Cat -->
+<!--				<dependency>-->
+<!--					<groupId>org.springframework.boot</groupId>-->
+<!--					<artifactId>spring-boot-starter-tomcat</artifactId>-->
+<!--					<scope>provided</scope>-->
+<!--				</dependency>-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
@@ -77,12 +79,6 @@
 			<artifactId>spring-boot-starter-aop</artifactId>
 			<version>2.6.3</version>
 		</dependency>
-		<!-- Banco H2 -->
-		<!--		<dependency>-->
-		<!--			<groupId>com.h2database</groupId>-->
-		<!--			<artifactId>h2</artifactId>-->
-		<!--			<scope>runtime</scope>-->
-		<!--		</dependency>-->
 		<!-- Lombok -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -184,11 +180,17 @@
 			<version>21.8.0.0</version>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- Gerador de Banners -->
+		<dependency>
+			<groupId>com.github.lalyos</groupId>
+			<artifactId>jfiglet</artifactId>
+			<version>0.0.8</version>
+		</dependency>
 	</dependencies>
 
 	<build>
 		<!-- Necessidade para deploy no Tomcat -->
-		<!--		<finalName>${artifactId}</finalName> -->
+		<finalName>${artifactId}</finalName>
 		<plugins>
 			<!-- Compilador Spring -->
 			<plugin>

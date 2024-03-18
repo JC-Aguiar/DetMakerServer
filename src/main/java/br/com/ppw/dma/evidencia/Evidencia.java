@@ -3,7 +3,7 @@ package br.com.ppw.dma.evidencia;
 import br.com.ppw.dma.execFile.ExecFile;
 import br.com.ppw.dma.execQuery.ExecQuery;
 import br.com.ppw.dma.job.Job;
-import br.com.ppw.dma.job.JobExecutePOJO;
+import br.com.ppw.dma.job.JobProcess;
 import br.com.ppw.dma.master.MasterEntity;
 import br.com.ppw.dma.relatorio.Relatorio;
 import com.fasterxml.jackson.annotation.JsonBackReference;
@@ -13,7 +13,6 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.Where;
 import org.hibernate.proxy.HibernateProxy;
-import org.hibernate.type.NumericBooleanConverter;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
@@ -63,8 +62,8 @@ public class Evidencia implements MasterEntity<Long> {
     @Column(name = "ARGUMENTOS", length = 300)
     String argumentos;
 
-    @Column(name = "ANALISE", length = 3000)
-    String analise;
+//    @Column(name = "ANALISE", length = 3000)
+//    String analise;
 
     @ToString.Exclude
     @JsonManagedReference
@@ -93,9 +92,18 @@ public class Evidencia implements MasterEntity<Long> {
     @Where(clause = "tipo = 'saída'")
     List<ExecFile> saidas = new ArrayList<>();
 
-    @Convert(converter = NumericBooleanConverter.class)
-    @Column(name = "SUCESSO")
-    Boolean sucesso = false;
+    @Column(name = "EXIT_CODE", columnDefinition = "NUMBER(3)")
+    Integer exitCode;
+
+    @Column(name = "SHA256", columnDefinition = "VARCHAR2(64)")
+    String sha256;
+
+    @Column(name = "ERRO_FATAL", columnDefinition = "VARCHAR2(200)")
+    String erroFatal;
+
+//    @Convert(converter = NumericBooleanConverter.class)
+//    @Column(name = "SUCESSO")
+//    Boolean sucesso = false;
 
     @Column(name = "DATA_INICIO", columnDefinition = "DATE")
     OffsetDateTime dataInicio;
@@ -119,17 +127,17 @@ public class Evidencia implements MasterEntity<Long> {
     TipoEvidenciaResultado resultado;
 
 
-    public static Evidencia jobPojoExecutado(@NonNull JobExecutePOJO jobPojo) {
-        return Evidencia.builder()
-            .job(jobPojo.getJob())
-            .sucesso(jobPojo.isSucesso())
-            .ordem(jobPojo.getOrdem())
-            .argumentos(jobPojo.getArgumentos())
-            .dataInicio(jobPojo.getDataInicio())
-            .dataFim(jobPojo.getDataFim())
-            .sucesso(jobPojo.isSucesso())
-            .analise(jobPojo.getAnalise())
-            .build();
+    public Evidencia(@NonNull JobProcess process) {
+        this.job = process.getJob();
+        this.ordem = process.getJobInputs().getOrdem();
+        this.argumentos = process.getJobInputs().getArgumentos();
+        this.dataInicio = process.getDataInicio();
+        this.dataFim = process.getDataFim();
+        this.sha256 = process.getSha256();
+        this.exitCode = process.getExitCode();
+        this.erroFatal = process.getErroFatal();
+//        this.sucesso = process.isSucesso();
+//        this.analise = process.getAnalise();
     }
 
     public final boolean jaRevisada() {

@@ -1,6 +1,7 @@
 package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.configQuery.ComandoSql;
+import br.com.ppw.dma.configQuery.QueryInfoDTO;
 import br.com.ppw.dma.system.ShellPointer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
@@ -46,7 +47,7 @@ public class JobInfoDTO implements ShellPointer {
     String escalation;
     LocalDate dataAtualizacao;
     String atualizadoPor;
-    List<ComandoSql> queries = new ArrayList<>();
+    List<QueryInfoDTO> queries = new ArrayList<>();
 
 
     public static JobInfoDTO converterJob(@NonNull Job job) {
@@ -60,12 +61,7 @@ public class JobInfoDTO implements ShellPointer {
         jobDto.setMascaraEntrada(dividirValores(job.getMascaraEntrada()));
         jobDto.setMascaraSaida(dividirValores(job.getMascaraSaida()));
         jobDto.setMascaraLog(dividirValores(job.getMascaraLog()));
-        jobDto.setQueries(
-            job.getQueries()
-                .stream()
-                .map(ComandoSql::new)
-                .toList()
-        );
+        jobDto.setQueries(QueryInfoDTO.converterJobConfigQuery(job));
         log.info("Conversão realizada com sucesso.");
         log.info("{}", jobDto);
         return jobDto;

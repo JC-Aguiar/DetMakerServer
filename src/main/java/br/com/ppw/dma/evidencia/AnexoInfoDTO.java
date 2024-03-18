@@ -11,15 +11,17 @@ import java.io.File;
 import java.util.List;
 
 public record AnexoInfoDTO(
-    @Getter @NotBlank String nome,
-    @Getter @NotBlank String tipo,
-    @Getter @NotBlank String conteudo) {
+    @NonNull String nome,
+    @NonNull String tipo,
+    @NonNull String conteudo,
+    @NonNull String inconformidade) {
 
     public static AnexoInfoDTO converterExecFile(@NonNull ExecFile execFile) {
         return new AnexoInfoDTO(
             execFile.getArquivoNome(),
             execFile.getTipo().tipo,
-            execFile.getArquivo()
+            execFile.getArquivo(),
+            execFile.getInconformidade()
         );
     }
 

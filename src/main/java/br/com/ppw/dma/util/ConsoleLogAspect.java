@@ -41,7 +41,6 @@ public class ConsoleLogAspect {
         className = getMethodSimpleName(signature);
         methodName = signature.getMethod();
 
-
         //Getting all parameters types
         parametersType = Arrays
             .stream(methodName.getParameterTypes())
@@ -58,10 +57,11 @@ public class ConsoleLogAspect {
         for(int i = 0; i < parametersType.size(); i++) {
             String args = "";
             if(i < parametersType.size()-1) { args = ", "; }
-            parameters.append(parametersType.get(i))
-                      .append(": ")
-                      .append(paramitersValues.get(i))
-                      .append(args);
+            parameters
+                .append(parametersType.get(i))
+                .append(": ")
+                .append(paramitersValues.get(i))    //TODO: implementar validação para não exibir senhas, cpfs e etcs
+                .append(args);
         }
         LOGGER.info(String.format(LOG_FORMAT, className, methodName.getName(), parameters));
     }

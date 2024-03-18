@@ -13,26 +13,26 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@EqualsAndHashCode
 public class EvidenciaInfoDTO {
 
     Long id;
+    Integer ordem;
     String job;
     String jobDescricao;
+    String argumentos;
+    List<String> queries;
+    List<String> queriesNome;       //TODO: renomear no front
+    List<String> tabelasPreJob;
+    List<String> tabelasPosJob;
+    List<AnexoInfoDTO> cargas;      //TODO: ajustar AnexoInfoDTO no front
+    List<AnexoInfoDTO> logs;        //TODO: ajustar AnexoInfoDTO no front
+    List<AnexoInfoDTO> saidas;      //TODO: ajustar AnexoInfoDTO no front
+    Integer exitCode;               //TODO: adicionar o novo campo no front
+    String sha256;                  //TODO: adicionar o novo campo no front
+    String erroFatal;               //TODO: adicionar o novo campo no front
     OffsetDateTime dataInicio;
     OffsetDateTime dataFim;
     Long duracao;
-    Boolean sucesso;
-    Integer ordem;
-    String argumentos;
-    List<String> queries;
-    List<String> tabelasNome;
-    List<String> tabelasPreJob;
-    List<String> tabelasPosJob;
-    List<AnexoInfoDTO> logs;
-    List<AnexoInfoDTO> cargas;
-    List<AnexoInfoDTO> saidas;
-    String analise;
     String revisor;
     OffsetDateTime dataRevisao;
     String requisitos;
@@ -44,21 +44,33 @@ public class EvidenciaInfoDTO {
     }
 
     public EvidenciaInfoDTO(@NonNull Evidencia evidencia, @NonNull Integer ordem) {
-        log.info("Convertendo Evidencia em EvidenciaInfoDTO.");
+        log.info("Convertendo Evidencia em {}.", EvidenciaInfoDTO.class.getSimpleName());
         log.info("Ordem da evidência na Pipeline: {}.", ordem);
         val queries = new ArrayList<String>();
-        val tabelasNome = new ArrayList<String>();
+        val queriesNome = new ArrayList<String>();
         val bancoPreJob = new ArrayList<String>();
         val bancoPosJob = new ArrayList<String>();
         for(val execQuery : evidencia.getBanco()) {
             queries.add(execQuery.getQuery());
-            tabelasNome.add(execQuery.getTabelaNome());
+            queriesNome.add(execQuery.getQueryNome());
             bancoPreJob.add(execQuery.getResultadoPreJob());
             bancoPosJob.add(execQuery.getResultadoPosJob());
         }
         this.id = evidencia.getId();
+        this.ordem = ordem;
         this.job = evidencia.getJob().getNome();
         this.jobDescricao = evidencia.getJob().getDescricao();
+        this.argumentos = evidencia.getArgumentos();
+        this.queries = queries;
+        this.queriesNome = queriesNome;
+        this.tabelasPreJob = bancoPreJob;
+        this.tabelasPosJob = bancoPosJob;
+        this.cargas = AnexoInfoDTO.converterExecFile(evidencia.getCargas());
+        this.logs = AnexoInfoDTO.converterExecFile(evidencia.getLogs());
+        this.saidas = AnexoInfoDTO.converterExecFile(evidencia.getSaidas());
+        this.exitCode = evidencia.getExitCode();
+        this.sha256 = evidencia.getSha256();
+        this.erroFatal = evidencia.getErroFatal();
         this.dataInicio = evidencia.getDataInicio();
         this.dataFim = evidencia.getDataFim();
         if(this.dataInicio != null && this.dataFim != null) {
@@ -66,24 +78,12 @@ public class EvidenciaInfoDTO {
                 .between(dataInicio.toInstant(), dataFim.toInstant())
                 .getSeconds() * 1000;
         }
-        this.sucesso = evidencia.getSucesso();
-        this.ordem = ordem;
-        this.argumentos = evidencia.getArgumentos();
-        this.queries = queries;
-        this.tabelasNome = tabelasNome;
-        this.tabelasPreJob = bancoPreJob;
-        this.tabelasPosJob = bancoPosJob;
-        this.cargas = AnexoInfoDTO.converterExecFile(evidencia.getCargas());
-        this.logs = AnexoInfoDTO.converterExecFile(evidencia.getLogs());
-        this.saidas = AnexoInfoDTO.converterExecFile(evidencia.getSaidas());
-        this.analise = evidencia.getAnalise();
         this.revisor = evidencia.getRevisor();
         this.dataRevisao = evidencia.getDataRevisao();
         this.requisitos = evidencia.getRequisitos();
         this.comentario = evidencia.getComentario();
         if(evidencia.getResultado() != null)
             this.resultado = evidencia.getResultado().status;
-
         log.info(this.toString());
     }
 
@@ -104,27 +104,31 @@ public class EvidenciaInfoDTO {
 
     @Override
     public String toString() {
-        return "EvidenciaInfoDTO(" +
-            "job='" + job + '\'' +
+        return "EvidenciaInfoDTO{" +
+            "id=" + id +
+            ", ordem=" + ordem +
+            ", job='" + job + '\'' +
             ", jobDescricao='" + jobDescricao + '\'' +
+            ", argumentos='" + argumentos + '\'' +
+            ", queries=" + queries +
+            ", queriesNome=" + queriesNome +
+            ", tabelasPreJob=" + getResumoTabelasPreJob() +
+            ", tabelasPosJob=" + getResumoTabelasPosJob() +
+            ", cargas=" + getResumoCargas() +
+            ", logs=" + getResumoLogs() +
+            ", saidas=" + getResumoSaidas() +
+            ", exitCode=" + exitCode +
+            ", sha256='" + sha256 + '\'' +
+            ", erroFatal='" + erroFatal + '\'' +
             ", dataInicio=" + dataInicio +
             ", dataFim=" + dataFim +
             ", duracao=" + duracao +
-            ", sucesso=" + sucesso +
-            ", ordem=" + ordem +
-            ", argumentos='" + argumentos + '\'' +
-            ", queries=" + queries +
-            ", tabelasPreJob=" + getResumoTabelasPreJob() +
-            ", tabelasPosJob=" + getResumoTabelasPosJob() +
-            ", logs=" + getResumoLogs() +
-            ", cargas=" + getResumoCargas() +
-            ", saidas=" + getResumoSaidas() +
-            ", resivor='" + revisor + '\'' +
+            ", revisor='" + revisor + '\'' +
             ", dataRevisao=" + dataRevisao +
             ", requisitos='" + requisitos + '\'' +
-            ", expectativa='" + comentario + '\'' +
+            ", comentario='" + comentario + '\'' +
             ", resultado='" + resultado + '\'' +
-            ')';
+            '}';
     }
 
     private String getResumoTabelasPreJob() {

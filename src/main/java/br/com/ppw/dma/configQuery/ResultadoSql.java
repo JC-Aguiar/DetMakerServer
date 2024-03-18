@@ -13,16 +13,16 @@ import java.util.*;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ResultadoSql extends ComandoSql {
 
-     boolean consultaPosJob = false;
-     final List<List<Object>> resultadoPreJob = new ArrayList<>();
-     final List<List<Object>> resultadoPosJob = new ArrayList<>();
-     boolean success = false;
-     String errorMessage;
+//     boolean consultaPosJob = false;
+//     final List<List<Object>> resultadoPreJob = new ArrayList<>();
+     final List<List<Object>> resultado = new ArrayList<>();
+     boolean successo = false;
+     String mensagemErro = "";
 
 
      public ResultadoSql(@NonNull ComandoSql cmdSql) {
           addCampo(cmdSql.getCampos());
-          setTabela(cmdSql.getTabela());
+          setNome(cmdSql.getNome());
           getFiltros().addAll(cmdSql.getFiltros());
           setSql(cmdSql.getSql());
           setDescricao(cmdSql.getDescricao());
@@ -34,19 +34,8 @@ public class ResultadoSql extends ComandoSql {
      }
 
      @JsonIgnore
-     public ResultadoSql fecharConsultaPreJob() {
-          consultaPosJob = true;
-          return this;
-     }
-
-     @JsonIgnore
-     public String resumoPreJob() {
-          return resumo(resultadoPreJob);
-     }
-
-     @JsonIgnore
-     public String resumoPosJob() {
-          return resumo(resultadoPosJob);
+     public String resumo() {
+          return resumo(resultado);
      }
 
      @JsonIgnore
@@ -58,26 +47,38 @@ public class ResultadoSql extends ComandoSql {
      }
 
      @JsonIgnore
-     public void addResultado(Map<String, Object> resultado) {
-          val novoRegistro = new ArrayList<>(resultado.values());
-          if(!consultaPosJob) resultadoPreJob.add(novoRegistro);
-          else resultadoPosJob.add(novoRegistro);
+     public void addResultado(List<Map<String, Object>> extracao) {
+          if(getCampos().isEmpty()) {
+               getCampos().addAll(extracao.get(0).keySet());
+          }
+          resultado.clear();
+          extracao.forEach(
+              registro -> resultado.add(List.of(registro.values()))
+          );
+          successo = true;
+     }
+
+     public void setMensagemErro(@NonNull String mensagemErro) {
+          this.mensagemErro = mensagemErro;
+          this.successo = false;
      }
 
      @Override
      public String toString() {
           return "ResultadoSql(" +
-             "campos=" + getCampos() +
-             ", tabela='" + getTabela() + '\'' +
-             ", sql='" + getSql() + '\'' +
-             ", filtros=" + getFiltros() +
-             ", dinamico=" + isDinamico() +
-             ", descricao='" + getDescricao() + '\'' +
-             ", consultaPosJob=" + consultaPosJob +
-             ", resultadoPreJob=" + resumoRegistros(resultadoPreJob) +
-             ", resultadoPosJob=" + resumoRegistros(resultadoPosJob) +
+              "campos=" + getCampos() +
+              ", tabela='" + getNome() + '\'' +
+              ", sql='" + getSql() + '\'' +
+              ", filtros=" + getFiltros() +
+              ", dinamico=" + isDinamico() +
+              ", descricao='" + getDescricao() + '\'' +
+              ", resultado=" + resumoRegistros(resultado) +
+              ", successo=" + successo +
+              ", mensagemErro='" + mensagemErro + '\'' +
              ')';
      }
+
+
 
      @JsonIgnore
      private String resumoRegistros(@NotEmpty List<List<Object>> registros) {

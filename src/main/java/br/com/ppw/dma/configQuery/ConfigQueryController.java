@@ -51,12 +51,12 @@ public class ConfigQueryController extends MasterController<Long, ConfigQuery, C
     }
 
     @GetMapping("cliente/{clienteId}")
-    public ResponseEntity<List<ConfigQueryInfoDTO>> getAllByCliente(
+    public ResponseEntity<List<QueryInfoDTO>> getAllByCliente(
         @PathVariable(name = "clienteId") Long clienteId) {
         //-------------------------------------------------
-        final List<ConfigQueryInfoDTO> dtos = service.findAllByCliente(clienteId)
+        final List<QueryInfoDTO> dtos = service.findAllByCliente(clienteId)
             .stream()
-            .map(ConfigQueryInfoDTO::new)
+            .map(QueryInfoDTO::new)
             .toList();
         return ResponseEntity.ok(dtos);
     }

@@ -1,8 +1,10 @@
 package br.com.ppw.dma;
 
+import br.com.ppw.dma.config.CustomPrintStream;
 import br.com.ppw.dma.exception.DiretorioSemPermissaoException;
 import br.com.ppw.dma.system.StorageProperties;
 import br.com.ppw.dma.system.StorageService;
+import com.github.lalyos.jfiglet.FigletFont;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -23,9 +25,12 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+
+import static java.time.format.DateTimeFormatter.BASIC_ISO_DATE;
 
 @Slf4j
 @SpringBootApplication
@@ -39,67 +44,33 @@ public class DetMakerApplication { //extends SpringBootServletInitializer {
 	@Getter
 	private static String appVersion;
 
-	@GetMapping("/")
-	public String home() {
-		return "Bem vindo ao DET-MAKER-SERVER";
-	}
 
+	public static void main(String[] args) {
+		CustomPrintStream customPrintStream = new CustomPrintStream(System.out);
+		System.setOut(customPrintStream);
 
-	public static void main(String[] args) throws DiretorioSemPermissaoException, IOException {
-		log.info("Obtendo metadados da aplicação DET-MAKER.");
-		setAppVersion();
-
-//		log.info("Preparando servidor do DET-MAKER");
-//		log.info("Validando diretórios e arquivos obrigatórios...");
-//		Arquivos.validarCriarDiretorio(DIR_RECURSOS);
-
-		log.info("Iniciando servidor do DET-MAKER");
 		SpringApplication.run(DetMakerApplication.class, args);
-	}
-
-	@Bean
-	CommandLineRunner init(StorageService storageService) {
-		return (args) -> {
-			storageService.deleteAll();
-			storageService.init();
-		};
-	}
-
-	private static void setAppVersion() throws IOException {
-		if(appVersion != null) return;
-
-		//if(checkIdeaEnvironment()) {
-		appVersion = DetMakerApplication.class.getPackage().getImplementationVersion();
-		if(appVersion == null) appVersion = "vDEV.Unknown";
-
-		log.info("Versão da aplicação: {}", appVersion);
-	}
-
-	private static boolean checkIdeaEnvironment() {
-		val ideas = List.of("netbeans", "eclipse", "intellij");
-		val classPath = System.getProperty("java.class.path");
-		log.debug("ClassPath:");
-
-		return Arrays.stream(classPath.split(";"))
-			.peek(cp -> log.debug(" - {}", cp))
-			.anyMatch(cp -> ideas.stream()
-				.anyMatch(idea -> idea.equalsIgnoreCase(cp)));
-	}
-
-	private static String getVersionFromApplicationContext() throws IOException {
-		val resourcePatternResolver = ResourcePatternUtils.getResourcePatternResolver(
-			new PathMatchingResourcePatternResolver());
-		val resources = resourcePatternResolver.getResources("classpath*:META-INF/MANIFEST.MF");
-
-		for(Resource resource : resources) {
-			val properties = new Properties();
-			properties.load(resource.getInputStream());
-			val version = properties.getProperty("Implementation-Version");
-			if(StringUtils.hasText(version)) {
-				return version;
-			}
+		setAppVersion();
+		try {
+			//String fonte = FigletFont.convertOneLine("standard.flf");
+			String[] banner = FigletFont.convertOneLine("DET-MAKER").split("\n");
+			System.out.println();
+			Arrays.stream(banner)
+				.filter(linha -> !linha.trim().isEmpty())
+				.forEach(System.out::println);
 		}
-		return null;
+		catch(IOException e) {
+			System.err.println(e.getMessage());
+		}
+		System.out.println(":: Det-Maker ::                 (" +appVersion+ ")");
 	}
+
+	private static void setAppVersion() {
+		if(appVersion != null) return;
+		appVersion = DetMakerApplication.class.getPackage().getImplementationVersion();
+		if(appVersion == null)
+			appVersion = "v" + LocalDateTime.now().format(BASIC_ISO_DATE) + "-DEV";
+	}
+
 
 }

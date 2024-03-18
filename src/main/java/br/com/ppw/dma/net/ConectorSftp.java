@@ -1,11 +1,13 @@
 package br.com.ppw.dma.net;
 
-import br.com.ppw.dma.exception.OperacaoSftpException;
+import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.exception.FtpHostException;
+import br.com.ppw.dma.exception.OperacaoSftpException;
 import br.com.ppw.dma.system.ExitCodes;
 import com.jcraft.jsch.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -13,15 +15,30 @@ import lombok.val;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 
 @Slf4j
-@FieldDefaults(level = AccessLevel.PRIVATE)
-public class ConectorSftp extends Uploader {
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class ConectorSftp {
+
+    @Getter String server;
+    @Getter int port;
+    String username;
+    String password;
 
     //TODO: Javadoc
+    public static ConectorSftp conectar(@NonNull AmbienteAcessoDTO sftpConfig) {
+        return ConectorSftp.conectar(
+            sftpConfig.getConexao(),
+            sftpConfig.getUsuario(),
+            sftpConfig.getSenha());
+    }
+
     public static ConectorSftp conectar(@NotBlank String host, @NotBlank String usuario, String senha) {
         log.info("Validando IP e PORTA para conexão.");
         val ipPorta = List.of(host.split(":"));
@@ -46,7 +63,11 @@ public class ConectorSftp extends Uploader {
 
     //TODO: Javadoc
     private ConectorSftp(String server, int port, String username, String password) throws IOException {
-        super(server, port, username, password);
+//        super(server, port, username, password);
+        this.server = server;
+        this.port = port;
+        this.username = username;
+        this.password = password;
         comando("hostname; whoami; date; uptime; uname -a");
         log.info("Conexão testada e estabelecida.");
     }
@@ -58,117 +79,87 @@ public class ConectorSftp extends Uploader {
 
     //TODO: Javadoc
     private Session iniciarSessao(int timeout) throws JSchException {
-        Session session = new JSch().getSession(getUsername(), getServer(), getPort());
-        session.setPassword(getPassword());
+        Session session = new JSch().getSession(username, server, port);
+        session.setPassword(password);
         session.setConfig("StrictHostKeyChecking", "no");
         session.connect(timeout);
         return session;
     }
 
-    public List<UploadManager> upload(@NonNull String dirRemoto, @NonNull List<File> arquivos) {
-        return upload(dirRemoto, arquivos.toArray(new File[0]));
-    }
-
     //TODO: Javadoc
-    @Override
-    public List<UploadManager> upload(@NonNull String dirRemoto, @NonNull File...arquivos) {
-        val uploads = new ArrayList<UploadManager>();
+    public SftpFileManager<File> upload(@NonNull String dirRemoto, @NonNull File arquivo) {
+        val comando = "sftp put " + dirRemoto;
         Session session = null;
         Channel channel = null;
         ChannelSftp sftpChannel = null;
-        
-        log.info("Quantidade de arquivos locais a serem enviados: {}.", arquivos.length);
-        log.info("Diretório remoto de destino: '{}'.", dirRemoto);
-        Arrays.stream(arquivos).forEach(
-            arquivo -> log.info("Arquivo: " + arquivo.getAbsolutePath()));
+        val newUpload = new SftpFileManager<>(comando, arquivo);
 
+        log.info("Realizando upload do arquivo: '{}'.", arquivo);
+        log.info("Diretório remoto de destino: '{}'.", dirRemoto);
         try {
             session = iniciarSessao();
             channel = session.openChannel("sftp");
             channel.connect();
             sftpChannel = (ChannelSftp) channel;
-            UploadManager newUpload = null;
-            for(val arq : arquivos) {
-                newUpload = new UploadManager(dirRemoto, arq);
-                try {
-                    log.info("Realizando upload do arquivo '{}'.", arq.getAbsolutePath());
-                    sftpChannel.put(arq.getAbsolutePath(), dirRemoto);
-                    newUpload.setStatus(UploadManagerStatus.SUCCESS);
-                }
-                catch(SftpException e) {
-                    log.error("Erro ao tentar realizar upload do arquivo '{}': {}", arq.getName(), e.getMessage());
-                    newUpload.setStatus(UploadManagerStatus.NOT_FOUND);
-                }
-                uploads.add(newUpload);
-            }
+            sftpChannel.put(arquivo.getAbsolutePath(), dirRemoto);
+            newUpload.setSuccess(true);
+            log.info("Upload realizado com sucesso.");
         }
         catch(Exception e) {
             e.printStackTrace();
-            log.error("Erro inesperado curante conexão para download: {}", e.getMessage());
+            newUpload.setErro(e.getMessage());
         }
         finally {
             if(sftpChannel != null) sftpChannel.exit();
             if(channel != null) channel.disconnect();
             if(session != null) session.disconnect();
         }
-
-        val sucessos = uploads.stream()
-            .map(UploadManager::getStatus)
-            .filter(status -> status == UploadManagerStatus.SUCCESS)
-            .count();
-        if(sucessos > 0) log.info("Quantidade de uploads: " + sucessos);
-        else log.warn("Nenhum arquivo foi enviado com sucesso.");
-
-        return uploads;
+        return newUpload;
     }
 
     //TODO: Javadoc
-    public List<RemoteFile> download(@NonNull String...arquivosRemotos)
+    public SftpFileManager<RemoteFile> download(@NonNull String arquivoRemoto)
     throws OperacaoSftpException {
-        val comando = "sftp get " + String.join(", ", arquivosRemotos);
         Session session = null;
         Channel channel = null;
         ChannelSftp sftpChannel = null;
         InputStream entrada = null;
-        val arquivosObtidos = new ArrayList<RemoteFile>();
-        
-        log.info("Quantidade de arquivos remotos para baixar: " + Arrays.stream(arquivosRemotos).count());
-        log.info("Arquivos para download:");
-        Arrays.stream(arquivosRemotos).forEach(info -> log.info(" - {}", info));
+        SftpFileManager<RemoteFile> newDownload = null;
+        val comando = "sftp get " + arquivoRemoto;
+
+        log.info("Realizando download do arquivo: '{}'.", arquivoRemoto);
         try {
             session = iniciarSessao();
             channel = session.openChannel("sftp");
             channel.connect();
             sftpChannel = (ChannelSftp) channel;
 
-            log.info("Iniciando downloads...");
-            for(val arquivoRemoto : arquivosRemotos) {
-                log.info("Realizando download do arquivo: '{}'.", arquivoRemoto);
-                val arquivoNome = arquivoRemoto.substring(arquivoRemoto.lastIndexOf('/') + 1);//arquivoRemoto.split("/");
-                final SftpATTRS props = sftpChannel.lstat(arquivoRemoto);
-                val conteudo = new StringBuilder();
+            val arquivoNome = arquivoRemoto.substring(arquivoRemoto.lastIndexOf('/') + 1); //arquivoRemoto.split("/");
+            val conteudo = new StringBuilder();
 
-                entrada = sftpChannel.get(arquivoRemoto);
-                val leitor = new BufferedReader(new InputStreamReader(entrada, StandardCharsets.UTF_8));
-                String linha;
-                while((linha = leitor.readLine()) != null) {
-                    conteudo.append(linha).append("\n");
-                }
-                val arquivo = RemoteFile.addFile(
-                    arquivoNome,
-                    props.getSize(),
-                    props.getMTime(),
-                    props.getATime(),
-                    conteudo.toString());
-                arquivosObtidos.add(arquivo);
+            entrada = sftpChannel.get(arquivoRemoto);
+            final SftpATTRS props = sftpChannel.lstat(arquivoRemoto);
+            val leitor = new BufferedReader(new InputStreamReader(entrada, StandardCharsets.UTF_8));
+            String linha;
 
-                log.info("Arquivo '{}' salvo em memória com sucesso.", arquivo.nome());
-                log.info(arquivo.toString());
+            while((linha = leitor.readLine()) != null) {
+                conteudo.append(linha).append("\n");
             }
+            val arquivo = RemoteFile.addFile(
+                arquivoNome,
+                props.getSize(),
+                props.getMTime(),
+                props.getATime(),
+                conteudo.toString());
+            newDownload = new SftpFileManager<>(comando, arquivo);
+            newDownload.setSuccess(true);
+            log.info("Arquivo '{}' obtido com sucesso.", arquivo.nome());
+            log.info(arquivo.toString());
         }
         catch(Exception e) {
             e.printStackTrace();
-            throw new OperacaoSftpException(comando, "Erro inesperado durante download: " + e.getMessage());
+            newDownload = new SftpFileManager<>(comando, null);
+            newDownload.setErro(e.getMessage());
         }
         finally {
             if(sftpChannel != null) sftpChannel.exit();
@@ -181,23 +172,20 @@ public class ConectorSftp extends Uploader {
                 catch(IOException e) {
                     log.warn("Erro de I/O ao tentar fechar leitor remoto SFTP: {}.", e.getMessage());
                 }
-            };
+            }
         }
-        if(arquivosObtidos.isEmpty())
-            throw new OperacaoSftpException(comando, "Operação finalizada, mas nenhum download obtido.");
-            //log.warn("Nenhum arquivo foi baixado com sucesso.");
-        return arquivosObtidos;
+        return newDownload;
     }
 
     //TODO: Javadoc
-    public TerminalManager comando(String comando) throws OperacaoSftpException {
+    public SftpTerminalManager comando(String comando) throws OperacaoSftpException {
         log.info("Executando comando: " + comando);
         Session session = null;
         ChannelExec channelExec = null;
         InputStream in = null;
         InputStream err = null;
         val outputBuffer = new ByteArrayOutputStream();
-        val terminal = new TerminalManager();
+        val terminal = new SftpTerminalManager();
         try {
             val properties = getShellProperties();
             val comandoFull = properties.keySet()
@@ -219,7 +207,6 @@ public class ConectorSftp extends Uploader {
             err = channelExec.getExtInputStream();
 
             //Lendo resultado exibido no servidor remoto
-//            log.debug(LINHA_HIFENS + LINHA_HIFENS);
             while(true) {
                 while(in.available() > 0) {
                     outputBuffer.write(in.readAllBytes());
@@ -295,7 +282,6 @@ public class ConectorSftp extends Uploader {
         //properties.put("SSH_CONNECTION", "10.238.101.33 61680 10.129.164.206 22");
         properties.put("LESSOPEN", "||/usr/bin/lesspipe.sh %s");
         properties.put("GC_ROOT", "/var/lib/guardicore");
-        properties.put("ORACLE_HOME", "/u01/app/oracle/product/client12.2");
         //properties.put("HISTTIMEFORMAT", "%Y-%m-%d %T %z");
         properties.put("HISTFILE", "/app/rcvry//.bash_history");
         properties.put("AGENT_PKG_TYPE", "rpm");
@@ -303,76 +289,46 @@ public class ConectorSftp extends Uploader {
         return properties;
     }
 
-    //TODO: Javadoc
-    public List<DownloadManager> downloadMaisRecentePreJob(List<String> arquivosRemotos) {
-        return downloadMaisRecentePreJob(arquivosRemotos.toArray(new String[0]));
+    public List<SftpFileManager<RemoteFile>> downloadMaisRecente(@NonNull List<String> arquivosRemotos) {
+        return downloadMaisRecente(arquivosRemotos.toArray(new String[0]));
     }
 
-    public List<DownloadManager> downloadMaisRecentePreJob(String...arquivosRemotos) {
-        val totalDownloads = new ArrayList<DownloadManager>();
-        log.debug("Total de referências a coletar: {}.", arquivosRemotos.length);
-        log.debug(" - {}", String.join(", ", arquivosRemotos));
-
-        for(val arquivoRemoto : arquivosRemotos) {
-            log.debug(" - {}", arquivoRemoto);
-            Optional<RemoteFile> arquivo;
-            try {
-                arquivo = listarArquivoDownload(arquivoRemoto);
-            }
-            catch(OperacaoSftpException e) {
-                arquivo = Optional.empty();
-            }
-            totalDownloads.add(new DownloadManager(arquivoRemoto, arquivo));
-        }
-        if(!totalDownloads.isEmpty())
-            log.info("Total de downloads pré-execução: {}", totalDownloads.size());
+    public List<SftpFileManager<RemoteFile>> downloadMaisRecente(String...arquivosRemotos) {
+        log.debug("Total de arquivos para download: {}.", arquivosRemotos.length);
+        var sucessos = new AtomicInteger();
+        val totalDownloads = Arrays.stream(arquivosRemotos)
+            .map(this::downloadMaisRecente)
+            .peek(download -> sucessos.addAndGet(download.isSuccess() ? 1 : 0))
+            .toList();
+        if(sucessos.get() > 0)
+            log.info("Total de downloads obtidos: {}", sucessos);
         else
-            log.warn("Nenhum download pré-execução obtido.");
+            log.warn("Nenhum download obtido com sucesso.");
         return totalDownloads;
     }
 
     //TODO: Javadoc
-    public void downloadMaisRecentePosJob(List<DownloadManager> gerenciadores) {
-        downloadMaisRecentePosJob(gerenciadores.toArray(new DownloadManager[0]));
-    }
+    public SftpFileManager<RemoteFile> downloadMaisRecente(String arquivoNome) {
+        val comandoInput = "ls -t " + arquivoNome + " | head -1";
+        log.info("Comando a ser executado: {}", comandoInput);
+        try {
+            if(arquivoNome == null || arquivoNome.isEmpty())
+                throw new OperacaoSftpException(comandoInput, "Diretório/arquivo inválido.");
 
-    public void downloadMaisRecentePosJob(DownloadManager...gerenciadores) {
-        log.debug("Total de referências a coletar: {}.", gerenciadores.length);
+            val listaArquivos = comando(comandoInput).getConsoleLog();
+            if(listaArquivos.isEmpty())
+                throw new OperacaoSftpException(comandoInput, "Nenhum arquivo encontrado.");
 
-        for(val gerenciador : gerenciadores) {
-            log.debug(" - {}", gerenciador.getReference());
-            try {
-                gerenciador.setPostFile(listarArquivoDownload(gerenciador.getReference()));
-            }
-            catch(OperacaoSftpException e) {
-                gerenciador.setPostFile(Optional.empty());
-            }
+            //Por algum motivo estranho o nome dos arquivos retornam concatenados com '\r' e pode causar problemas.
+            val arquivoMaisRecente = listaArquivos.get(0).replace("\r", "");
+            log.info("Arquivo mais recente: '{}'", arquivoMaisRecente);
+            return download(arquivoMaisRecente);
         }
-        val sucessos = Arrays.stream(gerenciadores)
-            .map(DownloadManager::getPostFile)
-            .filter(Objects::nonNull)
-            .toList()
-            .size();
-        if(sucessos > 0)
-            log.info("Total de downloads pós-execução: {}", sucessos);
-        else
-            log.warn("Nenhum download pós-execução obtido.");
-    }
-
-    //TODO: Javadoc
-    private Optional<RemoteFile> listarArquivoDownload(String arquivoNome) throws OperacaoSftpException {
-        val comando = "ls -t " + arquivoNome + " | head -1";
-        if(arquivoNome == null || arquivoNome.isEmpty())
-            throw new OperacaoSftpException(comando, "Diretório/arquivo inválido para download.");
-
-        val listaArquivos = comando("ls -t " + arquivoNome + " | head -1").getConsoleLog();
-        if(listaArquivos.isEmpty())
-            throw new OperacaoSftpException(comando, "Nenhum arquivo disponível.");
-
-        //Por algum motivo estranho o nome dos arquivos retornam concatenados com '\r' e pode causar problemas.
-        val arquivoMaisRecente = listaArquivos.get(0).replace("\r", "");
-        log.info("Arquivo mais recente: '{}'", arquivoMaisRecente);
-        return download(arquivoMaisRecente).stream().findFirst();
+        catch (OperacaoSftpException e) {
+            val retorno = new SftpFileManager<RemoteFile>(e.comando, null);
+            retorno.setErro(e.getMessage());
+            return retorno;
+        }
     }
     
 }

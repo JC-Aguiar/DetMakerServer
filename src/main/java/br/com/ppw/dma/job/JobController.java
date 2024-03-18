@@ -1,15 +1,11 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.ambiente.AmbienteService;
-import br.com.ppw.dma.cliente.Cliente;
 import br.com.ppw.dma.cliente.ClienteService;
 import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.configQuery.ConfigQueryController;
-import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.evidencia.EvidenciaController;
 import br.com.ppw.dma.master.MasterController;
-import br.com.ppw.dma.net.ConectorSftp;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -85,15 +81,6 @@ public class JobController extends MasterController<Long, Job, JobController> {
         return ResponseEntity.ok(responsePage);
     }
 
-    public List<Job> findByClienteAndNome(@NonNull Cliente cliente, @NonNull List<String> nomes) {
-        log.info("Procurando Jobs do Cliente '{}' para os seguintes nomes: {}.",
-            cliente.getNome(), String.join(", ", nomes));
-
-        val jobs = jobService.findByClienteAndNome(cliente, nomes);
-        log.info("Total de Jobs encontrados: {}", jobs.size());
-        return jobs;
-    }
-
     //TODO: javadoc
     //TODO: criar novo controlar para ter essa responsabilidade?
     @PostMapping(value = "read/xlsx/planilha/{planilhaNome}/cliente/{clienteId}")
@@ -149,21 +136,6 @@ public class JobController extends MasterController<Long, Job, JobController> {
         return ResponseEntity.ok(mensagem);
     }
 
-    //TODO: criar exception própria
-    //TODO: javadoc
-    public List<Evidencia> executeJobsAndGetEvidencias(
-        @NonNull AmbienteAcessoDTO ftp,
-        @NonNull List<JobExecutePOJO> jobsPojo) {
-        //----------------------------------------------
-        log.debug("Iniciando conexão remota SFTP.");
-        val connSftp = ConectorSftp.conectar(ftp.getConexao(), ftp.getUsuario(), ftp.getSenha());
-        jobService.setSftp(connSftp);
-
-        log.debug("Executando Jobs-Pojo.");
-        jobsPojo = jobService.executarJobs(jobsPojo);
-        return evidenciaController.gerarEvidencias(jobsPojo);
-    }
-
     //TODO: javadoc
     private JobConfigDTO criarJobConfigDto(@NonNull JobInfoDTO infoDto) {
         final List<ComandoSql> queries = new ArrayList<>();
@@ -180,7 +152,7 @@ public class JobController extends MasterController<Long, Job, JobController> {
         log.info("Job tabelas: {}.", infoDto.getTabelas().size());
         infoDto.getTabelas()
             .stream()
-            .filter(tabela -> queries.stream().noneMatch(query -> query.getTabela().trim().equals(tabela)))
+            .filter(tabela -> queries.stream().noneMatch(query -> query.getNome().trim().equals(tabela)))
             .peek(tabela -> log.info("Tabela '{}' pendente de ConfigQuery.", tabela))
             .map(ComandoSql::new)
             .forEach(queries::add);

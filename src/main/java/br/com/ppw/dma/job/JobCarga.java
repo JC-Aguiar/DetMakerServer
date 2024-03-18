@@ -1,9 +1,7 @@
 package br.com.ppw.dma.job;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import br.com.ppw.dma.execFile.ExecFile;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 @Data
@@ -15,5 +13,11 @@ public class JobCarga {
     String nome;
     String conteudo;
     String tipo;
+
+    public JobCarga(@NonNull ExecFile file) {
+        nome = file.getArquivoNome();
+        conteudo = file.getArquivo();
+        tipo = "tmp";
+    }
 
 }

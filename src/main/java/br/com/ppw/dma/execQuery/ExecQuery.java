@@ -5,7 +5,6 @@ import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
@@ -42,9 +41,9 @@ public class ExecQuery {
     // Nome do job que gerou essa query
     String jobNome;
 
-    @Column(name = "TABELA_NOME", length = 150, nullable = false)
+    @Column(name = "QUERY_NOME", length = 150, nullable = false)
     // Nome da tabela usada na queries
-    String tabelaNome;
+    String queryNome;
 
     @Column(name = "QUERY", length = 500, nullable = false)
     // SQL usada na evidência desse queries pós-execução
@@ -58,15 +57,26 @@ public class ExecQuery {
     // Conteúdo da tabela extraída
     String resultadoPosJob;
 
+    @Column(name = "INCONFORMIDADE", columnDefinition = "VARCHAR2(200)")
+    String inconformidade;
 
-    public static ExecQuery montarEvidencia(@NonNull Evidencia evidencia, @NonNull ResultadoSql tabela) {
+
+    public static ExecQuery montarEvidencia(
+        @NonNull Evidencia evidencia,
+        @NonNull ResultadoSql tabelaPre,
+        @NonNull ResultadoSql tabelaPos) {
+        //-----------------------------------
+        val separador = tabelaPre.getMensagemErro() == null
+            || tabelaPre.getMensagemErro().isEmpty() ?
+            "" : "\n";
         return ExecQuery.builder()
             .evidencia(evidencia)
             .jobNome(evidencia.getJob().getNome())
-            .tabelaNome(tabela.getTabela())
-            .query(tabela.getSqlCompleta())
-            .resultadoPreJob(tabela.resumoPreJob())
-            .resultadoPosJob(tabela.resumoPosJob())
+            .queryNome(tabelaPos.getNome())
+            .query(tabelaPos.getSqlCompleta())
+            .resultadoPreJob(tabelaPre.resumo())
+            .resultadoPosJob(tabelaPos.resumo())
+            .inconformidade(tabelaPre.getMensagemErro() + separador + tabelaPos.getMensagemErro())
             //TODO: ?informações da pipeline?
             .build();
     }
@@ -77,10 +87,11 @@ public class ExecQuery {
             "id=" + id +
             ", evidencia=" + evidencia +
             ", jobNome='" + jobNome + '\'' +
-            ", tabelaNome='" + tabelaNome + '\'' +
+            ", tabelaNome='" + queryNome + '\'' +
             ", query='" + query + '\'' +
             ", resultadoPreJob=" + getResumoResultado(resultadoPreJob) +
             ", resultadoPosJob=" + getResumoResultado(resultadoPosJob) +
+            ", inconformidade='" + inconformidade + '\'' +
             '}';
     }
 
