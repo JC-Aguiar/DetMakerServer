@@ -9,6 +9,7 @@ import br.com.ppw.dma.pipeline.PipelineExecDTO;
 import br.com.ppw.dma.util.SqlUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.lalyos.jfiglet.FigletFont;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
@@ -186,6 +187,29 @@ public class BasicTest {
 //        comandoSql.setFiltros("SELECT * FROM EVENTOS_WEB ew WHERE EVTYPE='EV_BOLETO_CYBER_HUBPGTO' ORDER BY EVID");
 //        comandoSql.setTabela("EVENTOS_WEB");
 //    }
+
+    @Test
+    public void testeBannerFormatado() throws IOException {
+        String[] banner = FigletFont.convertOneLine("DET-MAKER").split("\n");
+        System.out.println();
+        Arrays.stream(banner)
+            .filter(linha -> !linha.trim().isEmpty())
+            .forEach(System.out::println);
+        System.out.println(":: Det-Maker ::                 (v20240314-DEV)");
+    }
+
+    @Test
+    public void testeRegexQuebraDelinhaComEspaco() throws JsonProcessingException {
+//        String texto = "Olá\n        mundo!\n\n    Como\n\n        você está?";
+        String texto = "GenerationTarget encountered exception accepting command : Error executing DDL \"\n" +
+            " alter table ppw_exec_query \n" +
+            " add query_nome varchar2(150 char) not null\" via JDBC Statement";
+
+        // Remover quebra de linha + múltiplos espaços em branco
+        String textoFormatado = texto.replaceAll("\\n\\s+", " ");
+
+        System.out.println(textoFormatado);
+    }
 
     @Test
     public void testarConversaoModelMapper_PipelineExecDTO() throws JsonProcessingException {

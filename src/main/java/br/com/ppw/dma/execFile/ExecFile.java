@@ -2,22 +2,18 @@ package br.com.ppw.dma.execFile;
 
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.net.RemoteFile;
+import br.com.ppw.dma.net.SftpFileManager;
 import br.com.ppw.dma.system.Arquivos;
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
-import org.springframework.util.FileCopyUtils;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static br.com.ppw.dma.execFile.TipoExecFile.*;
 import static br.com.ppw.dma.execFile.TipoExecFile.CARGA;
@@ -55,25 +51,17 @@ public class ExecFile {
     // Informação para descrever se o arquivo é do tipo 'carga', 'saída' ou 'log'
     TipoExecFile tipo;
 
-    @Column(name = "ARQUIVO_NOME", length = 200, nullable = false)
+    @Column(name = "ARQUIVO_NOME", length = 200, nullable = true)
     // Nome desse arquivo pós-execução
     String arquivoNome;
 
-    @Column(name = "ARQUIVO", columnDefinition = "CLOB", nullable = false)
+    @Column(name = "ARQUIVO", columnDefinition = "CLOB", nullable = true)
     // Conteúdo do arquivo pós-execução
     String arquivo;
 
+    @Column(name = "INCONFORMIDADE", columnDefinition = "VARCHAR2(200)")
+    String inconformidade;
 
-    public static ExecFile montarEvidenciaCarga(@NonNull Evidencia evidencia, @NonNull File carga) {
-        //return ExecFile.montarEvidencia(evidencia, carga, CARGA);
-        return ExecFile.builder()
-            .evidencia(evidencia)
-            .jobNome(evidencia.getJob().getNome())
-            .tipo(CARGA)
-            .arquivoNome(carga.getName())
-            .arquivo(Arquivos.lerArquivo(carga))
-            .build();
-    }
 
     public static ExecFile montarEvidenciaTerminal(@NonNull Evidencia evidencia, String conteudo) {
         return ExecFile.builder()
@@ -85,21 +73,58 @@ public class ExecFile {
             .build();
     }
 
-    public static ExecFile montarEvidenciaLog(@NonNull Evidencia evidencia, @NonNull RemoteFile log) {
+    public static ExecFile montarEvidenciaCarga(
+        @NonNull Evidencia evidencia,
+        @NonNull SftpFileManager<File> carga) {
+        //-----------------------------------------
+        String nome = "";
+        String conteudo = "";
+        if(carga.getFile().isPresent()) {
+            nome = carga.getFile().get().getName();
+            conteudo = Arquivos.lerArquivo(carga.getFile().get());
+        }
+        return ExecFile.builder()
+            .evidencia(evidencia)
+            .jobNome(evidencia.getJob().getNome())
+            .tipo(CARGA)
+            .arquivoNome(nome)
+            .arquivo(conteudo)
+            .inconformidade(carga.getErro())
+            .build();
+    }
+
+    public static ExecFile montarEvidenciaLog(
+        @NonNull Evidencia evidencia,
+        @NonNull SftpFileManager<RemoteFile> log) {
+        //-----------------------------------------
         return ExecFile.montarEvidencia(evidencia,log, LOG);
     }
 
-    public static ExecFile montarEvidenciaSaida(@NonNull Evidencia evidencia, @NonNull RemoteFile carga) {
+    public static ExecFile montarEvidenciaSaida(
+        @NonNull Evidencia evidencia,
+        @NonNull SftpFileManager<RemoteFile> carga) {
+        //-----------------------------------------
         return ExecFile.montarEvidencia(evidencia, carga, SAIDA);
     }
 
-    private static ExecFile montarEvidencia(Evidencia evidencia, RemoteFile rf, TipoExecFile tipo) {
+    private static ExecFile montarEvidencia(
+        Evidencia evidencia,
+        SftpFileManager<RemoteFile> fileManager,
+        TipoExecFile tipo) {
+        //-----------------------------------
+        String nome = "";
+        String conteudo = "";
+        if(fileManager.getFile().isPresent()) {
+            nome = fileManager.getFile().get().nome();
+            conteudo = fileManager.getFile().get().conteudo();
+        }
         return ExecFile.builder()
             .evidencia(evidencia)
             .jobNome(evidencia.getJob().getNome())
             .tipo(tipo)
-            .arquivoNome(rf.nome())
-            .arquivo(rf.conteudo())
+            .arquivoNome(nome)
+            .arquivo(conteudo)
+            .inconformidade(fileManager.getErro())
             .build();
     }
 

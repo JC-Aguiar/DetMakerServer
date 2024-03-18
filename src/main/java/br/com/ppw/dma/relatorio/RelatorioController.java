@@ -2,9 +2,12 @@ package br.com.ppw.dma.relatorio;
 
 import br.com.ppw.dma.ambiente.AmbienteService;
 import br.com.ppw.dma.evidencia.Evidencia;
-import br.com.ppw.dma.job.JobExecutePOJO;
+import br.com.ppw.dma.job.JobExecuteDTO;
+import br.com.ppw.dma.job.JobInfoDTO;
+import br.com.ppw.dma.job.JobPreparation;
 import br.com.ppw.dma.master.MasterController;
 import br.com.ppw.dma.pipeline.PipelineController;
+import br.com.ppw.dma.pipeline.PipelinePreparation;
 import br.com.ppw.dma.system.FileSystemService;
 import br.com.ppw.dma.user.UserInfoDTO;
 import br.com.ppw.dma.util.DetHtml;
@@ -141,15 +144,13 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
         if(!podeGerarDet) return ResponseEntity.badRequest()
             .body("O Relatório ID " +id+ " não está totalmente revisado para gerar DET");
 
-        //TODO: ajustar
-        val det = DetDTO.from(relatorio);
+        //TODO: o usuário tem que ser quem fez a solicitação de execução da pipleine/relatório
         val detUser = new UserInfoDTO();
         detUser.setNome(user);
         detUser.setEmail(email);
         detUser.setPapel("DEV");
         detUser.setEmpresa("PPW");
-
-        return retornarNovoDet(det, List.of(detUser));
+        return retornarNovoDet(DetDTO.from(relatorio, List.of(detUser)));
     }
 
     //TODO: javadoc
@@ -161,33 +162,35 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
         val relatorio = relatorioService.findById(id);
         val pipeline = relatorio.getPipeline();
         val ambiente = relatorio.getAmbiente();
-        val jobPojo = relatorio.getEvidencias()
+        val jobs = relatorio.getEvidencias()
             .stream()
-//            .map(JobExecutePOJO::new)
             .map(ev -> {
-                log.info("Recriando execução da Evidência ID {}", ev.getId());
-                val pojo = new JobExecutePOJO(ev);
-                log.info("Convertendo registro ExecFile em arquivos temporários para envio SFTP.");
-                val cargas = ev.getCargas()
-                    .stream()
-                    .map(fileSystemService::store)
-                    .toList();
-                pojo.setCargas(cargas);
-                log.info(pojo.toString());
-                return pojo;
+                log.info("Recriando as propriedades executadas na Evidência ID {}", ev.getId());
+                return new JobPreparation(
+                    JobInfoDTO.converterJob(ev.getJob()),
+                    new JobExecuteDTO(ev)
+                );
+//                val process = JobPreparation(ev);
+//                log.info("Convertendo registro ExecFile em arquivos temporários para envio SFTP.");
+//                val cargas = ev.getCargas()
+//                    .stream()
+//                    .map(fileSystemService::store)
+//                    .toList();
+//                process.setCargas(cargas);
+//                log.info(process.toString());
+//                return process;
             })
             .toList();
         val relatorioDto = new RelatorioInfoDTO(relatorio);
-        return pipelineController.run(relatorioDto, pipeline, ambiente, jobPojo);
+//        return pipelineController.run(relatorioDto, pipeline, ambiente, jobs);
+        return pipelineController.run(
+            new PipelinePreparation(pipeline, relatorioDto, ambiente, jobs));
     }
 
-    private ResponseEntity<Resource> retornarNovoDet(
-        @NonNull DetDTO pipelineRelatorio,
-        @NonNull List<UserInfoDTO> userInfo)
+    private ResponseEntity<Resource> retornarNovoDet(@NonNull DetDTO pipelineRelatorio)
     throws IOException, URISyntaxException {
-
         //log.debug("Criando objeto Resource para arquivo no caminho '{}'.", det.getAbsolutePath());
-        val det = new DetHtml(resourceLoader, pipelineRelatorio, userInfo);
+        val det = new DetHtml(resourceLoader, pipelineRelatorio);
         final Resource fileResource = new ByteArrayResource(det.getDocumento());
 
         log.debug("Configurando cabeçalho da resposta: 'attachment/{}'.", det.getDocumentoNome());

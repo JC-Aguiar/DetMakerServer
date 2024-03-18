@@ -1,14 +1,12 @@
 package br.com.ppw.dma.pipeline;
 
-import br.com.ppw.dma.ambiente.Ambiente;
-import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.ambiente.AmbienteService;
 import br.com.ppw.dma.cliente.ClienteService;
+import br.com.ppw.dma.evidencia.EvidenciaService;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.job.*;
 import br.com.ppw.dma.master.MasterController;
 import br.com.ppw.dma.relatorio.RelatorioHistoricoDTO;
-import br.com.ppw.dma.relatorio.RelatorioInfoDTO;
 import br.com.ppw.dma.relatorio.RelatorioService;
 import br.com.ppw.dma.system.FileSystemService;
 import jakarta.validation.Valid;
@@ -22,8 +20,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -43,9 +39,11 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 
     private AmbienteService ambienteService;
 
-    private JobController jobController;
+    private JobService jobService;
 
     private RelatorioService relatorioService;
+
+    private EvidenciaService evidenciaService;
 
     private FileSystemService fileSystemService;
 
@@ -54,17 +52,19 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         @Autowired PipelineService pipelineService,
         @Autowired ClienteService clienteService,
         @Autowired AmbienteService ambienteService,
-        @Autowired JobController jobController,
+        @Autowired JobService jobService,
         @Autowired RelatorioService relatorioService,
+        @Autowired EvidenciaService evidenciaService,
         @Autowired FileSystemService fileSystemService) {
         //--------------------------------------------
         super(pipelineService);
         this.pipelineService = pipelineService;
         this.clienteService = clienteService;
         this.ambienteService = ambienteService;
-        this.jobController = jobController;
+        this.jobService = jobService;
         this.relatorioService = relatorioService;
         this.fileSystemService = fileSystemService;
+        this.evidenciaService = evidenciaService;
     }
 
     @GetMapping("cliente/{clienteId}")
@@ -112,45 +112,49 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         val pipeline = getAndUpdate(execDto.getPipeline())
             .orElseGet(() -> proxy().createNewPipeline(execDto));
         val ambiente = ambienteService.findById(execDto.getAmbienteId());
-        val banco = AmbienteAcessoDTO.banco(ambiente);
+//        val banco = AmbienteAcessoDTO.banco(ambiente);
+//        val ftp = AmbienteAcessoDTO.ftp(ambiente);
 
         //TODO: O looping abaixo deve ser um for manual.
         //  Validar se o Job ID atual já não foi processado.
         //  Evitar consultas desnecessárias no banco.
         log.debug("Preparando execução dos Jobs, convertendo os JobExecuteDTOs para JobExecutePOJOs.");
-        final List<JobExecutePOJO> jobsPojo = execDto.getJobs()
+        final List<JobPreparation> jobs = execDto.getJobs()
             .stream()
             .map(dto -> {
                 val id = dto.getId();
                 log.info("Buscando registro para Job id {}.", id);
-                val job = ((JobService) jobController.getService()).findById(id);
+                val job = jobService.findById(id);
                 log.info(job.toString());
-
-                val cargas = new ArrayList<File>();
-                if(!dto.getCargas().isEmpty()) {
-                    log.info("Total de arquivos de carga: {}.", dto.getCargas());
-                    log.info("Salvando as cargas dos Jobs no diretório temporário.");
-                    dto.getCargas()
-                        .stream()
-                        .map(fileSystemService::store)
-                        .forEach(cargas::add);
-                }
-                else log.info("Nenhum arquivo de carga foi enviado.");
-                return new JobExecutePOJO(job, dto, banco, cargas);
+//                val cargas = new ArrayList<File>();
+//                if(!dto.getCargas().isEmpty()) {
+//                    log.info("Total de arquivos de carga: {}.", dto.getCargas());
+//                    log.info("Salvando as cargas dos Jobs no diretório temporário.");
+//                    dto.getCargas()
+//                        .stream()
+//                        .map(fileSystemService::store)
+//                        .forEach(cargas::add);
+//                }
+//                else log.info("Nenhum arquivo de carga foi informado na requisição.");
+//                return new JobProcess(job, dto, banco, cargas);
+                return new JobPreparation(JobInfoDTO.converterJob(job), dto);
             })
             .toList();
-        return run(execDto.getRelatorio(), pipeline, ambiente, jobsPojo);
+
+        return run(
+            new PipelinePreparation(pipeline, execDto.getRelatorio(), ambiente, jobs));
     }
 
-    public ResponseEntity<RelatorioHistoricoDTO> run(
-        @NonNull RelatorioInfoDTO relatorioDto,
-        @NonNull Pipeline pipeline,
-        @NonNull Ambiente ambiente,
-        @NonNull List<JobExecutePOJO> jobsPojo) {
-        //-----------------------------------
-        val ftp = AmbienteAcessoDTO.ftp(ambiente);
-        val evidencias = jobController.executeJobsAndGetEvidencias(ftp, jobsPojo);
-        val relatorio = relatorioService.buildAndPersist(relatorioDto, ambiente, pipeline, evidencias);
+
+    public ResponseEntity<RelatorioHistoricoDTO> run(@NonNull PipelinePreparation preparation) {
+//        val evidencias = jobService.executarJob(ftp, jobsPojo);
+        val jobsProcessados = jobService.executarJob(preparation);
+        val evidencias = evidenciaService.gerarEvidencia(jobsProcessados);
+        val relatorio = relatorioService.buildAndPersist(
+            preparation.relatorio(),
+            preparation.ambiente(),
+            preparation.pipeline(),
+            evidencias);
 
         log.info("Montando RelatorioHistoricoDTO.");
         val relatorioHistorico = new RelatorioHistoricoDTO(relatorio);
@@ -186,7 +190,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         log.debug("Iniciando validação contra duplicidade, conversão e persistência.");
         pipelineService.checkDuplicated(dto.getNome(), dto.getClienteId());
         val cliente = clienteService.findById(dto.getClienteId());
-        val jobs = jobController.findByClienteAndNome(cliente, dto.getJobs());
+        val jobs = jobService.findByClienteAndNome(cliente, dto.getJobs());
         val pipeline = Pipeline.parseInfoDto(dto, jobs, cliente);
         pipelineService.persist(pipeline);
 
@@ -237,7 +241,6 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         log.info("Criando nova Pipeline '{}' para Cliente ID {}.",
             execDTO.getPipeline().getNome(), execDTO.getClienteId());
 
-        val jobService = jobController.getService();
         val cliente = clienteService.findById(execDTO.getClienteId());
 
         log.info("Obtendo todos os Jobs listados no DTO.");
@@ -274,7 +277,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
             if(atualizarDescricao)
                 pipelineBanco.setDescricao(dto.getDescricao());
             if(atualizarJobs)
-                pipelineBanco.setJobs(jobController.findByClienteAndNome(cliente, dto.getJobs()));
+                pipelineBanco.setJobs(jobService.findByClienteAndNome(cliente, dto.getJobs()));
             pipelineService.persist(pipelineBanco);
         }
         return pipeline;

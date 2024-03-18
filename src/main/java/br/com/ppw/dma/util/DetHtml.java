@@ -4,9 +4,7 @@ import br.com.ppw.dma.DetMakerApplication;
 import br.com.ppw.dma.evidencia.AnexoInfoDTO;
 import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
 import br.com.ppw.dma.relatorio.DetDTO;
-import br.com.ppw.dma.user.UserInfoDTO;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -84,19 +82,16 @@ public class DetHtml {
 
 
     //TODO: javadoc
-    public DetHtml(
-        @NonNull ResourceLoader resourceLoader,
-        @NonNull DetDTO dto,
-        @NotEmpty List<UserInfoDTO> userInfo)
+    public DetHtml(@NonNull ResourceLoader resourceLoader, @NonNull DetDTO dto)
     throws IOException, URISyntaxException {
         log.info("Criando novo relatório DET.");
 
         this.resourceLoader = resourceLoader;
-        val userNome = userInfo.size() > 0 ? userInfo.get(0).getNome() : ""; //TODO
-        val userPapel = userInfo.size() > 0 ? userInfo.get(0).getPapel() : ""; //TODO
-        val userEmpresa = userInfo.size() > 0 ? userInfo.get(0).getEmpresa() : ""; //TODO
-        val userEmail = userInfo.size() > 0 ? userInfo.get(0).getEmail() : ""; //TODO
-        val userTelefone = userInfo.size() > 0 ? userInfo.get(0).getTelefone() : ""; //TODO
+        val userNome = dto.users().size() > 0 ? dto.users().get(0).getNome() : ""; //TODO
+        val userPapel = dto.users().size() > 0 ? dto.users().get(0).getPapel() : ""; //TODO
+        val userEmpresa = dto.users().size() > 0 ? dto.users().get(0).getEmpresa() : ""; //TODO
+        val userEmail = dto.users().size() > 0 ? dto.users().get(0).getEmail() : ""; //TODO
+        val userTelefone = dto.users().size() > 0 ? dto.users().get(0).getTelefone() : ""; //TODO
         //TODO: log.info()
 
         //DADOS DO DET
@@ -104,11 +99,11 @@ public class DetHtml {
         log.debug("Assinatura: '{}'.", assinatura);
 
         //DETALHAMENTO DOS TESTES
-        val parametrosDaPipeline = dto.getRelatorio()
+        val parametrosDaPipeline = dto.relatorio()
             .getEvidencias()
             .stream()
             .sorted(Comparator.comparing(EvidenciaInfoDTO::getOrdem))
-            .map(ev -> "ksh " +ev.getJob()+ " " +ev.getArgumentos())
+            .map(ev -> "ksh " +ev.getJob()+ " " +ev.getArgumentos()+ "\n")
             .map(txt -> txt.replace(" null", ""))
             .collect(Collectors.joining("\n"));
 
@@ -132,14 +127,14 @@ public class DetHtml {
         val scriptDetalhamento =
             CAMPO_DETALHES_PIPELINE   + javascriptString(dto.pipelineNome())                    + "; \n" +
             CAMPO_DETALHES_PARAMETROS + javascriptString(parametrosDaPipeline)                  + "; \n" +
-            CAMPO_DETALHES_DADOS      + javascriptString(dto.getPipelineDescricao())            + "; \n" +
-            CAMPO_DETALHES_CONFIG     + javascriptString(dto.getRelatorio().getConsideracoes())  + "; \n" +
+            CAMPO_DETALHES_DADOS      + javascriptString(dto.pipelineDescricao())            + "; \n" +
+            CAMPO_DETALHES_CONFIG     + javascriptString(dto.relatorio().getConsideracoes())  + "; \n" +
             CAMPO_DETALHES_AMBIENTE   + javascriptString(dto.relatorio().getAmbiente())         + "; \n";
         log.debug("Script-Detalhamento:");
         Arrays.stream(scriptDetalhamento.split("\n")).forEach(log::debug);
 
         //Preenchendo o script 'listaTestecases'
-        val evidenciasDto = dto.getRelatorio().getEvidencias();
+        val evidenciasDto = dto.relatorio().getEvidencias();
         log.info("Total de Evidências: {}.", evidenciasDto.size());
         for(val evidenciaDto : evidenciasDto) {
             countEvidencias += 1;
@@ -165,7 +160,7 @@ public class DetHtml {
                 evidenciaDto.getRevisor(),                          //revisor
                 evidenciaDto.getDataInicio().format(BRASIL_STYLE),  //data
                 evidenciaDto.getQueries(),                          //queries
-                evidenciaDto.getTabelasNome(),                      //tabelasNome
+                evidenciaDto.getQueriesNome(),                      //tabelasNome
                 tabelasPreJobMap.keySet().stream().toList(),        //tabelasPreJob
                 tabelasPosJobMap.keySet().stream().toList(),        //tabelasPosJob
                 logsMap.keySet().stream().toList(),                 //logsConteudo

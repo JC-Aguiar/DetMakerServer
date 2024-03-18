@@ -1,8 +1,6 @@
 package br.com.ppw.dma.master;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
-import br.com.ppw.dma.configQuery.ComandoSql;
-import br.com.ppw.dma.configQuery.ResultadoSql;
 import br.com.ppw.dma.util.SqlUtils;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -11,8 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.hibernate.exception.SQLGrammarException;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -49,7 +45,7 @@ public class MasterOracleDAO implements AutoCloseable {
         }
         val listaColunas = new ArrayList<String>();
         try(val statement = conn.createStatement()) {
-            val sql = sqlGetColsFromTable(tableName);
+            val sql = sqlColsFromTable(tableName);
             log.info("SQL: {}", sql);
             log.info("Executando query.");
             val resultSet = statement.executeQuery(sql);
@@ -65,7 +61,7 @@ public class MasterOracleDAO implements AutoCloseable {
         }
     }
 
-    private static String sqlGetColsFromTable(@NotBlank String tableName) {
+    private static String sqlColsFromTable(@NotBlank String tableName) {
         String sql = "SELECT a.column_name " +
                 "FROM all_tab_columns a " +
                 "WHERE a.table_name = '%s' " +
@@ -87,14 +83,12 @@ public class MasterOracleDAO implements AutoCloseable {
     }
 
     //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
-    public ResultadoSql getAllInfoFromTable(@NonNull ResultadoSql resultadoSql) throws SQLException {
+    public List<Map<String, Object>> getAllInfoFromTable(@NonNull String sql) throws SQLException {
 //        if(resultadoSql.semTabela()) throw new RuntimeException("Tabela não definida.");
-        log.info("Executando query '{}'.", resultadoSql.getTabela());
-        val tableName = resultadoSql.getTabela();
+//        log.info("Executando query '{}'.", resultadoSql.getTabela());
+//        val tableName = resultadoSql.getTabela();
         val extracao = new ArrayList<Map<String, Object>>();
-
         try(val statement = conn.createStatement()) {
-            val sql = resultadoSql.getSqlCompleta();
             log.info("SQL: {}", sql);
             validateSql(sql);
             log.info("Executando query.");
@@ -114,10 +108,12 @@ public class MasterOracleDAO implements AutoCloseable {
             }
         }
         if(extracao.isEmpty())
-            log.info("Nenhum registro para a query '{}'.",  tableName);
+            log.info("Nenhum registro encontrado");
         else
-            log.info("Total de registros para a query '{}': {}.", tableName, extracao.size());
+            log.info("Total de registros coletados: {}.", extracao.size());
+        return extracao;
 
+/*
         //Adicionando os campos do primeiro registro para o ResultadoSql dessa mesma tabela
         if(resultadoSql.getCampos().isEmpty()) {
             extracao.get(0)
@@ -128,12 +124,9 @@ public class MasterOracleDAO implements AutoCloseable {
         //Adicionando os valores de cada registro para o ResultadoSql dessa mesma tabela
         extracao.forEach(resultadoSql::addResultado);
         return resultadoSql;
+ */
     }
 
-    public List<String> checkFields(@NonNull ComandoSql sql) throws SQLException {
-        if(sql.getCampos().isEmpty()) return getColsFromTable(sql.getTabela());
-        return sql.getCampos();
-    }
 
     //TODO: criar exception própria?
     //TODO: javadoc

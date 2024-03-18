@@ -17,8 +17,8 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ComandoSql {
 
+    String nome;
     final List<String> campos= new ArrayList<>();
-    String tabela;
     final List<FiltroSql> filtros = new ArrayList<>();
     String sql;
     String descricao;
@@ -27,12 +27,12 @@ public class ComandoSql {
     public static final int ROWNUM_LIMIT = 50;
 
 
-    public ComandoSql(@NotBlank String tabela) {
-        this.tabela = tabela;
+    public ComandoSql(@NotBlank String nome) {
+        this.nome = nome;
     }
 
     public ComandoSql(@NonNull ConfigQuery configQuery) {
-        this.tabela = configQuery.getTabelaNome();
+        this.nome = configQuery.getNome();
         this.filtros.addAll(FiltroSql.identificar(configQuery.getSql()));
         this.sql = configQuery.getSql();
         this.descricao = configQuery.getDescricao();
@@ -40,7 +40,7 @@ public class ComandoSql {
     }
 
     public ComandoSql(@NonNull ExecQuery execQuery) {
-        this.tabela = execQuery.getTabelaNome();
+        this.nome = execQuery.getQueryNome();
         this.filtros.addAll(FiltroSql.identificar(execQuery.getQuery()));
         this.sql = execQuery.getQuery();
         this.descricao = "";
@@ -61,7 +61,7 @@ public class ComandoSql {
 
     @JsonIgnore
     public String getSqlCompleta() {
-        if(semTabela()) throw new RuntimeException("Tabela não definida.");
+//        if(semTabela()) throw new RuntimeException("Tabela não definida.");
         if(!dinamico) return sql;
         if(filtros.isEmpty())
             throw new RuntimeException("Não existem filtros declarados para se montar o SQL.");
@@ -69,14 +69,14 @@ public class ComandoSql {
         val valoresPendentes = filtros.stream()
             .map(FiltroSql::getValor)
             .anyMatch(valor -> valor == null || valor.isEmpty());
-        if(valoresPendentes) throw new RuntimeException("Favor preencher todos os campos antes da query.");
+        if(valoresPendentes) throw new RuntimeException("Existem filtros não preenchidos na query.");
 
         return FiltroSql.montarSql(sql, filtros);
     }
 
     @JsonIgnore
     public boolean semTabela() {
-        return tabela == null || tabela.trim().isEmpty();
+        return nome == null || nome.trim().isEmpty();
     }
 
     @JsonIgnore

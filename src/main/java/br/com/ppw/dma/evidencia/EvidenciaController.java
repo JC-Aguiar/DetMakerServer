@@ -1,10 +1,8 @@
 package br.com.ppw.dma.evidencia;
 
 import br.com.ppw.dma.exception.TipoEvidenciaResultadoException;
-import br.com.ppw.dma.job.JobExecutePOJO;
 import br.com.ppw.dma.master.MasterController;
 import br.com.ppw.dma.master.MasterSummaryDTO;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,7 +15,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -84,23 +81,6 @@ public class EvidenciaController extends MasterController<Long, Evidencia, Evide
 
         if(resumo.getFailed().isEmpty()) return ResponseEntity.ok(resumo);
         return new ResponseEntity<>(resumo, HttpStatus.NO_CONTENT);
-    }
-
-    //TODO: javadoc
-    public List<Evidencia> gerarEvidencias(@NonNull List<JobExecutePOJO> jobsPojo) {
-        log.info("Iniciando rotina para gerar Evidências.");
-        val listaEvidencias = new ArrayList<Evidencia>();
-        for(val jobPojo : jobsPojo) {
-            try {
-                val evidencia = evidenciaService.createEvidencia(jobPojo);
-                listaEvidencias.add(evidencia);
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        }
-        return listaEvidencias;
     }
 
 }
