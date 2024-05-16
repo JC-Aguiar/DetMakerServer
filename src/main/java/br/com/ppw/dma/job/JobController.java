@@ -83,8 +83,9 @@ public class JobController extends MasterController<Long, Job, JobController> {
 
     //TODO: javadoc
     //TODO: criar novo controlar para ter essa responsabilidade?
+    @Transactional
     @PostMapping(value = "read/xlsx/planilha/{planilhaNome}/cliente/{clienteId}")
-    public ResponseEntity<List<JobInfoDTO>> readXlsx(
+    public ResponseEntity<String> readXlsx(
         @PathVariable() String planilhaNome,
         @PathVariable() Long clienteId,
         @RequestParam("file") final MultipartFile file)
@@ -95,10 +96,22 @@ public class JobController extends MasterController<Long, Job, JobController> {
         val jobsDto = jobService.mapExcelToJobInfoDto(excelX, planilhaNome);
         log.info("Total de jobs mapeados da planilha: {}.", jobsDto.size());
 
-        //val configJobDto = jobsDto.stream()
-        //    .map(this::criarJobConfigDto)
-        //    .toList();
-        return ResponseEntity.ok(jobsDto);
+        log.info("Convertendo DTOs em Entidades.");
+        var entidades = jobsDto.stream()
+            .peek(dto -> log.debug(dto.toString()))
+            .map(dto -> mapper.map(dto, Job.class).refinarCampos())
+            .peek(job -> job.setCliente(cliente))
+            .toList();
+
+        log.info("Persistindo Jobs no banco.");
+        var totalSalvos = jobService.addAll(entidades)
+            .stream()
+            .filter(job -> job.getId() != -1)
+            .count();
+
+        var mensagem = "Total de Jobs salvos com sucesso = " + totalSalvos;
+        log.info(mensagem + ".");
+        return ResponseEntity.ok(mensagem);
     }
 
     //TODO: javadoc

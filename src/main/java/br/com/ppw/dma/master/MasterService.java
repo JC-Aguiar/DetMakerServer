@@ -42,6 +42,10 @@ public abstract class MasterService<ID, ENTITY, THIS extends  MasterService> {
         return page;
     }
 
+    public List<ENTITY> addAll(@NotNull List<ENTITY> entities) {
+        return dao.saveAll(entities);
+    }
+
     public Optional<ENTITY> addOne(@NotNull ENTITY entity) throws DuplicatedRecordException {
         try {
             return Optional.of(dao.save(entity));
