@@ -2,6 +2,7 @@ package br.com.ppw.dma.util;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
 import java.sql.SQLSyntaxErrorException;
 import java.util.List;
@@ -12,6 +13,28 @@ public abstract class SqlUtils {
     private static final List<String> KEYWORDS = List.of(
         "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "TRUNCATE", "RENAME", "DROP"
     );
+
+    //TODO: javadoc
+    public static boolean isSafeInsertQuery(String query) {
+        if(query == null || query.trim().isEmpty()) return true;
+        val keywords = KEYWORDS.stream()
+            .filter(k -> !k.equals("INSERT"))
+            .toList();
+        String palavras = String.join("|", keywords);
+        String ddlPattern = "(?i)(" +palavras+ ")";
+        return !query.matches(".*" + ddlPattern + ".*");
+    }
+
+    //TODO: javadoc
+    public static boolean isSafeDeleteQuery(String query) {
+        if(query == null || query.trim().isEmpty()) return true;
+        val keywords = KEYWORDS.stream()
+            .filter(k -> !k.equals("DELETE"))
+            .toList();
+        String palavras = String.join("|", keywords);
+        String ddlPattern = "(?i)(" +palavras+ ")";
+        return !query.matches(".*" + ddlPattern + ".*");
+    }
 
     //TODO: javadoc
     public static boolean isSafeQuery(String query) {

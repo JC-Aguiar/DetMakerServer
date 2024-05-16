@@ -37,6 +37,7 @@ public class Cliente implements MasterEntity<Long> {
     String nome;
 
     @Lob
+    @ToString.Exclude
     @Column(name = "BANNER", columnDefinition = "BLOB")
     // Imagem do banner do cliente para ser usada no frontend
     byte[] banner;
@@ -62,6 +63,11 @@ public class Cliente implements MasterEntity<Long> {
     // IDs das Pipelines relacionadas a este Cliente
     List<Pipeline> pipelines = new ArrayList<>();
 
+
+    public Cliente(@NonNull ClienteNovoDTO dto) {
+        this.nome = dto.getNome();
+        this.banner = dto.getBanner();
+    }
 
     @Override
     public final boolean equals(Object o) {

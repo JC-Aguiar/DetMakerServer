@@ -72,7 +72,7 @@ public class EvidenciaController extends MasterController<Long, Evidencia, Evide
             }
             catch(TipoEvidenciaResultadoException e) {
                 log.warn(e.getMessage());
-                resumo.fail(evRevisada.evidenciaId);
+                resumo.fail(evRevisada.evidenciaId, e.getMessage());
             }
         });
         log.info("Total de Evidências atualizadas com os campos de revisão: {}.", resumo.totalSize());

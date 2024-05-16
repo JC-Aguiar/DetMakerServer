@@ -1,13 +1,7 @@
-package br.com.ppw.dma.evidencia;
+package br.com.ppw.dma.execFile;
 
-import br.com.ppw.dma.execFile.ExecFile;
-import br.com.ppw.dma.system.Arquivos;
-import jakarta.validation.constraints.NotBlank;
-import lombok.Getter;
 import lombok.NonNull;
-import lombok.val;
 
-import java.io.File;
 import java.util.List;
 
 public record AnexoInfoDTO(
@@ -16,13 +10,13 @@ public record AnexoInfoDTO(
     @NonNull String conteudo,
     @NonNull String inconformidade) {
 
+    //TODO: auhssauhsaus
     public static AnexoInfoDTO converterExecFile(@NonNull ExecFile execFile) {
         return new AnexoInfoDTO(
             execFile.getArquivoNome(),
             execFile.getTipo().tipo,
             execFile.getArquivo(),
-            execFile.getInconformidade()
-        );
+            execFile.getInconformidade());
     }
 
     public static List<AnexoInfoDTO> converterExecFile(@NonNull List<ExecFile> execFiles) {

@@ -1,7 +1,7 @@
 package br.com.ppw.dma.util;
 
 import br.com.ppw.dma.DetMakerApplication;
-import br.com.ppw.dma.evidencia.AnexoInfoDTO;
+import br.com.ppw.dma.execFile.AnexoInfoDTO;
 import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
 import br.com.ppw.dma.relatorio.DetDTO;
 import jakarta.validation.constraints.NotBlank;

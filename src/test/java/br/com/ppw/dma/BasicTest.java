@@ -1,19 +1,20 @@
 package br.com.ppw.dma;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
+import br.com.ppw.dma.carga.PadraoCargaProdutoGLW;
 import br.com.ppw.dma.configQuery.FiltroSql;
-import br.com.ppw.dma.configQuery.ResultadoSql;
 import br.com.ppw.dma.job.JobService;
 import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.pipeline.PipelineExecDTO;
 import br.com.ppw.dma.util.SqlUtils;
+import br.com.ppware.NumeroAleatorio;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.lalyos.jfiglet.FigletFont;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.jupiter.api.Test;
-import org.modelmapper.ModelMapper;
 import org.springframework.util.ResourceUtils;
 
 import java.io.File;
@@ -25,16 +26,169 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static br.com.ppw.dma.util.FormatString.dividirValores;
 
 @Slf4j
 public class BasicTest {
+
+    public static final List<String> REGISTROS_CRIADOS = new ArrayList<>(Arrays.asList(
+        "1#182015159141-MOK 54134418638 CTA-V0001NNM8Q-013",
+        "1#694918356017-MOK 56237660955 CTA-V0001NNM06-013",
+        "1#976705153873-MOK 12600793547 4130942898",
+        "1#696370720150-MOK 54999655776 11975981679",
+        "1#928461850636-MOK 16959806304 11999223054",
+        "1#559548337639-MOK 54686031879 CTA-V0001NNMJ5-013",
+        "1#256974321866-MOK 77558568915 11975981679",
+        "1#688307547620-MOK 38612421325 CTA-V0001NNNT3-013",
+        "1#314839724968-MOK 70582162656 CTA-V0001NNNXT-013",
+        "1#956306269061-MOK 84310248037 4130942898",
+        "1#943784923008-MOK 47195163276 TV-CTA-V0001NNLZJ-050",
+        "1#260154707676-MOK 70538911843 4131071950",
+        "1#492985891497-MOK 83463161450 11997027002",
+        "1#218446172137-MOK 74234814677 TV-CTA-V0001NNMJ6-050",
+        "1#770555023115-MOK 15032024971 CTA-V0001NNM8Q-013",
+        "1#130181368621-MOK 85119911281 CTA-V0001NNNXT-013",
+        "1#866839209261-MOK 35764687088 4131071124",
+        "1#863348335247-MOK 37666599538 TV-CTA-V0001NNNXU-050",
+        "1#696974437896-MOK 00866402749 TV-CTA-V0001NNNT2-050",
+        "1#732911155025-MOK 39138172502 11999223054",
+        "1#813548536808-MOK 90089015443 CTA-V0001NNLZI-013",
+        "1#230222099163-MOK 46969503800 11997027002",
+        "1#038047925229-MOK 01478596188 TV-CTA-V0001NNLZJ-050",
+        "1#286953494180-MOK 76013792096 CTA-V0001NNM8Q-013",
+        "1#644575994351-MOK 58463097538 TV-CTA-V0001NNM8R-050",
+        "1#221698926753-MOK 99346277181 CTA-V0001NNMJ5-013",
+        "1#223386059243-MOK 80121065446 CTA-V0001NNNT3-013",
+        "1#995244920118-MOK 03241919500 11975981679",
+        "1#200330377032-MOK 18114125032 CTA-V0001NNNXT-013",
+        "1#298844413100-MOK 02053426687 TV-CTA-V0001NNM8R-050",
+        "1#684636670384-MOK 06971572978 11999504335",
+        "1#609299126914-MOK 63163589906 TV-CTA-V0001NNNXU-050",
+        "1#973424098243-MOK 12921123379 11999819205",
+        "1#563340844752-MOK 10496498785 11999819205",
+        "1#538571498123-MOK 28513439415 11997027002",
+        "1#313958167115-MOK 38324365503 TV-CTA-V0001NNLZJ-050",
+        "1#885275354450-MOK 80674589665 TV-CTA-V0001NNLZJ-050",
+        "1#380145520461-MOK 20186150924 11999504335",
+        "1#150254761819-MOK 03091995469 4131071124",
+        "1#384652788334-MOK 31478273902 CTA-V0001NNM8Q-013",
+        "1#408177840572-MOK 41380370105 11999223054",
+        "1#323258300350-MOK 99139830813 TV-CTA-V0001NNMJ6-050",
+        "1#329652631291-MOK 50914613639 11997027002",
+        "1#536625845853-MOK 04961375165 TV-CTA-V0001NNMJ6-050",
+        "1#708874218165-MOK 66725164524 Servicos Digitais",
+        "1#885086694357-MOK 11218734249 11999819205",
+        "1#859574832867-MOK 40140780775 TV-CTA-V0001NNNT2-050",
+        "1#792953750421-MOK 98891886448 4131071124",
+        "1#851505628388-MOK 83549814163 CTA-V0001NNNXT-013",
+        "1#177380661797-MOK 85626308996 CTA-V0001NNM8Q-013",
+        "1#020851838389-MOK 66145580283 TV-CTA-V0001NNMJ6-050",
+        "1#749707947489-MOK 37065679851 11999504335",
+        "1#365396992524-MOK 29437691194 TV-CTA-V0001NNLZJ-050",
+        "1#376445081128-MOK 52613900538 CTA-V0001NNLZI-013",
+        "1#086985738716-MOK 22311168271 TV-CTA-V0001NNLZJ-050",
+        "1#838249370839-MOK 94230665972 11999227503",
+        "1#128947052590-MOK 19170628500 TV-CTA-V0001NNM07-050",
+        "1#695851017399-MOK 33229116219 11999223054",
+        "1#078461470131-MOK 23322045532 4130942898",
+        "1#948317769292-MOK 96971467167 CTA-V0001NNNXT-013",
+        "1#604226335398-MOK 37606648414 TV-CTA-V0001NNLZJ-050",
+        "1#529283662160-MOK 99673794635 11975981679",
+        "1#141271969810-MOK 98622778872 CTA-V0001NNM06-013",
+        "1#058516491705-MOK 23162373582 4131071950"
+    ));
+
+    public static final List<String> ID_PRODUTO = List.of(
+        "Servicos Digitais",
+        "CTA-V0001NNLZI-013",
+        "CTA-V0001NNM06-013",
+        "TV-CTA-V0001NNLZJ-050",
+        "TV-CTA-V0001NNM07-050",
+        "11975981679",
+        "11999504335",
+        "11999819205",
+        "11999227503",
+        "CTA-V0001NNM8Q-013",
+        "TV-CTA-V0001NNM8R-050",
+        "4131071950",
+        "11997027002",
+        "CTA-V0001NNMJ5-013",
+        "TV-CTA-V0001NNMJ6-050",
+        "4131071124",
+        "CTA-V0001NNNT3-013",
+        "TV-CTA-V0001NNNT2-050",
+        "11999223054",
+        "4130942898",
+        "CTA-V0001NNNXT-013",
+        "TV-CTA-V0001NNNXU-050"
+    );
+
+    public static final List<String> TIPO_PRODUTO = List.of(
+        "TV",
+        "Linha Fixa",
+        "Linha Móvel",
+        "Banda Larga"
+    );
+
+    public static final DateTimeFormatter DATA_FORMATO = DateTimeFormatter.ofPattern("ddMMyyyy");
+
+    public static String getidProduto() {
+        return ID_PRODUTO.get(
+            new Random().nextInt(0, ID_PRODUTO.size())
+        );
+    }
+
+    public static String getTipoProduto() {
+        return TIPO_PRODUTO.get(
+            new Random().nextInt(0, TIPO_PRODUTO.size())
+        );
+    }
+
+    public static final String GET_TIPO_STATUS = NumeroAleatorio
+        .novoInteger(0, 2) > 0 ? "Ativo" : "Retirado";
+
+
+    public static String preencherEspacosCampoCarga(@NonNull String texto, int tamanhoMax) {
+        val builder = new StringBuilder(texto);
+        if(tamanhoMax - builder.length() > 0)
+            builder.append(" ".repeat(tamanhoMax - builder.length()));
+        return builder.toString();
+    }
+
+    private static String criarRegistroCargaGLW() {
+        var builder = new StringBuilder();
+        Arrays.stream(PadraoCargaProdutoGLW.values())
+            .map(PadraoCargaProdutoGLW::gerarCampo)
+            .forEach(builder::append);
+        var conteudo = builder.toString();
+        var chave = Arrays.stream(conteudo.substring(0, 82).split(" "))
+            .filter(txt -> !txt.trim().isEmpty())
+            .collect(Collectors.joining(" "));
+
+        if(REGISTROS_CRIADOS.contains(chave)) return criarRegistroCargaGLW();
+        REGISTROS_CRIADOS.add(chave);
+        return conteudo;
+    }
+
+    @Test
+    public void shell_vivoProdutos_identificarPadrao() {
+        Stream.of(new String[420])
+            .map(obj -> criarRegistroCargaGLW())
+            .forEach(System.out::println);
+    }
+
+    @Test
+    public void shell_vivoProdutos_geradorDeCarga() {
+
+    }
 
 //    @Test
 //    public void testeGerandoHtmlDetUnificado() throws IOException, URISyntaxException {

@@ -13,9 +13,11 @@ import jakarta.validation.Valid;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.coyote.Response;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -281,6 +283,21 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
             pipelineService.persist(pipelineBanco);
         }
         return pipeline;
+    }
+
+    @DeleteMapping(value = "clientId/{clientId}/pipeline/{nome}")
+    public ResponseEntity<String> delete(
+        @PathVariable(name = "clientId") Long clientId,
+        @PathVariable(name = "nome") String nome) {
+        //----------------------------------------
+        var pipeline = pipelineService.getUniqueOne(nome, clientId);
+        if (pipeline.isPresent())
+            pipelineService.delete(pipeline.get());
+        else
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
+                .body("Pipeline '" + nome + "' não encontrada.");
+
+        return ResponseEntity.ok("Pipeline '" + nome + "' deletada com sucesso.");
     }
 
 }

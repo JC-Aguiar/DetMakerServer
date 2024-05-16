@@ -10,9 +10,15 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AmbienteAcessoDTO {
 
-    @NotBlank String conexao;
-    @NotBlank String usuario;
+    @NotBlank
+    String conexao;
+
+    @NotBlank
+    String usuario;
+
+    @ToString.Exclude
     String senha;
+
 
     public static AmbienteAcessoDTO banco(@NonNull Ambiente ambiente) {
         return new AmbienteAcessoDTO(

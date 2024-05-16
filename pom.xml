@@ -186,6 +186,12 @@
 			<artifactId>jfiglet</artifactId>
 			<version>0.0.8</version>
 		</dependency>
+		<!-- Gerador de Massa -->
+		<dependency>
+			<groupId>br.com.aguiar</groupId>
+			<artifactId>GeradorAleatorio</artifactId>
+			<version>v2.0</version>
+		</dependency>
 	</dependencies>
 
 	<build>
