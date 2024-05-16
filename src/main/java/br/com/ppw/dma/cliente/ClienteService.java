@@ -39,8 +39,8 @@ public class ClienteService {
     // A method that returns an Cliente by id.
     public Cliente findById(@Positive @NotNull Long id) {
         val record = Optional
-                .ofNullable(dao.getById(id))
-                .orElseThrow();
+            .ofNullable(dao.getById(id))
+            .orElseThrow();
         log.info("Registro encontrado no banco para ID {}:", id);
         log.info(record.toString());
         return record;

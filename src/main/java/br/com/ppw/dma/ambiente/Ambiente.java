@@ -15,7 +15,7 @@ import static jakarta.persistence.FetchType.LAZY;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_AMBIENTE")
-@Table(name = "PPW_AMBIENTE")
+@Table(name = "PPW_AMBIENTE", uniqueConstraints = {@UniqueConstraint(columnNames = {"NOME", "CLIENTE_ID"})})
 @SequenceGenerator(name = "SEQ_AMBIENTE_ID", sequenceName = "RCVRY.SEQ_AMBIENTE_ID", allocationSize = 1)
 public class Ambiente implements MasterEntity<Long> {
 
@@ -36,6 +36,7 @@ public class Ambiente implements MasterEntity<Long> {
     // Usuário para login de conexão sftp do Ambiente
     String usuarioSftp;
 
+    @ToString.Exclude
     @Column(name = "SENHA_SFTP", length = 200)
     // Senha para login de conexão sftp do Ambiente
     String senhaSftp;
@@ -49,6 +50,7 @@ public class Ambiente implements MasterEntity<Long> {
     // Usuário para login de conexão ao banco do Ambiente
     String usuarioBanco;
 
+    @ToString.Exclude
     @Column(name = "SENHA_BANCO", length = 200)
     // Senha para login de conexão ao banco do Ambiente
     String senhaBanco;
@@ -59,5 +61,17 @@ public class Ambiente implements MasterEntity<Long> {
     @JoinColumns( @JoinColumn(name = "CLIENTE_ID", referencedColumnName = "ID") )
     // Cliente associado a este ambiente
     Cliente cliente; //TODO: precisa ser não-nulo
+
+
+    public Ambiente(@NonNull AmbienteInfoDTO dto, @NonNull Cliente cliente) {
+        this.nome = dto.getNome();
+        this.conexaoSftp = dto.getFtp().getConexao();
+        this.usuarioSftp = dto.getFtp().getUsuario();
+        this.senhaSftp = dto.getFtp().getSenha();
+        this.conexaoBanco = dto.getBanco().getConexao();
+        this.usuarioBanco = dto.getBanco().getUsuario();
+        this.senhaBanco = dto.getBanco().getSenha();
+        this.cliente = cliente;
+    }
 
 }

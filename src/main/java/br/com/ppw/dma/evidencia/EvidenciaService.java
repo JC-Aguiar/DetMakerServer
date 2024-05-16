@@ -15,8 +15,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import static br.com.ppw.dma.util.FormatDate.RELOGIO;
 
 @Service
 @Slf4j
@@ -131,6 +134,14 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         evidencia.setCargas(cargas);
         evidencia.setLogs(logs);
         evidencia.setSaidas(saidas);
+
+        if(evidencia.getErroFatal().isEmpty()) return evidencia;
+
+        evidencia.setRevisor("Det-Maker");
+        evidencia.setDataRevisao(OffsetDateTime.now(RELOGIO));
+        evidencia.setResultado(TipoEvidenciaResultado.REPROVADO);
+        evidencia.setComentario(
+            "A aplicação não conseguiu executar o Job com sucesso e seu resultado foi definido automaticamente");
         return evidencia;
     }
 

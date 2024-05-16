@@ -42,7 +42,7 @@ public class ExecQuery {
     String jobNome;
 
     @Column(name = "QUERY_NOME", length = 150, nullable = false)
-    // Nome da tabela usada na queries
+    // Nome da query usada na queries
     String queryNome;
 
     @Column(name = "QUERY", length = 500, nullable = false)

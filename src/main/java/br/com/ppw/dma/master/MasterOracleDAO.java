@@ -2,9 +2,11 @@ package br.com.ppw.dma.master;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.util.SqlUtils;
+import br.com.ppware.api.MassaPreparada;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.hibernate.exception.SQLGrammarException;
@@ -136,6 +138,26 @@ public class MasterOracleDAO implements AutoCloseable {
             throw new RuntimeException("A queries informada contêm comandos DDL não permitidos.");
         }
         log.info("Query aprovada.");
+    }
+
+    //TODO: criar exception própria?
+    //TODO: javadoc
+    //TODO: @throws SQLException
+    @SneakyThrows
+    public boolean insertSql(@NonNull MassaPreparada massa)  {
+        log.info("Validando comandos inválidos para query de insert.");
+        val sql = massa.gerarQueryInsert();
+        if(!SqlUtils.isSafeInsertQuery(sql))
+            throw new RuntimeException("A queries informada contêm comandos DDL não permitidos.");
+        log.info("Query aprovada.");
+
+        try(val statement = conn.prepareStatement(sql)) {
+            massa.preencherColunas(statement);
+            log.info("SQL: {}", sql);
+            log.info("Executando query.");
+            log.info("Registros inseridos com sucesso: {}", statement.executeUpdate());
+            return true;
+        }
     }
 
     @Override

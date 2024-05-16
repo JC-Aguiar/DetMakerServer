@@ -71,4 +71,9 @@ public abstract class MasterService<ID, ENTITY, THIS extends  MasterService> {
     public void deleteAll() {
         dao.deleteAll();
     }
+
+    @Profile("dev")
+    public void delete(@NotNull ENTITY entity) {
+        dao.delete(entity);
+    }
 }

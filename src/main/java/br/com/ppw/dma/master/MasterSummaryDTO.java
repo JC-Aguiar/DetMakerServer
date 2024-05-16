@@ -1,34 +1,87 @@
 package br.com.ppw.dma.master;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import br.com.ppw.dma.exception.SummaryErrorWithNoMessage;
+import lombok.*;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode
 public class MasterSummaryDTO<T> {
 
+    //TODO: Alterar no front
     final List<T> saved = new ArrayList<>();
-    final List<T> failed = new ArrayList<>();
-    SummaryStatus status;
+    final Map<T, String> failed = new HashMap<>();
+
 
     public enum SummaryStatus {
-        SUCESSO(), PARCIAL(), FALHA();
+        SUCESSO(HttpStatus.OK),
+        PARCIAL(HttpStatus.PARTIAL_CONTENT),
+        FALHA(HttpStatus.INTERNAL_SERVER_ERROR);
+
+        public final HttpStatus httpStatus;
+
+        SummaryStatus(HttpStatus httpStatus) {
+            this.httpStatus = httpStatus;
+        }
     }
 
-    public MasterSummaryDTO<T> save(T item) {
+
+    //TODO: javadoc
+    public static <T> MasterSummaryDTO<T> startsPositive(List<T> initialRecords) {
+        var summary = new MasterSummaryDTO<T>();
+        summary.saved.addAll(initialRecords);
+        return summary;
+    }
+
+    //TODO: javadoc
+    public static <T> MasterSummaryDTO<T> startsNegative(List<T> initialRecords) {
+        var summary = new MasterSummaryDTO<T>();
+//        summary.failed.addAll(initialRecords);
+        initialRecords.forEach(
+            record -> summary.failed.put(record, "Não processado ainda."));
+        return summary;
+    }
+
+    public List<T> getSaved() {
+        return List.copyOf(saved);
+    }
+
+    public Map<T, String> getFailed() {
+        return Map.copyOf(failed);
+    }
+
+    public MasterSummaryDTO<T> save(@NonNull T item) {
         saved.add(item);
+        failed.remove(item);
         return this;
     }
 
-    public MasterSummaryDTO<T> fail(T item) {
-        failed.add(item);
+    public MasterSummaryDTO<T> fail(@NonNull T item, @NonNull String motivo) {
+        failed.put(item, motivo);
+        saved.remove(item);
         return this;
+    }
+
+    public void tryAndSet(T obj, Function<T, Boolean> action) {
+        try {
+            if(action.apply(obj)) save(obj);
+            else throw new SummaryErrorWithNoMessage();
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            fail(obj, e.getMessage());
+        }
+        catch(SummaryErrorWithNoMessage e) {
+            fail(obj, e.getMessage());
+        }
     }
 
     public int totalSize() {
@@ -41,6 +94,12 @@ public class MasterSummaryDTO<T> {
         else if(failed.isEmpty())
             return SummaryStatus.SUCESSO;
         return SummaryStatus.PARCIAL;
+    }
+
+    public static <T> ResponseEntity<MasterSummaryDTO<T>> toResponseEntity(
+        @NonNull MasterSummaryDTO<T> summary) {
+        //----------------------------------------------------------------
+        return ResponseEntity.status(summary.getStatus().httpStatus).body(summary);
     }
 
 }

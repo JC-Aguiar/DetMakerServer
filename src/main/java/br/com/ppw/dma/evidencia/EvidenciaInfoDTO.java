@@ -1,5 +1,6 @@
 package br.com.ppw.dma.evidencia;
 
+import br.com.ppw.dma.execFile.AnexoInfoDTO;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,15 +22,16 @@ public class EvidenciaInfoDTO {
     String jobDescricao;
     String argumentos;
     List<String> queries;
-    List<String> queriesNome;       //TODO: renomear no front
+    List<String> queriesNome;
     List<String> tabelasPreJob;
     List<String> tabelasPosJob;
-    List<AnexoInfoDTO> cargas;      //TODO: ajustar AnexoInfoDTO no front
-    List<AnexoInfoDTO> logs;        //TODO: ajustar AnexoInfoDTO no front
-    List<AnexoInfoDTO> saidas;      //TODO: ajustar AnexoInfoDTO no front
-    Integer exitCode;               //TODO: adicionar o novo campo no front
-    String sha256;                  //TODO: adicionar o novo campo no front
-    String erroFatal;               //TODO: adicionar o novo campo no front
+    List<String> queriesInconformidade;
+    List<AnexoInfoDTO> cargas;
+    List<AnexoInfoDTO> logs;
+    List<AnexoInfoDTO> saidas;
+    Integer exitCode;
+    String sha256;
+    String erroFatal;
     OffsetDateTime dataInicio;
     OffsetDateTime dataFim;
     Long duracao;
@@ -55,6 +57,7 @@ public class EvidenciaInfoDTO {
             queriesNome.add(execQuery.getQueryNome());
             bancoPreJob.add(execQuery.getResultadoPreJob());
             bancoPosJob.add(execQuery.getResultadoPosJob());
+            this.queriesInconformidade.add(execQuery.getInconformidade());
         }
         this.id = evidencia.getId();
         this.ordem = ordem;
@@ -68,6 +71,9 @@ public class EvidenciaInfoDTO {
         this.cargas = AnexoInfoDTO.converterExecFile(evidencia.getCargas());
         this.logs = AnexoInfoDTO.converterExecFile(evidencia.getLogs());
         this.saidas = AnexoInfoDTO.converterExecFile(evidencia.getSaidas());
+//        this.cargas.forEach(c -> inconformidades.add(c.inconformidade()));
+//        this.logs.forEach(l -> inconformidades.add(l.inconformidade()));
+//        this.saidas.forEach(s -> inconformidades.add(s.inconformidade()));
         this.exitCode = evidencia.getExitCode();
         this.sha256 = evidencia.getSha256();
         this.erroFatal = evidencia.getErroFatal();

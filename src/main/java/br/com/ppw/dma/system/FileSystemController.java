@@ -40,7 +40,7 @@ public class FileSystemController {
     }
 
     @PostMapping()
-    public ResponseEntity<String> upload(@RequestParam("files") List<MultipartFile> files) {
+    public ResponseEntity<MasterSummaryDTO<String>> upload(@RequestParam("files") List<MultipartFile> files) {
         val summary = new MasterSummaryDTO<String>();
         for(val file : files) {
             try {
@@ -49,21 +49,22 @@ public class FileSystemController {
             }
             catch(Exception e) {
                 log.error(e.getMessage());
-                summary.fail(file.getOriginalFilename());
+                summary.fail(file.getOriginalFilename(), e.getMessage());
             }
         }
-        return switch(summary.getStatus()) {
-            case SUCESSO -> ResponseEntity.ok("Todos os arquivos foram salvos com sucesso.");
-            case PARCIAL -> ResponseEntity.ok(
-                "Arquivos salvos com sucesso: \n"
-                    + String.join("\n", summary.getSaved())
-                    + "\n"
-                    + "Arquivos com problemas: \n"
-                    + String.join("\n", summary.getFailed())
-            );
-            case FALHA -> ResponseEntity.internalServerError()
-                .body("Nenhum arquivo foi salvo no diretório temporário.");
-        };
+        return MasterSummaryDTO.toResponseEntity(summary);
+//        return switch(summary.getStatus()) {
+//            case SUCESSO -> ResponseEntity.ok("Todos os arquivos foram salvos com sucesso.");
+//            case PARCIAL -> ResponseEntity.ok(
+//                "Arquivos salvos com sucesso: \n"
+//                    + String.join("\n", summary.getSaved())
+//                    + "\n"
+//                    + "Arquivos com problemas: \n"
+//                    + String.join("\n", summary.getFailed())
+//            );
+//            case FALHA -> ResponseEntity.internalServerError()
+//                .body("Nenhum arquivo foi salvo no diretório temporário.");
+//        };
     }
 
     @ExceptionHandler(StorageFileNotFoundException.class)

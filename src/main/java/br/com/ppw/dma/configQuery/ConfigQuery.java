@@ -37,16 +37,16 @@ public class ConfigQuery implements MasterEntity<Long> {
     // ID do job relacionado com essa configuração de queries
     Job job;
 
-    @Column(name = "SQL_NOME", length = 50)
+    @Column(name = "SQL_NOME", length = 50, nullable = false)
     // Nome da tabela usada na queries
     String nome;
 
-    @Column(name = "SQL", length = 900)
+    @Column(name = "SQL", length = 900, nullable = false)
     // SQL usada na evidência desse queries pré e pós-execução
     // Exemplo: SELECT * FROM EVENTOS_WEB WHERE ${EVACCT} IN (${string[]}) AND ${EVDTPROC}=${date(DD-MM-YYYYY)}
     String sql;
 
-    @Column(name = "DESCRICAO", length = 500)
+    @Column(name = "DESCRICAO", length = 500, nullable = false)
     // Informações sobre como preencher a SQL
     String descricao;
 
