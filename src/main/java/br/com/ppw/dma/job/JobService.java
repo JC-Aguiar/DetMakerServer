@@ -132,12 +132,13 @@ public class JobService extends MasterService<Long, Job, JobService> {
             .orElseThrow(() -> new RuntimeException("Planilha " + planilhaNome + " não encontrada."))
             .getJobsPOJO()
             .stream()
-            .map(Job -> refinarCampos(Job, planilhaNome, arquivoNome))
+            .map(Job -> converterScheduleJobEmInfo(Job, planilhaNome, arquivoNome))
             .collect(Collectors.toList());
     }
 
     // TODO: javadoc
-    private JobInfoDTO refinarCampos(
+    //TODO: mover para escopo do JobSchedulePOJO como um construtor alternativo
+    private JobInfoDTO converterScheduleJobEmInfo(
         @NotNull JobSchedulePOJO jobPojo, @NotBlank String planilhaNome, @NotBlank String arquivoNome) {
         //---------------------------------------------------------------------------------------------
         val registro = "Job [" +jobPojo.getId()+ "] " +jobPojo.getNome();
@@ -172,6 +173,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
         }
         log.info("{}: Gerando JobInfoDTO.", registro);
         val JobDto = new ModelMapper().map(jobPojo, JobInfoDTO.class);
+        JobDto.setId(null);
         JobDto.setDiretorioEntrada(diretorioEntrada);
         JobDto.setDiretorioSaida(diretorioSaida);
         JobDto.setDiretorioLog(diretorioLog);
