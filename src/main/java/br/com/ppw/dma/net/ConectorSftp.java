@@ -6,12 +6,9 @@ import br.com.ppw.dma.exception.OperacaoSftpException;
 import br.com.ppw.dma.system.ExitCodes;
 import com.jcraft.jsch.*;
 import jakarta.validation.constraints.NotBlank;
-import lombok.AccessLevel;
-import lombok.Getter;
-import lombok.NonNull;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -23,6 +20,7 @@ import java.util.stream.Collectors;
 
 
 @Slf4j
+@ToString
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class ConectorSftp {
 
@@ -30,6 +28,7 @@ public class ConectorSftp {
     @Getter int port;
     String username;
     String password;
+    @Getter Properties properties = new Properties();
 
     //TODO: Javadoc
     public static ConectorSftp conectar(@NonNull AmbienteAcessoDTO sftpConfig) {
@@ -187,13 +186,13 @@ public class ConectorSftp {
         val outputBuffer = new ByteArrayOutputStream();
         val terminal = new SftpTerminalManager();
         try {
-            val properties = getShellProperties();
             val comandoFull = properties.keySet()
                 .stream()
                 .map(k -> "export " + k + "=" + properties.get(k))
                 .collect(Collectors.joining(" && "))
                 .concat(" && ")
                 .concat(comando);
+            log.info("ComandoFull: {}", comandoFull);
 
             session = iniciarSessao();
             session.setTimeout(36000);  //timeout de conexão ao ambiente
@@ -252,7 +251,7 @@ public class ConectorSftp {
     }
 
     //TODO: Javadoc
-    private Properties getShellProperties() {
+    public static Properties getVivo3Properties() {
         val properties = new Properties();
         properties.put("ORACLE_HOME", "/u01/app/oracle/product/client12.2");
         properties.put("DETECTION_AGENT_CAP", "cap_dac_override,cap_setfcap");
@@ -286,6 +285,36 @@ public class ConectorSftp {
         properties.put("HISTFILE", "/app/rcvry//.bash_history");
         properties.put("AGENT_PKG_TYPE", "rpm");
         //comando = "export ORACLE_HOME=/u01/app/oracle/product/client12.2 && "
+        return properties;
+    }
+
+    public static Properties getVivo1Properties() {
+        var properties = new Properties();
+        var env = "" +
+//            "PATH=.:/usr/lib64/qt-3.3/bin:/usr/local/bin:/bin:/usr/bin:/cyberapp/rcvry/bin:/cyberapp/rcvry/shells:/cyberapp/rcvry:/cyberapp/rcvry/bin:/cyberapp/rcvry/shells:/usr/bin:/usr/bin/X11:/usr/lib:/usr/etc:/usr/etc/sec:/usr/sbin:/usr/include:/lib:/sbin:/etc:/etc/sec:/cyberapp/rcvry/bin:/cyberapp/rcvry/shells:/cyberapp/local:/cyberapp/local/bin:/bin:/opt/oracle/product/11.2.0/client_1/bin:/opt/ansic:/opt/ansic/bin:/usr/ccs/bin:/usr/contrib/bin:/opt/nettladm/bin:/opt/pd/bin:/usr/bin/X11:/usr/contrib/bin/X11:/opt/upgrade/bin:/opt/langtools/bin:/opt/graphics/OpenGL/debugger/bin:/opt/imake/bin:/opt/java/bin\n" +
+//            "SSH_TTY=/dev/pts/1\n" +
+//            "TERM=xterm\n" +
+//            "HOST=brtlvltb0164sl\n" +
+//            "HOSTNAME=brtlvltb0164sl\n" +
+//            "USR_HOME=/cyberapp/rcvry\n" +
+//            "USR_HLP=/cyberapp/rcvry/hlp\n" +
+//            "USR_BIN=/cyberapp/rcvry/bin\n" +
+//            "USR_SCR=/cyberapp/rcvry/shells\n" +
+//            "USR_TMP=/cyberapp/rcvry/tmp\n" +
+//            "JAVA_HOME=/opt/jdk1.6.0_33\n" +
+//            "ORACLE_BASE=/opt/oracle\n" +
+//            "ORACLE_HOME=/opt/oracle/product/11.2.0/client_1\n" +
+//            "ORACLE_SID=CCSSIDEV\n" +
+//            "ORACLE_TERM=xterm\n" +
+//            "LD_LIBRARY_PATH=/opt/oracle/product/11.2.0/client_1/lib" +
+            "";
+        Arrays.stream(env.split("\n"))
+            .filter(var -> !var.startsWith("#"))
+            .filter(var -> var.contains("="))
+            .forEach(var -> {
+                var varArray = var.split("=");
+                properties.put(varArray[0], varArray[1]);
+            });
         return properties;
     }
 

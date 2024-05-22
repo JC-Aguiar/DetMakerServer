@@ -8,6 +8,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
+import org.hibernate.type.NumericBooleanConverter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,6 +61,10 @@ public class Pipeline implements MasterEntity<Long> {
         inverseJoinColumns = @JoinColumn(name = "JOB_ID", referencedColumnName = "ID"))
     // IDs dos jobs relacionados a essa pipeline
     List<Job> jobs = new ArrayList<>();
+
+    @Convert(converter = NumericBooleanConverter.class)
+    @Column(name = "OCULTAR", nullable = false)
+    Boolean ocultar;
 
 
     public static Pipeline parseInfoDto(
