@@ -1,15 +1,23 @@
 package br.com.ppw.dma.cliente;
 
 import br.com.ppw.dma.ambiente.Ambiente;
+import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.ambiente.AmbienteInfoDTO;
 import br.com.ppw.dma.ambiente.AmbienteService;
+import br.com.ppw.dma.net.ConectorSftp;
 import jakarta.validation.Valid;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.List;
 
 @Slf4j
@@ -20,6 +28,9 @@ public class ClienteController {
     private final ClienteService clienteService;
 
     private final AmbienteService ambienteService;
+
+    @Getter
+    private ConectorSftp sftp;
 
     public ClienteController(
         @Autowired ClienteService clienteService,
@@ -64,6 +75,54 @@ public class ClienteController {
         dto.setId(novoAmbiente.getId());
         return ResponseEntity.ok(dto);
     }
+
+    //TODO: REMOVER
+    @PostMapping(value = "{clientId}/ambiente/{ambienteNome}", consumes = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<String> testarComando(
+        @PathVariable() Long clientId,
+        @PathVariable() String ambienteNome,
+        @NonNull @RequestBody String comando) {
+        //-----------------------------------------
+        var ambiente = clienteService.findById(clientId)
+            .getAmbientes()
+            .stream()
+            .filter(amb -> amb.getNome().equalsIgnoreCase(ambienteNome))
+            .findFirst()
+            .orElseThrow();
+
+        sftp = ConectorSftp.conectar(AmbienteAcessoDTO.ftp(ambiente));
+
+        //TODO: paliativo. Remover e aprimorar o código
+        switch(ambiente.getConexaoSftp()) {
+            case "10.129.226.157:22" -> {
+                sftp.getProperties().putAll(ConectorSftp.getVivo1Properties());
+                log.info("Adicionando variáveis de ambiente VIVO1.");
+            }
+            case "10.129.164.206:22" -> {
+                sftp.getProperties().putAll(ConectorSftp.getVivo3Properties());
+                log.info("Adicionando variáveis de ambiente VIVO3.");
+            }
+        }
+        var terminal = sftp.comando(comando);
+
+        var mensagem = String.format("Exit-Code: %d.\n%s",
+            terminal.getExitCode(), String.join("\n", terminal.getConsoleLog()));
+
+        sftp = null;
+        return ResponseEntity.ok(mensagem);
+    }
+
+    private static String lerOutput(InputStream inputStream) throws IOException {
+        StringBuilder sb = new StringBuilder();
+        var reader = new BufferedReader(new InputStreamReader(inputStream));
+        String linha;
+        while ((linha = reader.readLine()) != null) {
+            sb.append(linha).append(System.lineSeparator());
+        }
+        return sb.toString();
+    }
+
+
 
     @PostMapping()
     public ResponseEntity<ClienteInfoDTO> novoCliente(@Valid @RequestBody ClienteNovoDTO dto) {

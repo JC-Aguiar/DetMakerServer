@@ -291,12 +291,15 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         @PathVariable(name = "nome") String nome) {
         //----------------------------------------
         var pipeline = pipelineService.getUniqueOne(nome, clientId);
-        if (pipeline.isPresent())
-            pipelineService.delete(pipeline.get());
-        else
-            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE)
+        if (pipeline.isPresent()) {
+            pipeline.get().setOcultar(true);
+            pipelineService.persist(pipeline.get());
+        }
+        else {
+            return ResponseEntity
+                .status(HttpStatus.NOT_ACCEPTABLE)
                 .body("Pipeline '" + nome + "' não encontrada.");
-
+        }
         return ResponseEntity.ok("Pipeline '" + nome + "' deletada com sucesso.");
     }
 

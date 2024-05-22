@@ -14,7 +14,8 @@ public interface PipelineRepository extends JpaRepository<Pipeline, PipelineProp
         nativeQuery = true)
     Pipeline findByNomeAndCliente(@NotNull String nome, @NotNull Long clienteId);
 
-    @Query(value = "SELECT * FROM PPW_PIPELINE p WHERE p.CLIENTE_ID = :clienteId", nativeQuery = true)
+    @Query(nativeQuery = true,
+        value = "SELECT * FROM PPW_PIPELINE p WHERE p.CLIENTE_ID = :clienteId AND p.OCULTAR < 1")
     List<Pipeline> findAllByClienteId(@NotNull Long clienteId);
 
 //    Ambiente findAllByNome(@NotNull String nome);

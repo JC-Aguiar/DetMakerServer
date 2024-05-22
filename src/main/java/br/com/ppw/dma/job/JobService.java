@@ -206,6 +206,18 @@ public class JobService extends MasterService<Long, Job, JobService> {
         banco = AmbienteAcessoDTO.banco(preparation.ambiente());
         sftp = ConectorSftp.conectar(AmbienteAcessoDTO.ftp(preparation.ambiente()));
 
+        //TODO: paliativo. Remover e aprimorar o código
+        switch(preparation.ambiente().getConexaoSftp()) {
+            case "10.129.226.157:22" -> {
+                sftp.getProperties().putAll(ConectorSftp.getVivo1Properties());
+                log.info("Adicionando variáveis de ambiente VIVO1.");
+            }
+            case "10.129.164.206:22" -> {
+                sftp.getProperties().putAll(ConectorSftp.getVivo3Properties());
+                log.info("Adicionando variáveis de ambiente VIVO3.");
+            }
+        }
+
         log.info("Iniciando rotina da execução de Jobs");
         val sucessos = new AtomicInteger();
         val jobProcesses = preparation.jobs()
@@ -240,6 +252,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
             if(!jobInput.getCargas().isEmpty()) {
                 log.info("Enviando os arquivos de carga a serem usadas na execução.");
                 jobInput.getCargas().stream()
+                    .filter((carga -> carga.getNome() != null && !carga.getNome().isBlank()))
                     .map(fileSystemService::store)
                     .map(carga -> sftp.upload(jobInfo.getDiretorioEntrada(), carga))
                     .forEach(process::addCargas);

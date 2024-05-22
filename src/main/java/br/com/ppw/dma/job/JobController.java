@@ -18,8 +18,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import static br.com.ppw.dma.util.FormatDate.RELOGIO;
 
 @RestController
 @RequestMapping("job")
@@ -84,10 +87,11 @@ public class JobController extends MasterController<Long, Job, JobController> {
     //TODO: javadoc
     //TODO: criar novo controlar para ter essa responsabilidade?
     @Transactional
-    @PostMapping(value = "read/xlsx/planilha/{planilhaNome}/cliente/{clienteId}")
+    @PostMapping(value = "read/xlsx/planilha/{planilhaNome}/cliente/{clienteId}/usuario/{userEmail}")
     public ResponseEntity<String> readXlsx(
         @PathVariable() String planilhaNome,
         @PathVariable() Long clienteId,
+        @PathVariable() String userEmail,
         @RequestParam("file") final MultipartFile file)
     throws IOException {
         val cliente = clienteService.findById(clienteId);
@@ -101,6 +105,8 @@ public class JobController extends MasterController<Long, Job, JobController> {
             .peek(dto -> log.debug(dto.toString()))
             .map(dto -> mapper.map(dto, Job.class).refinarCampos())
             .peek(job -> job.setCliente(cliente))
+            .peek(job -> job.setDataAtualizacao(OffsetDateTime.now(RELOGIO)))
+            .peek(job -> job.setAtualizadoPor(userEmail))
             .toList();
 
         log.info("Persistindo Jobs no banco.");

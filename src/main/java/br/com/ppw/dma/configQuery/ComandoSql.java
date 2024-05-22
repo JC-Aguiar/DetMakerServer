@@ -63,8 +63,8 @@ public class ComandoSql {
     public String getSqlCompleta() {
 //        if(semTabela()) throw new RuntimeException("Tabela não definida.");
         if(!dinamico) return sql;
-        if(filtros.isEmpty())
-            throw new RuntimeException("Não existem filtros declarados para se montar o SQL.");
+        //if(filtros.isEmpty())
+        //    throw new RuntimeException("Não existem filtros declarados para se montar o SQL.");
 
         val valoresPendentes = filtros.stream()
             .map(FiltroSql::getValor)
