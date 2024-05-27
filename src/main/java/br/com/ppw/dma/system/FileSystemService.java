@@ -4,6 +4,7 @@ import br.com.ppw.dma.exception.StorageException;
 import br.com.ppw.dma.exception.StorageFileNotFoundException;
 import br.com.ppw.dma.execFile.ExecFile;
 import br.com.ppw.dma.job.JobCarga;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +28,7 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 @Slf4j
 @Service
+@ToString
 public class FileSystemService implements StorageService {
 
     private final Path rootLocation;

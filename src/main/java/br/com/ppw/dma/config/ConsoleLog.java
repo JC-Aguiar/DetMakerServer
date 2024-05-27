@@ -1,4 +1,4 @@
-package br.com.ppw.dma.util;
+package br.com.ppw.dma.config;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

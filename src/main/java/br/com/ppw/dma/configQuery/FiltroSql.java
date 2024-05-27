@@ -6,11 +6,9 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Setter
 @Getter
@@ -30,7 +28,7 @@ public class FiltroSql {
 
     //TODO: javadoc
     public static List<FiltroSql> identificar(@NotBlank String texto) {
-        val variaveis = FormatString.obterVariaveis(texto);
+        val variaveis = FormatString.extrairVariaveisLista(texto);
         String chave = null;
         val filtros = new ArrayList<FiltroSql>();
         for(int i = 0; i < variaveis.size(); i++) {

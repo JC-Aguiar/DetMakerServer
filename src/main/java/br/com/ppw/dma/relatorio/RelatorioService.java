@@ -2,8 +2,11 @@ package br.com.ppw.dma.relatorio;
 
 import br.com.ppw.dma.ambiente.Ambiente;
 import br.com.ppw.dma.evidencia.Evidencia;
+import br.com.ppw.dma.evidencia.EvidenciaProcess;
+import br.com.ppw.dma.job.JobPreparation;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.pipeline.Pipeline;
+import br.com.ppw.dma.pipeline.PipelinePreparation;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -15,9 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatDate.RELOGIO;
@@ -78,33 +79,39 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
 
     @Transactional
     public Relatorio buildAndPersist(
-        @NotNull RelatorioInfoDTO relatorioDto,
-        @NotNull Ambiente ambiente,
-        @NotNull Pipeline pipeline,
-        @NotNull List<Evidencia> evidencias) {
+        @NonNull PipelinePreparation preparation,
+        @NotNull List<EvidenciaProcess> evidencias) {
         //--------------------------------------
-        //Coleta todos os parâmetros de entrada dos Jobs
         log.debug("Coletando todos os parâmetros usados nos Jobs.");
-        val parametrosDosJobs = evidencias.stream()
-            .map(ev -> ev.getJob().getNome() +" "+ ev.getArgumentos())
+        val parametrosDosJobs = preparation.jobs()
+            .stream()
+            .map(JobPreparation::comandoShell)
             .collect(Collectors.joining("\n"));
+
+        log.debug("Separando Evidências persistidas com sucesso daquelas com erro.");
+        var consideracoes = new StringBuilder();
+        var evidenciasOk = new ArrayList<Evidencia>();
+        for(var ev : evidencias) {
+            if(ev.exception()) consideracoes.append(ev.detalhes() + "\n");
+            else ev.evidencia().ifPresent(evidenciasOk::add);
+        }
 
         log.info("Convertendo Relatório DTO em Entidade.");
         var relatorio = Relatorio.builder()
-            .nomeAtividade(relatorioDto.getNomeAtividade())
-            .consideracoes(relatorioDto.getConsideracoes())
-            .cliente(ambiente.getCliente().getNome())
-            .ambiente(ambiente)
-            .pipeline(pipeline)
-            .evidencias(evidencias)
+            .nomeAtividade(preparation.relatorio().getNomeAtividade())
+            .consideracoes(consideracoes.toString())
+            .cliente(preparation.ambiente().getCliente().getNome())
+            .ambiente(preparation.ambiente())
+            .pipeline(preparation.pipeline())
+            .evidencias(evidenciasOk)
             .parametros(parametrosDosJobs)
             .data(OffsetDateTime.now(RELOGIO))
             .build();
-
-        relatorio.setIdProjeto(relatorioDto.getIdProjeto());
-        relatorio.setNomeProjeto(relatorioDto.getNomeProjeto());
-        relatorio.setTesteTipo(
-            TiposDeTeste.identificar(relatorioDto.getTesteTipo()).orElse(null)
+        relatorio.setIdProjeto(preparation.relatorio().getIdProjeto());
+        relatorio.setNomeProjeto(preparation.relatorio().getNomeProjeto());
+        relatorio.setTesteTipo(TiposDeTeste
+            .identificar(preparation.relatorio().getTesteTipo())
+            .orElse(null)
         );
         relatorio = persist(relatorio);
         return relatorio;
