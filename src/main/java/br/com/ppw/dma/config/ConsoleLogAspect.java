@@ -1,69 +1,107 @@
-package br.com.ppw.dma.util;
+package br.com.ppw.dma.config;
 
+import ch.qos.logback.core.CoreConstants;
 import jakarta.validation.constraints.NotBlank;
 import lombok.val;
 import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-import org.aspectj.lang.annotation.Pointcut;
+import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
 
-import java.lang.reflect.Method;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+
+import static br.com.ppw.dma.util.FormatDate.FORMAL_STYLE;
+import static br.com.ppw.dma.util.FormatDate.RELOGIO;
 
 @Aspect
 @Component
 public class ConsoleLogAspect {
 
-    MethodSignature signature;
-    String className;
-    Method methodName;
-    List<String> parametersType;
-    List<String> paramitersValues;
-    final public static Logger LOGGER = LogManager.getLogger("CONSOLE LOG");
-    final public static Logger CONTROLLER = LogManager.getLogger("CONTROLLER LOG");
-    final public static Logger SERVICER = LogManager.getLogger("SERVICE LOG");
-    final private static String LOG_FORMAT = "%s::%s(%s)";
+//    MethodSignature signature;
+//    String className;
+//    Method methodName;
+//    List<String> parametersType;
+//    List<String> paramitersValues;
 
-    @Pointcut("(execution(* br.com.ppw.dma..*(..))) && !within(is(FinalType))")
+//    @Pointcut("(execution(* br.com.ppw.dma..*(..))) && !within(is(FinalType))")
+    @Pointcut("within(br.com.ppw.dma..*)")
     public void log() {    }
 
     @Before("log()")
-    public void identify(JoinPoint joinPoint) {
-        val parameters = new StringBuilder();
+    public void identifyBefore(JoinPoint joinPoint) {
+        val stringBuilder = new StringBuilder();
 
-        //Getting method name
-        signature = (MethodSignature) joinPoint.getSignature();
-        className = getMethodSimpleName(signature);
-        methodName = signature.getMethod();
+        var signature = (MethodSignature) joinPoint.getSignature();
+        var className = getMethodSimpleName(signature);
+        var methodName = signature.getMethod().getName();
+        String[] parameterNames = signature.getParameterNames();
+        Object[] parameterValues = joinPoint.getArgs();
 
-        //Getting all parameters types
-        parametersType = Arrays
-            .stream(methodName.getParameterTypes())
-            .map(type -> type != null ? type.getSimpleName() : "NULL")
-            .toList();
+//        var log = LogManager.getLogger(className + "." + methodName);
 
-        //Getting all parameters names
-        paramitersValues = Arrays
-            .stream(joinPoint.getArgs())
-            .map(obj -> obj != null ? obj.toString() : "NULL")
-            .toList();
+        stringBuilder
+            .append(CoreConstants.LINE_SEPARATOR)
+            .append(LocalDateTime.now(RELOGIO).format(FORMAL_STYLE))
+            .append(" -- ")
+            .append(Thread.currentThread().getName())
+            .append(" -- ")
+            .append(className + "." + methodName)
+            .append(CoreConstants.LINE_SEPARATOR)
+            .append("INICIOU")
+            .append(parameterNames.length);
 
-        //Getting all parameters values
-        for(int i = 0; i < parametersType.size(); i++) {
-            String args = "";
-            if(i < parametersType.size()-1) { args = ", "; }
-            parameters
-                .append(parametersType.get(i))
-                .append(": ")
-                .append(paramitersValues.get(i))    //TODO: implementar validação para não exibir senhas, cpfs e etcs
-                .append(args);
+        for (int i = 0; i < parameterNames.length; i++) {
+            String parameterName = parameterNames[i];
+            Class<?> parameterType = signature.getParameterTypes()[i];
+            Object parameterValue = parameterValues[i];
+            parameterValue = printObject(parameterValue);
+
+            //TODO: implementar anotação para se usar nos parâmetros, não que aqui não exiba senhas, cpfs e etcs
+            stringBuilder
+                .append(CoreConstants.LINE_SEPARATOR)
+                .append("  ")
+                .append(i+1)
+                .append(". ")
+                .append(parameterName)
+                .append(" ")
+                .append(parameterType.getSimpleName())
+                .append(" = ")
+                .append(parameterValue);
         }
-        LOGGER.info(String.format(LOG_FORMAT, className, methodName.getName(), parameters));
+        System.out.println();
+//        log.info(stringBuilder.toString());
+    }
+
+    @AfterReturning(pointcut = "log()", returning = "result")
+    public void identifyAfter(JoinPoint joinPoint, Object result) {
+        val stringBuilder = new StringBuilder();
+
+        var signature = (MethodSignature) joinPoint.getSignature();
+        var className = getMethodSimpleName(signature);
+        var method = signature.getMethod();
+
+        var log = LogManager.getLogger(className + "." + method.getName());
+
+        stringBuilder.append("Concluído.");
+        if (method.getReturnType() != void.class)
+            stringBuilder.append(" Objeto retornado: ").append(printObject(result));
+
+        log.info(stringBuilder.toString());
+    }
+
+    private static String printObject(Object object) {
+        return switch (object) {
+            case null -> "null";
+            case Object[] array -> Arrays.toString(array);
+            case Collection<?> collection -> collection.toString();
+            case String string -> string;
+            default -> String.valueOf(object);
+        };
     }
 
     //SERVICE-LOG: @Service

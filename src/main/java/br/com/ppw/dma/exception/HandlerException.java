@@ -18,7 +18,7 @@ public class HandlerException {
 
     public static final String ERRO_PADRAO = "Erro inesperado ocorreu durante o processo.\n" +
         "Veja no log para mais detalhes (%s).\n" +
-        "Mensagem do erro: %s.";
+        "Mensagem do exception: %s.";
 
     public static final String ERRO_VALOR_NULO = "Alguma informação importante durante o processo " +
         "não foi encontrada ou está nula.";

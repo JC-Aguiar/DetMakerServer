@@ -2,9 +2,9 @@ package br.com.ppw.dma.config;
 
 public enum LogStep {
     SQL("@Query@", "SQL     "),
-    INICIOU("@Start@", "INICIOU "),
+    INICIOU("@Start@", "INICIOU"),
     PROCESSO("@Step@", "PROCESSO"),
-    TERMINOU("@Close@", "TERMINOU");
+    TERMINOU("@Close@", "CONCLUIU");
 
     public final String call;
     public final String log;

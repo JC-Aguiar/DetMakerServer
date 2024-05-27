@@ -99,7 +99,7 @@ public class ConfigQueryController extends MasterController<Long, ConfigQuery, C
         }
         catch(SQLException | PersistenceException e) {
             mensagem = "Query reprovada: " + SqlUtils.getExceptionMainCause(e);
-            log.info(mensagem);
+            log.warn(mensagem);
             return ResponseEntity.badRequest().body(mensagem);
         }
         //catch() TODO: cath da Exceção personalizada

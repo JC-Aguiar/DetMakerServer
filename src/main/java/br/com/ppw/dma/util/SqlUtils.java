@@ -51,7 +51,7 @@ public abstract class SqlUtils {
     }
 
     public static String getExceptionMainCause(@NonNull Exception e) {
-        log.info("Tentando identificar a causa raiz por trás do erro SQL.");
+        log.info("Tentando identificar a causa raiz por trás do exception SQL.");
         String mensagem = null;
         Throwable causa = e.getCause();
 

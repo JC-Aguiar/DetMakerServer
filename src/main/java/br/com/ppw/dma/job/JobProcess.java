@@ -179,7 +179,7 @@ public class JobProcess {
 //            "Sucesso" : "Falha";
 //
 //        val errosMensagem = erroFatal.stream()
-//            .map(erro -> "   - "+erro)
+//            .map(exception -> "   - "+exception)
 //            .collect(Collectors.joining("\n"));
 //
 //        val tabelasConsultadas = tabelas.stream()

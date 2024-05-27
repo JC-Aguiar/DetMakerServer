@@ -44,7 +44,7 @@ enum FiltroTipo {
     public static FiltroTipo identificar(@NonNull String sqlTipo) {
         //TODO: criar exception própria
         val filtroTipo = Arrays.stream(FiltroTipo.values())
-            .filter(ft -> sqlTipo.trim().startsWith(ft.nome))
+            .filter(ft -> sqlTipo.trim().toUpperCase().startsWith(ft.nome.toUpperCase()))
             .findFirst()
             .orElseThrow(() -> new RuntimeException(mensagemErro(sqlTipo)));
 

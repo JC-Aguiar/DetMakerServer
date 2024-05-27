@@ -20,11 +20,6 @@ public final class FormatString {
     public static final List<String> INDICADORES_NULOS = Arrays.asList(
         "N/A", "VAZIO", "NULL", "NUL", "NULO","NÃO", "NAO", "NO", "NENHUM", "NADA", "NENHUN", "0", "-", "X"
     );
-    public static final LinkedHashSet<String> INDICADORES_CORINGA = new LinkedHashSet<>(Arrays.asList(
-        "{", "*", "AAAA_MM_DD", "DD_MM_AAAA", "AAAAMMDD", "DDMMAAAA", "AAAA_MM", "MM_AAAA", "AAAAMM", "MMAAAA",
-        "AAAA", "AA_MM_DD", "DD_MM_AA", "AAMMDD", "DDMMAA", "AA_MM", "MM_AA", "AAMM", "MMAA", "HH_MM_SS",
-        "HHMMSS", "HHMM", "SUBSET", "NNNNN", "NNNN", "NNN"
-    ));
 
     /**
      * Verifica se o texto obtido indica representar um valor nulo (exemplo: "N/A").
@@ -83,7 +78,7 @@ public final class FormatString {
             .trim();
     }
 
-    public static List<String> obterVariaveis(@NotBlank String texto) {
+    public static List<String> extrairVariaveisLista(@NotBlank String texto) {
         String regex = "\\$\\{(.*?)\\}";
         val resultado = new ArrayList<String>();
         val pattern = Pattern.compile(regex);
@@ -92,6 +87,10 @@ public final class FormatString {
             resultado.add(matcher.group(1));
         }
         return resultado;
+    }
+
+    public static String abstrairVariavel(@NonNull String texto, @NonNull String regex) {
+        return texto.replaceAll(regex, "*");
     }
 
     public static List<String> javascriptString(List<String> texto) {
@@ -115,14 +114,16 @@ public final class FormatString {
     }
 
     public static String tabelaParaString(@NotNull List<@NotNull List<?>> tabela) {
+        if(tabela.isEmpty() || tabela.get(0).isEmpty()) return "";
+
         //Encontra o tamanho máximo de cada coluna
         int numColunas = tabela.get(0).size();
         int[] tamanhosMaximos = new int[numColunas];
-        for(List<?> linha : tabela) {
-            for(int i = 0; i < numColunas; i++) {
-                int tamanhoValor = String.valueOf(linha.get(i)).length();
-                if (tamanhoValor > tamanhosMaximos[i]) {
-                    tamanhosMaximos[i] = tamanhoValor;
+        for(var linha : tabela) {
+            for(int col = 0; col < linha.size(); col++) {
+                int tamanhoValor = String.valueOf(linha.get(col)).length();
+                if (tamanhoValor > tamanhosMaximos[col]) {
+                    tamanhosMaximos[col] = tamanhoValor;
                 }
             }
         }
@@ -130,18 +131,19 @@ public final class FormatString {
         val linhaAlinhada = new StringBuilder();
         for(int linha = 0; linha < tabela.size(); linha++) {
             if(linha == 1) {
-                val tamanhoLinha = Arrays.stream(tamanhosMaximos).sum()
+                val tamanhoLinha = Arrays.stream(tamanhosMaximos)
+                    .sum()
                     + (numColunas * SEPARADOR_TABELA_COLUNA.length());
                 linhaAlinhada.append(
                     preencherNaEsquerda("\n", tamanhoLinha, SEPARADOR_TABELA_HEADER)
                 );
             }
-            for(int col = 0; col < numColunas; col++) {
-                val colunasMiolo = col < (numColunas-1);
+            for(int col = 0; col < tabela.get(linha).size(); col++) {
+                val colunasMiolo = col < (tabela.get(linha).size() -1);
                 String valor = String.valueOf(tabela.get(linha).get(col));
                 linhaAlinhada.append(
                     String.format("%-" + tamanhosMaximos[col] + "s", valor)
-                    .concat(colunasMiolo ? SEPARADOR_TABELA_COLUNA : "")
+                        .concat(colunasMiolo ? SEPARADOR_TABELA_COLUNA : "")
                 );
             }
             linhaAlinhada.append("\n");
@@ -201,13 +203,11 @@ public final class FormatString {
             .toList();
     }
 
-    //TODO: criar throw customizado
+    //TODO: Trocar String para algo mais performatico
     public static String extrairMascara(String mascara) {
-        String textoRefinado = refinarCelula(mascara);
-        for(val ind : INDICADORES_CORINGA) {
-            if(textoRefinado.toUpperCase().contains(ind.toUpperCase()))
-                textoRefinado = textoRefinado.replace(ind.toUpperCase(), "*");
-        }
+        var textoRefinado = refinarCelula(mascara);
+        for(var item : MascaraCoringa.values())
+            textoRefinado = item.algoritmo.apply(textoRefinado);
         return textoRefinado;
     }
 

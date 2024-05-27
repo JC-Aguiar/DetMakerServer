@@ -35,14 +35,9 @@ public class ResultadoSql extends ComandoSql {
 
      @JsonIgnore
      public String resumo() {
-          return resumo(resultado);
-     }
-
-     @JsonIgnore
-     private String resumo(@NonNull List<List<Object>> conteudo) {
           final List<List<?>> tabela = new ArrayList<>();
-          tabela.add(getCampos());
-          tabela.addAll(conteudo);
+          tabela.add(this.getCampos());
+          tabela.addAll(this.resultado);
           return FormatString.tabelaParaString(tabela);
      }
 

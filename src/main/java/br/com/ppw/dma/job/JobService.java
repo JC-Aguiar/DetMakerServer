@@ -198,10 +198,11 @@ public class JobService extends MasterService<Long, Job, JobService> {
         return JobDto;
     }
 
-    //TODO: criar exception própria
+    //TODO: criar exception própria?
+    //TODO: mover para pipline?
     //TODO: javadoc
 //    public List<Evidencia> executarJob(@NonNull PipelinePreparation preparation) {
-    public List<JobProcess> executarJob(@NonNull PipelinePreparation preparation) {
+    public List<JobProcess> prepararExecutar(@NonNull PipelinePreparation preparation) {
         log.debug("Configurando conexão do Banco e do SFTP.");
         banco = AmbienteAcessoDTO.banco(preparation.ambiente());
         sftp = ConectorSftp.conectar(AmbienteAcessoDTO.ftp(preparation.ambiente()));
@@ -217,12 +218,11 @@ public class JobService extends MasterService<Long, Job, JobService> {
                 log.info("Adicionando variáveis de ambiente VIVO3.");
             }
         }
-
         log.info("Iniciando rotina da execução de Jobs");
         val sucessos = new AtomicInteger();
         val jobProcesses = preparation.jobs()
             .stream()
-            .map(this::executarJob)
+            .map(this::executar)
             .peek(process -> sucessos.addAndGet(process.isSucesso() ? 1 : 0))
             .toList();
         log.info("Total de Jobs executados: {}.", jobProcesses.size());
@@ -236,10 +236,11 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: javadoc
-    private JobProcess executarJob(@NonNull JobPreparation dados) {
+    private JobProcess executar(@NonNull JobPreparation dados) {
         val jobInfo = dados.jobInfo();
         val jobInput = dados.jobInputs();
         val process = new JobProcess();
+        process.setJob(findById(jobInfo.getId()));
         final List<SftpFileManager<RemoteFile>> logsPreJob = new ArrayList<>();
         final List<SftpFileManager<RemoteFile>> logsPosJob = new ArrayList<>();
 
@@ -300,7 +301,6 @@ public class JobService extends MasterService<Long, Job, JobService> {
                 process.addTabelasPosJob(
                     extractTable(jobInput.getQueries()));
             }
-
             //Com base nos logs pré/pós: comparar cenários de duplicidade para então adicionar ao JobProcess
             for(int i = 0; i < logsPreJob.size(); i++) {
                 val logPre = logsPreJob.get(i);
@@ -308,9 +308,10 @@ public class JobService extends MasterService<Long, Job, JobService> {
                 process.addLogs(SftpFileManager.compare(logPre, logPos));
             }
         }
-        //Caso erro no acionamento/monitoramento do DetMaker com o Job
+        //Caso exception no acionamento/monitoramento do DetMaker com o Job
         catch(Exception e) {
-            log.error("Erro inesperado na execução do Job [{}] '{}'", jobInfo.getId(), jobInfo.getNome());
+            log.error("Erro inesperado na execução do {}º Job [ID {}] '{}': {}",
+                jobInput.getOrdem(), jobInfo.getId(), jobInfo.getNome(), e.getMessage());
             process.setErroFatal(e.getMessage());
         }
         //Fim

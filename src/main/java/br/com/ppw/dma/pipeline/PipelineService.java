@@ -55,6 +55,7 @@ public class PipelineService extends MasterService<PipelineProps, Pipeline, Pipe
 
     public void checkDuplicated(@NotNull String nome, @NotNull Long clienteId)
     throws DuplicatedRecordException {
+        log.debug("Iniciando validação contra duplicidade, conversão e persistência.");
         if(getUniqueOne(nome, clienteId).isPresent()) throw new DuplicatedRecordException();
     }
 

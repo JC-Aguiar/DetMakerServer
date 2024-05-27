@@ -2,7 +2,7 @@
 //
 //import br.com.ppw.dma.user.UserDtoRequest;
 //import br.com.ppw.dma.user.UserService;
-//import br.com.ppw.dma.util.ConsoleLog;
+//import br.com.ppw.dma.config.ConsoleLog;
 //import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.http.HttpStatus;
 //import org.springframework.http.ResponseEntity;

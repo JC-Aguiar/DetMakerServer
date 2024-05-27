@@ -5,18 +5,18 @@ import lombok.NonNull;
 import java.util.List;
 
 public record AnexoInfoDTO(
-    @NonNull String nome,
+    String nome,
     @NonNull String tipo,
-    @NonNull String conteudo,
-    @NonNull String inconformidade) {
+    String conteudo,
+    String inconformidade) {
 
     //TODO: auhssauhsaus
     public static AnexoInfoDTO converterExecFile(@NonNull ExecFile execFile) {
         return new AnexoInfoDTO(
-            execFile.getArquivoNome(),
+            execFile.getArquivoNome() == null ? "" : execFile.getArquivoNome(),
             execFile.getTipo().tipo,
-            execFile.getArquivo(),
-            execFile.getInconformidade());
+            execFile.getArquivo() == null ? "" : execFile.getArquivo(),
+            execFile.getInconformidade() == null ? "" : execFile.getInconformidade());
     }
 
     public static List<AnexoInfoDTO> converterExecFile(@NonNull List<ExecFile> execFiles) {

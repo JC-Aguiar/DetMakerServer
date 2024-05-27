@@ -5,13 +5,13 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>br.com.jcaguiar</groupId>
 	<artifactId>det-maker-api</artifactId>
-	<version>v1.16.Beta</version>
+	<version>v1.17.Beta</version>
 	<name>DetMakerApi</name>
-<!--	<packaging>war</packaging>-->
-	<packaging>jar</packaging>
+	<packaging>war</packaging>
+<!--	<packaging>jar</packaging>-->
 	<description>
-		API do sistema Det-Maker usando Java 16 com Framework Spring, focado para banco Oracle e
-		acesso Telnet usando Jsch.
+		API do sistema Det-Maker usando Java 17 e Framework Spring, para servidor Wildfly.
+		Focado para banco Oracle e acesso Telnet usando Jsch.
 	</description>
 
 	<properties>
@@ -210,9 +210,14 @@
 	</dependencies>
 
 	<build>
-		<!-- Necessidade para deploy no Tomcat -->
 		<finalName>${artifactId}</finalName>
 		<plugins>
+			<!-- Compilador Wildfly -->
+			<plugin>
+				<groupId>org.wildfly.plugins</groupId>
+				<artifactId>wildfly-maven-plugin</artifactId>
+				<version>3.0.2.Final</version>
+			</plugin>
 			<!-- Compilador Spring -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

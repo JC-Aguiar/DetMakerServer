@@ -47,7 +47,7 @@ public class ExecFile {
     // Nome do job que gerou esse arquivo
     String jobNome;
 
-    @Column(name = "TIPO", length = 10)
+    @Column(name = "TIPO", length = 10, nullable = false)
     // Informação para descrever se o arquivo é do tipo 'carga', 'saída' ou 'log'
     TipoExecFile tipo;
 
@@ -59,7 +59,7 @@ public class ExecFile {
     // Conteúdo do arquivo pós-execução
     String arquivo;
 
-    @Column(name = "INCONFORMIDADE", columnDefinition = "VARCHAR2(200)")
+    @Column(name = "INCONFORMIDADE", length = 200)
     String inconformidade;
 
 
@@ -89,7 +89,7 @@ public class ExecFile {
             .tipo(CARGA)
             .arquivoNome(nome)
             .arquivo(conteudo)
-            .inconformidade(carga.getErro())
+            .inconformidade(carga.getComando() +": "+ carga.getErro())
             .build();
     }
 
@@ -124,7 +124,7 @@ public class ExecFile {
             .tipo(tipo)
             .arquivoNome(nome)
             .arquivo(conteudo)
-            .inconformidade(fileManager.getErro())
+            .inconformidade(fileManager.getComando() +": "+ fileManager.getErro())
             .build();
     }
 

@@ -6,7 +6,9 @@ import br.com.ppw.dma.execQuery.ExecQuery;
 import br.com.ppw.dma.execQuery.ExecQueryService;
 import br.com.ppw.dma.job.JobProcess;
 import br.com.ppw.dma.master.MasterService;
+import br.com.ppw.dma.util.SqlUtils;
 import com.google.gson.Gson;
+import jakarta.persistence.PersistenceException;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -15,9 +17,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import static br.com.ppw.dma.util.FormatDate.RELOGIO;
 
@@ -61,88 +65,102 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
     }
 
     //TODO: javadoc
-    public List<Evidencia> gerarEvidencia(@NonNull List<JobProcess> jobProcesses) {
+    public List<EvidenciaProcess> gerarEvidencia(@NonNull List<JobProcess> jobProcesses) {
         log.info("Iniciando geração de Evidências para {} registro(s).", jobProcesses.size());
-        val listaEvidencias = new ArrayList<Evidencia>();
-        for(val jobPojo : jobProcesses) {
-            try {
-                val evidencia = gerarEvidencia(jobPojo);
-                listaEvidencias.add(evidencia);
-            }
-            catch(Exception e) {
-                e.printStackTrace();
-            }
-        }
-        return listaEvidencias;
+        return jobProcesses.stream()
+            .map(this::gerarEvidencia)
+            .toList();
     }
 
     //TODO: javadoc
     @Transactional
-    public Evidencia gerarEvidencia(@NonNull JobProcess process) {
+    public EvidenciaProcess gerarEvidencia(@NonNull JobProcess process) {
         log.info("Gerando Evidência para o JobProcess:");
         log.info(process.toString());
         val logs = new ArrayList<ExecFile>();
 
-        log.info("Criando novo registro da Evidência.");
-        val evidencia = persist(new Evidencia(process));
-        evidenciaDao.flush();
-        log.info(evidencia.toString());
+        var jobInfo = process.getJobInfo();
+        var jobInput = process.getJobInputs();
+        Function<String, String> criarMensagemErro = (texto) -> String.format(
+            "Erro SQL na persistência do %dº Job [ID %d] '%s': %s",
+            jobInput.getOrdem(),
+            jobInfo.getId(),
+            jobInfo.getNome(),
+            texto
+        );
 
-        if(process.possuiTabelas())
-            log.info("Criando novos registros ExecQuery para cada resultado no banco (pré e pós Job).");
-        val banco = new ArrayList<ExecQuery>();
-        for(int i = 0; i < process.getTabelasPosJob().size(); i++) {
-            val tabelaPre = process.getTabelasPreJob().get(i);
-            val tabelaPos = process.getTabelasPosJob().get(i);
-            if(!tabelaPre.getNome().equals(tabelaPos.getNome()))
-                continue;
-            val query = ExecQuery.montarEvidencia(evidencia, tabelaPre, tabelaPos);
-            banco.add(execQueryService.persist(query));
+        try {
+            var evidencia = persist(new Evidencia(process));
+            evidenciaDao.flush();
+            log.info(evidencia.toString());
+
+            if (process.possuiTabelas())
+                log.info("Criando novos registros ExecQuery para cada resultado no banco (pré e pós Job).");
+            val banco = new ArrayList<ExecQuery>();
+            for (int i = 0; i < process.getTabelasPosJob().size(); i++) {
+                val tabelaPre = process.getTabelasPreJob().get(i);
+                val tabelaPos = process.getTabelasPosJob().get(i);
+                if (!tabelaPre.getNome().equals(tabelaPos.getNome()))
+                    continue;
+                val query = ExecQuery.montarEvidencia(evidencia, tabelaPre, tabelaPos);
+                banco.add(execQueryService.persist(query));
+            }
+
+            if (!process.getCargas().isEmpty())
+                log.info("Criando novos registros ExecFile para cada uma das cargas usadas.");
+            val cargas = process.getCargas()
+                .stream()
+                .map(carga -> ExecFile.montarEvidenciaCarga(evidencia, carga))
+                .map(execFileService::persist)
+                .toList();
+
+            if (!process.getLogs().isEmpty() || !process.getTerminal().isEmpty())
+                log.info("Criando novos registros ExecFile para cada um dos logs obtidos.");
+            final String terminalConteudo = process.getTerminalFormatado();
+            if (!terminalConteudo.isEmpty()) {
+                val execFileTerminal = ExecFile.montarEvidenciaTerminal(evidencia, terminalConteudo);
+                logs.add(execFileTerminal);
+            }
+            process.getLogs()
+                .stream()
+                .map(log -> ExecFile.montarEvidenciaLog(evidencia, log))
+                .map(execFileService::persist)
+                .forEach(logs::add);
+
+            if (!process.getSaidas().isEmpty())
+                log.info("Criando novos registros ExecFile para cada uma das saídas produzidas.");
+            val saidas = process.getSaidas()
+                .stream()
+                .map(saida -> ExecFile.montarEvidenciaSaida(evidencia, saida))
+                .map(execFileService::persist)
+                .toList();
+
+            log.info("Atualizando Evidência ID {} com os anexos (ExecFile e ExecQuery).", evidencia.getId());
+            evidencia.setBanco(banco);
+            evidencia.setCargas(cargas);
+            evidencia.setLogs(logs);
+            evidencia.setSaidas(saidas);
+
+            if (evidencia.getErroFatal() == null || evidencia.getErroFatal().isEmpty())
+                return EvidenciaProcess.ok(evidencia);
+
+            evidencia.setRevisor("Det-Maker");
+            evidencia.setDataRevisao(OffsetDateTime.now(RELOGIO));
+            evidencia.setResultado(TipoEvidenciaResultado.REPROVADO);
+            evidencia.setComentario("A aplicação não conseguiu executar o Job com sucesso " +
+                "e seu resultado foi definido automaticamente");
+            return EvidenciaProcess.ok(evidencia);
         }
-
-        if(!process.getCargas().isEmpty())
-            log.info("Criando novos registros ExecFile para cada uma das cargas usadas.");
-        val cargas = process.getCargas()
-            .stream()
-            .map(carga -> ExecFile.montarEvidenciaCarga(evidencia, carga))
-            .map(execFileService::persist)
-            .toList();
-
-        if(!process.getLogs().isEmpty() || !process.getTerminal().isEmpty())
-            log.info("Criando novos registros ExecFile para cada um dos logs obtidos.");
-        final String terminalConteudo = process.getTerminalFormatado();
-        if(!terminalConteudo.isEmpty()) {
-            val execFileTerminal = ExecFile.montarEvidenciaTerminal(evidencia, terminalConteudo);
-            logs.add(execFileTerminal);
+        catch(PersistenceException e) {
+            var mensagem = criarMensagemErro.apply(SqlUtils.getExceptionMainCause(e));
+            log.error(mensagem);
+            return EvidenciaProcess.erro(criarMensagemErro.apply(mensagem));
         }
-        process.getLogs()
-            .stream()
-            .map(log -> ExecFile.montarEvidenciaLog(evidencia, log))
-            .map(execFileService::persist)
-            .forEach(logs::add);
-
-        if(!process.getSaidas().isEmpty())
-            log.info("Criando novos registros ExecFile para cada uma das saídas produzidas.");
-        val saidas = process.getSaidas()
-            .stream()
-            .map(saida -> ExecFile.montarEvidenciaSaida(evidencia, saida))
-            .map(execFileService::persist)
-            .toList();
-
-        log.info("Atualizando Evidência ID {} com os anexos (ExecFile e ExecQuery).", evidencia.getId());
-        evidencia.setBanco(banco);
-        evidencia.setCargas(cargas);
-        evidencia.setLogs(logs);
-        evidencia.setSaidas(saidas);
-
-        if(evidencia.getErroFatal().isEmpty()) return evidencia;
-
-        evidencia.setRevisor("Det-Maker");
-        evidencia.setDataRevisao(OffsetDateTime.now(RELOGIO));
-        evidencia.setResultado(TipoEvidenciaResultado.REPROVADO);
-        evidencia.setComentario(
-            "A aplicação não conseguiu executar o Job com sucesso e seu resultado foi definido automaticamente");
-        return evidencia;
+        catch(Exception e) {
+            var mensagem = criarMensagemErro.apply(e.getMessage());
+            log.error(mensagem);
+            return EvidenciaProcess.erro(criarMensagemErro.apply(mensagem));
+        }
     }
 
 //    public File parseBlobToFile(@NonNull Blob blob, @NotBlank String filePath){

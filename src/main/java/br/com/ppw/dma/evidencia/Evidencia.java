@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.Comment;
 import org.hibernate.annotations.Where;
 import org.hibernate.proxy.HibernateProxy;
 
@@ -95,10 +96,10 @@ public class Evidencia implements MasterEntity<Long> {
     @Column(name = "EXIT_CODE", columnDefinition = "NUMBER(3)")
     Integer exitCode;
 
-    @Column(name = "SHA256", columnDefinition = "VARCHAR2(64)")
+    @Column(name = "SHA256", length = 65)
     String sha256;
 
-    @Column(name = "ERRO_FATAL", columnDefinition = "VARCHAR2(200)")
+    @Column(name = "ERRO_FATAL", length = 200)
     String erroFatal;
 
 //    @Convert(converter = NumericBooleanConverter.class)

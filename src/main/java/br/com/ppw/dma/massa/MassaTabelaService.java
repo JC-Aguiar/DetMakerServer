@@ -94,7 +94,7 @@ public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTa
             }
             return summary;
         }
-        //Exceção em caso de erro inesperado
+        //Exceção em caso de exception inesperado
         catch(SQLException | PersistenceException e) {
             e.printStackTrace();
             return summary;
