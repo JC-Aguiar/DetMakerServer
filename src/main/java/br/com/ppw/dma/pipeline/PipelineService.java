@@ -16,7 +16,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class PipelineService extends MasterService<PipelineProps, Pipeline, PipelineService> {
+public class PipelineService extends MasterService<Long, Pipeline, PipelineService> {
 
     @Autowired
     private final PipelineRepository dao;

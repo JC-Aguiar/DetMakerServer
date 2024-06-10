@@ -49,13 +49,13 @@ public class ExecQuery {
     // SQL usada na evidência desse queries pós-execução
     String query;
 
-    @Column(name = "RESULTADO_PRE_JOB", columnDefinition = "CLOB", nullable = false)
+    @Column(name = "RESULTADO_PRE_JOB", columnDefinition = "CLOB") //nullable = false ?
     // Conteúdo da tabela extraída
-    String resultadoPreJob;
+    String resultadoPreJob = "";
 
-    @Column(name = "RESULTADO_POS_JOB", columnDefinition = "CLOB", nullable = false)
+    @Column(name = "RESULTADO_POS_JOB", columnDefinition = "CLOB") //nullable = false ?
     // Conteúdo da tabela extraída
-    String resultadoPosJob;
+    String resultadoPosJob = "";
 
     @Column(name = "INCONFORMIDADE", columnDefinition = "VARCHAR2(200)")
     String inconformidade;

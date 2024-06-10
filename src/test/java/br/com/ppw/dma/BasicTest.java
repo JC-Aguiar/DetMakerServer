@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +38,14 @@ import static br.com.ppw.dma.util.FormatString.dividirValores;
 
 @Slf4j
 public class BasicTest {
+
+    @Test
+    public void converterData() throws Exception {
+        String dataExecString = "2024-05-24";
+        var dataExec = LocalDate.parse(dataExecString);
+        log.info("Data Exec String: {}", dataExecString);
+        log.info("Data Exec: {}", dataExec);
+    }
 
     @Test
     public void testeInterpretadorDeMascaraDeArquivo() throws IOException {

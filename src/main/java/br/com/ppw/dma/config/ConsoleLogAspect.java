@@ -2,12 +2,15 @@ package br.com.ppw.dma.config;
 
 import ch.qos.logback.core.CoreConstants;
 import jakarta.validation.constraints.NotBlank;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.logging.log4j.LogManager;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.data.domain.Page;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -20,6 +23,7 @@ import static br.com.ppw.dma.util.FormatDate.RELOGIO;
 
 @Aspect
 @Component
+@Slf4j
 public class ConsoleLogAspect {
 
 //    MethodSignature signature;
@@ -45,15 +49,17 @@ public class ConsoleLogAspect {
 //        var log = LogManager.getLogger(className + "." + methodName);
 
         stringBuilder
+//            .append(CoreConstants.LINE_SEPARATOR)
+//            .append(LocalDateTime.now(RELOGIO).format(FORMAL_STYLE))
+//            .append(" -- ")
+//            .append(Thread.currentThread().getName())
+//            .append(" -- ")
+            .append(className)
             .append(CoreConstants.LINE_SEPARATOR)
-            .append(LocalDateTime.now(RELOGIO).format(FORMAL_STYLE))
-            .append(" -- ")
-            .append(Thread.currentThread().getName())
-            .append(" -- ")
-            .append(className + "." + methodName)
-            .append(CoreConstants.LINE_SEPARATOR)
-            .append("INICIOU")
-            .append(parameterNames.length);
+            .append("(INFO) ")
+            .append(methodName)
+            .append(": Acionado")
+            .append(parameterNames.length > 0 ? " com " + parameterNames.length + " parâmetro(s)." : ".");
 
         for (int i = 0; i < parameterNames.length; i++) {
             String parameterName = parameterNames[i];
@@ -64,17 +70,17 @@ public class ConsoleLogAspect {
             //TODO: implementar anotação para se usar nos parâmetros, não que aqui não exiba senhas, cpfs e etcs
             stringBuilder
                 .append(CoreConstants.LINE_SEPARATOR)
-                .append("  ")
+                .append("(INFO)    [")
                 .append(i+1)
-                .append(". ")
+                .append("] ")
                 .append(parameterName)
                 .append(" ")
                 .append(parameterType.getSimpleName())
                 .append(" = ")
                 .append(parameterValue);
         }
-        System.out.println();
-//        log.info(stringBuilder.toString());
+//        System.out.println();
+        log.info(stringBuilder.toString());
     }
 
     @AfterReturning(pointcut = "log()", returning = "result")
@@ -85,11 +91,16 @@ public class ConsoleLogAspect {
         var className = getMethodSimpleName(signature);
         var method = signature.getMethod();
 
-        var log = LogManager.getLogger(className + "." + method.getName());
+//        var log = LogManager.getLogger(className + "." + method.getName());
 
-        stringBuilder.append("Concluído.");
+        stringBuilder
+            .append(className)
+            .append(CoreConstants.LINE_SEPARATOR)
+            .append("(INFO) ")
+            .append(method.getName())
+            .append(": Concluído.");
         if (method.getReturnType() != void.class)
-            stringBuilder.append(" Objeto retornado: ").append(printObject(result));
+            stringBuilder.append(" Objeto retornado: " + printObject(result));
 
         log.info(stringBuilder.toString());
     }
@@ -97,6 +108,9 @@ public class ConsoleLogAspect {
     private static String printObject(Object object) {
         return switch (object) {
             case null -> "null";
+            case ResponseEntity response -> response.getStatusCode().value()
+                + " " + HttpStatus.valueOf(
+                    response.getStatusCode().value()).getReasonPhrase();
             case Object[] array -> Arrays.toString(array);
             case Collection<?> collection -> collection.toString();
             case String string -> string;

@@ -3,13 +3,11 @@ package br.com.ppw.dma.cliente;
 import br.com.ppw.dma.ambiente.AmbienteInfoDTO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Data
@@ -29,4 +27,13 @@ public class ClienteInfoDTO {
         this.ambientes.addAll(ambientes);
     }
 
+    @Override
+    public String toString() {
+        return "ClienteInfoDTO{" +
+            "id=" + id +
+            ", nome='" + nome + '\'' +
+            ", banner=[" + banner.length + "Kbs]" +
+            ", ambientes=" + ambientes +
+            '}';
+    }
 }

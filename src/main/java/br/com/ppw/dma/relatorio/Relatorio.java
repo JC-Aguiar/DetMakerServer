@@ -12,6 +12,8 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.type.NumericBooleanConverter;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -82,8 +84,10 @@ public class Relatorio implements MasterEntity<Long> {
     Ambiente ambiente;
 
     @Column(name = "DATA", columnDefinition = "DATE", nullable = false, updatable = false)
-    OffsetDateTime data;
+    LocalDate data;
 
+    @Column(name = "DATA_COMPLETA", columnDefinition = "DATE", nullable = false, updatable = false)
+    OffsetDateTime dataCompleta;
 
     public void setIdProjeto(final String idProjeto) {
         if(idProjeto != null) this.idProjeto = idProjeto;
