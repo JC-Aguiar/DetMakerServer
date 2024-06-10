@@ -40,7 +40,7 @@ public class CustomLog extends LayoutBase<ILoggingEvent> {
     }
 
     public String doLayout(ILoggingEvent event) {
-        final StringBuffer logBuilder = new StringBuffer(128);
+            final StringBuffer logBuilder = new StringBuffer(128);
 //        final String pid = Optional.ofNullable(MDC.get("PID")).orElse(" ");
 //        final LogStep step = Arrays.stream(LogStep.values())
 //            .filter(ls -> mensagem.startsWith(ls.call))

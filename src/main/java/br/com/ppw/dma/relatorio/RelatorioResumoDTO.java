@@ -5,6 +5,7 @@ import lombok.NonNull;
 import lombok.val;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 
 public record RelatorioResumoDTO(
     long id,
@@ -36,7 +37,7 @@ public record RelatorioResumoDTO(
             relatorio.getIdProjeto(),
             relatorio.getNomeProjeto(),
             relatorio.getNomeAtividade(),
-            relatorio.getData(),
+            relatorio.getDataCompleta(),
             sucesso,
             evidencias.size(),
             revisados);

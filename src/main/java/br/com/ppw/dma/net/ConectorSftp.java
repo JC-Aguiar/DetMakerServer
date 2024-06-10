@@ -156,7 +156,8 @@ public class ConectorSftp {
             log.info(arquivo.toString());
         }
         catch(Exception e) {
-            e.printStackTrace();
+//            e.printStackTrace();
+            log.error(e.getMessage());
             newDownload = new SftpFileManager<>(comando, null);
             newDownload.setErro(e.getMessage());
         }

@@ -7,7 +7,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -20,7 +20,7 @@ import java.util.Optional;
 
 import static br.com.ppw.dma.util.FormatString.LINHA_HORINZONTAL;
 
-@Log4j2(topic = "JWT AUTHENTICATION FILTER")
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 //    private final JwtAuthenticationService jwtService;

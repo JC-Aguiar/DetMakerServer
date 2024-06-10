@@ -6,6 +6,7 @@ import br.com.ppw.dma.job.JobExecuteDTO;
 import br.com.ppw.dma.job.JobInfoDTO;
 import br.com.ppw.dma.job.JobPreparation;
 import br.com.ppw.dma.master.MasterController;
+import br.com.ppw.dma.pipeline.Pipeline;
 import br.com.ppw.dma.pipeline.PipelineController;
 import br.com.ppw.dma.pipeline.PipelinePreparation;
 import br.com.ppw.dma.system.FileSystemService;
@@ -18,10 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +28,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @RestController
@@ -98,13 +98,36 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
     public ResponseEntity<Page<RelatorioResumoDTO>> getAllSummarized(
         @PathVariable(name = "ambienteId") Long ambienteId,
         @RequestParam(name = "page", defaultValue = "0") int page,
-        @RequestParam(name = "itens", defaultValue = "12") int itens) {
+        @RequestParam(name = "itens", defaultValue = "12") int itens,
+        @RequestParam(name = "idProjeto") Optional<String> idProjeto,
+        @RequestParam(name = "nomeProjeto") Optional<String> nomeProjeto,
+        @RequestParam(name = "nomeAtividade") Optional<String> nomeAtividade,
+        @RequestParam(name = "nomePipeline") Optional<String> nomePipeline,
+        @RequestParam(name = "data") Optional<String> dataExecString) {
         //--------------------------------------------------------------
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("id").ascending());
-        val dtos = relatorioService
-            .findAllByAmbiente(ambienteId, pageConfig)
+
+        LocalDate dataExec = null;
+        if(dataExecString.isPresent() && !dataExecString.get().isBlank())
+            dataExec = LocalDate.parse(dataExecString.get());
+
+        var ambiente = ambienteService.findById(ambienteId);
+        var pipeline = new Pipeline();
+        pipeline.setNome(nomePipeline.orElse(null));
+        var relatorioBusca = Relatorio.builder()
+            .idProjeto(idProjeto.orElse(null))
+            .nomeProjeto(nomeProjeto.orElse(null))
+            .nomeAtividade(nomeAtividade.orElse(null))
+            .ambiente(ambiente)
+            .data(dataExec)
+            .pipeline(pipeline)
+            .build();
+        Example<Relatorio> exemplo = Example.of(relatorioBusca, MATCHER_ALL);
+
+        Page<RelatorioResumoDTO> relatorios = relatorioService.findAllByExample(exemplo, pageConfig)
             .map(RelatorioResumoDTO::converterEntidade);
-        return ResponseEntity.ok(dtos);
+
+        return ResponseEntity.ok(relatorios);
     }
 
     //TODO:
@@ -181,7 +204,7 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
 //                return process;
             })
             .toList();
-        val relatorioDto = new RelatorioInfoDTO(relatorio);
+        val relatorioDto = new AtividadeInfoDTO(relatorio);
 //        return pipelineController.run(relatorioDto, pipeline, ambiente, jobs);
         return pipelineController.run(
             new PipelinePreparation(pipeline, relatorioDto, ambiente, jobs));

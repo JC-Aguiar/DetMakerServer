@@ -5,8 +5,21 @@
     <import class="ch.qos.logback.core.ConsoleAppender"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <layout class="br.com.ppw.dma.config.CustomLog" />
+<!--        <layout class="br.com.ppw.dma.config.CustomLog" />-->
+        <encoder class="br.com.ppw.dma.config.CustomLog2">
+            <pattern>%date{yyyy/MM/dd HH:mm:ss} - %thread - %class{0}%n%method</pattern>
+        </encoder>
     </appender>
+
+    <appender name="CUSTOM" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="br.com.ppw.dma.config.CustomLog3">
+            <pattern>%date{yyyy/MM/dd HH:mm:ss} - %thread - %msg</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="br.com.ppw.dma.config.ConsoleLogAspect" level="info" additivity="false">
+        <appender-ref ref="CUSTOM" />
+    </logger>
 
     <root level="info">
         <appender-ref ref="CONSOLE" />

@@ -11,6 +11,7 @@ import br.com.ppw.dma.relatorio.RelatorioService;
 import br.com.ppw.dma.system.FileSystemService;
 import jakarta.validation.Valid;
 import lombok.NonNull;
+import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.modelmapper.ModelMapper;
@@ -21,9 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -69,7 +68,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
     }
 
     @GetMapping("cliente/{clienteId}")
-    public ResponseEntity<?> getAll( @PathVariable(name = "clienteId") Long clienteId) {
+    public ResponseEntity<?> getAll(@PathVariable(name = "clienteId") Long clienteId) {
         final List<PipelineInfoDTO> dtos = pipelineService.findAllByCliente(clienteId)
             .stream()
             .map(PipelineInfoDTO::new)
@@ -108,31 +107,41 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
     //TODO: aplicar @Synchronized e testar.
     //  Se funcionar, o timeout do front precisa ser atualizado com base na quantidade de espera na fila
     @Transactional
-    @PostMapping(value = "run")
-    public ResponseEntity<RelatorioHistoricoDTO> updateAndRun(@Valid @RequestBody PipelineExecDTO execDto) {
-        val pipeline = getAndUpdate(execDto.getPipeline())
-            .orElseGet(() -> proxy().createNewPipeline(execDto));
-        val ambiente = ambienteService.findById(execDto.getAmbienteId());
+    @PostMapping(value = "run") //"run/pipelineId/{pipelineId}/ambienteId/{ambienteId}")
+    public ResponseEntity<RelatorioHistoricoDTO> setAndRun(
+//        @PathVariable Long pipelineId,
+//        @PathVariable Long ambienteId,
+        @Valid @RequestBody PipelineExecDTO execDto) {
+        //----------------------------------------------------------
+        var pipeline = pipelineService.findById(execDto.getPipelineId()); //pipelineId);
+        var ambiente = ambienteService.findById(execDto.getAmbienteId()); //ambienteId);
+        var jobs = Set.copyOf(execDto.getJobs())
+            .stream()
+            .map(dto -> jobService.findById(dto.getId()))
+            .toList();
 
-        //TODO: O looping abaixo deve ser um for manual.
-        //  Validar se o Job ID atual já não foi processado.
-        //  Evitar consultas desnecessárias no banco.
         log.debug("Preparando execução dos Jobs, convertendo os JobExecuteDTOs para JobExecutePOJOs.");
-        final List<JobPreparation> jobs = execDto.getJobs()
+        var jobsPreparation = execDto.getJobs()
             .stream()
             .map(dto -> {
-                val id = dto.getId();
-                log.info("Buscando registro para Job id {}.", id);
-                val job = jobService.findById(id);
-                log.info(job.toString());
+                var job = jobs.stream()
+                    .filter(j -> dto.getId().equals(j.getId()))
+                    .findFirst()
+                    .orElse(null);
                 return new JobPreparation(JobInfoDTO.converterJob(job), dto);
             })
             .toList();
 
         return run(
-            new PipelinePreparation(pipeline, execDto.getRelatorio(), ambiente, jobs));
+            new PipelinePreparation(
+                pipeline,
+                execDto.getAtividade(),
+                ambiente,
+                jobsPreparation
+        ));
     }
 
+    @Synchronized
     public ResponseEntity<RelatorioHistoricoDTO> run(@NonNull PipelinePreparation preparation) {
         val jobsProcessados = jobService.prepararExecutar(preparation);
         val evidencias = evidenciaService.gerarEvidencia(jobsProcessados);
@@ -168,26 +177,26 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         throw new NoSuchElementException(mensagem);
     }
 
-    public Pipeline createNewPipeline(@NonNull PipelineExecDTO execDTO) {
-        log.info("Criando nova Pipeline '{}' para Cliente ID {}.",
-            execDTO.getPipeline().getNome(), execDTO.getClienteId());
-        val cliente = clienteService.findById(execDTO.getClienteId());
-
-        log.info("Obtendo todos os Jobs listados no DTO.");
-        val jobIds = execDTO.getJobs()
-            .stream()
-            .map(JobExecuteDTO::getId)
-            .toList();
-        final List<Job> jobs = jobService.findAllById(jobIds);
-        val jobsNome = jobs.stream()
-            .map(Job::getNome)
-            .collect(Collectors.joining(", "));
-        log.info("Total de {} Jobs encontrados:", jobs.size());
-        log.info(" - {}", jobsNome);
-
-        val pipeline = Pipeline.parseInfoDto(execDTO.getPipeline(), jobs, cliente);
-        return pipelineService.persist(pipeline);
-    }
+//    public Pipeline createNewPipeline(@NonNull PipelineExecDTO execDTO) {
+//        log.info("Criando nova Pipeline '{}' para Cliente ID {}.",
+//            execDTO.getPipelineId().getNome(), execDTO.getClienteId());
+//        val cliente = clienteService.findById(execDTO.getClienteId());
+//
+//        log.info("Obtendo todos os Jobs listados no DTO.");
+//        val jobIds = execDTO.getJobs()
+//            .stream()
+//            .map(JobExecuteDTO::getId)
+//            .toList();
+//        final List<Job> jobs = jobService.findAllById(jobIds);
+//        val jobsNome = jobs.stream()
+//            .map(Job::getNome)
+//            .collect(Collectors.joining(", "));
+//        log.info("Total de {} Jobs encontrados:", jobs.size());
+//        log.info(" - {}", jobsNome);
+//
+//        val pipeline = Pipeline.parseInfoDto(execDTO.getPipelineId(), jobs, cliente);
+//        return pipelineService.persist(pipeline);
+//    }
 
     public Optional<Pipeline> getAndUpdate(@NonNull PipelineInfoDTO dto) {
         val pipeline = pipelineService.getUniqueOne(dto.getNome(), dto.getClienteId());

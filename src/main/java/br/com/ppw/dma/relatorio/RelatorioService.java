@@ -1,27 +1,35 @@
 package br.com.ppw.dma.relatorio;
 
-import br.com.ppw.dma.ambiente.Ambiente;
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.evidencia.EvidenciaProcess;
 import br.com.ppw.dma.job.JobPreparation;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.pipeline.Pipeline;
 import br.com.ppw.dma.pipeline.PipelinePreparation;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Example;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatDate.RELOGIO;
+import static java.time.ZoneOffset.UTC;
 
 @Service
 @Slf4j
@@ -105,7 +113,8 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
             .pipeline(preparation.pipeline())
             .evidencias(evidenciasOk)
             .parametros(parametrosDosJobs)
-            .data(OffsetDateTime.now(RELOGIO))
+            .data(LocalDate.now(RELOGIO))
+            .dataCompleta(OffsetDateTime.now(RELOGIO))
             .build();
         relatorio.setIdProjeto(preparation.relatorio().getIdProjeto());
         relatorio.setNomeProjeto(preparation.relatorio().getNomeProjeto());
@@ -125,6 +134,10 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
         relatorio = dao.save(relatorio);
         log.info("Relatório ID {} gravado com sucesso.", relatorio.getId());
         return relatorio;
+    }
+
+    public Page<Relatorio> findAllByExample(Example<Relatorio> exemplo, Pageable pageConfig) {
+        return dao.findAll(exemplo, pageConfig);
     }
 
 }

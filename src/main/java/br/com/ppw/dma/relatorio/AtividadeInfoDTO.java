@@ -9,7 +9,7 @@ import lombok.experimental.FieldDefaults;
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class RelatorioInfoDTO {
+public class AtividadeInfoDTO {
 
     String idProjeto;
     String nomeProjeto;
@@ -19,7 +19,7 @@ public class RelatorioInfoDTO {
     //String sistema;
     //String ambiente;
 
-    public RelatorioInfoDTO(@NonNull Relatorio relatorio) {
+    public AtividadeInfoDTO(@NonNull Relatorio relatorio) {
         this.idProjeto = relatorio.getIdProjeto();
         this.nomeProjeto = relatorio.getNomeProjeto();
         this.nomeAtividade = relatorio.getNomeAtividade();

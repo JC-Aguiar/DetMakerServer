@@ -43,7 +43,7 @@ public class ResultadoSql extends ComandoSql {
 
      @JsonIgnore
      public void addResultado(List<Map<String, Object>> extracao) {
-          if(getCampos().isEmpty()) {
+          if(getCampos().isEmpty() && !extracao.isEmpty()) {
                getCampos().addAll(extracao.get(0).keySet());
           }
           resultado.clear();

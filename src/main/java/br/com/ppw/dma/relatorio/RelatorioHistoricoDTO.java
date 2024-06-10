@@ -8,6 +8,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,7 +46,7 @@ public class RelatorioHistoricoDTO {
         this.dados = relatorio.getPipeline().getDescricao();
         this.cliente = relatorio.getCliente();
         this.ambiente = relatorio.getAmbiente().getNome();
-        this.data = relatorio.getData();
+        this.data = relatorio.getDataCompleta();
         if(relatorio.getTesteTipo() != null)
             this.testeTipo = relatorio.getTesteTipo().nome;
 
