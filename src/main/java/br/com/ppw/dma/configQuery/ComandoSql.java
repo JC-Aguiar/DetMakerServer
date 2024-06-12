@@ -33,18 +33,21 @@ public class ComandoSql {
 
     public ComandoSql(@NonNull ConfigQuery configQuery) {
         this.nome = configQuery.getNome();
-        this.filtros.addAll(FiltroSql.identificar(configQuery.getSql()));
         this.sql = configQuery.getSql();
         this.descricao = configQuery.getDescricao();
+        this.filtros.addAll(
+            FiltroSql.identificar(configQuery.getSql())
+        );
         if(!filtros.isEmpty()) this.dinamico = true;
     }
 
     public ComandoSql(@NonNull ExecQuery execQuery) {
         this.nome = execQuery.getQueryNome();
-        this.filtros.addAll(FiltroSql.identificar(execQuery.getQuery()));
+//        this.filtros.addAll(FiltroSql.identificar(execQuery.getQuery()));
         this.sql = execQuery.getQuery();
         this.descricao = "";
-        if(!filtros.isEmpty()) this.dinamico = true;
+        this.dinamico = false;
+//        if(!filtros.isEmpty()) this.dinamico = true;
     }
 
     @JsonIgnore
@@ -60,6 +63,16 @@ public class ComandoSql {
     }
 
     @JsonIgnore
+    public List<String> getCampos() {
+        return List.copyOf(campos);
+    }
+
+    @JsonIgnore
+    public List<FiltroSql> getFiltros() {
+        return List.copyOf(filtros);
+    }
+
+    @JsonIgnore
     public String getSqlCompleta() {
 //        if(semTabela()) throw new RuntimeException("Tabela não definida.");
         if(!dinamico) return sql;
@@ -68,7 +81,7 @@ public class ComandoSql {
 
         val valoresPendentes = filtros.stream()
             .map(FiltroSql::getValor)
-            .anyMatch(valor -> valor == null || valor.isEmpty());
+            .anyMatch(valor -> valor == null || valor.isBlank());
         if(valoresPendentes) throw new RuntimeException("Existem filtros não preenchidos na query.");
 
         return FiltroSql.montarSql(sql, filtros);
@@ -76,7 +89,7 @@ public class ComandoSql {
 
     @JsonIgnore
     public boolean semTabela() {
-        return nome == null || nome.trim().isEmpty();
+        return nome == null || nome.isBlank();
     }
 
     @JsonIgnore

@@ -3,11 +3,14 @@ package br.com.ppw.dma.configQuery;
 import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.master.MasterEntity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.proxy.HibernateProxy;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import static jakarta.persistence.FetchType.LAZY;
@@ -27,24 +30,31 @@ public class ConfigQuery implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CONFIG_QUERY_ID")
-    // Identificador numérico dessa queries pós-execução da evidência
+    // Identificador numérico dessa query
     Long id;
 
     @ToString.Exclude
     @JsonBackReference
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "JOB_ID")
-    // ID do job relacionado com essa configuração de queries
+    // ID do job relacionado com essa configuração de query
     Job job;
 
     @Column(name = "SQL_NOME", length = 50, nullable = false)
-    // Nome da tabela usada na queries
+    // Nome dessa configuração de query
     String nome;
 
     @Column(name = "SQL", length = 900, nullable = false)
     // SQL usada na evidência desse queries pré e pós-execução
-    // Exemplo: SELECT * FROM EVENTOS_WEB WHERE ${EVACCT} IN (${string[]}) AND ${EVDTPROC}=${date(DD-MM-YYYYY)}
+    // Exemplo: SELECT * FROM EVENTOS_WEB WHERE EVACCT IN (${contratos}) AND EVDTPROC=${ifxdate}
     String sql;
+
+    @ToString.Exclude
+//    @JsonManagedReference
+    @Column(name = "VARIAVEIS")
+    @OneToMany(fetch = LAZY)
+    // Lista das variáveis que constam dentro da SQL
+    List<ConfigQueryVar> variaveis = new ArrayList<>();
 
     @Column(name = "DESCRICAO", length = 500, nullable = false)
     // Informações sobre como preencher a SQL

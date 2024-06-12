@@ -2,7 +2,9 @@ package br.com.ppw.dma;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.configQuery.FiltroSql;
+import br.com.ppw.dma.configQuery.FiltroTipo;
 import br.com.ppw.dma.job.JobService;
+import br.com.ppw.dma.master.MasterOracleDAO;
 import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.pipeline.PipelineExecDTO;
 import br.com.ppw.dma.util.FormatString;
@@ -32,6 +34,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatString.dividirValores;
@@ -373,14 +377,36 @@ public class BasicTest {
     }
 
     @Test
-    public void testeConverterTextoEmMapaDeFiltrosSql() {
-        val filtro = "EVTYPE='EV_PAYMENTMODEL' AND ${EVACCT} IN (${string[]}) AND ${EVACCTG} = ${char}";
-        log.info(filtro);
+    public void testeConverterTextoEmMapaDeFiltrosSql() throws SQLException {
+        var sql = "" +
+                "SELECT * " +
+                "FROM TMP_ENTRADA_PAGTO " +
+                "WHERE " +
+                "   PBACCT IN (${contratos}) " +
+                "   AND PBACCTG=${grupo} " +
+                "   AND TRUNC(PBDTOCORR) = TRUNC(${ifxdate}) " +
+                "ORDER BY PBID ASC";
+//        var metadados = "contratos=string[], grupo=char";
+        log.info(sql);
+//        log.info(metadados);
 
-        FiltroSql.identificar(filtro)
+        var colunas = FiltroSql.identificar(sql)
             .stream()
-            .map(FiltroSql::toString)
-            .forEach(log::info);
+            .peek(filtro -> log.info(filtro.toString()))
+            .map(FiltroSql::getColuna)
+            .toList();
+
+        var oracleDao = new MasterOracleDAO(new AmbienteAcessoDTO(
+            "10.129.164.205:1521:cyb3dev",
+            "rcvry",
+            "rcvry"
+        ));
+        var total = oracleDao
+            .getFullInfoFromCols(colunas)
+            .stream()
+            .peek(col -> log.info(col.toString()))
+            .count();
+        log.info("total: {}", total);
     }
 
     @Test
@@ -423,25 +449,25 @@ public class BasicTest {
         log.info("Duração em milésimos: {}", duracao.getSeconds() * 1000);
     }
 
-    @Test
-    public void testePreencherConfigQuerySqlComFiltroSql() {
-        String sql1 = "SELECT * FROM TMP_ENTRADA_PAGTO WHERE ${PBACCTG} = ${string} AND ${PBACCT} IN (${string[]}) ORDER BY PBID ASC";
-        String sql2 = "SELECT * FROM TMP_ENTRADA_PAGTO WHERE ${PBACCTG} = ${string} AND ${PBACCT}";
-        String sql3 = "SELECT * FROM TMP_ENTRADA_PAGTO WHERE ${PBACCTG} = ${string} AND ${PBACCT} IN (${string[]}) AND ${PBACCT} = ${string}";
-        val filtroSql1 = new FiltroSql("PBACCTG", "string");
-        filtroSql1.setValor("1");
-        val filtroSql2 = new FiltroSql("PBACCT", "string[]");
-        filtroSql2.setValor("215487621-BRM");
-        val listaFiltrosSql = List.of(filtroSql1, filtroSql2);
-
-        String resultado = FiltroSql.montarSql(sql1,listaFiltrosSql);
-        log.info(resultado);
-
-        resultado = FiltroSql.montarSql(sql2,listaFiltrosSql);
-        log.info(resultado);
-
-        resultado = FiltroSql.montarSql(sql3,listaFiltrosSql);
-        log.info(resultado);
-    }
+//    @Test
+//    public void testePreencherConfigQuerySqlComFiltroSql() {
+//        String sql1 = "SELECT * FROM TMP_ENTRADA_PAGTO WHERE ${PBACCTG} = ${string} AND ${PBACCT} IN (${string[]}) ORDER BY PBID ASC";
+//        String sql2 = "SELECT * FROM TMP_ENTRADA_PAGTO WHERE ${PBACCTG} = ${string} AND ${PBACCT}";
+//        String sql3 = "SELECT * FROM TMP_ENTRADA_PAGTO WHERE ${PBACCTG} = ${string} AND ${PBACCT} IN (${string[]}) AND ${PBACCT} = ${string}";
+//        val filtroSql1 = new FiltroSql("PBACCTG", "string");
+//        filtroSql1.setValor("1");
+//        val filtroSql2 = new FiltroSql("PBACCT", "string[]");
+//        filtroSql2.setValor("215487621-BRM");
+//        val listaFiltrosSql = List.of(filtroSql1, filtroSql2);
+//
+//        String resultado = FiltroSql.montarSql(sql1,listaFiltrosSql);
+//        log.info(resultado);
+//
+//        resultado = FiltroSql.montarSql(sql2,listaFiltrosSql);
+//        log.info(resultado);
+//
+//        resultado = FiltroSql.montarSql(sql3,listaFiltrosSql);
+//        log.info(resultado);
+//    }
 
 }
