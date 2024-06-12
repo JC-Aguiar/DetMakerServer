@@ -6,6 +6,7 @@ import lombok.NonNull;
 import lombok.val;
 
 import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -87,6 +88,50 @@ public final class FormatString {
             resultado.add(matcher.group(1));
         }
         return resultado;
+    }
+
+    public static String extrairVariaveis(String input) {
+        var pattern = Pattern.compile("\\$\\{(.*?)\\}");
+        var matcher = pattern.matcher(input);
+        var output = new StringBuffer();
+
+        while(matcher.find()) {
+            String variable = matcher.group(1);
+            String replacement = Matcher.quoteReplacement(variable);
+            matcher.appendReplacement(output, replacement);
+        }
+        matcher.appendTail(output);
+        return output.toString();
+    }
+
+    public static String substituirVariaveis(String input, Map<String, String> variables) {
+        var pattern = Pattern.compile("\\$\\{(.*?)\\}"); // "\\$\\{([^}]+)}"
+        var matcher = pattern.matcher(input);
+        var output = new StringBuffer();
+
+        while (matcher.find()) {
+            String variable = matcher.group(1);
+            String value = variables.get(variable);
+            String replacement = (value != null) ? Matcher.quoteReplacement(value) : "";
+            matcher.appendReplacement(output, replacement);
+        }
+        matcher.appendTail(output);
+        return output.toString();
+    }
+
+    public static String extrairConteudoParenteses(@NonNull String txt) {
+        var builder = new StringBuilder(txt);
+        int start = builder.indexOf("(");
+        while(start != -1) {
+            builder.delete(0, start+1);
+            start = builder.indexOf("(");
+        }
+        int end = builder.indexOf(")");
+        while(end != -1) {
+            builder.delete(end, builder.length());
+            end = builder.indexOf(")");
+        }
+        return builder.toString().trim();
     }
 
     public static String abstrairVariavel(@NonNull String texto, @NonNull String regex) {

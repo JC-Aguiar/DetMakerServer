@@ -1,33 +1,35 @@
 package br.com.ppw.dma.configQuery;
 
 import lombok.NonNull;
-import lombok.val;
 
+import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-enum FiltroTipo {
-    CHAR("char", 5),
-    STRING("string", 6),
-    NUMBER("number", 7),
-    DECIMAL("decimal", 8),
-    DATE("date", 9),
-    CHAR_ARRAY("char[]", -1),
-    STRING_ARRAY("string[]", -1),
-    NUMBER_ARRAY("number[]", -1),
-    DECIMAL_ARRAY("decimal[]", -1),
-    DATE_ARRAY("date[]", -1);
+public enum FiltroTipo {
+    CHAR("char", Character.class),
+    STRING("string", String.class),
+    NUMBER("number", Long.class),
+    DECIMAL("decimal", BigDecimal.class),
+    DATE("date", OffsetDateTime.class),
+    CHAR_ARRAY("char[]", Character.class),
+    STRING_ARRAY("string[]", String.class),
+    NUMBER_ARRAY("number[]", Long.class),
+    DECIMAL_ARRAY("decimal[]", BigDecimal.class);
+//    DATE_ARRAY("date[]");
 
     public final String nome;
-    public final int arrayRef;
 
     private static final String NAO_IDENTIFICADO = "O tipo informado '%s' para o FitlroSql não " +
         "corresponde a nenhuma das opções registradas no DET-MAKER: " + getTodosOsTiposComoString();
 
-    FiltroTipo(String nome, int arrayRef) {
+    FiltroTipo(String nome, Class<?> classe) {
         this.nome = nome;
-        this.arrayRef = arrayRef;
+
     }
 
     public static String getTodosOsTiposComoString() {
@@ -41,15 +43,24 @@ enum FiltroTipo {
     }
 
     //TODO: javadoc
-    public static FiltroTipo identificar(@NonNull String sqlTipo) {
+    public static FiltroTipo identificar(@NonNull String texto) {
         //TODO: criar exception própria
-        val filtroTipo = Arrays.stream(FiltroTipo.values())
-            .filter(ft -> sqlTipo.trim().toUpperCase().startsWith(ft.nome.toUpperCase()))
+        var filtroTipo = Arrays.stream(FiltroTipo.values())
+            .filter(ft -> texto.trim().toUpperCase().startsWith(ft.nome.toUpperCase()))
             .findFirst()
-            .orElseThrow(() -> new RuntimeException(mensagemErro(sqlTipo)));
+            .orElseThrow(() -> new RuntimeException(mensagemErro(texto)));
 
-        if (sqlTipo.trim().endsWith("[]") && filtroTipo.arrayRef != -1)
-            return FiltroTipo.values()[filtroTipo.arrayRef];
+        if(!texto.trim().endsWith("[]")) return filtroTipo;
+
+        filtroTipo = switch(filtroTipo) {
+            case CHAR -> CHAR_ARRAY;
+            case STRING -> STRING_ARRAY;
+            case NUMBER -> NUMBER_ARRAY;
+            case DECIMAL -> DECIMAL_ARRAY;
+//            case DATE -> DATE_ARRAY;
+            default -> null;
+        };
+        if(filtroTipo == null) throw new RuntimeException(mensagemErro(texto));
         return filtroTipo;
     }
 
@@ -63,7 +74,7 @@ enum FiltroTipo {
             case DECIMAL -> String.valueOf(Double.parseDouble(valor));
             //case DATE, DATE_ARRAY -> valor; //TODO: criar validador entre padrão e input
             case CHAR_ARRAY -> formatarCharArray(valor);
-            case STRING_ARRAY, DATE_ARRAY -> formatarStringArray(valor);
+            case STRING_ARRAY -> formatarStringArray(valor); //DATE_ARRAY
             case NUMBER_ARRAY -> formatarNumberArray(valor);
             case DECIMAL_ARRAY -> formatarDecimalArray(valor);
         };

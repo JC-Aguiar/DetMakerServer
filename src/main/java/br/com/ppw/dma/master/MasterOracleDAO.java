@@ -3,6 +3,7 @@ package br.com.ppw.dma.master;
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.util.SqlUtils;
 import br.com.ppware.api.MassaPreparada;
+import jakarta.persistence.Column;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.hibernate.exception.SQLGrammarException;
 
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -18,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @AllArgsConstructor
@@ -61,6 +64,37 @@ public class MasterOracleDAO implements AutoCloseable {
             log.info("Total de campos coletados da tabela '{}': {}.", tableName, listaColunas.size());
             return listaColunas;
         }
+    }
+
+    public record ColumnInfo(String name, int length, String type, int precision, int scale) {};
+
+    public List<ColumnInfo> getFullInfoFromCols(@NonNull List<String> colunas)
+    throws SQLException {
+        log.info("Obtendo dados dos campos: '{}'.", String.join(", ", colunas));
+        var valores = new ArrayList<ColumnInfo>();
+        var sql = "SELECT COLUMN_NAME, DATA_LENGTH, DATA_TYPE, DATA_PRECISION, DATA_SCALE " +
+                "FROM ALL_TAB_COLUMNS " +
+                "WHERE COLUMN_NAME IN (" +
+                colunas.stream().map(filtro -> "?").collect(Collectors.joining(", ")) +
+                ")";
+        log.info("SQL: {}", sql);
+        try(val statement = conn.prepareStatement(sql)) {
+            int index = 1;
+            for(var col : colunas) statement.setString(index++, col);
+            var resultado = statement.executeQuery();
+            while(resultado.next()) {
+                var colunaInfo = new ColumnInfo(
+                    resultado.getString("COLUMN_NAME"),
+                    resultado.getInt("DATA_LENGTH"),
+                    resultado.getString("DATA_TYPE"),
+                    resultado.getInt("DATA_PRECISION"),
+                    resultado.getInt("DATA_SCALE")
+                );
+                valores.add(colunaInfo);
+                log.info(colunaInfo.toString());
+            }
+        }
+        return valores;
     }
 
     private static String sqlColsFromTable(@NotBlank String tableName) {
