@@ -90,14 +90,14 @@ public final class FormatString {
         return resultado;
     }
 
-    public static String extrairVariaveis(String input) {
+    public static String substituirVariaveis(String input, String signal) {
         var pattern = Pattern.compile("\\$\\{(.*?)\\}");
         var matcher = pattern.matcher(input);
         var output = new StringBuffer();
 
         while(matcher.find()) {
             String variable = matcher.group(1);
-            String replacement = Matcher.quoteReplacement(variable);
+            String replacement = Matcher.quoteReplacement(signal);
             matcher.appendReplacement(output, replacement);
         }
         matcher.appendTail(output);
@@ -109,7 +109,7 @@ public final class FormatString {
         var matcher = pattern.matcher(input);
         var output = new StringBuffer();
 
-        while (matcher.find()) {
+        while(matcher.find()) {
             String variable = matcher.group(1);
             String value = variables.get(variable);
             String replacement = (value != null) ? Matcher.quoteReplacement(value) : "";

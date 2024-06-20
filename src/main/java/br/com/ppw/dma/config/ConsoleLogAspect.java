@@ -33,7 +33,7 @@ public class ConsoleLogAspect {
 //    List<String> paramitersValues;
 
 //    @Pointcut("(execution(* br.com.ppw.dma..*(..))) && !within(is(FinalType))")
-    @Pointcut("within(br.com.ppw.dma..*)")
+    @Pointcut("within(br.com.ppw.dma..*) && execution(* *(..))")
     public void log() {    }
 
     @Before("log()")

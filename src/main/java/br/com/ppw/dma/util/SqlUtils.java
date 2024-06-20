@@ -1,10 +1,17 @@
 package br.com.ppw.dma.util;
 
+import br.com.ppw.dma.configQuery.ConfigQueryVar;
+import br.com.ppware.NumeroAleatorio;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
+import java.math.BigDecimal;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
+import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 @Slf4j
@@ -13,6 +20,35 @@ public abstract class SqlUtils {
     private static final List<String> KEYWORDS = List.of(
         "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "TRUNCATE", "RENAME", "DROP"
     );
+
+    public static Object parseToString(@NonNull String s) {
+        return String.format("'%s'", s);
+    }
+
+//    public static Object parseToDate(@NonNull String s) {
+//        //TODO: validar formato!
+//        return String.format(
+//            "TO_DATE('%s', 'DD/MM/YYYY HH24:MI:SS')", s
+//        );
+//    }
+//
+//    public static Object parseTotimestamp(@NonNull String s) {
+//        return String.format(
+//            "TO_TIMESTAMP('%s', 'DD/MM/YYYY HH24:MI:SS')", s
+//        );
+//    }
+//
+//    public static Object parseToDouble(@NonNull String s) {
+//        return String.format(
+//            "TO_TIMESTAMP('%s', 'DD/MM/YYYY HH24:MI:SS')", s
+//        );
+//    }
+
+//    public static Object parseToFloat(@NonNull String s) {
+//    }
+//
+//    public static Object parseToNumber(@NonNull String s) {
+//    }
 
     //TODO: javadoc
     public static boolean isSafeInsertQuery(String query) {
@@ -68,7 +104,6 @@ public abstract class SqlUtils {
             log.debug("Causa raiz não identificada.");
             mensagem = e.getMessage();
         }
-
         log.debug("Resultado: {}", mensagem);
         return mensagem;
     }

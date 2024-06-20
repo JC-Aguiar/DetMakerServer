@@ -68,7 +68,7 @@ public class Evidencia implements MasterEntity<Long> {
 
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "BANCO_ID")
+    @Column(name = "BANCO_ID") //TODO: mudar o nome para algo melhor
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     List<ExecQuery> banco = new ArrayList<>();
 

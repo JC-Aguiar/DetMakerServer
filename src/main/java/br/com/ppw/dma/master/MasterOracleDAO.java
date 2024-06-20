@@ -1,9 +1,11 @@
 package br.com.ppw.dma.master;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
+import br.com.ppw.dma.configQuery.ColumnInfo;
+import br.com.ppw.dma.configQuery.FiltroSql;
 import br.com.ppw.dma.util.SqlUtils;
 import br.com.ppware.api.MassaPreparada;
-import jakarta.persistence.Column;
+import jakarta.persistence.PersistenceException;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
@@ -12,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.hibernate.exception.SQLGrammarException;
 
-import java.sql.Array;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -66,35 +67,69 @@ public class MasterOracleDAO implements AutoCloseable {
         }
     }
 
-    public record ColumnInfo(String name, int length, String type, int precision, int scale) {};
+    public List<FiltroSql> findAndSetColumnInfo(
+        @NonNull String tabela,
+        @NonNull List<FiltroSql> filtros) {
+        //----------------------------------------
+        var colunas = filtros.stream()
+            .map(FiltroSql::getColuna)
+            .collect(Collectors.toSet());
+        var coringas = colunas.stream()
+            .map(filtro -> "?")
+            .collect(Collectors.joining(", "));
 
-    public List<ColumnInfo> getFullInfoFromCols(@NonNull List<String> colunas)
-    throws SQLException {
-        log.info("Obtendo dados dos campos: '{}'.", String.join(", ", colunas));
-        var valores = new ArrayList<ColumnInfo>();
-        var sql = "SELECT COLUMN_NAME, DATA_LENGTH, DATA_TYPE, DATA_PRECISION, DATA_SCALE " +
-                "FROM ALL_TAB_COLUMNS " +
-                "WHERE COLUMN_NAME IN (" +
-                colunas.stream().map(filtro -> "?").collect(Collectors.joining(", ")) +
-                ")";
+        var sql = "SELECT COLUMN_NAME, DATA_LENGTH, DATA_TYPE, DATA_PRECISION, DATA_SCALE "
+            + "FROM ALL_TAB_COLUMNS "
+            + "WHERE TABLE_NAME = ? "
+            + "AND COLUMN_NAME IN ("
+            + coringas
+            + ")";
         log.info("SQL: {}", sql);
+
         try(val statement = conn.prepareStatement(sql)) {
             int index = 1;
+            statement.setString(index++, tabela);
             for(var col : colunas) statement.setString(index++, col);
+
             var resultado = statement.executeQuery();
+            log.info("Query executada com sucesso. Resultado obtido:");
             while(resultado.next()) {
-                var colunaInfo = new ColumnInfo(
-                    resultado.getString("COLUMN_NAME"),
+                var col = resultado.getString("COLUMN_NAME");
+                var type = resultado.getString("DATA_TYPE");
+                var metaDados = new ColumnInfo(
                     resultado.getInt("DATA_LENGTH"),
-                    resultado.getString("DATA_TYPE"),
                     resultado.getInt("DATA_PRECISION"),
                     resultado.getInt("DATA_SCALE")
                 );
-                valores.add(colunaInfo);
-                log.info(colunaInfo.toString());
+                log.info("{}: {} - {}.", col, type, metaDados);
+
+                filtros.stream()
+                    .filter(filtro -> filtro.getColuna().equals(col))
+                    .findFirst()
+                    .ifPresent(filtro -> {
+                        filtro.setTipo(type);
+                        filtro.setMetaDados(metaDados);
+                    });
             }
+            var pendentes = filtros.stream()
+                .filter(filtro -> filtro.getMetaDados() == null)
+                .map(FiltroSql::getVariavel)
+                .toList();
+            var sucessos = filtros.size() - pendentes.size();
+            log.info("Total de filtros identificados: {}/{}", sucessos, filtros.size());
+
+            //TODO: criar exception própria
+            if(!pendentes.isEmpty()) {
+                throw new RuntimeException(
+                    "Não foi possível obter todos os dados necessários. "
+                    + "Colunas não identificadas: " + String.join(", ", pendentes)
+                );
+            }
+            return filtros;
         }
-        return valores;
+        catch(SQLException | PersistenceException e) {
+            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+        }
     }
 
     private static String sqlColsFromTable(@NotBlank String tableName) {
@@ -107,26 +142,11 @@ public class MasterOracleDAO implements AutoCloseable {
     }
 
     //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
-    public void validateQuery(@NonNull String sql) throws SQLGrammarException, SQLException {
-        log.info("SQL: {}", sql);
-        validateSql(sql);
-        log.info("Validando tabelas e colunas da query.");
-        try(val statement = conn.createStatement()) {
-            statement.setMaxRows(1);
-            statement.executeQuery(sql);
-        }
-        log.info("Query aprovada.");
-    }
-
-    //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
-    public List<Map<String, Object>> getAllInfoFromTable(@NonNull String sql) throws SQLException {
-//        if(resultadoSql.semTabela()) throw new RuntimeException("Tabela não definida.");
-//        log.info("Executando query '{}'.", resultadoSql.getTabela());
-//        val tableName = resultadoSql.getTabela();
+    public List<Map<String, Object>> collectData(@NonNull String sql)
+    throws SQLException {
+        checkSqlGrammar(sql);
         val extracao = new ArrayList<Map<String, Object>>();
         try(val statement = conn.createStatement()) {
-            log.info("SQL: {}", sql);
-            validateSql(sql);
             log.info("Executando query.");
             val resultSet = statement.executeQuery(sql);
             val metaDados = resultSet.getMetaData();
@@ -134,7 +154,6 @@ public class MasterOracleDAO implements AutoCloseable {
 
             while(resultSet.next()) {
                 val resultMap = new HashMap<String, Object>();
-
                 for(int i = 1; i <= columnCount; i++) {
                     val coluna = metaDados.getColumnName(i);
                     val valor = resultSet.getObject(i);
@@ -148,26 +167,87 @@ public class MasterOracleDAO implements AutoCloseable {
         else
             log.info("Total de registros coletados: {}.", extracao.size());
         return extracao;
-
-/*
-        //Adicionando os campos do primeiro registro para o ResultadoSql dessa mesma tabela
-        if(resultadoSql.getCampos().isEmpty()) {
-            extracao.get(0)
-                .keySet()
-                .forEach(resultadoSql.getCampos()::add);
-            log.debug(" - Campos: {}", String.join(", ", resultadoSql.getCampos()));
-        }
-        //Adicionando os valores de cada registro para o ResultadoSql dessa mesma tabela
-        extracao.forEach(resultadoSql::addResultado);
-        return resultadoSql;
- */
     }
 
+    public List<Map<String, Object>> getAllInfoFromTable2(@NonNull String sql) throws SQLException {
+        val extracao = new ArrayList<Map<String, Object>>();
+        try(val statement = conn.createStatement()) {
+            log.info("SQL: {}", sql);
+            checkSqlGrammar(sql);
+            log.info("Executando query.");
+            val resultSet = statement.executeQuery(sql);
+            val metaDados = resultSet.getMetaData();
+            int columnCount = metaDados.getColumnCount();
+
+            while(resultSet.next()) {
+                val resultMap = new HashMap<String, Object>();
+                for(int i = 1; i <= columnCount; i++) {
+                    val coluna = metaDados.getColumnName(i);
+                    val valor = resultSet.getObject(i);
+                    resultMap.put(coluna, valor);
+                }
+                extracao.add(resultMap);
+            }
+        }
+        if(extracao.isEmpty())
+            log.info("Nenhum registro encontrado");
+        else
+            log.info("Total de registros coletados: {}.", extracao.size());
+        return extracao;
+    }
+    
+    //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
+    public void validadeQuery(@NonNull String sql) throws SQLGrammarException, SQLException {
+        checkSqlGrammar(sql);
+        log.info("SQL: {}", sql);
+        log.info("Testando executar query (ROWNUM = 1).");
+        try(val statement = conn.createStatement()) {
+            statement.setMaxRows(1);
+            statement.executeQuery(sql);
+            log.info("Query aprovada.");
+        }
+    }
+    
+    //TODO: javadoc
+//    public void createValidateQuery(@NonNull String sql, @NonNull List<ConfigQueryVar> queryVars)
+//    throws SQLGrammarException, SQLException {
+//        sql = FormatString.substituirVariaveis(sql, "?");
+//        checkSqlGrammar(sql);
+//        try(val statement = conn.prepareStatement(sql)) {
+//            log.info("Inserindo registros aleatórios e validando tabelas e colunas da query.");
+//            for(var queryVar : queryVars) {
+//                var index = queryVar.getIndex();
+//                //TODO: gerar valor aleatório STRING
+//                var valor = queryVar.gerarValorAleatorio();
+//                var array = queryVar.getArray();
+//                if(array) {
+//                    var tipo = queryVar.getTipo();
+//                    var valorArray = conn.createArrayOf(tipo.name(), new Object[] {valor, valor});
+//                    statement.setArray(index, valorArray);
+//                    continue;
+//                }
+//                switch(valor) {
+//                    case(BigDecimal number) -> statement.setBigDecimal(index, number);
+//                    case(Float number) -> statement.setFloat(index, number);
+//                    case(String string) -> statement.setString(index, string);
+//                    case(OffsetDateTime date) -> statement.setTimestamp(
+//                        index, Timestamp.from(date.toInstant())
+//                    );
+//                    default -> throw new RuntimeException("Sem foi possível gerar massa"); //TODO: usar mesma exceção própria do TipoColuna
+//                }
+//            };
+//            log.info("Testando executar query (ROWNUM = 1).");
+//            statement.setMaxRows(1);
+//            statement.executeQuery(sql);
+//            log.info("Query aprovada.");
+//        }
+//    }
 
     //TODO: criar exception própria?
     //TODO: javadoc
-    public void validateSql(@NonNull String sql) {
+    private void checkSqlGrammar(@NonNull String sql) {
         log.info("Validando comandos inválidos na query.");
+        sql = sql.replace("\"", "");
         if(!SqlUtils.isSafeQuery(sql)) {
             throw new RuntimeException("A queries informada contêm comandos DDL não permitidos.");
         }

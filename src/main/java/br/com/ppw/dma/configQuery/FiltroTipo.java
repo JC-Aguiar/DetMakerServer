@@ -1,36 +1,40 @@
 package br.com.ppw.dma.configQuery;
 
+import br.com.ppw.dma.util.TipoColuna;
 import lombok.NonNull;
 
 import java.math.BigDecimal;
-import java.sql.PreparedStatement;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
-import java.util.function.Function;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public enum FiltroTipo {
-    CHAR("char", Character.class),
-    STRING("string", String.class),
-    NUMBER("number", Long.class),
-    DECIMAL("decimal", BigDecimal.class),
-    DATE("date", OffsetDateTime.class),
-    CHAR_ARRAY("char[]", Character.class),
-    STRING_ARRAY("string[]", String.class),
-    NUMBER_ARRAY("number[]", Long.class),
-    DECIMAL_ARRAY("decimal[]", BigDecimal.class);
-//    DATE_ARRAY("date[]");
+//    CHAR("char", Character.class, TipoColuna.COLUNAS_TEXTUAIS),
+    UNSET("", List.of()),
+    STRING("string", TipoColuna.COLUNAS_TEXTUAIS),
+    NUMBER("number", TipoColuna.COLUNAS_NUMERICAS),
+//    DECIMAL("decimal", BigDecimal.class, TipoColuna.COLUNAS_TEXTUAIS),
+    DATE("date", TipoColuna.COLUNAS_DATAVEIS),
+//    CHAR_ARRAY("char[]", Character.class, TipoColuna.COLUNAS_TEXTUAIS),
+    STRING_ARRAY("string[]", TipoColuna.COLUNAS_TEXTUAIS),
+    NUMBER_ARRAY("number[]", TipoColuna.COLUNAS_NUMERICAS),
+//    DECIMAL_ARRAY("decimal[]", BigDecimal.class, TipoColuna.COLUNAS_TEXTUAIS);
+//    DATE_ARRAY("date[]")
+    ;
 
     public final String nome;
+    public final List<TipoColuna> tiposSuportados;
+
+    FiltroTipo(String nome, List<TipoColuna> colunas) {
+        this.nome = nome;
+        this.tiposSuportados = colunas;
+    }
+
 
     private static final String NAO_IDENTIFICADO = "O tipo informado '%s' para o FitlroSql não " +
         "corresponde a nenhuma das opções registradas no DET-MAKER: " + getTodosOsTiposComoString();
-
-    FiltroTipo(String nome, Class<?> classe) {
-        this.nome = nome;
-
-    }
 
     public static String getTodosOsTiposComoString() {
         return Arrays.stream(FiltroTipo.values())
@@ -48,19 +52,20 @@ public enum FiltroTipo {
         var filtroTipo = Arrays.stream(FiltroTipo.values())
             .filter(ft -> texto.trim().toUpperCase().startsWith(ft.nome.toUpperCase()))
             .findFirst()
-            .orElseThrow(() -> new RuntimeException(mensagemErro(texto)));
+            .orElse(UNSET);
+//            .orElseThrow(() -> new RuntimeException(mensagemErro(texto)));
 
         if(!texto.trim().endsWith("[]")) return filtroTipo;
 
         filtroTipo = switch(filtroTipo) {
-            case CHAR -> CHAR_ARRAY;
+//            case CHAR -> CHAR_ARRAY;
             case STRING -> STRING_ARRAY;
             case NUMBER -> NUMBER_ARRAY;
-            case DECIMAL -> DECIMAL_ARRAY;
+//            case DECIMAL -> DECIMAL_ARRAY;
 //            case DATE -> DATE_ARRAY;
-            default -> null;
+            default -> UNSET;
         };
-        if(filtroTipo == null) throw new RuntimeException(mensagemErro(texto));
+//        if(filtroTipo == null) throw new RuntimeException(mensagemErro(texto));
         return filtroTipo;
     }
 
@@ -68,15 +73,16 @@ public enum FiltroTipo {
     public static String formatarValor(@NonNull FiltroTipo tipo, @NonNull String valor) {
         if(valor.trim().isEmpty()) throw new RuntimeException(mensagemErro(valor));
         return switch(tipo) {
-            case CHAR -> formatarChar(valor);
+//            case CHAR -> formatarChar(valor);
             case STRING, DATE -> formatarString(valor);
             case NUMBER -> String.valueOf(Long.parseLong(valor));
-            case DECIMAL -> String.valueOf(Double.parseDouble(valor));
+//            case DECIMAL -> String.valueOf(Double.parseDouble(valor));
             //case DATE, DATE_ARRAY -> valor; //TODO: criar validador entre padrão e input
-            case CHAR_ARRAY -> formatarCharArray(valor);
+//            case CHAR_ARRAY -> formatarCharArray(valor);
             case STRING_ARRAY -> formatarStringArray(valor); //DATE_ARRAY
             case NUMBER_ARRAY -> formatarNumberArray(valor);
-            case DECIMAL_ARRAY -> formatarDecimalArray(valor);
+//            case DECIMAL_ARRAY -> formatarDecimalArray(valor);
+            default -> ""; //TODO: lançar exceção?
         };
     }
 

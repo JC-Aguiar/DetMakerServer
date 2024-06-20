@@ -42,15 +42,15 @@ public abstract class MasterService<ID, ENTITY, THIS extends  MasterService> {
         return page;
     }
 
-    public List<ENTITY> addAll(@NotNull List<ENTITY> entities) {
+    public List<ENTITY> save(@NotNull List<ENTITY> entities) {
         return dao.saveAll(entities);
     }
 
-    public Optional<ENTITY> addOne(@NotNull ENTITY entity) throws DuplicatedRecordException {
+    public ENTITY save(@NotNull ENTITY entity) throws DuplicatedRecordException {
         try {
-            return Optional.of(dao.save(entity));
+            return dao.save(entity);
         }
-        catch (ConstraintViolationException e) {
+        catch(ConstraintViolationException e) {
             throw new DuplicatedRecordException();
         }
     }

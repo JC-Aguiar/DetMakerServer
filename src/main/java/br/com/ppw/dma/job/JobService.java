@@ -320,23 +320,23 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: javadoc
-    public List<ResultadoSql> extractTable(@NonNull List<? extends ComandoSql> comandosSql) {
-        val extracoes = comandosSql.stream().map(cmdSql -> {
-            val manager = new ResultadoSql(cmdSql);
+    public List<ResultadoSql> extractTable(@NonNull List<ComandoSql> queries) {
+        val extracoes = queries.stream().map(query -> {
+            var sql = query.getSql();
+            val evidencia = new ResultadoSql(query);
             try(val masterDao = new MasterOracleDAO(banco)) {
-                val extracao = masterDao.getAllInfoFromTable(manager.getSqlCompleta());
-                manager.addResultado(extracao);
+                evidencia.addResultado(masterDao.collectData(sql));
             }
             catch(SQLException | PersistenceException e) {
                 val errorMessage = SqlUtils.getExceptionMainCause(e);
                 log.warn(errorMessage);
-                manager.setMensagemErro(errorMessage);
+                evidencia.setMensagemErro(errorMessage);
             }
             catch(Exception e) {
                 e.printStackTrace();
-                manager.setMensagemErro(e.getMessage());
+                evidencia.setMensagemErro(e.getMessage());
             }
-            return manager;
+            return evidencia;
         })
         .toList();
 
