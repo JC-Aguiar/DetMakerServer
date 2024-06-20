@@ -2,8 +2,11 @@ package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.evidencia.Evidencia;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.validator.constraints.Range;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,13 +17,11 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class JobExecuteDTO {
 
-   Long id;
-   Integer ordem;
+   @NotNull @Positive Long id;
+   @NotNull @Range(max = 999) Integer ordem;
    String argumentos;
    List<ComandoSql> queries = new ArrayList<>();
-//   List<MultipartFile> cargas = new ArrayList<>();
    List<JobCarga> cargas = new ArrayList<>();
-   //TODO: precisa da informação da pipeline?
 
 
    public JobExecuteDTO(@NonNull Evidencia evidencia) {

@@ -2,7 +2,6 @@ package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.ambiente.AmbienteService;
 import br.com.ppw.dma.cliente.ClienteService;
-import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.configQuery.ConfigQueryController;
 import br.com.ppw.dma.evidencia.EvidenciaController;
 import br.com.ppw.dma.master.MasterController;
@@ -19,7 +18,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 import static br.com.ppw.dma.util.FormatDate.RELOGIO;
@@ -110,7 +108,7 @@ public class JobController extends MasterController<Long, Job, JobController> {
             .toList();
 
         log.info("Persistindo Jobs no banco.");
-        var totalSalvos = jobService.addAll(entidades)
+        var totalSalvos = jobService.save(entidades)
             .stream()
             .filter(job -> job.getId() != -1)
             .count();
@@ -148,40 +146,12 @@ public class JobController extends MasterController<Long, Job, JobController> {
         val mensagem = "Total de jobs salvos: " +jobsSalvos+ ".";
         log.info(mensagem);
 
-        if(jobsSalvos == 0)
+        if(jobsSalvos == 0) {
             return ResponseEntity
                 .internalServerError()
                 .body("Não foi possível salvar nenhum dos jobs enviados.");
+        }
         return ResponseEntity.ok(mensagem);
     }
 
-    //TODO: javadoc
-    private JobConfigDTO criarJobConfigDto(@NonNull JobInfoDTO infoDto) {
-        final List<ComandoSql> queries = new ArrayList<>();
-        try {
-            queries.addAll(
-                queryController.getAllByJob(infoDto.getId()).getBody()
-            );
-        }
-        catch(Exception e) {
-            log.warn(e.getMessage());
-        }
-        log.info("Verificando se alguma ConfigQuery está pendente.");
-        log.info("ConfigQuery tabelas: {}.", queries.size());
-        log.info("Job tabelas: {}.", infoDto.getTabelas().size());
-        infoDto.getTabelas()
-            .stream()
-            .filter(tabela -> queries.stream().noneMatch(query -> query.getNome().trim().equals(tabela)))
-            .peek(tabela -> log.info("Tabela '{}' pendente de ConfigQuery.", tabela))
-            .map(ComandoSql::new)
-            .forEach(queries::add);
-
-        val configDto = new JobConfigDTO();
-        configDto.setJob(infoDto);
-        configDto.addQuery(queries);
-
-        log.info("JobConfigDto montado com sucesso.");
-        log.info(configDto.toString());
-        return configDto;
-    }
 }

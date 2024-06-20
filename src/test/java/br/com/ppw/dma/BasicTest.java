@@ -1,8 +1,10 @@
 package br.com.ppw.dma;
 
+import br.com.ppw.dma.ambiente.Ambiente;
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
+import br.com.ppw.dma.configQuery.ComandoSql;
+import br.com.ppw.dma.configQuery.ConfigQueryVar;
 import br.com.ppw.dma.configQuery.FiltroSql;
-import br.com.ppw.dma.configQuery.FiltroTipo;
 import br.com.ppw.dma.job.JobService;
 import br.com.ppw.dma.master.MasterOracleDAO;
 import br.com.ppw.dma.net.ConectorSftp;
@@ -34,8 +36,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatString.dividirValores;
@@ -377,6 +377,59 @@ public class BasicTest {
     }
 
     @Test
+    public void testeCriarValidarComandoSqlEmConfigQueryVars() throws SQLException {
+        var ambiente = new Ambiente();
+        ambiente.setConexaoBanco("10.129.164.205:1521:cyb3dev");
+        ambiente.setUsuarioBanco("rcvry");
+        ambiente.setSenhaBanco("rcvry");
+        var banco = AmbienteAcessoDTO.banco(ambiente);
+        log.info(banco.toString());
+
+        var filtro1 = new FiltroSql();
+        filtro1.setTabela("EVENTOS_WEB");
+        filtro1.setColuna("EVDTPROC");
+        filtro1.setTipo("UNSET");
+        filtro1.setIndex(0);
+        filtro1.setArray(false);
+        filtro1.setVariavel("data-evento-processo");
+        var filtro2 = new FiltroSql();
+        filtro2.setTabela("EVENTOS_WEB");
+        filtro2.setColuna("EVACCT");
+        filtro2.setTipo("UNSET");
+        filtro2.setIndex(1);
+        filtro2.setArray(true);
+        filtro2.setVariavel("contrato");
+        var comando = new ComandoSql();
+        comando.setJobId(173L);
+        comando.setNome("Eventos de Pagamento BRM");
+        comando.setSql(
+            "SELECT * FROM EVENTOS_WEB WHERE EVTYPE='EV_BOLETO_CYBER_HUBPGTO' AND TRUNC" +
+                "(EVDTPROC)=TRUNC(${data-evento-processo}) AND EVACCT IN (${contrato}) ORDER BY EVID ASC");
+        comando.setFiltros(List.of(filtro1, filtro2));
+        log.info(comando.toString());
+
+        try(val masterDao = new MasterOracleDAO(banco)) {
+            log.info("Obtendo metadados das variáveis.");
+            comando.mapFiltrosPorTabela()
+                .forEach(masterDao::findAndSetColumnInfo);
+
+            log.info("Convertendo para ConfigQueryVars.");
+            var queryVars = comando.getFiltros()
+                .stream()
+                .map(ConfigQueryVar::new)
+                .peek(vars -> log.info(vars.toString()))
+                .toList();
+
+            log.info("Criando valores aleatórios para testar as variáveis da query.");
+            var mapaVariavelValor = ConfigQueryVar.mapaDasVariaveis(queryVars);
+            log.info("Variáveis: {}", mapaVariavelValor);
+
+            var sql = FormatString.substituirVariaveis(comando.getSql(), mapaVariavelValor);
+            masterDao.validadeQuery(sql);
+        }
+    }
+
+    @Test
     public void testeConverterTextoEmMapaDeFiltrosSql() throws SQLException {
         var sql = "" +
                 "SELECT * " +
@@ -390,23 +443,8 @@ public class BasicTest {
         log.info(sql);
 //        log.info(metadados);
 
-        var colunas = FiltroSql.identificar(sql)
-            .stream()
-            .peek(filtro -> log.info(filtro.toString()))
-            .map(FiltroSql::getColuna)
-            .toList();
-
-        var oracleDao = new MasterOracleDAO(new AmbienteAcessoDTO(
-            "10.129.164.205:1521:cyb3dev",
-            "rcvry",
-            "rcvry"
-        ));
-        var total = oracleDao
-            .getFullInfoFromCols(colunas)
-            .stream()
-            .peek(col -> log.info(col.toString()))
-            .count();
-        log.info("total: {}", total);
+        var novaSql = FormatString.substituirVariaveis(sql, "?");
+        log.info("total: {}", novaSql);
     }
 
     @Test

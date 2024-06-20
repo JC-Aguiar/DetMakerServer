@@ -49,10 +49,12 @@ public class ExecQuery {
     // SQL usada na evidência desse queries pós-execução
     String query;
 
+    @ToString.Exclude
     @Column(name = "RESULTADO_PRE_JOB", columnDefinition = "CLOB") //nullable = false ?
     // Conteúdo da tabela extraída
     String resultadoPreJob = "";
 
+    @ToString.Exclude
     @Column(name = "RESULTADO_POS_JOB", columnDefinition = "CLOB") //nullable = false ?
     // Conteúdo da tabela extraída
     String resultadoPosJob = "";
@@ -73,7 +75,7 @@ public class ExecQuery {
             .evidencia(evidencia)
             .jobNome(evidencia.getJob().getNome())
             .queryNome(tabelaPos.getNome())
-            .query(tabelaPos.getSqlCompleta())
+            .query(tabelaPos.getSqlCompleta()) //TODO: <-- ISSO MUDA TUDO!
             .resultadoPreJob(tabelaPre.resumo())
             .resultadoPosJob(tabelaPos.resumo())
             .inconformidade(tabelaPre.getMensagemErro() + separador + tabelaPos.getMensagemErro())
@@ -81,18 +83,14 @@ public class ExecQuery {
             .build();
     }
 
-    @Override
-    public String toString() {
-        return "ExecQuery{" +
-            "id=" + id +
-            ", evidencia=" + evidencia +
-            ", jobNome='" + jobNome + '\'' +
-            ", tabelaNome='" + queryNome + '\'' +
-            ", query='" + query + '\'' +
-            ", resultadoPreJob=" + getResumoResultado(resultadoPreJob) +
-            ", resultadoPosJob=" + getResumoResultado(resultadoPosJob) +
-            ", inconformidade='" + inconformidade + '\'' +
-            '}';
+    @ToString.Include
+    public String resumoResultadoPreJob() {
+        return getResumoResultado(resultadoPreJob);
+    }
+
+    @ToString.Include
+    public String resumoResultadoPosJob() {
+        return getResumoResultado(resultadoPosJob);
     }
 
     private String getResumoResultado(@NonNull String resultado) {

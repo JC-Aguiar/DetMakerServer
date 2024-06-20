@@ -1,100 +1,68 @@
 package br.com.ppw.dma.configQuery;
 
 import br.com.ppw.dma.execQuery.ExecQuery;
+import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Setter
 @Getter
 @ToString
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class ComandoSql {
+public class ComandoSql implements Serializable {
 
-    String nome;
-    final List<String> campos= new ArrayList<>();
-    final List<FiltroSql> filtros = new ArrayList<>();
-    String sql;
+    Long id;
+    @NotNull @Positive Long jobId;
+    @NotBlank String nome;
     String descricao;
-    boolean dinamico;
-
-    public static final int ROWNUM_LIMIT = 50;
-
-
-    public ComandoSql(@NotBlank String nome) {
-        this.nome = nome;
-    }
-
-    public ComandoSql(@NonNull ConfigQuery configQuery) {
-        this.nome = configQuery.getNome();
-        this.sql = configQuery.getSql();
-        this.descricao = configQuery.getDescricao();
-        this.filtros.addAll(
-            FiltroSql.identificar(configQuery.getSql())
-        );
-        if(!filtros.isEmpty()) this.dinamico = true;
-    }
+    @NotBlank String sql;
+    List<FiltroSql> filtros = new ArrayList<>();
+    Map<String, String> valores = new HashMap<>();
 
     public ComandoSql(@NonNull ExecQuery execQuery) {
         this.nome = execQuery.getQueryNome();
-//        this.filtros.addAll(FiltroSql.identificar(execQuery.getQuery()));
-        this.sql = execQuery.getQuery();
         this.descricao = "";
-        this.dinamico = false;
+        this.sql = execQuery.getQuery();
+//        this.filtros.addAll(FiltroSql.identificar(execQuery.getQuery()));
+//        this.dinamico = false;
 //        if(!filtros.isEmpty()) this.dinamico = true;
     }
 
-    @JsonIgnore
-    public ComandoSql addCampo(@NotBlank String campo) {
-        this.campos.add(campo);
-        return this;
-    }
-
-    @JsonIgnore
-    public ComandoSql addCampo(@NotEmpty List<String> campos) {
-        this.campos.addAll(campos);
-        return this;
-    }
-
-    @JsonIgnore
-    public List<String> getCampos() {
-        return List.copyOf(campos);
-    }
-
-    @JsonIgnore
     public List<FiltroSql> getFiltros() {
         return List.copyOf(filtros);
     }
 
     @JsonIgnore
-    public String getSqlCompleta() {
-//        if(semTabela()) throw new RuntimeException("Tabela não definida.");
-        if(!dinamico) return sql;
-        //if(filtros.isEmpty())
-        //    throw new RuntimeException("Não existem filtros declarados para se montar o SQL.");
-
-        val valoresPendentes = filtros.stream()
-            .map(FiltroSql::getValor)
-            .anyMatch(valor -> valor == null || valor.isBlank());
-        if(valoresPendentes) throw new RuntimeException("Existem filtros não preenchidos na query.");
-
-        return FiltroSql.montarSql(sql, filtros);
+    public Map<String, List<FiltroSql>> mapFiltrosPorTabela() {
+        return filtros.stream().collect(
+            Collectors.groupingBy(FiltroSql::getTabela)
+        );
     }
 
-    @JsonIgnore
-    public boolean semTabela() {
-        return nome == null || nome.isBlank();
-    }
-
-    @JsonIgnore
     public boolean semFiltros() {
         return filtros.isEmpty();
     }
 
+    public String getSqlCompleta() {
+        return FormatString.substituirVariaveis(sql, getValores());
+    }
+
+//    public void validarFiltrosPreenchidos() throws NoSuchAttributeException {
+//        var valoresPendentes = getFiltros()
+//            .stream()
+//            .anyMatch(filtro -> filtro.getValor().isBlank());
+//        if(valoresPendentes) throw new NoSuchAttributeException("Existem filtros sem valor definido");
+//    }
 }

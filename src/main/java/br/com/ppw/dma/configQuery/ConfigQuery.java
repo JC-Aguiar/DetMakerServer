@@ -2,17 +2,22 @@ package br.com.ppw.dma.configQuery;
 
 import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.master.MasterEntity;
+import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.Comment;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
+import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.FetchType.LAZY;
 
 
@@ -30,36 +35,47 @@ public class ConfigQuery implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CONFIG_QUERY_ID")
-    // Identificador numérico dessa query
+    @Comment("Identificador numérico dessa query")
     Long id;
 
     @ToString.Exclude
     @JsonBackReference
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "JOB_ID")
-    // ID do job relacionado com essa configuração de query
+    @Comment("ID do job relacionado com essa configuração de query")
     Job job;
 
     @Column(name = "SQL_NOME", length = 50, nullable = false)
-    // Nome dessa configuração de query
+    @Comment("Nome dessa configuração de query")
     String nome;
 
+    @Column(name = "DESCRICAO", length = 500, nullable = false)
+    @Comment("Informações sobre como preencher a SQL")
+    String descricao;
+
     @Column(name = "SQL", length = 900, nullable = false)
-    // SQL usada na evidência desse queries pré e pós-execução
-    // Exemplo: SELECT * FROM EVENTOS_WEB WHERE EVACCT IN (${contratos}) AND EVDTPROC=${ifxdate}
+    @Comment("SQL usada na evidência desse queries pré e pós-execução. "
+        + "Exemplo: SELECT * FROM EVENTOS_WEB WHERE EVACCT IN (${contratos})")
     String sql;
 
     @ToString.Exclude
-//    @JsonManagedReference
+    @JsonManagedReference
     @Column(name = "VARIAVEIS")
-    @OneToMany(fetch = LAZY)
-    // Lista das variáveis que constam dentro da SQL
+    @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "query")
+    @Comment("Indica a lista das variáveis que constam dentro da SQL")
     List<ConfigQueryVar> variaveis = new ArrayList<>();
 
-    @Column(name = "DESCRICAO", length = 500, nullable = false)
-    // Informações sobre como preencher a SQL
-    String descricao;
 
+    public ConfigQuery(@NonNull ComandoSql dto) {
+        this.nome = dto.getNome();
+        this.descricao = dto.getDescricao();
+        this.sql = dto.getSql();
+    }
+
+    public void setVariaveis(List<ConfigQueryVar> variaveis) {
+        this.variaveis = variaveis;
+        this.variaveis.forEach(variavel -> variavel.setQuery(this));
+    }
 
     @Override
     public final boolean equals(Object o) {
@@ -79,5 +95,15 @@ public class ConfigQuery implements MasterEntity<Long> {
     @Override
     public final int hashCode() {
         return getClass().hashCode();
+    }
+
+    @JsonIgnore
+    public String buildSql() {
+        var mapaValores = variaveis.stream()
+            .collect(Collectors.toMap(
+                ConfigQueryVar::getNome,
+                ConfigQueryVar::gerarValorAleatorio
+            ));
+        return FormatString.substituirVariaveis(sql, mapaValores);
     }
 }

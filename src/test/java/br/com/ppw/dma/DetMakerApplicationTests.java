@@ -1,7 +1,6 @@
 package br.com.ppw.dma;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
-import br.com.ppw.dma.ambiente.AmbienteInfoDTO;
 import br.com.ppw.dma.master.MasterOracleDAO;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -36,7 +35,7 @@ class DetMakerApplicationTests {
 
         try(val oracleDao = new MasterOracleDAO(bancoDev)) {
             oracleDao.getColsFromTable(tabelaNome);
-            oracleDao.validateQuery(sql);
+            oracleDao.validadeQuery(sql);
         }
     }
 

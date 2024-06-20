@@ -89,6 +89,7 @@ public class Relatorio implements MasterEntity<Long> {
     @Column(name = "DATA_COMPLETA", columnDefinition = "DATE", nullable = false, updatable = false)
     OffsetDateTime dataCompleta;
 
+
     public void setIdProjeto(final String idProjeto) {
         if(idProjeto != null) this.idProjeto = idProjeto;
     }
