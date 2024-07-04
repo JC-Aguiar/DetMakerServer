@@ -5,16 +5,13 @@ import lombok.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode
-public class MasterSummaryDTO<T> {
+public class MasterSummary<T> {
 
     //TODO: Alterar no front
     final List<T> saved = new ArrayList<>();
@@ -35,15 +32,15 @@ public class MasterSummaryDTO<T> {
 
 
     //TODO: javadoc
-    public static <T> MasterSummaryDTO<T> startsPositive(List<T> initialRecords) {
-        var summary = new MasterSummaryDTO<T>();
+    public static <T> MasterSummary<T> startsPositive(Collection<T> initialRecords) {
+        var summary = new MasterSummary<T>();
         summary.saved.addAll(initialRecords);
         return summary;
     }
 
     //TODO: javadoc
-    public static <T> MasterSummaryDTO<T> startsNegative(List<T> initialRecords) {
-        var summary = new MasterSummaryDTO<T>();
+    public static <T> MasterSummary<T> startsNegative(Collection<T> initialRecords) {
+        var summary = new MasterSummary<T>();
 //        summary.failed.addAll(initialRecords);
         initialRecords.forEach(
             record -> summary.failed.put(record, "Não processado ainda."));
@@ -58,13 +55,13 @@ public class MasterSummaryDTO<T> {
         return Map.copyOf(failed);
     }
 
-    public MasterSummaryDTO<T> save(@NonNull T item) {
+    public MasterSummary<T> save(@NonNull T item) {
         saved.add(item);
         failed.remove(item);
         return this;
     }
 
-    public MasterSummaryDTO<T> fail(@NonNull T item, @NonNull String motivo) {
+    public MasterSummary<T> fail(@NonNull T item, @NonNull String motivo) {
         failed.put(item, motivo);
         saved.remove(item);
         return this;
@@ -96,8 +93,8 @@ public class MasterSummaryDTO<T> {
         return SummaryStatus.PARCIAL;
     }
 
-    public static <T> ResponseEntity<MasterSummaryDTO<T>> toResponseEntity(
-        @NonNull MasterSummaryDTO<T> summary) {
+    public static <T> ResponseEntity<MasterSummary<T>> toResponseEntity(
+        @NonNull MasterSummary<T> summary) {
         //----------------------------------------------------------------
         return ResponseEntity.status(summary.getStatus().httpStatus).body(summary);
     }

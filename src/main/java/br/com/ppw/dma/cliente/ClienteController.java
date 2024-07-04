@@ -94,14 +94,8 @@ public class ClienteController {
 
         //TODO: paliativo. Remover e aprimorar o código
         switch(ambiente.getConexaoSftp()) {
-            case "10.129.226.157:22" -> {
-                sftp.getProperties().putAll(ConectorSftp.getVivo1Properties());
-                log.info("Adicionando variáveis de ambiente VIVO1.");
-            }
-            case "10.129.164.206:22" -> {
-                sftp.getProperties().putAll(ConectorSftp.getVivo3Properties());
-                log.info("Adicionando variáveis de ambiente VIVO3.");
-            }
+            case "10.129.226.157:22" -> ConectorSftp.setVivo1Properties(sftp);
+            case "10.129.164.206:22" -> ConectorSftp.setVivo3Properties(sftp);
         }
         var terminal = sftp.comando(comando);
 

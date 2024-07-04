@@ -75,7 +75,7 @@ public class ExecQuery {
             .evidencia(evidencia)
             .jobNome(evidencia.getJob().getNome())
             .queryNome(tabelaPos.getNome())
-            .query(tabelaPos.getSqlCompleta()) //TODO: <-- ISSO MUDA TUDO!
+            .query(tabelaPos.getSqlCompleta())
             .resultadoPreJob(tabelaPre.resumo())
             .resultadoPosJob(tabelaPos.resumo())
             .inconformidade(tabelaPre.getMensagemErro() + separador + tabelaPos.getMensagemErro())

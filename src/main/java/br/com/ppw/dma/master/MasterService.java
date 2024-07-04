@@ -4,6 +4,7 @@ import br.com.ppw.dma.exception.DuplicatedRecordException;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import lombok.NonNull;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -37,16 +39,16 @@ public abstract class MasterService<ID, ENTITY, THIS extends  MasterService> {
     }
 
     // A method that validates the page.
-    public Page<ENTITY> pageCheck(@NotNull Page<ENTITY> page) {
+    public Page<ENTITY> pageCheck(@NonNull Page<ENTITY> page) {
         page.stream().map(Objects::nonNull).findFirst().orElseThrow();
         return page;
     }
 
-    public List<ENTITY> save(@NotNull List<ENTITY> entities) {
+    public List<ENTITY> save(@NonNull List<ENTITY> entities) {
         return dao.saveAll(entities);
     }
 
-    public ENTITY save(@NotNull ENTITY entity) throws DuplicatedRecordException {
+    public ENTITY save(@NonNull ENTITY entity) throws DuplicatedRecordException {
         try {
             return dao.save(entity);
         }
@@ -56,19 +58,20 @@ public abstract class MasterService<ID, ENTITY, THIS extends  MasterService> {
     }
 
     // A method that returns an entity by id.
-    public ENTITY findById(@Positive @NotNull ID id) {
+    public ENTITY findById(@NonNull ID id) {
         return Optional
             .ofNullable(dao.getById(id))
             .orElseThrow();
     }
 
-    // A proxy method that calls `pageCheck` method.
-    public Page<ENTITY> findAll(@NotNull Pageable pageable) {
-        return proxy().pageCheck(dao.findAll(pageable));
+    // A method that returns an entity by id.
+    public List<ENTITY> findById(@NonNull Collection<ID> ids) {
+        return dao.findAllById(ids);
     }
 
-    public List<ENTITY> findAllById(List<ID> ids) {
-        return dao.findAllById(ids);
+    // A proxy method that calls `pageCheck` method.
+    public Page<ENTITY> findAll(@NonNull Pageable pageable) {
+        return proxy().pageCheck(dao.findAll(pageable));
     }
 
     @Profile("dev")
@@ -77,7 +80,7 @@ public abstract class MasterService<ID, ENTITY, THIS extends  MasterService> {
     }
 
     @Profile("dev")
-    public void delete(@NotNull ENTITY entity) {
+    public void delete(@NonNull ENTITY entity) {
         dao.delete(entity);
     }
 }

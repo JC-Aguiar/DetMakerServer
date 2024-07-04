@@ -26,7 +26,7 @@ public class ConectorSftp {
 
     @Getter String server;
     @Getter int port;
-    String username;
+    @Getter String username;
     String password;
     @Getter Properties properties = new Properties();
 
@@ -252,7 +252,8 @@ public class ConectorSftp {
     }
 
     //TODO: Javadoc
-    public static Properties getVivo3Properties() {
+    public static void setVivo3Properties(@NonNull ConectorSftp sftp) {
+        log.info("Adicionando variáveis de ambiente VIVO3.");
         val properties = new Properties();
         properties.put("ORACLE_HOME", "/u01/app/oracle/product/client12.2");
         properties.put("DETECTION_AGENT_CAP", "cap_dac_override,cap_setfcap");
@@ -286,10 +287,11 @@ public class ConectorSftp {
         properties.put("HISTFILE", "/app/rcvry//.bash_history");
         properties.put("AGENT_PKG_TYPE", "rpm");
         //comando = "export ORACLE_HOME=/u01/app/oracle/product/client12.2 && "
-        return properties;
+        sftp.properties.putAll(properties);
     }
 
-    public static Properties getVivo1Properties() {
+    public static void setVivo1Properties(@NonNull ConectorSftp sftp) {
+        log.info("Adicionando variáveis de ambiente VIVO1.");
         var properties = new Properties();
         var env = "" +
 //            "PATH=.:/usr/lib64/qt-3.3/bin:/usr/local/bin:/bin:/usr/bin:/cyberapp/rcvry/bin:/cyberapp/rcvry/shells:/cyberapp/rcvry:/cyberapp/rcvry/bin:/cyberapp/rcvry/shells:/usr/bin:/usr/bin/X11:/usr/lib:/usr/etc:/usr/etc/sec:/usr/sbin:/usr/include:/lib:/sbin:/etc:/etc/sec:/cyberapp/rcvry/bin:/cyberapp/rcvry/shells:/cyberapp/local:/cyberapp/local/bin:/bin:/opt/oracle/product/11.2.0/client_1/bin:/opt/ansic:/opt/ansic/bin:/usr/ccs/bin:/usr/contrib/bin:/opt/nettladm/bin:/opt/pd/bin:/usr/bin/X11:/usr/contrib/bin/X11:/opt/upgrade/bin:/opt/langtools/bin:/opt/graphics/OpenGL/debugger/bin:/opt/imake/bin:/opt/java/bin\n" +
@@ -316,7 +318,7 @@ public class ConectorSftp {
                 var varArray = var.split("=");
                 properties.put(varArray[0], varArray[1]);
             });
-        return properties;
+        sftp.properties.putAll(properties);
     }
 
     public List<SftpFileManager<RemoteFile>> downloadMaisRecente(@NonNull List<String> arquivosRemotos) {

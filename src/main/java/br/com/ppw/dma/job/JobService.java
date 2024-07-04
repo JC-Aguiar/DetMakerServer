@@ -3,13 +3,13 @@ package br.com.ppw.dma.job;
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.cliente.Cliente;
 import br.com.ppw.dma.configQuery.ComandoSql;
+import br.com.ppw.dma.configQuery.QueryInfoDTO;
 import br.com.ppw.dma.configQuery.ResultadoSql;
 import br.com.ppw.dma.master.MasterOracleDAO;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
-import br.com.ppw.dma.pipeline.PipelinePreparation;
 import br.com.ppw.dma.system.ExcelXLSX;
 import br.com.ppw.dma.system.FileSystemService;
 import br.com.ppw.dma.util.SqlUtils;
@@ -27,13 +27,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.management.InvalidAttributeValueException;
 import java.io.File;
 import java.io.IOException;
+import java.security.InvalidParameterException;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -198,35 +201,34 @@ public class JobService extends MasterService<Long, Job, JobService> {
         return JobDto;
     }
 
+
+
     //TODO: criar exception própria?
     //TODO: mover para pipline?
     //TODO: javadoc
 //    public List<Evidencia> executarJob(@NonNull PipelinePreparation preparation) {
-    public List<JobProcess> prepararExecutar(@NonNull PipelinePreparation preparation) {
+    public List<JobProcess> executar(
+        @NonNull AmbienteAcessoDTO conexaoBanco,
+        @NonNull AmbienteAcessoDTO conexaoSftp,
+        @NonNull List<JobPreparation> jobs) {
+
         log.debug("Configurando conexão do Banco e do SFTP.");
-        banco = AmbienteAcessoDTO.banco(preparation.ambiente());
-        sftp = ConectorSftp.conectar(AmbienteAcessoDTO.ftp(preparation.ambiente()));
+        banco = conexaoBanco;
+        sftp = ConectorSftp.conectar(conexaoSftp);
 
         //TODO: paliativo. Remover e aprimorar o código
-        switch(preparation.ambiente().getConexaoSftp()) {
-            case "10.129.226.157:22" -> {
-                sftp.getProperties().putAll(ConectorSftp.getVivo1Properties());
-                log.info("Adicionando variáveis de ambiente VIVO1.");
-            }
-            case "10.129.164.206:22" -> {
-                sftp.getProperties().putAll(ConectorSftp.getVivo3Properties());
-                log.info("Adicionando variáveis de ambiente VIVO3.");
-            }
+        switch(sftp.getServer()) {
+            case "10.129.226.157" -> ConectorSftp.setVivo1Properties(sftp);
+            case "10.129.164.206" -> ConectorSftp.setVivo3Properties(sftp);
         }
         log.info("Iniciando rotina da execução de Jobs");
         val sucessos = new AtomicInteger();
-        val jobProcesses = preparation.jobs()
-            .stream()
-            .map(this::executar)
+        val jobProcesses = jobs.stream()
+            .map(JobProcess::new)
+            .peek(this::executar)
             .peek(process -> sucessos.addAndGet(process.isSucesso() ? 1 : 0))
             .toList();
-        log.info("Total de Jobs executados: {}.", jobProcesses.size());
-        log.info("Total de Jobs com sucesso: {}.", sucessos);
+        log.info("Total de Jobs com sucesso: {}/{}.", sucessos, jobProcesses.size());
 
         log.debug("Desconfigurando conexão do Banco e do SFTP.");
         sftp = null;
@@ -236,18 +238,11 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: javadoc
-    private JobProcess executar(@NonNull JobPreparation dados) {
-        val jobInfo = dados.jobInfo();
-        val jobInput = dados.jobInputs();
-        val process = new JobProcess();
-        process.setJob(findById(jobInfo.getId()));
-        final List<SftpFileManager<RemoteFile>> logsPreJob = new ArrayList<>();
-        final List<SftpFileManager<RemoteFile>> logsPosJob = new ArrayList<>();
-
-        process.setJobInfo(jobInfo);
-        process.setJobInputs(jobInput);
-        process.setDataInicio(OffsetDateTime.now());
-
+    private void executar(@NonNull JobProcess process) {
+        val jobInfo = process.getJobInfo();
+        val jobInput = process.getJobInputs();
+        val logsPreJob = new ArrayList<SftpFileManager<RemoteFile>>();
+        val logsPosJob = new ArrayList<SftpFileManager<RemoteFile>>();
         try {
             //Coletas pré-execução
             if(!jobInput.getCargas().isEmpty()) {
@@ -279,7 +274,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
             process.setSha256(sha256);
 
             log.info("Acionando Job remoto.");
-            val terminalManager = sftp.comando(dados.comandoShell());
+            val terminalManager = sftp.comando(process.comandoShell());
             process.setTerminal(terminalManager.getConsoleLog());
             process.setExitCode(terminalManager.getExitCode());
             process.setSucesso(true);
@@ -314,9 +309,9 @@ public class JobService extends MasterService<Long, Job, JobService> {
                 jobInput.getOrdem(), jobInfo.getId(), jobInfo.getNome(), e.getMessage());
             process.setErroFatal(e.getMessage());
         }
-        //Fim
-        process.setDataFim(OffsetDateTime.now());
-        return process;
+        finally {
+            process.setDataFim(OffsetDateTime.now());
+        }
     }
 
     //TODO: javadoc
@@ -342,6 +337,28 @@ public class JobService extends MasterService<Long, Job, JobService> {
 
         log.info("Total de comandos SQL realizados: {}.", extracoes.size());
         return extracoes;
+    }
+
+    //TODO: javadoc
+    public List<JobPreparation> prepararJob(@NonNull List<Job> jobs, @NonNull List<JobExecuteDTO> dtos)
+    throws InvalidAttributeValueException {
+        log.info("Obtendo Jobs no banco para mapeá-los com os inputs declarados.");
+        var jobsIrregulares = new HashSet<String>();
+        var jobsPreparados = new ArrayList<JobPreparation>();
+        dtos.forEach(dto -> {
+            jobs.stream()
+                .filter(job -> job.getId().equals(dto.getId()))
+                .findFirst()
+                .ifPresentOrElse(
+                    job -> jobsPreparados.add(new JobPreparation(job, dto)),
+                    () -> jobsIrregulares.add(String.valueOf(dto.getId()))
+                );
+        });
+        if(!jobsIrregulares.isEmpty()) {
+            throw new InvalidAttributeValueException(
+                "Não existe os Jobs para os IDs: " + String.join(", ", jobsIrregulares));
+        }
+        return jobsPreparados;
     }
 
 }
