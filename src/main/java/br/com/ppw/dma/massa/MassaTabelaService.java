@@ -4,7 +4,7 @@ import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.cliente.Cliente;
 import br.com.ppw.dma.master.MasterOracleDAO;
 import br.com.ppw.dma.master.MasterService;
-import br.com.ppw.dma.master.MasterSummaryDTO;
+import br.com.ppw.dma.master.MasterSummary;
 import br.com.ppware.api.GeradorDeMassa;
 import br.com.ppware.api.MassaPreparada;
 import br.com.ppware.api.MassaTabelaDTO;
@@ -15,10 +15,13 @@ import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.management.InvalidAttributeValueException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatDate.SQL_BRASIL_STYLE;
 
@@ -74,17 +77,26 @@ public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTa
      * Primeiro se converte os DTOs em objetos do tipo {@link MassaPreparada}, para depois tentar processar
      * um a um suas respectivas queries no banco usando {@link DriverManager#getConnection(String, String, String)}
      * que já consta preparado dentro do {@link MasterOracleDAO}.
-     * As {@link MassaPreparada}s são armazenados temporariamente no {@link MasterSummaryDTO} com base no seu
-     * resultado. No final, transferimos as massas cujos inserts foram realizados com sucesso para a lista estática
-     * 'MASSA_A_DELETAR', controlada pelo {@link GeradorDeMassa}.
+     * As {@link MassaPreparada}s são armazenados temporariamente no {@link MasterSummary} com base no seu
+     * resultado.
      * @param ambienteBanco {@link AmbienteAcessoDTO} contendo o apontamento e a autenticação do banco que iremos
      *                      nos conectar
      * @param dtos um ou mais {@link MassaTabelaDTO} das tabelas a serem processadas
-     * @return resumo da operação realizada, retornada na forma de um {@link MasterSummaryDTO}
+     * @return resumo da operação realizada, retornada na forma de um {@link MasterSummary}
      */
-    public MasterSummaryDTO<MassaPreparada> newInserts(AmbienteAcessoDTO ambienteBanco, MassaTabelaDTO...dtos) {
+    public MasterSummary<MassaPreparada> newInserts(
+        @NonNull AmbienteAcessoDTO ambienteBanco,
+        @NonNull List<MassaTabelaDTO> dtos) {
+
+        return newInserts(ambienteBanco, dtos.toArray(new MassaTabelaDTO[0]));
+    }
+
+    public MasterSummary<MassaPreparada> newInserts(
+        @NonNull AmbienteAcessoDTO ambienteBanco,
+        @NonNull MassaTabelaDTO...dtos) {
+
         var massas = GeradorDeMassa.mapearMassa(SQL_BRASIL_STYLE, dtos);
-        var summary = MasterSummaryDTO.startsNegative(massas);
+        var summary = MasterSummary.startsNegative(massas);
 
         //Tenta executar o insert da massa gerada dinamicamente
         try(var oracleDao = new MasterOracleDAO(ambienteBanco)) {
@@ -100,19 +112,65 @@ public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTa
             return summary;
         }
         //Salva no contexto estático do GeradprDeMassa todas as massas inseridas com sucesso
-        finally {
-            summary.getSaved().forEach(GeradorDeMassa::addNovaMassa);
+//        finally {
+//            summary.getSaved().forEach(GeradorDeMassa::addNovaMassa);
+//        }
+    }
+
+    public MasterSummary<MassaPreparada> delete(
+        @NonNull AmbienteAcessoDTO ambienteBanco,
+        @NonNull MassaPreparada...massas) {
+
+        var summary = MasterSummary.startsNegative(List.of(massas));
+
+        //Tenta executar o delete da massa gerada dinamicamente
+        try(var oracleDao = new MasterOracleDAO(ambienteBanco)) {
+            for(var massa : massas) {
+                log.info("Massa: {}", massa);
+                summary.tryAndSet(massa, oracleDao::deleteSql);
+            }
+            return summary;
         }
+        //Exceção em caso de exception inesperado
+        catch(SQLException | PersistenceException e) {
+            e.printStackTrace();
+            return summary;
+        }
+        //Salva no contexto estático do GeradprDeMassa todas as massas inseridas com sucesso
+//        finally {
+//            summary.getSaved().forEach(GeradorDeMassa::addNovaMassa);
+//        }
+    }
+
+    //TODO: javadoc
+    public List<MassaTabela> prepararMassa(@NonNull Set<Long> massasId)
+    throws InvalidAttributeValueException {
+        log.info("Obtendo e validando Massas para os IDs: {}.", massasId
+            .stream()
+            .map(String::valueOf)
+            .collect(Collectors.joining(", "))
+        );
+        var massas = findById(massasId);
+        var massasPendentes = massasId
+            .stream()
+            .filter(id ->  massas.stream().noneMatch(massa -> massa.getId().equals(id)))
+            .map(String::valueOf)
+            .toList();
+        if(!massasPendentes.isEmpty()) {
+            throw new InvalidAttributeValueException(
+                "Não existe as Massas para os IDs: " + String.join(", ", massasPendentes));
+        }
+        return massas;
     }
 
 //    /**
-//     * Converte um {@link MasterSummaryDTO} do tipo {@link MassaPreparada} para o tipo {@link String},
+//     * Converte um {@link MasterSummary} do tipo {@link MassaPreparada} para o tipo {@link String},
 //     * onde a identificação dos registros é feita pelo atributo {@link MassaPreparada#getNome()}
-//     * @param summaryInserts {@link MasterSummaryDTO}<{@link MassaPreparada}> da massa processada
-//     * @return {@link MasterSummaryDTO}<{@link String}> com os respectivos identificadores
+//     * @param summaryInserts {@link MasterSummary}<{@link MassaPreparada}> da massa processada
+//     * @return {@link MasterSummary}<{@link String}> com os respectivos identificadores
 //     */
-//    public MasterSummaryDTO<String> parseSummary(@NonNull MasterSummaryDTO<MassaPreparada> summaryInserts) {
-//        var retorno = new MasterSummaryDTO<String>();
+//    public MasterSummary<String> parseSummary(@NonNull MasterSummary<MassaPreparada> summaryInserts) {
+//        var retorno = new MasterSummary<String>();
 //        summaryInserts.getSaved().forEach(massa -> retorno.save(massa.getNome()));
 //        summaryInserts.getFailed().forEach(massa -> retorno.fail(massa.getNome()));
 //

@@ -274,6 +274,26 @@ public class MasterOracleDAO implements AutoCloseable {
         }
     }
 
+    //TODO: criar exception própria?
+    //TODO: javadoc
+    //TODO: @throws SQLException
+    @SneakyThrows
+    public boolean deleteSql(@NonNull MassaPreparada massa)  {
+        log.info("Validando comandos inválidos para query de delete.");
+        val sql = massa.gerarQueryDelete();
+        if(!SqlUtils.isSafeDeleteQuery(sql))
+            throw new RuntimeException("A queries informada contêm comandos DDL não permitidos.");
+        log.info("Query aprovada.");
+
+        try(val statement = conn.prepareStatement(sql)) {
+            massa.preencherColunas(statement);
+            log.info("SQL: {}", sql);
+            log.info("Executando query.");
+            log.info("Registros inseridos com sucesso: {}", statement.executeUpdate());
+            return true;
+        }
+    }
+
     @Override
     public void close() {
         try {

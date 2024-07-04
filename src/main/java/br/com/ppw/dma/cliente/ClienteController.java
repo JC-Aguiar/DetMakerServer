@@ -94,14 +94,8 @@ public class ClienteController {
 
         //TODO: paliativo. Remover e aprimorar o código
         switch(ambiente.getConexaoSftp()) {
-            case "${DETMAKER_HOST_1}:22" -> {
-                sftp.getProperties().putAll(ConectorSftp.getVivo1Properties());
-                log.info("Adicionando variáveis de ambiente VIVO1.");
-            }
-            case "${DETMAKER_HOST_3}:22" -> {
-                sftp.getProperties().putAll(ConectorSftp.getVivo3Properties());
-                log.info("Adicionando variáveis de ambiente VIVO3.");
-            }
+            case "${DETMAKER_HOST_1}:22" -> ConectorSftp.setVivo1Properties(sftp);
+            case "${DETMAKER_HOST_3}:22" -> ConectorSftp.setVivo3Properties(sftp);
         }
         var terminal = sftp.comando(comando);
 

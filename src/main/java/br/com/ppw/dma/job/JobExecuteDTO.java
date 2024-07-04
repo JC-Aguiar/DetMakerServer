@@ -2,26 +2,27 @@ package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.evidencia.Evidencia;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.validator.constraints.Range;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
+@Valid
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class JobExecuteDTO {
 
-   @NotNull @Positive Long id;
-   @NotNull @Range(max = 999) Integer ordem;
+   @NotNull @Range(min = 0) Long id;
+   @NotNull @Range(min = 0, max = 999) Integer ordem;
    String argumentos;
    List<ComandoSql> queries = new ArrayList<>();
    List<JobCarga> cargas = new ArrayList<>();
+   Map<String, String> variaveis = new HashMap<>();
 
 
    public JobExecuteDTO(@NonNull Evidencia evidencia) {
@@ -38,13 +39,11 @@ public class JobExecuteDTO {
           .toList();
    }
 
-
-   public JobExecuteDTO addQuery(@NonNull ComandoSql query) {
-      this.queries.add(query);
-      return this;
+   public JobExecuteDTO addQuery(@NonNull ComandoSql...query) {
+      return addQuery(List.of(query));
    }
 
-   public JobExecuteDTO addQuery(@NonNull List<ComandoSql> queries) {
+   public JobExecuteDTO addQuery(@NonNull Collection<ComandoSql> queries) {
       this.queries.addAll(queries);
       return this;
    }

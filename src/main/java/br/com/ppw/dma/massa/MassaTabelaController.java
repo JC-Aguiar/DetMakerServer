@@ -6,7 +6,7 @@ import br.com.ppw.dma.ambiente.AmbienteService;
 import br.com.ppw.dma.cliente.Cliente;
 import br.com.ppw.dma.cliente.ClienteService;
 import br.com.ppw.dma.master.MasterController;
-import br.com.ppw.dma.master.MasterSummaryDTO;
+import br.com.ppw.dma.master.MasterSummary;
 import br.com.ppware.NumeroAleatorio;
 import br.com.ppware.api.GeradorDeMassa;
 import br.com.ppware.api.MassaPreparada;
@@ -115,13 +115,13 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
      * Endpoint para gerar massas aleatórias para diferentes tabelas.
      * @param ambienteId {@link Long} contendo o ID do {@link Ambiente} em que será feito insert.
      * @param dtos um ou mais {@link MassaTabelaDTO} em que há o mapeamento das colunas para determinada tabela
-     * @return {@link ResponseEntity} contendo o resumo {@link MasterSummaryDTO}<{@link String}>
+     * @return {@link ResponseEntity} contendo o resumo {@link MasterSummary}<{@link String}>
      *           informando quais tabelas obtiveram sucesso ou falha
      */
     @Transactional
     @PostMapping("ambiente/{ambienteId}/map")
-//    public ResponseEntity<MasterSummaryDTO<String>> generate(
-    public ResponseEntity<MasterSummaryDTO<MassaPreparada>> generate(
+//    public ResponseEntity<MasterSummary<String>> generate(
+    public ResponseEntity<MasterSummary<MassaPreparada>> generate(
         @PathVariable("ambienteId") Long ambienteId,
         @Valid @RequestBody MassaTabelaDTO...dtos) {
         //-----------------------------------------------
@@ -130,7 +130,7 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
         val ambienteBanco = AmbienteAcessoDTO.banco(ambiente);
         var resultadoDosInserts = service.newInserts(ambienteBanco, dtos);
 //        return ResponseEntity.ok(service.parseSummary(resultadoDosInserts));
-        return MasterSummaryDTO.toResponseEntity(resultadoDosInserts);
+        return MasterSummary.toResponseEntity(resultadoDosInserts);
     }
 
     /**
@@ -138,13 +138,13 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
      * @param ambienteId {@link Long} contendo o ID do {@link Ambiente} em que será feito insert.
      * @param massaId um ou mais IDs do tipo {@link Long} que representa registros de mapeamento
      *                de uma tabela se suas respectivas colunas
-     * @return {@link ResponseEntity} contendo o resumo {@link MasterSummaryDTO}<{@link String}>
+     * @return {@link ResponseEntity} contendo o resumo {@link MasterSummary}<{@link String}>
      *          informando quais tabelas obtiveram sucesso ou falha
      */
     @Transactional
     @PostMapping("ambiente/{ambienteId}/ids/{ids}")
-//    public ResponseEntity<MasterSummaryDTO<String>> generate(
-    public ResponseEntity<MasterSummaryDTO<MassaPreparada>> generate(
+//    public ResponseEntity<MasterSummary<String>> generate(
+    public ResponseEntity<MasterSummary<MassaPreparada>> generate(
         @PathVariable("ambienteId") Long ambienteId,
         @PathVariable("ids") Long...massaId) {
         //-----------------------------------------------
@@ -156,7 +156,7 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
         val ambiente = ambienteService.findById(ambienteId);
         val ambienteBanco = AmbienteAcessoDTO.banco(ambiente);
         var resultadoDosInserts = service.newInserts(ambienteBanco, massa);
-        return MasterSummaryDTO.toResponseEntity(resultadoDosInserts);
+        return MasterSummary.toResponseEntity(resultadoDosInserts);
 //        return ResponseEntity.ok(service.parseSummary(resultadoDosInserts));
     }
 

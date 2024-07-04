@@ -1,7 +1,7 @@
 package br.com.ppw.dma.system;
 
 import br.com.ppw.dma.exception.StorageFileNotFoundException;
-import br.com.ppw.dma.master.MasterSummaryDTO;
+import br.com.ppw.dma.master.MasterSummary;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,8 +40,8 @@ public class FileSystemController {
     }
 
     @PostMapping()
-    public ResponseEntity<MasterSummaryDTO<String>> upload(@RequestParam("files") List<MultipartFile> files) {
-        val summary = new MasterSummaryDTO<String>();
+    public ResponseEntity<MasterSummary<String>> upload(@RequestParam("files") List<MultipartFile> files) {
+        val summary = new MasterSummary<String>();
         for(val file : files) {
             try {
                 storageService.store(file);
@@ -52,7 +52,7 @@ public class FileSystemController {
                 summary.fail(file.getOriginalFilename(), e.getMessage());
             }
         }
-        return MasterSummaryDTO.toResponseEntity(summary);
+        return MasterSummary.toResponseEntity(summary);
 //        return switch(summary.getStatus()) {
 //            case SUCESSO -> ResponseEntity.ok("Todos os arquivos foram salvos com sucesso.");
 //            case PARCIAL -> ResponseEntity.ok(

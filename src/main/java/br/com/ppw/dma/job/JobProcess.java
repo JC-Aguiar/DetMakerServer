@@ -2,22 +2,16 @@ package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.configQuery.ResultadoSql;
-import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.io.File;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Stream;
 
 @Data
 @NoArgsConstructor
@@ -76,24 +70,18 @@ public class JobProcess {
 //         - Total de arquivos produzidos: %d
 //        """;
 
-    //Construção para cenários de nova execução
-    public JobProcess(
-        @NonNull Job job,
-        @NonNull JobExecuteDTO dto,
-        @NonNull AmbienteAcessoDTO banco,
-        @NonNull List<File> cargas) {
-        //----------------------------------------
-        setJob(job);
-        setJobInfo(JobInfoDTO.converterJob(job));
-        setJobInputs(dto);
-        setBanco(banco);
-//        dto.getQueries()
-//            .stream()
-//            .map(ResultadoSql::new)
-//            .forEach(resultadoSql -> {
-//                addTabelasPreJob(resultadoSql);
-//                addTabelasPosJob(resultadoSql);
-//            });
+    public JobProcess(@NonNull JobPreparation dados) {
+        setJob(dados.job());
+        setJobInfo(JobInfoDTO.converterJob(dados.job()));
+        setJobInputs(dados.jobInputs());
+        setDataInicio(OffsetDateTime.now());
+    }
+
+    public String comandoShell() {
+        return "ksh "
+            + jobInfo.pathShell()
+            + " "
+            + jobInputs.getArgumentos();
     }
 
     public String getTerminalFormatado() {
@@ -186,11 +174,11 @@ public class JobProcess {
 //            .map(ResultadoSql::getTabela)
 //            .toList();
 //
-//        val tabelasPendentes = new ArrayList<>(jobInfo.getTabelas());
+//        val tabelasPendentes = new ArrayList<>(job.getTabelas());
 //        tabelasPendentes.removeAll(tabelasConsultadas);
 //
 //        val tabelasExtras = new ArrayList<>(tabelasConsultadas);
-//        tabelasPendentes.removeAll(jobInfo.getTabelas());
+//        tabelasPendentes.removeAll(job.getTabelas());
 //
 //        val infoTabelas = new StringBuilder();
 //        for (val tabela : tabelas) {
@@ -209,17 +197,17 @@ public class JobProcess {
 //             status,
 //             erroFatal.size(),
 //             erroFatal.isEmpty() ? "" : errosMensagem,
-//             jobInfo.getTabelas().size(),
+//             job.getTabelas().size(),
 //             tabelasConsultadas.size(),
 //             tabelasPendentes.isEmpty() ? "0" : String.join("\n", tabelasPendentes),
 //             tabelasExtras.isEmpty() ? "0" : String.join("\n", tabelasExtras),
 //             infoTabelas,
 //             terminal.isEmpty() ? LOG_TERMINAL_AUSENTE : "",
-//             jobInfo.getMascaraLog().size(),
+//             job.getMascaraLog().size(),
 //             logs.size(),
-//             jobInfo.getMascaraEntrada().size(),
+//             job.getMascaraEntrada().size(),
 //             cargas.size(),
-//             jobInfo.getMascaraSaida().size(),
+//             job.getMascaraSaida().size(),
 //             saidas.size()
 //         );
 //    }

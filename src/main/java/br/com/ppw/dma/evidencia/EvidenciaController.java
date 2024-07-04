@@ -2,7 +2,7 @@ package br.com.ppw.dma.evidencia;
 
 import br.com.ppw.dma.exception.TipoEvidenciaResultadoException;
 import br.com.ppw.dma.master.MasterController;
-import br.com.ppw.dma.master.MasterSummaryDTO;
+import br.com.ppw.dma.master.MasterSummary;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,7 +46,7 @@ public class EvidenciaController extends MasterController<Long, Evidencia, Evide
     //TODO: javadoc
     @Transactional
     @PostMapping(value = "review")
-    public ResponseEntity<MasterSummaryDTO<Long>> salvarRevisao(
+    public ResponseEntity<MasterSummary<Long>> salvarRevisao(
         @RequestBody List<EvidenciaRevisadaDTO> evidencias) {
         //------------------------------------------------------------
         val evidenciasId = evidencias
@@ -56,7 +56,7 @@ public class EvidenciaController extends MasterController<Long, Evidencia, Evide
             .collect(Collectors.joining(", "));
         log.info("Atualizando campos de revisão para as Evidências ID {}", evidenciasId);
 
-        val resumo = new MasterSummaryDTO<Long>();
+        val resumo = new MasterSummary<Long>();
         evidencias.forEach(evRevisada -> {
             try {
                 val evidencia = evidenciaService.findById(evRevisada.evidenciaId);

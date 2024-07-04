@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.springframework.lang.Nullable;
 
 import java.io.Serializable;
 
@@ -27,7 +28,8 @@ public class FiltroSql implements Serializable {
     @NotNull Boolean array;
     @NotBlank String variavel;
 
-    @JsonIgnore ColumnInfo metaDados;
+    @Nullable @JsonIgnore ColumnInfo metaDados;
+    @JsonIgnore String valor = "";
 
 //    public static final LinkedHashSet<String> OPERADORES_REMOVER = new LinkedHashSet<>();
 //

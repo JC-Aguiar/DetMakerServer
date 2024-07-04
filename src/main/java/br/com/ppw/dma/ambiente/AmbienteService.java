@@ -92,7 +92,7 @@ public class AmbienteService {
     }
 
     public Optional<Ambiente> getByName(@NotNull String nome) {
-        log.info("Consultando pela Ambiente '{}'.", nome);
+        log.info("Consultando pelo Ambiente '{}'.", nome);
         val pipeline = Optional.ofNullable(dao.findAllByNome(nome));
         if(pipeline.isPresent())
             log.info("Ambiente '{}' obtida com sucesso.", nome);
