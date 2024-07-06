@@ -99,6 +99,10 @@ public class Pipeline implements MasterEntity<Long> {
         return !thisJobs.equals(otherJobs);
     }
 
+    public int totalJobs() {
+        return jobs.size();
+    }
+
     @Override
     public final boolean equals(Object o) {
         if(this == o) return true;

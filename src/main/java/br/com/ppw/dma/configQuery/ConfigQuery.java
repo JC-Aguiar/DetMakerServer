@@ -2,9 +2,7 @@ package br.com.ppw.dma.configQuery;
 
 import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.master.MasterEntity;
-import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -15,7 +13,6 @@ import org.hibernate.proxy.HibernateProxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.FetchType.LAZY;
@@ -67,14 +64,42 @@ public class ConfigQuery implements MasterEntity<Long> {
 
 
     public ConfigQuery(@NonNull ComandoSql dto) {
+        atualizar(dto);
+    }
+
+    public void atualizar(@NonNull ComandoSql dto) {
         this.nome = dto.getNome();
         this.descricao = dto.getDescricao();
         this.sql = dto.getSql();
+
+        var querysNovas = new ArrayList<FiltroSql>();
+        dto.getFiltros().forEach(filtro ->
+            variaveis.stream()
+                .filter(queryVar -> filtro.getVariavel().equals(queryVar.getNome()))
+                .findFirst()
+                .ifPresentOrElse(
+                    queryVar -> queryVar.atualizar(filtro),
+                    () -> querysNovas.add(filtro)
+                )
+        );
+        querysNovas.stream()
+            .map(ConfigQueryVar::new)
+            .forEach(this::addVariaveis);
     }
 
     public void setVariaveis(List<ConfigQueryVar> variaveis) {
         this.variaveis = variaveis;
         this.variaveis.forEach(variavel -> variavel.setQuery(this));
+    }
+
+    public void addVariaveis(List<ConfigQueryVar> variaveis) {
+        variaveis.forEach(variavel -> variavel.setQuery(this));
+        this.variaveis.addAll(variaveis);
+    }
+
+    public void addVariaveis(ConfigQueryVar variavel) {
+        variavel.setQuery(this);
+        this.variaveis.add(variavel);
     }
 
     @Override
@@ -97,13 +122,13 @@ public class ConfigQuery implements MasterEntity<Long> {
         return getClass().hashCode();
     }
 
-    @JsonIgnore
-    public String buildSql() {
-        var mapaValores = variaveis.stream()
-            .collect(Collectors.toMap(
-                ConfigQueryVar::getNome,
-                ConfigQueryVar::gerarValorAleatorio
-            ));
-        return FormatString.substituirVariaveis(sql, mapaValores);
-    }
+//    @JsonIgnore
+//    public String buildSql() {
+//        var mapaValores = variaveis.stream()
+//            .collect(Collectors.toMap(
+//                ConfigQueryVar::getNome,
+//                ConfigQueryVar::gerarValorAleatorio
+//            ));
+//        return FormatString.substituirVariaveis(sql, mapaValores);
+//    }
 }

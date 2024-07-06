@@ -80,29 +80,18 @@ public class ConfigQueryVar implements MasterEntity<Long> {
 
 
     public ConfigQueryVar(@NonNull FiltroSql filtro) {
+        atualizar(filtro);
+    }
+
+    public void atualizar(@NonNull FiltroSql filtro) {
         this.nome = filtro.getVariavel();
-        this.tipo = TipoColuna.from(filtro.getTipo());
+        this.tipo = filtro.getTipo();
         this.coluna = filtro.getColuna();
         this.index = filtro.getIndex();
         this.array = filtro.getArray();
-        if(filtro.getMetaDados() == null) return;
+        if (filtro.getMetaDados() == null) return;
         this.tamanho = filtro.getMetaDados().length();
         this.precisao = filtro.getMetaDados().precision();
         this.escala = filtro.getMetaDados().scale();
     }
-    
-    public String gerarValorAleatorio() {
-        var valor = tipo.gerarValorAleatorioSql(this);
-        if(!array) return valor;
-        return valor + ", " + tipo.gerarValorAleatorioSql(this);
-    }
-
-    public static Map<String, String> mapaDasVariaveis(@NonNull List<ConfigQueryVar> queryVars) {
-        return queryVars.stream().collect(
-            Collectors.toMap(
-                ConfigQueryVar::getNome,
-                ConfigQueryVar::gerarValorAleatorio
-            ));
-    }
-
 }

@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.sql.SQLException;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("query")
@@ -149,8 +148,8 @@ public class ConfigQueryController extends MasterController<Long, ConfigQuery, C
         val ambiente = ambienteService.findById(ambienteId);
         var banco = AmbienteAcessoDTO.banco(ambiente);
         var job = jobService.findById(comando.getJobId());
-        var configQueryVars = service.createValidateVariables(comando, banco);
-        var configQuery = service.criarAtualizar(job, comando, configQueryVars);
+        service.completeAndValidateVariables(comando, banco);
+        var configQuery = service.criarAtualizar(job, comando);
         return ResponseEntity.ok(new QueryInfoDTO(configQuery));
     }
 
