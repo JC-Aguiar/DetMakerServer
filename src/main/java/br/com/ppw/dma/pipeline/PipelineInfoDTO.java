@@ -1,7 +1,11 @@
 package br.com.ppw.dma.pipeline;
 
 import br.com.ppw.dma.job.Job;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,23 +15,23 @@ import lombok.experimental.FieldDefaults;
 import java.util.ArrayList;
 import java.util.List;
 
+@Valid
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PipelineInfoDTO {
 
-    @NotNull Long id;
-    @NotNull String nome;
-    @NotNull String descricao;
-    @NotNull Long clienteId;
-    @NotNull List<String> jobs = new ArrayList<>();
+    @NotNull @Min(0) Long id;
+    @NotBlank @Size(max = 200) String nome;
+    @NotNull @Size(max = 500) String descricao;
+    @NotNull @Min(0) Long clienteId;
+    List<String> jobs = new ArrayList<>();
+
 
     public PipelineInfoDTO(@NonNull Pipeline pipeline) {
         this.id = pipeline.getId();
-//        this.nome = pipeline.getProps().getNome();
         this.nome = pipeline.getNome();
         this.descricao = pipeline.getDescricao();
-//        this.clienteId = pipeline.getProps().getCliente().getId();
         this.clienteId = pipeline.getCliente().getId();
         setJobs(pipeline.getJobs());
     }

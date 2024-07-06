@@ -1,5 +1,7 @@
 package br.com.ppw.dma.configQuery;
 
+import br.com.ppw.dma.util.TipoColuna;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -10,6 +12,9 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.lang.Nullable;
 
 import java.io.Serializable;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Valid
 @Setter
@@ -21,15 +26,28 @@ public class FiltroSql implements Serializable {
 
     //TODO: sincronizar com front
     Long id;
-    @NotBlank String tabela;
-    @NotBlank String coluna;
-    @NotBlank String tipo;
-    @NotNull @Min(0) Integer index;
-    @NotNull Boolean array;
-    @NotBlank String variavel;
 
-    @Nullable @JsonIgnore ColumnInfo metaDados;
-    @JsonIgnore String valor = "";
+    @NotBlank
+    String tabela;
+
+    @NotBlank
+    String coluna;
+
+    @NotBlank
+    @JsonFormat(shape = JsonFormat.Shape.STRING)
+    TipoColuna tipo;
+
+    @NotNull @Min(0)
+    Integer index;
+
+    @NotNull
+    Boolean array;
+
+    @NotBlank
+    String variavel;
+
+    @Nullable @JsonIgnore
+    ColumnInfo metaDados;
 
 //    public static final LinkedHashSet<String> OPERADORES_REMOVER = new LinkedHashSet<>();
 //
@@ -61,7 +79,7 @@ public class FiltroSql implements Serializable {
     public FiltroSql(@NonNull ConfigQueryVar queryVar) {
         this.id = queryVar.getId();
         this.coluna = queryVar.getColuna();
-        this.tipo = queryVar.getTipo().name();
+        this.tipo = queryVar.getTipo();
         this.variavel = queryVar.getNome();
         this.index = queryVar.getIndex();
         this.array = queryVar.getArray();
@@ -70,6 +88,12 @@ public class FiltroSql implements Serializable {
             queryVar.getPrecisao(),
             queryVar.getEscala()
         );
+    }
+
+    public String gerarValorAleatorio() {
+        var valor = tipo.gerarValorAleatorioSql(metaDados);
+        if(!array) return valor;
+        return valor + ", " + tipo.gerarValorAleatorioSql(metaDados);
     }
 
     //TODO: javadoc

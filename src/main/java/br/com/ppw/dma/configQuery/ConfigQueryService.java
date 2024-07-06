@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -57,7 +58,7 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
         }
     }
     
-    public List<ConfigQueryVar> createValidateVariables(
+    public void completeAndValidateVariables(
         @NonNull ComandoSql comando,
         @NonNull AmbienteAcessoDTO banco) {
         //--------------------------------
@@ -65,18 +66,15 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
             log.info("Obtendo metadados das variáveis.");
             comando.mapFiltrosPorTabela().forEach(masterDao::findAndSetColumnInfo);
 
-            log.info("Convertendo para ConfigQueryVars.");
-            var queryVars = comando.getFiltros()
-                .stream()
-                .map(ConfigQueryVar::new)
-                .peek(vars -> log.info(vars.toString()))
-                .toList();
-
             log.info("Criando valores aleatórios para testar as variáveis da query.");
-            var mapaVariavelValor = ConfigQueryVar.mapaDasVariaveis(queryVars);
+            var mapaVariavelValor = comando.getFiltros()
+                .stream()
+                .collect(Collectors.toMap(
+                    FiltroSql::getVariavel,
+                    FiltroSql::gerarValorAleatorio
+                ));
             var sql = FormatString.substituirVariaveis(comando.getSql(), mapaVariavelValor);
             masterDao.validadeQuery(sql);
-            return queryVars;
         }
         catch(SQLException | PersistenceException e) {
             throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
@@ -94,22 +92,15 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
         configQueryDao.deleteQueryVarById(varid);
     }
 
-    public ConfigQuery criarAtualizar(
-        @NonNull Job job,
-        @NonNull ComandoSql comando,
-        @NonNull List<ConfigQueryVar> queryVars)
+    public ConfigQuery criarAtualizar(@NonNull Job job, @NonNull ComandoSql comando)
     throws DuplicatedRecordException {
-
         ConfigQuery configQuery;
         if(comando.getId() != null) {
             log.info("Atualizando ConfigQuery [{}] do Job [{}] '{}'.",
                 comando.getId(), job.getId(), job.getNome()
             );
             configQuery = findById(comando.getId());
-            configQuery.setNome(comando.getNome());
-            configQuery.setDescricao(comando.getDescricao());
-            configQuery.setSql(comando.getSql());
-            configQuery.setVariaveis(queryVars);
+            configQuery.atualizar(comando);
             configQuery.setJob(job);
             save(configQuery);
             log.info("ConfigQuery atualizada com sucesso. ID {}.", configQuery.getId());
@@ -117,8 +108,14 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
         else {
             log.info("Criando nova ConfigQuery para Job [{}] '{}'.", job.getId(), job.getNome());
             configQuery = new ConfigQuery(comando);
-            configQuery.setVariaveis(queryVars);
             configQuery.setJob(job);
+//            log.info("Convertendo os FiltroSqls para ConfigQueryVars.");
+//            var queryVars = comando.getFiltros()
+//                .stream()
+//                .map(ConfigQueryVar::new)
+//                .peek(vars -> log.info(vars.toString()))
+//                .collect(Collectors.toList());
+//            configQuery.setVariaveis(queryVars);
             save(configQuery);
             log.info("ConfigQuery gerada com sucesso. ID {}.", configQuery.getId());
         }

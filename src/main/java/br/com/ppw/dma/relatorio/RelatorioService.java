@@ -2,6 +2,7 @@ package br.com.ppw.dma.relatorio;
 
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.evidencia.EvidenciaProcess;
+import br.com.ppw.dma.job.JobInfoDTO;
 import br.com.ppw.dma.job.JobPreparation;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.pipeline.Pipeline;
@@ -89,12 +90,6 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
     public Relatorio buildAndPersist(
         @NonNull PipelinePreparation preparation,
         @NotNull List<EvidenciaProcess> evidencias) {
-        //--------------------------------------
-        log.debug("Coletando todos os parâmetros usados nos Jobs.");
-        val parametrosDosJobs = preparation.jobs()
-            .stream()
-            .map(JobPreparation::comandoShell)
-            .collect(Collectors.joining("\n"));
 
         log.debug("Separando Evidências persistidas com sucesso daquelas com erro.");
         var consideracoes = new StringBuilder();
@@ -103,7 +98,6 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
             if(ev.exception()) consideracoes.append(ev.detalhes() + "\n");
             else ev.evidencia().ifPresent(evidenciasOk::add);
         }
-
         log.info("Convertendo Relatório DTO em Entidade.");
         var relatorio = Relatorio.builder()
             .nomeAtividade(preparation.relatorio().getNomeAtividade())
@@ -112,7 +106,7 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
             .ambiente(preparation.ambiente())
             .pipeline(preparation.pipeline())
             .evidencias(evidenciasOk)
-            .parametros(parametrosDosJobs)
+//            .parametros(parametrosDosJobs)
             .data(LocalDate.now(RELOGIO))
             .dataCompleta(OffsetDateTime.now(RELOGIO))
             .build();

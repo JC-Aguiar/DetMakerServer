@@ -4,14 +4,18 @@ import br.com.ppw.dma.ambiente.AmbienteService;
 import br.com.ppw.dma.cliente.ClienteService;
 import br.com.ppw.dma.evidencia.EvidenciaService;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
-import br.com.ppw.dma.job.*;
+import br.com.ppw.dma.job.Job;
+import br.com.ppw.dma.job.JobPreparation;
+import br.com.ppw.dma.job.JobService;
+import br.com.ppw.dma.massa.MassaTabela;
+import br.com.ppw.dma.massa.MassaTabelaService;
 import br.com.ppw.dma.master.MasterController;
 import br.com.ppw.dma.relatorio.RelatorioHistoricoDTO;
 import br.com.ppw.dma.relatorio.RelatorioService;
 import br.com.ppw.dma.system.FileSystemService;
 import jakarta.validation.Valid;
+import jakarta.validation.ValidationException;
 import lombok.NonNull;
-import lombok.Synchronized;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.modelmapper.ModelMapper;
@@ -22,6 +26,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import javax.management.InvalidAttributeValueException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -45,6 +50,8 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 
     private EvidenciaService evidenciaService;
 
+    private MassaTabelaService massaService;
+
     private FileSystemService fileSystemService;
 
 
@@ -55,6 +62,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         @Autowired JobService jobService,
         @Autowired RelatorioService relatorioService,
         @Autowired EvidenciaService evidenciaService,
+        @Autowired MassaTabelaService massaService,
         @Autowired FileSystemService fileSystemService) {
         //--------------------------------------------
         super(pipelineService);
@@ -63,8 +71,9 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         this.ambienteService = ambienteService;
         this.jobService = jobService;
         this.relatorioService = relatorioService;
-        this.fileSystemService = fileSystemService;
         this.evidenciaService = evidenciaService;
+        this.massaService = massaService;
+        this.fileSystemService = fileSystemService;
     }
 
     @GetMapping("cliente/{clienteId}")
@@ -108,50 +117,104 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
     //  Se funcionar, o timeout do front precisa ser atualizado com base na quantidade de espera na fila
     @Transactional
     @PostMapping(value = "run") //"run/pipelineId/{pipelineId}/ambienteId/{ambienteId}")
-    public ResponseEntity<RelatorioHistoricoDTO> setAndRun(
-//        @PathVariable Long pipelineId,
-//        @PathVariable Long ambienteId,
-        @Valid @RequestBody PipelineExecDTO execDto) {
-        //----------------------------------------------------------
-        var pipeline = pipelineService.findById(execDto.getPipelineId()); //pipelineId);
-        var ambiente = ambienteService.findById(execDto.getAmbienteId()); //ambienteId);
-        var jobs = Set.copyOf(execDto.getJobs())
-            .stream()
-            .map(dto -> jobService.findById(dto.getId()))
-            .toList();
+    public ResponseEntity<RelatorioHistoricoDTO> validadeAndRun(@RequestBody PipelineExecDTO execDto) {
+        //TODO: validar Ambiente?
+        log.info("Obtendo e validando Ambiente e Pipeline.");
+        var ambiente = ambienteService.findById(execDto.getAmbienteId());
+        var pipeline = pipelineService.findById(execDto.getPipelineId());
+        var inconformidades = new ArrayList<String>();
 
-        log.debug("Preparando execução dos Jobs, convertendo os JobExecuteDTOs para JobExecutePOJOs.");
-        var jobsPreparation = execDto.getJobs()
-            .stream()
-            .map(dto -> {
-                var job = jobs.stream()
-                    .filter(j -> dto.getId().equals(j.getId()))
-                    .findFirst()
-                    .orElse(null);
-                return new JobPreparation(JobInfoDTO.converterJob(job), dto);
-            })
-            .toList();
+        var jobsPreparados = new ArrayList<JobPreparation>();
+        try {
+            //Obtendo Jobs no banco para mapeá-los com os inputs declarados
+            jobsPreparados.addAll(
+                jobService.prepararJob(pipeline.getJobs(), execDto.getJobs()));
+        }
+        catch(InvalidAttributeValueException e) {
+            inconformidades.add(e.getMessage());
+        }
 
-        return run(
-            new PipelinePreparation(
-                pipeline,
-                execDto.getAtividade(),
-                ambiente,
-                jobsPreparation
+
+        var massas = new ArrayList<MassaTabela>();
+        try {
+            //Obtendo e validando Massas
+            massas.addAll(
+                massaService.prepararMassa(execDto.getMassas())
+            );
+        }
+        catch(InvalidAttributeValueException e) {
+            inconformidades.add(e.getMessage());
+        }
+
+        log.info("Validando conflitos entre as variáveis dos Jobs e as configurações da Pipeline.");
+        try {
+            execDto.validar();
+        }
+        catch(Exception e) {
+            inconformidades.add(e.getMessage());
+        }
+
+        if(!inconformidades.isEmpty())
+            throw new ValidationException(String.join("\n", inconformidades));
+        log.info("Validações finalizadas.");
+
+        log.info("Aplicando configurações da Pipeline nos Jobs preparados.");
+        jobsPreparados.forEach(job -> job.aplicarConfiguracoes(execDto.getConfiguracoes()));
+
+        return run(new PipelinePreparation(
+            pipeline,
+            execDto.getAtividade(),
+            ambiente,
+            jobsPreparados,
+            Map.of(),
+            Map.of()
         ));
     }
 
-    @Synchronized
     public ResponseEntity<RelatorioHistoricoDTO> run(@NonNull PipelinePreparation preparation) {
-        val jobsProcessados = jobService.prepararExecutar(preparation);
-        val evidencias = evidenciaService.gerarEvidencia(jobsProcessados);
-        val relatorio = relatorioService.buildAndPersist(preparation, evidencias);
-        val relatorioHistorico = new RelatorioHistoricoDTO(relatorio);
-        return ResponseEntity.ok(relatorioHistorico);
+        log.info(preparation.toString());
+//        var resumoMassasGeradas = new MasterSummary<MassaPreparada>();
+//        try {
+//            if(preparation.massas() != null && preparation.massas().size() > 0) {
+//                resumoMassasGeradas = massaService.newInserts(
+//                    AmbienteAcessoDTO.banco(preparation.ambiente()),
+//                    preparation.massas()
+//                );
+//            }
+//            if(resumoMassasGeradas.getStatus() != SummaryStatus.SUCESSO) {
+//                var mensagem = new StringBuilder("Erro na geração das Massas.\n");
+//                resumoMassasGeradas.getFailed().forEach(
+//                    (obj, erro) -> mensagem
+//                        .append(obj.getTabela())
+//                        .append(": ")
+//                        .append(erro)
+//                        .append("\n")
+//                );
+//                throw new RuntimeException(mensagem.toString());
+//            }
+        return ResponseEntity.ok(null);
+
+//            val jobsProcessados = jobService.executar(
+//                AmbienteAcessoDTO.banco(preparation.ambiente()),
+//                AmbienteAcessoDTO.ftp(preparation.ambiente()),
+//                preparation.jobs()
+//            );
+//            val evidencias = evidenciaService.gerarEvidencia(jobsProcessados);
+//            val relatorio = relatorioService.buildAndPersist(preparation, evidencias);
+//            val relatorioHistorico = new RelatorioHistoricoDTO(relatorio);
+//            return ResponseEntity.ok(relatorioHistorico);
+//        }
+//        finally {
+//            log.info("Deletando Massas salvas");
+//           massaService.delete(
+//               preparation.ambiente(),
+//               resumoMassasGeradas.getSaved()
+//           );
+//        }
     }
 
     @PostMapping(value = "new")
-    public ResponseEntity<?> createNew(@Valid @RequestBody PipelineInfoDTO dto)
+    public ResponseEntity<?> createNew(@RequestBody PipelineInfoDTO dto)
     throws DuplicatedRecordException {
         pipelineService.checkDuplicated(dto.getNome(), dto.getClienteId());
         val cliente = clienteService.findById(dto.getClienteId());
@@ -168,7 +231,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
     }
 
     @PostMapping(value = "update")
-    public ResponseEntity<String> update(@NonNull @RequestBody PipelineInfoDTO pipeline) {
+    public ResponseEntity<String> update(@RequestBody PipelineInfoDTO pipeline) {
         if(getAndUpdate(pipeline).isPresent())
             return ResponseEntity.ok("Pipeline atualizada");
 
@@ -211,7 +274,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         val atualizarJobs = pipelineBanco.atualizarJobs(dto.getJobs());
 
         if(atualizarDescricao || atualizarJobs) {
-            log.info("A Ambiente precisa ser atualizada.");
+            log.info("A Pipeline precisa ser atualizada.");
             if(atualizarDescricao)
                 pipelineBanco.setDescricao(dto.getDescricao());
             if(atualizarJobs)

@@ -3,7 +3,6 @@ package br.com.ppw.dma.relatorio;
 import br.com.ppw.dma.ambiente.AmbienteService;
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.job.JobExecuteDTO;
-import br.com.ppw.dma.job.JobInfoDTO;
 import br.com.ppw.dma.job.JobPreparation;
 import br.com.ppw.dma.master.MasterController;
 import br.com.ppw.dma.pipeline.Pipeline;
@@ -30,6 +29,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -189,10 +189,7 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
             .stream()
             .map(ev -> {
                 log.info("Recriando as propriedades executadas na Evidência ID {}", ev.getId());
-                return new JobPreparation(
-                    JobInfoDTO.converterJob(ev.getJob()),
-                    new JobExecuteDTO(ev)
-                );
+                return new JobPreparation(ev.getJob(), new JobExecuteDTO(ev));
 //                val process = JobPreparation(ev);
 //                log.info("Convertendo registro ExecFile em arquivos temporários para envio SFTP.");
 //                val cargas = ev.getCargas()
@@ -204,10 +201,14 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
 //                return process;
             })
             .toList();
-        val relatorioDto = new AtividadeInfoDTO(relatorio);
-//        return pipelineController.run(relatorioDto, pipeline, ambiente, jobs);
-        return pipelineController.run(
-            new PipelinePreparation(pipeline, relatorioDto, ambiente, jobs));
+        return pipelineController.run(new PipelinePreparation(
+            pipeline,
+            new AtividadeInfoDTO(relatorio),
+            ambiente,
+            jobs,
+            Map.of(),
+            Map.of()
+        ));
     }
 
     private ResponseEntity<Resource> retornarNovoDet(@NonNull DetDTO pipelineRelatorio)

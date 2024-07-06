@@ -4,6 +4,7 @@ import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.configQuery.ColumnInfo;
 import br.com.ppw.dma.configQuery.FiltroSql;
 import br.com.ppw.dma.util.SqlUtils;
+import br.com.ppw.dma.util.TipoColuna;
 import br.com.ppware.api.MassaPreparada;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.constraints.NotBlank;
@@ -107,7 +108,7 @@ public class MasterOracleDAO implements AutoCloseable {
                     .filter(filtro -> filtro.getColuna().equals(col))
                     .findFirst()
                     .ifPresent(filtro -> {
-                        filtro.setTipo(type);
+                        filtro.setTipo(TipoColuna.from(type));
                         filtro.setMetaDados(metaDados);
                     });
             }

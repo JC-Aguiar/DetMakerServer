@@ -1,6 +1,6 @@
 package br.com.ppw.dma.util;
 
-import br.com.ppw.dma.configQuery.ConfigQueryVar;
+import br.com.ppw.dma.configQuery.ColumnInfo;
 import br.com.ppware.GeradorAleatorio;
 import br.com.ppware.NumeroAleatorio;
 import br.com.ppware.TempoAleatorio;
@@ -29,54 +29,54 @@ public enum TipoColuna {
     UNSET(null, "") //TODO: exceção própria
     ;
 
-    private final Function<ConfigQueryVar, String> geradorAleatorio;
+    private final Function<ColumnInfo, String> geradorAleatorio;
     private final String formatacao;
     private final Function<String, String> formatoSql;
 
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.###");
 
 
-    TipoColuna(Function<ConfigQueryVar, String> geradorAleatorio, String formatacao) {
+    TipoColuna(Function<ColumnInfo, String> geradorAleatorio, String formatacao) {
         this.geradorAleatorio = geradorAleatorio;
         this.formatacao = formatacao;
         this.formatoSql = (input) -> String.format(formatacao, input);
     }
 
-    public String gerarValorAleatorioSql(@NonNull ConfigQueryVar configQueryVar) {
-        var valor = geradorAleatorio.apply(configQueryVar);
+    public String gerarValorAleatorioSql(@NonNull ColumnInfo info) {
+        var valor = geradorAleatorio.apply(info);
         return formatoSql.apply(valor);
     }
 
     
-    private static String randomBigDecimal(@NonNull ConfigQueryVar queryVar) {
+    private static String randomBigDecimal(@NonNull ColumnInfo info) {
         return DECIMAL_FORMAT.format(
             NumeroAleatorio.novoBigDecimal(
-                queryVar.getPrecisao() - queryVar.getEscala(),
-                queryVar.getEscala()
+                info.precision() - info.scale(),
+                info.scale()
         ));
     }
     
-    private static String randomInteger(@NonNull ConfigQueryVar queryVar) {
+    private static String randomInteger(@NonNull ColumnInfo info) {
         return NumeroAleatorio.XDigitosEmString(5);
     }
 
-    private static String randomFloat(@NonNull ConfigQueryVar queryVar) {
+    private static String randomFloat(@NonNull ColumnInfo info) {
         return NumeroAleatorio.novoValorMonetarioReal(10);
     }
     
-    private static String randomString(@NonNull ConfigQueryVar queryVar) {
+    private static String randomString(@NonNull ColumnInfo info) {
         var nome  = GeradorAleatorio.nome();
-        if(nome.length() <= queryVar.getTamanho()) return nome;
-        return nome.substring(0, queryVar.getTamanho());
+        if(nome.length() <= info.length()) return nome;
+        return nome.substring(0, info.length());
     }
     
-    private static String randomOffsetDateTime(@NonNull ConfigQueryVar queryVar) {
+    private static String randomOffsetDateTime(@NonNull ColumnInfo info) {
         return TempoAleatorio.dataHora().format(FormatDate.BRASIL_STYLE);
     }
     
-    //    public static byte[] randomByteArray(@NonNull ConfigQueryVar queryVar) {
-//        return NumeroAleatorio.XDigitosEmString(queryVar.getTamanho()).getBytes();
-//    }
+    //    public static byte[] randomByteArray(@NonNull FiltroSql filtro) {
+    //        return NumeroAleatorio.XDigitosEmString(filtro.getTamanho()).getBytes();
+    //    }
     
     public static List<TipoColuna> COLUNAS_TEXTUAIS = List.of(CHAR, LOB, LONG);
     public static List<TipoColuna> COLUNAS_NUMERICAS = List.of(
