@@ -37,10 +37,10 @@ public class PipelineExecDTO {
     @NotNull Long pipelineId;
     @NotNull AtividadeInfoDTO atividade;
     @NotNull UserInfoDTO user;
-    Set<Long> massas = new HashSet<>();
+    Set<String> massas = new HashSet<>();
     @NotEmpty List<JobExecuteDTO> jobs = new ArrayList<>();
     Map<String, String> configuracoes = new HashMap<>();
-    boolean resetMassaNoFim = false;
+    boolean resetMassaNoFim = true;
     boolean sobrescreverVariaveis = false;
 
 
@@ -53,12 +53,11 @@ public class PipelineExecDTO {
 
     @JsonIgnore
     public Map<JobExecuteDTO, String> getConfiguracoesConflitantes() {
-        if(sobrescreverVariaveis) return Map.of();
         var conflitos = new HashMap<JobExecuteDTO, String>();
         for(var job : jobs) {
             job.getVariaveis()
                 .keySet()
-                .stream()
+                .parallelStream()
                 .filter(configuracoes::containsKey)
                 .forEach(variavelNome -> conflitos.put(job, variavelNome));
         }
@@ -66,6 +65,8 @@ public class PipelineExecDTO {
     }
 
     public void validar() throws InvalidAttributeValueException {
+        if(sobrescreverVariaveis) return;
+
         var variaveisRepetidas = getConfiguracoesConflitantes();
         if(!variaveisRepetidas.isEmpty()) return;
 
@@ -84,8 +85,8 @@ public class PipelineExecDTO {
         ...
         "massas": [2, 11],
         "configuracoes": {
-            "grupo": "${DELQMST.DMACCT}",
-            "contrato": "${DELQMST.DMACCTG}"
+            "grupo": "$DELQMST.DMACCT",
+            "contrato": "$DELQMST.DMACCTG"
         }
         ...
     Se o valor nas `configuracoes` não for definido usando `${ }`, o valor será considerado um literal.

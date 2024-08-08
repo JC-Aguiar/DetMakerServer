@@ -1,32 +1,20 @@
 package br.com.ppw.dma.util;
 
-import br.com.ppw.dma.configQuery.ConfigQueryVar;
-import br.com.ppware.NumeroAleatorio;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
-import java.math.BigDecimal;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
 import java.sql.SQLSyntaxErrorException;
-import java.sql.Timestamp;
-import java.time.OffsetDateTime;
 import java.util.List;
 
 @Slf4j
 public abstract class SqlUtils {
 
     private static final List<String> KEYWORDS = List.of(
-        "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "TRUNCATE", "RENAME", "DROP"
+        "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "TRUNCATE", "RENAME", "DROP", "DECLARE"
     );
 
-    public static Object parseToString(@NonNull String s) {
-        return String.format("'%s'", s);
-    }
-
 //    public static Object parseToDate(@NonNull String s) {
-//        //TODO: validar formato!
 //        return String.format(
 //            "TO_DATE('%s', 'DD/MM/YYYY HH24:MI:SS')", s
 //        );

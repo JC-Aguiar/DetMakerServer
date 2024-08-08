@@ -410,7 +410,7 @@ public class BasicTest {
 
         try(val masterDao = new MasterOracleDAO(banco)) {
             log.info("Obtendo metadados das variáveis.");
-            comando.mapFiltrosPorTabela()
+            comando.groupFiltrosPorTabela()
                 .forEach(masterDao::findAndSetColumnInfo);
 
             log.info("Convertendo para ConfigQueryVars.");

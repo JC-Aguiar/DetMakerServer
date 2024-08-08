@@ -74,4 +74,12 @@ public class Ambiente implements MasterEntity<Long> {
         this.cliente = cliente;
     }
 
+    public AmbienteAcessoDTO acessoBanco() {
+        return AmbienteAcessoDTO.banco(this);
+    }
+
+    public AmbienteAcessoDTO acessoFtp() {
+        return AmbienteAcessoDTO.ftp(this);
+    }
+
 }

@@ -4,8 +4,6 @@ import br.com.ppw.dma.execQuery.ExecQuery;
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -23,13 +21,17 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class ComandoSql implements Serializable {
 
-    Long id;
-    @NotNull @Positive Long jobId;
     @NotBlank String nome;
+
     String descricao;
+
     @NotBlank String sql;
+
     List<FiltroSql> filtros = new ArrayList<>();
+
+    @JsonIgnore
     Map<String, String> valores = new HashMap<>();
+
 
     public ComandoSql(@NonNull ExecQuery execQuery) {
         this.nome = execQuery.getQueryNome();
@@ -40,13 +42,22 @@ public class ComandoSql implements Serializable {
 //        if(!filtros.isEmpty()) this.dinamico = true;
     }
 
-    public List<FiltroSql> getFiltros() {
-        return List.copyOf(filtros);
+    public ComandoSql(@NonNull ConfigQuery configQuery) {
+        this.nome = configQuery.getNome();
+        this.descricao = configQuery.getDescricao();
+        this.sql = configQuery.getSql();
+        this.filtros.addAll(
+            configQuery.getVariaveis()
+                .stream()
+                .map(FiltroSql::new)
+                .toList());
+//        this.dinamico = false;
+//        if(!filtros.isEmpty()) this.dinamico = true;
     }
 
     @JsonIgnore
-    public Map<String, List<FiltroSql>> mapFiltrosPorTabela() {
-        return filtros.stream().collect(
+    public Map<String, List<FiltroSql>> groupFiltrosPorTabela() {
+        return filtros.parallelStream().collect(
             Collectors.groupingBy(FiltroSql::getTabela)
         );
     }
@@ -55,6 +66,7 @@ public class ComandoSql implements Serializable {
         return filtros.isEmpty();
     }
 
+    @JsonIgnore
     public String getSqlCompleta() {
         return FormatString.substituirVariaveis(sql, getValores());
     }

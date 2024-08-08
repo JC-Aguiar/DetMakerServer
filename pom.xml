@@ -168,7 +168,7 @@
 		<dependency>
 			<groupId>br.com.aguiar</groupId>
 			<artifactId>GeradorAleatorio</artifactId>
-			<version>v2.0</version>
+			<version>v2.1</version>
 		</dependency>
 
 		<!-- TESTE: SSH APACHE MINA -->

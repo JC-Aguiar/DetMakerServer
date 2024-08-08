@@ -5,7 +5,6 @@ import br.com.ppw.dma.exception.FtpHostException;
 import br.com.ppw.dma.exception.OperacaoSftpException;
 import br.com.ppw.dma.system.ExitCodes;
 import com.jcraft.jsch.*;
-import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +26,7 @@ public class ConectorSftp {
     @Getter String server;
     @Getter int port;
     @Getter String username;
-    String password;
+    @ToString.Exclude String password;
     @Getter Properties properties = new Properties();
 
     //TODO: Javadoc
@@ -38,7 +37,7 @@ public class ConectorSftp {
             sftpConfig.getSenha());
     }
 
-    public static ConectorSftp conectar(@NotBlank String host, @NotBlank String usuario, String senha) {
+    public static ConectorSftp conectar(@NonNull String host, @NonNull String usuario, String senha) {
         log.info("Validando IP e PORTA para conexão.");
         val ipPorta = List.of(host.split(":"));
         if(ipPorta.size() < 2) throw new FtpHostException();
@@ -71,12 +70,21 @@ public class ConectorSftp {
         log.info("Conexão testada e estabelecida.");
     }
 
-    //TODO: Javadoc
+    /**
+     * Tenta iniciar uma sessão ao ambiente configurado
+     * @return {@link Session} da sessão em caso de sucesso
+     * @throws JSchException em caso de impeditivo
+     */
     private Session iniciarSessao() throws JSchException {
         return iniciarSessao(0);
     }
 
-    //TODO: Javadoc
+    /**
+     * Tenta iniciar uma sessão ao ambiente configurado
+     * @param timeout número inteiro (em milissegundos?)
+     * @return {@link Session} da sessão em caso de sucesso
+     * @throws JSchException em caso de impeditivo
+     */
     private Session iniciarSessao(int timeout) throws JSchException {
         Session session = new JSch().getSession(username, server, port);
         session.setPassword(password);

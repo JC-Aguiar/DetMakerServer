@@ -2,7 +2,6 @@ package br.com.ppw.dma.massa;
 
 import br.com.ppw.dma.cliente.Cliente;
 import br.com.ppw.dma.master.MasterEntity;
-import br.com.ppware.api.MassaTabelaDTO;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -52,21 +51,22 @@ public class MassaTabela implements MasterEntity {
 
     public MassaTabela(@NonNull MassaTabelaDTO dto) {
         this.nome = dto.getNome();
-        this.usaPessoa = dto.isUsaPessoa();
         this.colunas = dto.getColunas()
-            .stream()
+            .parallelStream()
             .map(MassaColuna::new)
             .peek(col -> col.setTabelaId(this))
             .toList();
+        this.usaPessoa = dto.getUsaPessoa();
     }
 
     public MassaTabelaDTO toDto() {
-        var dto = new MassaTabelaDTO(this.nome);
-        this.colunas
-            .stream()
-            .map(MassaColuna::toDto)
-            .forEach(dto::addColuna);
-        dto.setUsaPessoa(this.usaPessoa);
-        return dto;
+        return new MassaTabelaDTO(this);
+//        var dto = new MassaTabelaDTO(this.nome);
+//        this.colunas
+//            .parallelStream()
+//            .map(MassaColuna::toDto)
+//            .forEach(dto::addColuna);
+//        dto.setUsaPessoa(this.usaPessoa);
+//        return dto;
     }
 }

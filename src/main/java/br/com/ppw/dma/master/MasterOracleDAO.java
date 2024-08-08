@@ -1,11 +1,12 @@
 package br.com.ppw.dma.master;
 
+import br.com.ppw.dma.ambiente.Ambiente;
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.configQuery.ColumnInfo;
 import br.com.ppw.dma.configQuery.FiltroSql;
 import br.com.ppw.dma.util.SqlUtils;
-import br.com.ppw.dma.util.TipoColuna;
 import br.com.ppware.api.MassaPreparada;
+import br.com.ppware.api.TipoColuna;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -18,10 +19,7 @@ import org.hibernate.exception.SQLGrammarException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -32,6 +30,10 @@ public class MasterOracleDAO implements AutoCloseable {
     final String username;
     final String password;
     final Connection conn;
+
+    public MasterOracleDAO(@NonNull Ambiente ambiente) throws SQLException {
+        this(ambiente.acessoBanco());
+    }
 
     public MasterOracleDAO(@NonNull AmbienteAcessoDTO acessoBanco) throws SQLException {
         url = "jdbc:oracle:thin:@" + acessoBanco.getConexao();
@@ -68,14 +70,68 @@ public class MasterOracleDAO implements AutoCloseable {
         }
     }
 
+    public Map<String, ColumnInfo> getColumnInfo(
+        @NonNull String tabela,
+        @NonNull Set<String> colunas) {
+        //----------------------------------------
+        var mapaColunas = new HashMap<String, ColumnInfo>();
+        var colunasString = colunas.parallelStream()
+            .map(col -> "'" +col+ "'")
+            .collect(Collectors.joining(", "));
+
+        var sql = "SELECT COLUMN_NAME, DATA_LENGTH, DATA_TYPE, DATA_PRECISION, DATA_SCALE "
+            + "FROM ALL_TAB_COLUMNS "
+            + "WHERE TABLE_NAME = '" +tabela+ "'"
+            + "AND COLUMN_NAME IN (" +colunasString+ ")";
+        log.info("SQL: {}", sql);
+
+        try(val statement = conn.prepareStatement(sql)) {
+            var resultado = statement.executeQuery();
+            log.info("Query executada com sucesso. Resultado obtido:");
+
+            while(resultado.next()) {
+                var nome = resultado.getString("COLUMN_NAME");
+                var type = resultado.getString("DATA_TYPE");
+                var metaDados = new ColumnInfo(
+                    resultado.getInt("DATA_LENGTH"),
+                    resultado.getInt("DATA_PRECISION"),
+                    resultado.getInt("DATA_SCALE")
+                );
+                log.info("{}: {} - {}.", nome, type, metaDados);
+
+                colunas.parallelStream()
+                    .filter(col -> col.equals(nome))
+                    .findFirst()
+                    .ifPresent(col -> mapaColunas.put(col, metaDados));
+                        //{
+                        //col.setTipo(TipoColuna.from(type));
+                        //col.setMetaDados(metaDados);
+                    //});
+            }
+            var pendentes = colunas.parallelStream()
+                .filter(col -> !mapaColunas.containsKey(col))
+                .collect(Collectors.joining(", "));
+            log.info("Total de filtros identificados: {}/{}", mapaColunas.size(), colunas.size());
+
+            //TODO: criar exception própria
+            if(!pendentes.isEmpty())
+                throw new RuntimeException("Existem colunas não identificadas: " + pendentes);
+            return mapaColunas;
+        }
+        catch(SQLException | PersistenceException e) {
+            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+        }
+    }
+
     public List<FiltroSql> findAndSetColumnInfo(
         @NonNull String tabela,
         @NonNull List<FiltroSql> filtros) {
         //----------------------------------------
-        var colunas = filtros.stream()
+        //TODO: não daria para já escrever diretamente o nome da tabela e das colunas na query?
+        var colunas = filtros.parallelStream()
             .map(FiltroSql::getColuna)
             .collect(Collectors.toSet());
-        var coringas = colunas.stream()
+        var coringas = colunas.parallelStream()
             .map(filtro -> "?")
             .collect(Collectors.joining(", "));
 
