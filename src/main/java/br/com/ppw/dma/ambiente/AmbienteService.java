@@ -1,10 +1,13 @@
 package br.com.ppw.dma.ambiente;
 
 import br.com.ppw.dma.cliente.Cliente;
+import br.com.ppw.dma.configQuery.ColumnInfo;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
+import br.com.ppw.dma.master.MasterOracleDAO;
+import br.com.ppw.dma.util.SqlUtils;
+import jakarta.persistence.PersistenceException;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -15,9 +18,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.sql.SQLException;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -44,7 +46,7 @@ public class AmbienteService {
     }
 
     // A method that returns an entity by id.
-    public Ambiente findById(@Positive @NotNull Long id) {
+    public Ambiente findById(@NonNull Long id) {
         val record = Optional
             .ofNullable(dao.getById(id))
             .orElseThrow();
@@ -59,13 +61,13 @@ public class AmbienteService {
     }
 
     // A method that validates the page.
-    public Page<Ambiente> pageCheck(@NotNull Page<Ambiente> page) {
+    public Page<Ambiente> pageCheck(@NonNull Page<Ambiente> page) {
         page.stream().map(Objects::nonNull).findFirst().orElseThrow();
         return page;
     }
 
     // A proxy method that calls `pageCheck` method.
-    public Page<Ambiente> findAll(@NotNull Pageable pageable) {
+    public Page<Ambiente> findAll(@NonNull Pageable pageable) {
         return proxy().pageCheck(dao.findAll(pageable));
     }
 
@@ -82,7 +84,7 @@ public class AmbienteService {
     }
 
     @Transactional
-    public Ambiente persist(@NotNull Ambiente ambiente) {
+    public Ambiente persist(@NonNull Ambiente ambiente) {
         log.info("Persistindo Ambiente no banco:");
         log.info(ambiente.toString());
 
@@ -91,7 +93,7 @@ public class AmbienteService {
         return ambiente;
     }
 
-    public Optional<Ambiente> getByName(@NotNull String nome) {
+    public Optional<Ambiente> getByName(@NonNull String nome) {
         log.info("Consultando pelo Ambiente '{}'.", nome);
         val pipeline = Optional.ofNullable(dao.findAllByNome(nome));
         if(pipeline.isPresent())
@@ -101,11 +103,57 @@ public class AmbienteService {
         return pipeline;
     }
 
-    public boolean checkByName(@NotNull String nome) {
+    public boolean checkByName(@NonNull String nome) {
         log.info("Validando se a Ambiente '{}' existe no banco.", nome);
         val resutlado = dao.existsByNome(nome);
         log.info("Resultado: {}.", resutlado);
         return resutlado;
+    }
+
+    //TODO: teste de Queries poderia ser por aqui?
+//    public void completeAndValidateSqlVariables(
+//        @NonNull ComandoSql comando,
+//        @NonNull Ambiente ambiente) {
+//
+//        try(val masterDao = new MasterOracleDAO(ambiente)) {
+//            log.info("Obtendo metadados das variáveis.");
+//            comando.groupFiltrosPorTabela().forEach(
+//                masterDao::findAndSetColumnInfo
+//            );
+//            log.info("Criando valores aleatórios para testar as variáveis.");
+//            var mapaVariavelValor = comando.getFiltros()
+//                .parallelStream()
+//                .collect(Collectors.toMap(
+//                    FiltroSql::getVariavel,
+//                    FiltroSql::gerarValorAleatorio
+//                ));
+//            var sql = FormatString.substituirVariaveis(comando.getSql(), mapaVariavelValor);
+//            masterDao.validadeQuery(sql);
+//        }
+//        catch(SQLException | PersistenceException e) {
+//            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+//        }
+//    }
+
+    public Map<String, ColumnInfo> getSqlDataTypes(
+        @NonNull String tabela,
+        @NonNull Set<String> campos,
+        @NonNull Ambiente ambiente) {
+
+        return getSqlDataTypes(tabela, campos, ambiente.acessoBanco());
+    }
+
+    public Map<String, ColumnInfo> getSqlDataTypes(
+        @NonNull String tabela,
+        @NonNull Set<String> campos,
+        @NonNull AmbienteAcessoDTO ambiente) {
+
+        try(val masterDao = new MasterOracleDAO(ambiente)) {
+            return masterDao.getColumnInfo(tabela, campos);
+        }
+        catch(SQLException | PersistenceException e) {
+            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+        }
     }
 
 }

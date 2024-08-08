@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -206,8 +205,7 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
             new AtividadeInfoDTO(relatorio),
             ambiente,
             jobs,
-            Map.of(),
-            Map.of()
+            List.of()
         ));
     }
 

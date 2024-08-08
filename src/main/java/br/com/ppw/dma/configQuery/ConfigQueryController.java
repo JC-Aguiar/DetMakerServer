@@ -57,7 +57,7 @@ public class ConfigQueryController extends MasterController<Long, ConfigQuery, C
     @GetMapping("cliente/{clienteId}")
     public ResponseEntity<List<QueryInfoDTO>> getAllByCliente(
         @PathVariable(name = "clienteId") Long clienteId) {
-        //-------------------------------------------------
+
         final List<QueryInfoDTO> dtos = service.findAllByCliente(clienteId)
             .stream()
             .map(QueryInfoDTO::new)
@@ -138,23 +138,30 @@ public class ConfigQueryController extends MasterController<Long, ConfigQuery, C
         return ResponseEntity.ok(variaveis);
     }
 
-    //TODO: javadoc
+    /**
+     * Cria ou atualiza uma entidade {@link ConfigQuery} e suas respectivas {@link ConfigQueryVar} para
+     * detemrinado cliente.
+     * @param ambienteId {@link Long} obtido no path da uri
+     * @param query {@link QueryInfoDTO}
+     * @return {@link ResponseEntity} da mesma {@link QueryInfoDTO} enviada, so que atualizada com o banco.
+     * @throws DuplicatedRecordException em caso de duplicidade no banco.
+     */
     @PostMapping(value = "ambiente/{ambienteId}")
     public ResponseEntity<QueryInfoDTO> criarAtualizarQuery(
         @PathVariable Long ambienteId,
-        @Valid @RequestBody ComandoSql comando)
+        @Valid @RequestBody QueryInfoDTO query)
     throws DuplicatedRecordException {
 
         val ambiente = ambienteService.findById(ambienteId);
         var banco = AmbienteAcessoDTO.banco(ambiente);
-        var job = jobService.findById(comando.getJobId());
-        service.completeAndValidateVariables(comando, banco);
-        var configQuery = service.criarAtualizar(job, comando);
+        var job = jobService.findById(query.getJobId());
+        service.completeAndValidateVariables(query, banco);
+        var configQuery = service.criarAtualizar(job, query);
         return ResponseEntity.ok(new QueryInfoDTO(configQuery));
     }
 
     @DeleteMapping("{queryId}")
-    public ResponseEntity<String> deletarQueryVar(@PathVariable Long queryId) {
+    public ResponseEntity<String> deletarQuery(@PathVariable Long queryId) {
         service.delete(service.findById(queryId));
         log.info("Removida Query ID {}.", queryId);
         return ResponseEntity.ok("Query removida com sucesso.");

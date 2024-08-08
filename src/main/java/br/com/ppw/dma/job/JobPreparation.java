@@ -14,7 +14,12 @@ public record JobPreparation(
 
 	//TODO: testar!
 	public void aplicarConfiguracoes(@NonNull Map<String, String> configuracoes) {
-		jobInputs.getVariaveis().putAll(configuracoes);
+		configuracoes.entrySet()
+			.parallelStream()
+			.forEach(conf -> jobInputs.getVariaveis().putIfAbsent(
+				conf.getKey(),
+				conf.getValue()
+			));
 		aplicarConfiguracoes();
 	}
 
@@ -57,7 +62,7 @@ public record JobPreparation(
 			jobInputs.getVariaveis()
 				.entrySet()
 				.stream()
-				.peek(entry -> entry.setValue("'" +entry.getValue()+ "'"))
+//				.peek(entry -> entry.setValue("'" +entry.getValue()+ "'"))
 				.collect(Collectors.toMap(
 					Map.Entry::getKey,
 					Map.Entry::getValue))

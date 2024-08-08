@@ -61,14 +61,15 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
     public void completeAndValidateVariables(
         @NonNull ComandoSql comando,
         @NonNull AmbienteAcessoDTO banco) {
-        //--------------------------------
+
         try(val masterDao = new MasterOracleDAO(banco)) {
             log.info("Obtendo metadados das variáveis.");
-            comando.mapFiltrosPorTabela().forEach(masterDao::findAndSetColumnInfo);
-
-            log.info("Criando valores aleatórios para testar as variáveis da query.");
+            comando.groupFiltrosPorTabela().forEach(
+                masterDao::findAndSetColumnInfo
+            );
+            log.info("Criando valores aleatórios para testar as variáveis.");
             var mapaVariavelValor = comando.getFiltros()
-                .stream()
+                .parallelStream()
                 .collect(Collectors.toMap(
                     FiltroSql::getVariavel,
                     FiltroSql::gerarValorAleatorio
@@ -88,36 +89,37 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
             .toList();
     }
 
-    public void deleteVar(@NonNull Long varid) {
-        configQueryDao.deleteQueryVarById(varid);
+    public void deleteVar(@NonNull Long varId) {
+        configQueryDao.deleteQueryVarById(varId);
     }
 
-    public ConfigQuery criarAtualizar(@NonNull Job job, @NonNull ComandoSql comando)
+    /**
+     * Cria ou atualiza uma entidade {@link ConfigQuery} e suas respectivas {@link ConfigQueryVar}
+     * @param job {@link Job} a ser relacionado a entidade dessa configuração de query
+     * @param query {@link QueryInfoDTO}
+     * @return entidade {@link ConfigQuery}
+     * @throws DuplicatedRecordException em caso de duplicidade no banco
+     */
+    public ConfigQuery criarAtualizar(@NonNull Job job, @NonNull QueryInfoDTO query)
     throws DuplicatedRecordException {
         ConfigQuery configQuery;
-        if(comando.getId() != null) {
-            log.info("Atualizando ConfigQuery [{}] do Job [{}] '{}'.",
-                comando.getId(), job.getId(), job.getNome()
-            );
-            configQuery = findById(comando.getId());
-            configQuery.atualizar(comando);
+        if(query.getId().isPresent()) {
+            var id = query.getId().get();
+            log.info("Atualizando ConfigQuery[ID {}] do Job[ID {}] '{}'.", id, job.getId(), job.getNome());
+            configQuery = findById(id);
+            log.info("Antes: {}", configQuery.getVariaveis());
+            configQuery.atualizar(query);
+            log.info("Depois: {}", configQuery.getVariaveis());
             configQuery.setJob(job);
             save(configQuery);
             log.info("ConfigQuery atualizada com sucesso. ID {}.", configQuery.getId());
         }
         else {
-            log.info("Criando nova ConfigQuery para Job [{}] '{}'.", job.getId(), job.getNome());
-            configQuery = new ConfigQuery(comando);
+            log.info("Criando nova ConfigQuery para Job[ID {}] '{}'.", job.getId(), job.getNome());
+            configQuery = new ConfigQuery(query);
             configQuery.setJob(job);
-//            log.info("Convertendo os FiltroSqls para ConfigQueryVars.");
-//            var queryVars = comando.getFiltros()
-//                .stream()
-//                .map(ConfigQueryVar::new)
-//                .peek(vars -> log.info(vars.toString()))
-//                .collect(Collectors.toList());
-//            configQuery.setVariaveis(queryVars);
             save(configQuery);
-            log.info("ConfigQuery gerada com sucesso. ID {}.", configQuery.getId());
+            log.info("ConfigQuery gerada com sucesso: ID {}.", configQuery.getId());
         }
         return configQuery;
     }

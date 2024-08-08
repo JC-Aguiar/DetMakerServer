@@ -64,7 +64,7 @@ public class Pipeline implements MasterEntity<Long> {
 
     @Convert(converter = NumericBooleanConverter.class)
     @Column(name = "OCULTAR", nullable = false)
-    Boolean ocultar;
+    Boolean ocultar = false;
 
 
     public static Pipeline parseInfoDto(

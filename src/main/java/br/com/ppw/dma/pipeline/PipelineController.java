@@ -2,6 +2,7 @@ package br.com.ppw.dma.pipeline;
 
 import br.com.ppw.dma.ambiente.AmbienteService;
 import br.com.ppw.dma.cliente.ClienteService;
+import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.evidencia.EvidenciaService;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.job.Job;
@@ -13,7 +14,8 @@ import br.com.ppw.dma.master.MasterController;
 import br.com.ppw.dma.relatorio.RelatorioHistoricoDTO;
 import br.com.ppw.dma.relatorio.RelatorioService;
 import br.com.ppw.dma.system.FileSystemService;
-import jakarta.validation.Valid;
+import br.com.ppw.dma.util.FormatString;
+import br.com.ppware.api.MassaPreparada;
 import jakarta.validation.ValidationException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -27,8 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.management.InvalidAttributeValueException;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 @Slf4j
 @RestController
@@ -113,34 +118,36 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
      * @param execDto {@link PipelineExecDTO} contendo as informações necessárias para execução.
      * @return {@link ResponseEntity} com o {@link RelatorioHistoricoDTO} do Relatório final.
      */
-    //TODO: aplicar @Synchronized e testar.
-    //  Se funcionar, o timeout do front precisa ser atualizado com base na quantidade de espera na fila
     @Transactional
     @PostMapping(value = "run") //"run/pipelineId/{pipelineId}/ambienteId/{ambienteId}")
-    public ResponseEntity<RelatorioHistoricoDTO> validadeAndRun(@RequestBody PipelineExecDTO execDto) {
+    public ResponseEntity<RelatorioHistoricoDTO> validadeToStack(@RequestBody PipelineExecDTO execDto) {
         //TODO: validar Ambiente?
         log.info("Obtendo e validando Ambiente e Pipeline.");
         var ambiente = ambienteService.findById(execDto.getAmbienteId());
+        var cliente = ambiente.getCliente();
         var pipeline = pipelineService.findById(execDto.getPipelineId());
         var inconformidades = new ArrayList<String>();
 
+        //Obtendo Jobs no banco conforme os inputs declarados para execução
         var jobsPreparados = new ArrayList<JobPreparation>();
         try {
-            //Obtendo Jobs no banco para mapeá-los com os inputs declarados
             jobsPreparados.addAll(
-                jobService.prepararJob(pipeline.getJobs(), execDto.getJobs()));
+                jobService.prepararJob(pipeline.getJobs(), execDto.getJobs())
+            );
         }
         catch(InvalidAttributeValueException e) {
             inconformidades.add(e.getMessage());
         }
 
-
-        var massas = new ArrayList<MassaTabela>();
+        //Obtendo e validando Massas
+        var massas = new ArrayList<MassaPreparada>();
         try {
-            //Obtendo e validando Massas
-            massas.addAll(
-                massaService.prepararMassa(execDto.getMassas())
-            );
+            massaService.getAllByClienteAndNomes(cliente, execDto.getMassas())
+                .parallelStream()
+                .map(MassaTabela::toDto)
+                .map(dto -> massaService.mockMassa(ambiente.acessoBanco(), dto))
+                .flatMap(List::parallelStream)
+                .forEach(massas::add);
         }
         catch(InvalidAttributeValueException e) {
             inconformidades.add(e.getMessage());
@@ -156,23 +163,65 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 
         if(!inconformidades.isEmpty())
             throw new ValidationException(String.join("\n", inconformidades));
-        log.info("Validações finalizadas.");
+
+        log.info("Aplicando valores das Massas nas variáveis globais.");
+        execDto.getConfiguracoes()
+            .entrySet()
+            .parallelStream()
+            .peek(config -> log.info(" - Variável global: {}.", config))
+            .filter(variavel -> variavel.getValue().matches("^\\$[^.]*\\..*"))
+//            .filter(variavel -> variavel.getValue().contains("\\."))
+            .forEach(variavel -> {
+                log.info(" - Identificada Variável Global de massa: {}", variavel);
+                var campoArray = variavel.getValue().split("\\.");
+                log.info(" - Array: {}.", String.join(", ", campoArray));
+                var tabelaNome = campoArray[0].substring(1);
+                var colunaNome = campoArray[1];
+                log.info(" - {}:{}.", tabelaNome, colunaNome);
+                massas.parallelStream()
+                    .filter(massa -> massa.getTabela().equalsIgnoreCase(tabelaNome))
+                    .peek(massa -> log.info("Tabela Massa identificada: {}.", massa.getTabela()))
+                    .findFirst()
+                    .flatMap(massa -> {
+                        var col = massa.getColunasSqlSintaxe(colunaNome);
+                        if(col.isPresent())
+                            log.info("Coluna Massa identificada: {}.", col);
+                        else
+                            log.info("Coluna Massa não identificada.");
+                        return col;
+                    })
+                    .ifPresent(variavel::setValue);
+            });
 
         log.info("Aplicando configurações da Pipeline nos Jobs preparados.");
-        jobsPreparados.forEach(job -> job.aplicarConfiguracoes(execDto.getConfiguracoes()));
+        jobsPreparados.parallelStream().forEach(
+            job -> job.aplicarConfiguracoes(execDto.getConfiguracoes())
+        );
+
+        log.info("Obtendo queries para as Massas.");
+//        var massaInsert = new ArrayList<String>();
+//        var massaDelete = new ArrayList<String>();
+        massas.forEach(massa -> {
+//            massaInsert.add(massa.gerarQueryInsert());
+//            massaDelete.add(massa.gerarQueryDelete());
+            var sql = massa.gerarQueryInsert();
+            FormatString.substituirVariaveis(sql, massa.getColunasSqlSintaxe());
+            log.info(sql);
+            sql = massa.gerarQueryDelete();
+            FormatString.substituirVariaveis(sql, massa.getColunasSqlSintaxe());
+            log.info(sql);
+        });
 
         return run(new PipelinePreparation(
             pipeline,
             execDto.getAtividade(),
             ambiente,
             jobsPreparados,
-            Map.of(),
-            Map.of()
+            massas
         ));
     }
 
     public ResponseEntity<RelatorioHistoricoDTO> run(@NonNull PipelinePreparation preparation) {
-        log.info(preparation.toString());
 //        var resumoMassasGeradas = new MasterSummary<MassaPreparada>();
 //        try {
 //            if(preparation.massas() != null && preparation.massas().size() > 0) {
@@ -192,17 +241,32 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 //                );
 //                throw new RuntimeException(mensagem.toString());
 //            }
+
+        //DESENVOLVIMENTO:
+//        log.info(preparation.toString());
+        log.info("MASSAS: ");
+        preparation.massas().forEach(m -> log.info(" - {}", m));
+        log.info("INPUT QUERIES: ");
+        preparation.jobs().stream()
+            .map(JobPreparation::jobInputs)
+            .flatMap(j -> j.getQueries().stream())
+            .map(ComandoSql::getSql)
+            .forEach(sql -> log.info(" - {}", sql));
         return ResponseEntity.ok(null);
 
+        //PRODUÇÃO:
 //            val jobsProcessados = jobService.executar(
-//                AmbienteAcessoDTO.banco(preparation.ambiente()),
-//                AmbienteAcessoDTO.ftp(preparation.ambiente()),
+//                preparation.ambiente().acessoBanco(),
+//                preparation.ambiente().acessoFtp(),
 //                preparation.jobs()
 //            );
 //            val evidencias = evidenciaService.gerarEvidencia(jobsProcessados);
 //            val relatorio = relatorioService.buildAndPersist(preparation, evidencias);
 //            val relatorioHistorico = new RelatorioHistoricoDTO(relatorio);
 //            return ResponseEntity.ok(relatorioHistorico);
+
+
+
 //        }
 //        finally {
 //            log.info("Deletando Massas salvas");

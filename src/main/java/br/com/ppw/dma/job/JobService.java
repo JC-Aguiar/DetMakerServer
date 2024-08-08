@@ -3,7 +3,6 @@ package br.com.ppw.dma.job;
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.cliente.Cliente;
 import br.com.ppw.dma.configQuery.ComandoSql;
-import br.com.ppw.dma.configQuery.QueryInfoDTO;
 import br.com.ppw.dma.configQuery.ResultadoSql;
 import br.com.ppw.dma.master.MasterOracleDAO;
 import br.com.ppw.dma.master.MasterService;
@@ -30,7 +29,6 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.management.InvalidAttributeValueException;
 import java.io.File;
 import java.io.IOException;
-import java.security.InvalidParameterException;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -342,11 +340,11 @@ public class JobService extends MasterService<Long, Job, JobService> {
     //TODO: javadoc
     public List<JobPreparation> prepararJob(@NonNull List<Job> jobs, @NonNull List<JobExecuteDTO> dtos)
     throws InvalidAttributeValueException {
-        log.info("Obtendo Jobs no banco para mapeá-los com os inputs declarados.");
+        log.info("Obtendo Jobs no banco conforme os inputs declarados para execução.");
         var jobsIrregulares = new HashSet<String>();
         var jobsPreparados = new ArrayList<JobPreparation>();
-        dtos.forEach(dto -> {
-            jobs.stream()
+        dtos.parallelStream().forEach(dto -> {
+            jobs.parallelStream()
                 .filter(job -> job.getId().equals(dto.getId()))
                 .findFirst()
                 .ifPresentOrElse(

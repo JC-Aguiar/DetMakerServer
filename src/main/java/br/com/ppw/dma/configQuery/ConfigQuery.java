@@ -13,6 +13,7 @@ import org.hibernate.proxy.HibernateProxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.FetchType.LAZY;
@@ -58,7 +59,7 @@ public class ConfigQuery implements MasterEntity<Long> {
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "VARIAVEIS")
-    @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "query")
+    @OneToMany(fetch = LAZY, cascade = ALL, orphanRemoval = true, mappedBy = "query")
     @Comment("Indica a lista das variáveis que constam dentro da SQL")
     List<ConfigQueryVar> variaveis = new ArrayList<>();
 
@@ -71,20 +72,15 @@ public class ConfigQuery implements MasterEntity<Long> {
         this.nome = dto.getNome();
         this.descricao = dto.getDescricao();
         this.sql = dto.getSql();
-
-        var querysNovas = new ArrayList<FiltroSql>();
-        dto.getFiltros().forEach(filtro ->
-            variaveis.stream()
-                .filter(queryVar -> filtro.getVariavel().equals(queryVar.getNome()))
-                .findFirst()
-                .ifPresentOrElse(
-                    queryVar -> queryVar.atualizar(filtro),
-                    () -> querysNovas.add(filtro)
-                )
+        this.variaveis.forEach(queryVar -> {
+            if (!dto.getFiltros().isEmpty()) {
+                var filtro = dto.getFiltros().remove(0);
+                queryVar.atualizar(filtro);
+            }
+        });
+        dto.getFiltros().forEach(
+            filtro -> addVariaveis(new ConfigQueryVar(filtro))
         );
-        querysNovas.stream()
-            .map(ConfigQueryVar::new)
-            .forEach(this::addVariaveis);
     }
 
     public void setVariaveis(List<ConfigQueryVar> variaveis) {

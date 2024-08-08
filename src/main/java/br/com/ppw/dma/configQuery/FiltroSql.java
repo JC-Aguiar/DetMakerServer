@@ -1,8 +1,7 @@
 package br.com.ppw.dma.configQuery;
 
-import br.com.ppw.dma.util.TipoColuna;
+import br.com.ppware.api.TipoColuna;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -12,9 +11,6 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.lang.Nullable;
 
 import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Valid
 @Setter
@@ -24,7 +20,7 @@ import java.util.stream.Collectors;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class FiltroSql implements Serializable {
 
-    //TODO: sincronizar com front
+    @Nullable
     Long id;
 
     @NotBlank
@@ -46,7 +42,7 @@ public class FiltroSql implements Serializable {
     @NotBlank
     String variavel;
 
-    @Nullable @JsonIgnore
+    @Nullable
     ColumnInfo metaDados;
 
 //    public static final LinkedHashSet<String> OPERADORES_REMOVER = new LinkedHashSet<>();
@@ -91,9 +87,9 @@ public class FiltroSql implements Serializable {
     }
 
     public String gerarValorAleatorio() {
-        var valor = tipo.gerarValorAleatorioSql(metaDados);
+        var valor = tipo.valorAleatorio(metaDados);
         if(!array) return valor;
-        return valor + ", " + tipo.gerarValorAleatorioSql(metaDados);
+        return valor + ", " + tipo.valorAleatorio(metaDados);
     }
 
     //TODO: javadoc

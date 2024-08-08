@@ -7,10 +7,7 @@ import br.com.ppw.dma.cliente.Cliente;
 import br.com.ppw.dma.cliente.ClienteService;
 import br.com.ppw.dma.master.MasterController;
 import br.com.ppw.dma.master.MasterSummary;
-import br.com.ppware.NumeroAleatorio;
-import br.com.ppware.api.GeradorDeMassa;
 import br.com.ppware.api.MassaPreparada;
-import br.com.ppware.api.MassaTabelaDTO;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -22,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("gerar-massa")
@@ -63,7 +61,7 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
     public ResponseEntity<List<MassaTabelaDTO>> getAllByCliente(@PathVariable("clienteId") Long clienteId) {
         List<MassaTabelaDTO> dtos = service.findAllByCliente(clienteId)
             .stream()
-            .map(MassaTabela::toDto)
+            .map(MassaTabelaDTO::new)
             .toList();
         return ResponseEntity.ok(dtos);
     }
@@ -71,28 +69,38 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
     /**
      * Endpoint para salvar mapeamento de massas aleatórias para tabelas.
      *
-     * @param clienteId {@link Long} contendo o ID do {@link Cliente} em que a tabela será associada.
+     * @param ambienteId {@link Long} contendo o ID do {@link Cliente} em que a tabela será associada.
      * @param dto       {@link MassaTabelaDTO} em que há o mapeamento das colunas para determinada tabela
      * @return {@link ResponseEntity} com status 200 em caso de sucesso
      */
-    @PostMapping("cliente/{clienteId}/test")
+    @PostMapping("ambiente/{ambienteId}/test")
     public ResponseEntity<List<MassaPreparada>> teste(
-        @PathVariable("clienteId") Long clienteId,
-        @Valid @RequestBody MassaTabelaDTO dto) {
+        @PathVariable("ambienteId") Long ambienteId,
+        @RequestBody MassaTabelaDTO dto) {
         //-----------------------------------------------
-        log.info("Validando novo mapeamentos de massa para cliente ID {}.", clienteId);
-        log.info("Nenhuma alteração será de fato persistida no banco!");
-        var cliente = clienteService.findById(clienteId);
-        var nome = dto.getNome();
-        dto.setNome(NumeroAleatorio.XDigitosEmString(10));
-        service.delete(service.save(cliente, dto));
-        dto.setNome(nome);
-        var massa = GeradorDeMassa.mapearMassa(dto);
+        log.info("Validando mapeamentos de massa no ambiente ID {}.", ambienteId);
+//        log.info("Nenhuma alteração será de fato persistida no banco!");
+        var ambiente = ambienteService.findById(ambienteId);
+        var massa = service.mockMassa(ambiente.acessoBanco(), dto);
+        if(massa.parallelStream().anyMatch(MassaPreparada::isErros)) {
+            log.warn("Massa possui erros!");
+            throw new RuntimeException(
+                "Existem campos não mapeados com sucesso: " + massa
+                    .parallelStream()
+                    .map(MassaPreparada::getColunasErro)
+                    .flatMap(erros -> erros.keySet().parallelStream())
+                    .collect(Collectors.joining(", "))
+            );
+        }
         log.info("Massa gerada com sucesso.");
-        log.info(massa.toString());
         return ResponseEntity.ok(massa);
+//        var nome = dto.getNome();
+//        dto.setNome(NumeroAleatorio.XDigitosEmString(10));
+//        service.delete(service.save(ambiente, dto)); //TODO: manter?
+//        dto.setNome(nome);
     }
 
+    //TODO: esse método também deveria atualizar caso já exista
     /**
      * Endpoint para salvar mapeamento de massas aleatórias para tabelas.
      * @param clienteId {@link Long} contendo o ID do {@link Cliente} em que a tabela será associada.
@@ -105,7 +113,7 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
         @PathVariable("clienteId") Long clienteId,
         @Valid @RequestBody MassaTabelaDTO dto) {
         //-----------------------------------------------
-        log.info("Salvando novos mapeamentos de massa para cliente ID {}.", clienteId);
+        log.info("Salvando novo mapeamento de massa '{}' para cliente ID {}.", dto.getNome(), clienteId);
         var cliente = clienteService.findById(clienteId);
         service.save(cliente, dto);
         return ResponseEntity.ok("Massa salva com sucesso");

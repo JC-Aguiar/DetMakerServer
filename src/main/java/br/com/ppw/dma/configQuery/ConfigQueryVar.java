@@ -1,7 +1,7 @@
 package br.com.ppw.dma.configQuery;
 
 import br.com.ppw.dma.master.MasterEntity;
-import br.com.ppw.dma.util.TipoColuna;
+import br.com.ppware.api.TipoColuna;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -9,11 +9,7 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.Comment;
 import org.hibernate.type.NumericBooleanConverter;
 
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static jakarta.persistence.EnumType.*;
+import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.SEQUENCE;
 
@@ -26,8 +22,7 @@ import static jakarta.persistence.GenerationType.SEQUENCE;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_CONFIG_QUERY_VAR")
 @Table(name = "PPW_CONFIG_QUERY_VAR",
-    uniqueConstraints = @UniqueConstraint(columnNames = {"NOME", "COLUNA", "CONFIG_QUERY_ID"})
-)
+    uniqueConstraints = @UniqueConstraint(columnNames = {"INDICE", "CONFIG_QUERY_ID"}))
 @SequenceGenerator(name = "SEQ_CONFIG_QUERY_ID", sequenceName = "RCVRY.SEQ_CONFIG_QUERY_ID", allocationSize = 1)
 public class ConfigQueryVar implements MasterEntity<Long> {
 
@@ -37,11 +32,11 @@ public class ConfigQueryVar implements MasterEntity<Long> {
     @Comment("Identificador único dessa variável de configuração de query")
     Long id;
 
-    @Column(name = "COLUNA", length = 50)//, nullable = false)
+    @Column(name = "COLUNA", length = 50, nullable = false)
     @Comment("Nome de uma das colunas usadas nos filtros da QUERY_CONFIG.SQL")
     String coluna;
 
-    @Column(name = "NOME", length = 25)//, nullable = false)
+    @Column(name = "NOME", length = 25, nullable = false)
     @Comment("Nome de uma das variáveis definidas nos filtros da QUERY_CONFIG.SQL")
     String nome;
 
@@ -50,24 +45,24 @@ public class ConfigQueryVar implements MasterEntity<Long> {
     @Comment("O tipo da variável serve para auxiliar ambos usuário e aplicação")
     TipoColuna tipo = TipoColuna.UNSET;
 
-    @Column(name = "TAMANHO")
+    @Column(name = "TAMANHO", nullable = false)
     @Comment("Se a variável for de uma coluna do tipo texto, aqui consta o tamanho máximo de caracteres")
     Integer tamanho;
 
-    @Column(name = "PRECISAO")
+    @Column(name = "PRECISAO", nullable = false)
     @Comment("Se a variável for de uma coluna do tipo numérica, aqui consta sua precisão")
     Integer precisao;
 
-    @Column(name = "ESCALA")
+    @Column(name = "ESCALA", nullable = false)
     @Comment("Se a variável for de uma coluna do tipo numérica, aqui consta sua escala")
     Integer escala;
 
     @Convert(converter = NumericBooleanConverter.class)
-    @Column(name = "ARRAY")
+    @Column(name = "ARRAY", nullable = false)
     @Comment("Identifica se a variável pode ou não receber múltiplos valores")
     Boolean array;
 
-    @Column(name = "INDICE")
+    @Column(name = "INDICE", nullable = false)
     @Comment("Informa a ordem sequencial em que essa variável aparece nos filtros da QUERY_CONFIG.SQL (da esquerda para a direita)")
     Integer index;
 

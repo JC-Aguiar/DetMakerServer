@@ -1,13 +1,14 @@
 package br.com.ppw.dma.massa;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
+import br.com.ppw.dma.ambiente.AmbienteService;
 import br.com.ppw.dma.cliente.Cliente;
 import br.com.ppw.dma.master.MasterOracleDAO;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.master.MasterSummary;
+import br.com.ppw.dma.util.FormatDate;
 import br.com.ppware.api.GeradorDeMassa;
 import br.com.ppware.api.MassaPreparada;
-import br.com.ppware.api.MassaTabelaDTO;
 import jakarta.persistence.PersistenceException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -25,8 +26,8 @@ import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatDate.SQL_BRASIL_STYLE;
 
-@Service
 @Slf4j
+@Service
 public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTabelaService> {
 
     @Autowired
@@ -35,18 +36,33 @@ public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTa
     @Autowired
     private final MassaColunaRepository massaColunaDao;
 
+    @Autowired
+    private final AmbienteService ambienteService;
+
 
     public MassaTabelaService(
         MassaTabelaRepository massaTabelaDao,
-        MassaColunaRepository massaColunaDao) {
+        MassaColunaRepository massaColunaDao,
+        AmbienteService ambienteService) {
         //-------------------------------------
         super(massaTabelaDao);
         this.massaTabelaDao = massaTabelaDao;
         this.massaColunaDao = massaColunaDao;
+        this.ambienteService = ambienteService;
     }
 
     public List<MassaTabela> findAllByCliente(@NonNull Long clienteId) {
         val result = massaTabelaDao.findAllByClienteId(clienteId);
+        if(result.isEmpty()) throw new NoSuchElementException();
+        return result;
+    }
+
+    public List<MassaTabela> findByClienteIdAndNomes(
+        @NonNull Long clienteId,
+        @NonNull Set<String> nomes) {
+
+        if(nomes.isEmpty()) return List.of();
+        val result = massaTabelaDao.findByClienteIdAndNomes(clienteId, nomes);
         if(result.isEmpty()) throw new NoSuchElementException();
         return result;
     }
@@ -142,25 +158,43 @@ public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTa
 //        }
     }
 
+    public List<MassaPreparada> mockMassa(
+        @NonNull AmbienteAcessoDTO banco,
+        @NonNull MassaTabelaDTO dto) {
+
+        var colunas = dto.getColunas()
+            .parallelStream()
+            .map(MassaColunaDTO::getNome)
+            .collect(Collectors.toSet());
+
+        ambienteService.getSqlDataTypes(dto.getNome(), colunas, banco)
+            .forEach((nome, info) ->
+                dto.getColunas().parallelStream()
+                    .filter(col -> col.getNome().equals(nome))
+                    .findFirst()
+                    .ifPresent(col -> col.setMetadados(info))
+            );
+        return GeradorDeMassa.mapearMassa(FormatDate.BRASIL_STYLE, dto);
+    }
+
     //TODO: javadoc
-    public List<MassaTabela> prepararMassa(@NonNull Set<Long> massasId)
+    public List<MassaTabela> getAllByClienteAndNomes(
+        @NonNull Cliente cliente,
+        @NonNull Set<String> massasNome)
     throws InvalidAttributeValueException {
-        log.info("Obtendo e validando Massas para os IDs: {}.", massasId
-            .stream()
-            .map(String::valueOf)
-            .collect(Collectors.joining(", "))
-        );
-        var massas = findById(massasId);
-        var massasPendentes = massasId
-            .stream()
-            .filter(id ->  massas.stream().noneMatch(massa -> massa.getId().equals(id)))
-            .map(String::valueOf)
+        log.info("Obtendo e validando as massas {} do cliente '{}'.", massasNome, cliente.getNome());
+        var massas = findByClienteIdAndNomes(cliente.getId(), massasNome);
+        var massasPendentes = massasNome
+            .parallelStream()
+            .filter(nome ->  massas.stream().noneMatch(massa -> massa.getNome().equals(nome)))
             .toList();
-        if(!massasPendentes.isEmpty()) {
-            throw new InvalidAttributeValueException(
-                "Não existe as Massas para os IDs: " + String.join(", ", massasPendentes));
-        }
-        return massas;
+        if(massasPendentes.isEmpty()) return massas;
+        throw new InvalidAttributeValueException(
+            "Massas não identificadas para o Cliente '" +
+            cliente.getNome() +
+            "': " +
+            String.join(", ", massasPendentes)
+        );
     }
 
 //    /**
