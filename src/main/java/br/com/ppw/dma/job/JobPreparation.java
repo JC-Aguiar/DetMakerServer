@@ -4,7 +4,9 @@ import br.com.ppw.dma.util.FormatString;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 
+import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public record JobPreparation(
@@ -12,7 +14,16 @@ public record JobPreparation(
     @NotNull JobExecuteDTO jobInputs) {
 
 
-	//TODO: testar!
+	public static Optional<JobPreparation> match(
+		@NonNull Job job,
+		@NonNull Collection<JobExecuteDTO> execDto) {
+
+		return execDto.parallelStream()
+			.filter(dto -> job.getId().equals(dto.getId()))
+			.findFirst()
+			.map(dto -> new JobPreparation(job, dto));
+	}
+
 	public void aplicarConfiguracoes(@NonNull Map<String, String> configuracoes) {
 		configuracoes.entrySet()
 			.parallelStream()
@@ -55,17 +66,7 @@ public record JobPreparation(
 //				+ String.join(", ", parametrosPendentes));
 //		}
 		jobInputs.setArgumentos(
-			String.join(" ", parametrosPreenchidos.values()));
-
-		//Alterando o mapa de variáveis para adicionar aspas simples nos valores.
-		jobInputs.setVariaveis(
-			jobInputs.getVariaveis()
-				.entrySet()
-				.stream()
-//				.peek(entry -> entry.setValue("'" +entry.getValue()+ "'"))
-				.collect(Collectors.toMap(
-					Map.Entry::getKey,
-					Map.Entry::getValue))
+			String.join(" ", parametrosPreenchidos.values())
 		);
 		//Aplicando as variáveis nas queries
 		jobInputs.getQueries().forEach(queryDto -> queryDto.setSql(
@@ -73,8 +74,6 @@ public record JobPreparation(
 				queryDto.getSql(),
 				jobInputs.getVariaveis())
 		));
-		//Limpando as variáveis (para melhor performance)
-		jobInputs.setVariaveis(Map.of());
 	}
 
 }

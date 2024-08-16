@@ -2,6 +2,7 @@ package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.evidencia.Evidencia;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -22,6 +23,8 @@ public class JobExecuteDTO {
    String argumentos;
    List<ComandoSql> queries = new ArrayList<>();
    List<JobCarga> cargas = new ArrayList<>();
+
+   @JsonIgnore
    Map<String, String> variaveis = new HashMap<>();
 
 

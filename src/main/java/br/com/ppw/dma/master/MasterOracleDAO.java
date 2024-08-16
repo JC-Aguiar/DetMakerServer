@@ -31,6 +31,7 @@ public class MasterOracleDAO implements AutoCloseable {
     final String password;
     final Connection conn;
 
+
     public MasterOracleDAO(@NonNull Ambiente ambiente) throws SQLException {
         this(ambiente.acessoBanco());
     }
@@ -44,30 +45,6 @@ public class MasterOracleDAO implements AutoCloseable {
         log.info(" - USER: '{}'", username);
         conn = DriverManager.getConnection(url, username, password);
         log.info("Conexão realizada com sucesso.");
-    }
-
-    public List<String> getColsFromTable(@NotBlank String tableName)
-    throws SQLException {
-        log.info("Obtendo os nomes dos campos para a tabela '{}'.", tableName);
-        if(!SqlUtils.isSafeQuery(tableName)) {
-            throw new RuntimeException("A tabela informada é/contêm comandos DDL não permitidos.");
-        }
-        val listaColunas = new ArrayList<String>();
-        try(val statement = conn.createStatement()) {
-            val sql = sqlColsFromTable(tableName);
-            log.info("SQL: {}", sql);
-            log.info("Executando query.");
-            val resultSet = statement.executeQuery(sql);
-            val metaDados = resultSet.getMetaData();
-            int columnCount = metaDados.getColumnCount();
-            while(resultSet.next()) {
-                for(int i = 1; i <= columnCount; i++) {
-                    listaColunas.add(resultSet.getString(i));
-                }
-            }
-            log.info("Total de campos coletados da tabela '{}': {}.", tableName, listaColunas.size());
-            return listaColunas;
-        }
     }
 
     public Map<String, ColumnInfo> getColumnInfo(
@@ -85,10 +62,10 @@ public class MasterOracleDAO implements AutoCloseable {
             + "AND COLUMN_NAME IN (" +colunasString+ ")";
         log.info("SQL: {}", sql);
 
-        try(val statement = conn.prepareStatement(sql)) {
-            var resultado = statement.executeQuery();
-            log.info("Query executada com sucesso. Resultado obtido:");
+        try(val statement = conn.prepareStatement(sql);
+            var resultado = statement.executeQuery()) {
 
+            log.info("Query executada com sucesso. Resultado obtido:");
             while(resultado.next()) {
                 var nome = resultado.getString("COLUMN_NAME");
                 var type = resultado.getString("DATA_TYPE");
@@ -98,7 +75,6 @@ public class MasterOracleDAO implements AutoCloseable {
                     resultado.getInt("DATA_SCALE")
                 );
                 log.info("{}: {} - {}.", nome, type, metaDados);
-
                 colunas.parallelStream()
                     .filter(col -> col.equals(nome))
                     .findFirst()
@@ -123,32 +99,120 @@ public class MasterOracleDAO implements AutoCloseable {
         }
     }
 
+    public TableDB getColumnsFromTable(@NonNull String tabela) {
+        var colunas = new ArrayList<ColumnDB>();
+        var sql = "SELECT COLUMN_NAME, DATA_LENGTH, DATA_TYPE, DATA_PRECISION, DATA_SCALE "
+            + "FROM ALL_TAB_COLUMNS "
+            + "WHERE TABLE_NAME = '" +tabela+ "'";
+        log.info("SQL: {}", sql);
+
+        try(val statement = conn.prepareStatement(sql);
+            var resultado = statement.executeQuery()) {
+
+            log.info("Query executada com sucesso. Coletando dados da tabela.");
+            while(resultado.next()) {
+                var coluna = ColumnDB.builder()
+                    .nome(resultado.getString("COLUMN_NAME"))
+                    .tipo(TipoColuna.from(
+                        resultado.getString("DATA_TYPE")
+                    ))
+                    .tamanho(resultado.getInt("DATA_LENGTH"))
+                    .precisao(resultado.getInt("DATA_PRECISION"))
+                    .escala(resultado.getInt("DATA_SCALE"))
+                    .build();
+                colunas.add(coluna);
+            }
+            log.info("Total de colunas identificadas: {}", colunas.size());
+            return TableDB.builder()
+                .tabela(tabela)
+                .colunas(colunas)
+                .build();
+        }
+        catch(SQLException | PersistenceException e) {
+            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+        }
+    }
+
+
+    public Set<TableDB> getColumnsFromTable(@NonNull Collection<String> tabelas) {
+        return getColumnsFromTable(tabelas);
+    }
+
+    public Set<TableDB> getColumnsFromTable(
+        @NonNull Set<String> tabelas,
+        @NonNull Set<String> colunas) {
+
+        var tabelasConsultadas = new LinkedHashSet<TableDB>();
+        var tabelasNomes = tabelas.parallelStream()
+            .map(nome -> "'" +nome+ "'")
+            .collect(Collectors.joining(", "));
+        var colunasNomes = colunas.parallelStream()
+            .map(nome -> "'" +nome+ "'")
+            .collect(Collectors.joining(", "));
+        var sqlAppend = !colunas.isEmpty()
+            ? ""
+            : "AND COLUMN_NAME IN (" +colunasNomes+ ")";
+
+        var sql = "SELECT TABLE_NAME, COLUMN_NAME, DATA_LENGTH, DATA_TYPE, DATA_PRECISION, DATA_SCALE "
+            + "FROM ALL_TAB_COLUMNS "
+            + "WHERE TABLE_NAME IN (" +tabelasNomes+ ") "
+            + sqlAppend
+            + "ORDER BY TABLE_NAME ";
+        log.info("SQL: {}", sql);
+
+        try(val statement = conn.prepareStatement(sql);
+            var resultado = statement.executeQuery()) {
+
+            log.info("Query executada com sucesso. Coletando dados das tabelas.");
+            while(resultado.next()) {
+                var nomeTabela = resultado.getString("TABLE_NAME");
+                var tabelaAlvo = tabelasConsultadas.parallelStream()
+                    .filter(t -> t.tabela().equalsIgnoreCase(nomeTabela))
+                    .findFirst()
+                    .orElseGet(() -> TableDB.builder()
+                        .tabela(nomeTabela)
+                        .colunas(new ArrayList<>())
+                        .build()
+                    );
+                var coluna = ColumnDB.builder()
+                    .nome(resultado.getString("COLUMN_NAME"))
+                    .tipo(TipoColuna.from(
+                        resultado.getString("DATA_TYPE")
+                    ))
+                    .tamanho(resultado.getInt("DATA_LENGTH"))
+                    .precisao(resultado.getInt("DATA_PRECISION"))
+                    .escala(resultado.getInt("DATA_SCALE"))
+                    .build();
+                tabelaAlvo.colunas().add(coluna);
+                tabelasConsultadas.add(tabelaAlvo);
+            }
+            log.info("Total de tabelas identificadas: {}", tabelasConsultadas.size());
+            return Set.copyOf(tabelasConsultadas);
+        }
+        catch(SQLException | PersistenceException e) {
+            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+        }
+    }
+
     public List<FiltroSql> findAndSetColumnInfo(
         @NonNull String tabela,
         @NonNull List<FiltroSql> filtros) {
         //----------------------------------------
         //TODO: não daria para já escrever diretamente o nome da tabela e das colunas na query?
-        var colunas = filtros.parallelStream()
+        var colunasString = filtros.parallelStream()
             .map(FiltroSql::getColuna)
-            .collect(Collectors.toSet());
-        var coringas = colunas.parallelStream()
-            .map(filtro -> "?")
+            .map(col -> "'" +col+ "'")
             .collect(Collectors.joining(", "));
 
         var sql = "SELECT COLUMN_NAME, DATA_LENGTH, DATA_TYPE, DATA_PRECISION, DATA_SCALE "
             + "FROM ALL_TAB_COLUMNS "
-            + "WHERE TABLE_NAME = ? "
-            + "AND COLUMN_NAME IN ("
-            + coringas
-            + ")";
+            + "WHERE TABLE_NAME = '" +tabela+ "'"
+            + "AND COLUMN_NAME IN (" +colunasString+ ")";
         log.info("SQL: {}", sql);
 
-        try(val statement = conn.prepareStatement(sql)) {
-            int index = 1;
-            statement.setString(index++, tabela);
-            for(var col : colunas) statement.setString(index++, col);
+        try(val statement = conn.prepareStatement(sql);
+            var resultado = statement.executeQuery()) {
 
-            var resultado = statement.executeQuery();
             log.info("Query executada com sucesso. Resultado obtido:");
             while(resultado.next()) {
                 var col = resultado.getString("COLUMN_NAME");
@@ -159,7 +223,6 @@ public class MasterOracleDAO implements AutoCloseable {
                     resultado.getInt("DATA_SCALE")
                 );
                 log.info("{}: {} - {}.", col, type, metaDados);
-
                 filtros.stream()
                     .filter(filtro -> filtro.getColuna().equals(col))
                     .findFirst()
@@ -189,14 +252,6 @@ public class MasterOracleDAO implements AutoCloseable {
         }
     }
 
-    private static String sqlColsFromTable(@NotBlank String tableName) {
-        String sql = "SELECT a.column_name " +
-                "FROM all_tab_columns a " +
-                "WHERE a.table_name = '%s' " +
-                "AND ROWNUM <= 125 " +
-                "ORDER BY COLUMN_ID ";
-        return String.format(sql, tableName);
-    }
 
     //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
     public List<Map<String, Object>> collectData(@NonNull String sql)
@@ -226,33 +281,6 @@ public class MasterOracleDAO implements AutoCloseable {
         return extracao;
     }
 
-    public List<Map<String, Object>> getAllInfoFromTable2(@NonNull String sql) throws SQLException {
-        val extracao = new ArrayList<Map<String, Object>>();
-        try(val statement = conn.createStatement()) {
-            log.info("SQL: {}", sql);
-            checkSqlGrammar(sql);
-            log.info("Executando query.");
-            val resultSet = statement.executeQuery(sql);
-            val metaDados = resultSet.getMetaData();
-            int columnCount = metaDados.getColumnCount();
-
-            while(resultSet.next()) {
-                val resultMap = new HashMap<String, Object>();
-                for(int i = 1; i <= columnCount; i++) {
-                    val coluna = metaDados.getColumnName(i);
-                    val valor = resultSet.getObject(i);
-                    resultMap.put(coluna, valor);
-                }
-                extracao.add(resultMap);
-            }
-        }
-        if(extracao.isEmpty())
-            log.info("Nenhum registro encontrado");
-        else
-            log.info("Total de registros coletados: {}.", extracao.size());
-        return extracao;
-    }
-    
     //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
     public void validadeQuery(@NonNull String sql) throws SQLGrammarException, SQLException {
         checkSqlGrammar(sql);

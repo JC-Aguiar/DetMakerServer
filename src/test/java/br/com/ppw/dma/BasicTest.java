@@ -1,9 +1,6 @@
 package br.com.ppw.dma;
 
-import br.com.ppw.dma.ambiente.Ambiente;
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
-import br.com.ppw.dma.configQuery.ComandoSql;
-import br.com.ppw.dma.configQuery.ConfigQueryVar;
 import br.com.ppw.dma.configQuery.FiltroSql;
 import br.com.ppw.dma.job.JobService;
 import br.com.ppw.dma.master.MasterOracleDAO;
@@ -11,6 +8,7 @@ import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.pipeline.PipelineExecDTO;
 import br.com.ppw.dma.util.FormatString;
 import br.com.ppw.dma.util.SqlUtils;
+import br.com.ppw.dma.util.SqlUtils.DqlKeywords;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.lalyos.jfiglet.FigletFont;
@@ -377,56 +375,96 @@ public class BasicTest {
     }
 
     @Test
-    public void testeCriarValidarComandoSqlEmConfigQueryVars() throws SQLException {
-        var ambiente = new Ambiente();
-        ambiente.setConexaoBanco("10.129.164.205:1521:cyb3dev");
-        ambiente.setUsuarioBanco("rcvry");
-        ambiente.setSenhaBanco("rcvry");
-        var banco = AmbienteAcessoDTO.banco(ambiente);
-        log.info(banco.toString());
+    public void testeObtendoCamposWhereDaQuery() throws SQLException {
+        var query = """
+            SELECT column1, count(column2)
+            FROM table_name
+            WHERE fieldX >= conditionX
+            AND fieldJ EXIST (
+                SELECT column3
+                FROM another_table
+                WHERE fieldK NOT LIKE conditionK
+                OR fieldZ1 = conditionZ1
+                OR fieldZ2 <> conditionZ2
+                ORDER BY column3 ASC
+            )
+            OR fieldY1=conditionY1
+            OR fieldY2>=conditionY2
+            OR fieldY3<=conditionY3
+            OR fieldY4<>conditionY4
+            GROUP BY column1
+            HAVING SUM(column2) > 100
+            ORDER BY column1 DESC
+            LIMIT 10
+            OFFSET 5
+            FETCH FIRST 5 ROWS ONLY
+            UNION ALL
+            SELECT column3, column4, column5
+            FROM another_table
+            WHERE fieldA LIKE conditionA
+            ORDER BY column3 ASC
+            """;
+        var filtros = FiltroSql.identificar(query);
+        filtros.forEach(fitlro -> log.info(filtros.toString()));
+    }
 
-        var filtro1 = new FiltroSql();
-        filtro1.setTabela("EVENTOS_WEB");
-        filtro1.setColuna("EVDTPROC");
-        filtro1.setTipo("UNSET");
-        filtro1.setIndex(0);
-        filtro1.setArray(false);
-        filtro1.setVariavel("data-evento-processo");
-        var filtro2 = new FiltroSql();
-        filtro2.setTabela("EVENTOS_WEB");
-        filtro2.setColuna("EVACCT");
-        filtro2.setTipo("UNSET");
-        filtro2.setIndex(1);
-        filtro2.setArray(true);
-        filtro2.setVariavel("contrato");
-        var comando = new ComandoSql();
-        comando.setJobId(173L);
-        comando.setNome("Eventos de Pagamento BRM");
-        comando.setSql(
-            "SELECT * FROM EVENTOS_WEB WHERE EVTYPE='EV_BOLETO_CYBER_HUBPGTO' AND TRUNC" +
-                "(EVDTPROC)=TRUNC(${data-evento-processo}) AND EVACCT IN (${contrato}) ORDER BY EVID ASC");
-        comando.setFiltros(List.of(filtro1, filtro2));
-        log.info(comando.toString());
+//    @Test
+//    public void testeObterMetaDadosViQuery() {
+//        String url = "jdbc:oracle:thin:@10.129.226.159:1521/CCSSIDEV";
+//        String user = "rcvry";
+//        String password = "Vivo2015";
+//        var ambiente = new AmbienteAcessoDTO();
+//        ambiente.setConexao("10.129.226.159:1521/CCSSIDEV");
+//        ambiente.setUsuario(user);
+//        ambiente.setSenha(password);
+//
+//        try (var dao = new MasterOracleDAO(ambiente)) {
+//            dao.getColumnsFromTable("DELQMST", "UDA1").forEach(
+//                tabela -> log.info(tabela.toString())
+//            );
+//        }
+//        catch(Exception e) {
+//            e.printStackTrace();
+//        }
+//    }
 
-        try(val masterDao = new MasterOracleDAO(banco)) {
-            log.info("Obtendo metadados das variáveis.");
-            comando.groupFiltrosPorTabela()
-                .forEach(masterDao::findAndSetColumnInfo);
-
-            log.info("Convertendo para ConfigQueryVars.");
-            var queryVars = comando.getFiltros()
-                .stream()
-                .map(ConfigQueryVar::new)
-                .peek(vars -> log.info(vars.toString()))
-                .toList();
-
-            log.info("Criando valores aleatórios para testar as variáveis da query.");
-            var mapaVariavelValor = ConfigQueryVar.mapaDasVariaveis(queryVars);
-            log.info("Variáveis: {}", mapaVariavelValor);
-
-            var sql = FormatString.substituirVariaveis(comando.getSql(), mapaVariavelValor);
-            masterDao.validadeQuery(sql);
-        }
+    @Test
+    public void testeRegexExtrairNomeDasTabelas() {
+        var query = """
+            SELECT alias1.column1,   table_name2.  count(column2)
+            FROM table_name1 alias1, table_name2 alias2
+            INNER JOIN   table_name3
+            ON alias1.algo1A = table_name3.algo3A
+            OR table_name1.algo1B = table_name3.algo3B
+            WHERE fieldX >= conditionX
+            AND EXIST (
+                SELECT column3
+                FROM table_name4
+                WHERE fieldZ = conditionZ1
+                OR fieldZ <> conditionZ2
+                ORDER BY column3 ASC
+            )
+            OR fieldY=conditionY1
+            OR fieldY>=conditionY2
+            OR fieldY<=conditionY3
+            OR fieldY<>conditionY4
+            GROUP BY column1
+            HAVING SUM(column2) > 100
+            ORDER BY column1 DESC
+            LIMIT 10
+            OFFSET 5
+            FETCH FIRST 5 ROWS ONLY
+            UNION ALL
+            SELECT column3, column4, column5
+            FROM table_name5,
+                 table_name6
+            WHERE fieldA LIKE conditionA
+            ORDER BY column3 ASC
+        """;
+        var tables = SqlUtils.getTablesNameFromQuery(query);
+        var columns = SqlUtils.getColumnsNameFromQuery(query);
+        log.info("TABELAS: {}", String.join(", ", tables));
+        log.info("COLUNAS: {}", String.join(", ", columns));
     }
 
     @Test

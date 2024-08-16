@@ -44,11 +44,23 @@ public class PipelineExecDTO {
     boolean sobrescreverVariaveis = false;
 
 
+
     public List<Long> getJobsId() {
         return getJobs()
             .stream()
             .map(JobExecuteDTO::getId)
             .toList();
+    }
+
+    @JsonIgnore
+    public Map<String, String> getConfiguracoesDinamicas() {
+        return configuracoes.entrySet()
+            .parallelStream()
+            .filter(variavel -> variavel.getValue().matches("^\\$[^.]*\\..*"))
+            .collect(Collectors.toMap(
+               Map.Entry::getKey,
+               Map.Entry::getValue
+            ));
     }
 
     @JsonIgnore

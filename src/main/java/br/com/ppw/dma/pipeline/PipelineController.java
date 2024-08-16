@@ -6,6 +6,7 @@ import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.evidencia.EvidenciaService;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.job.Job;
+import br.com.ppw.dma.job.JobExecuteDTO;
 import br.com.ppw.dma.job.JobPreparation;
 import br.com.ppw.dma.job.JobService;
 import br.com.ppw.dma.massa.MassaTabela;
@@ -15,7 +16,7 @@ import br.com.ppw.dma.relatorio.RelatorioHistoricoDTO;
 import br.com.ppw.dma.relatorio.RelatorioService;
 import br.com.ppw.dma.system.FileSystemService;
 import br.com.ppw.dma.util.FormatString;
-import br.com.ppware.api.MassaPreparada;
+import br.com.ppw.dma.util.SqlUtils;
 import jakarta.validation.ValidationException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -28,12 +29,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import javax.management.InvalidAttributeValueException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -124,84 +121,156 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         //TODO: validar Ambiente?
         log.info("Obtendo e validando Ambiente e Pipeline.");
         var ambiente = ambienteService.findById(execDto.getAmbienteId());
-        var cliente = ambiente.getCliente();
         var pipeline = pipelineService.findById(execDto.getPipelineId());
+        var cliente = ambiente.getCliente();
+        var jobs = pipeline.getJobs();
+        var inputJobs = execDto.getJobs();
+        var massasNome = execDto.getMassas();
         var inconformidades = new ArrayList<String>();
 
-        //Obtendo Jobs no banco conforme os inputs declarados para execução
-        var jobsPreparados = new ArrayList<JobPreparation>();
-        try {
-            jobsPreparados.addAll(
-                jobService.prepararJob(pipeline.getJobs(), execDto.getJobs())
-            );
-        }
-        catch(InvalidAttributeValueException e) {
-            inconformidades.add(e.getMessage());
-        }
+        // ------------- VALIDANDO INPUT JOBS -------------
+        log.info("Comparando Jobs declarados x Jobs na Pipeline.");
+        var jobsIds = jobs.parallelStream()
+            .map(Job::getId)
+            .collect(Collectors.toSet());
+        var inputsJobsIds = inputJobs.parallelStream()
+            .map(JobExecuteDTO::getId)
+            .collect(Collectors.toSet());
 
-        //Obtendo e validando Massas
-        var massas = new ArrayList<MassaPreparada>();
-        try {
-            massaService.getAllByClienteAndNomes(cliente, execDto.getMassas())
+        var jobsIdsPendentes = new LinkedList<Long>(jobsIds);
+        jobsIdsPendentes.removeAll(inputsJobsIds);
+        var inputsJobsIdsPendentes = new LinkedList<Long>(inputsJobsIds);
+        inputsJobsIdsPendentes.removeAll(jobsIds);
+
+        if(!jobsIdsPendentes.isEmpty()) {
+            var pendentes = "Jobs da Pipeline não declarados: " + jobsIdsPendentes
                 .parallelStream()
-                .map(MassaTabela::toDto)
-                .map(dto -> massaService.mockMassa(ambiente.acessoBanco(), dto))
-                .flatMap(List::parallelStream)
-                .forEach(massas::add);
+                .map(String::valueOf)
+                .collect(Collectors.joining(", "));
+            log.warn(pendentes);
+            inconformidades.add(pendentes);
         }
-        catch(InvalidAttributeValueException e) {
-            inconformidades.add(e.getMessage());
+        if(!inputsJobsIdsPendentes.isEmpty()) {
+            var pendentes = "Jobs declarados não encontrados na Pipeline: " + inputsJobsIdsPendentes
+                .parallelStream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(", "));
+            log.warn(pendentes);
+            inconformidades.add(pendentes);
         }
+        // ------------- VALIDANDO INPUT MASSAS -------------
+        log.info("Obtendo as Massas declaradas para validar pendências.");
+        var massasPendentes = new ArrayList<String>();
+        var massasBanco = massaService.findByClienteIdAndNomes(cliente.getId(), massasNome);
 
-        log.info("Validando conflitos entre as variáveis dos Jobs e as configurações da Pipeline.");
-        try {
-            execDto.validar();
+        massasNome.parallelStream()
+            .filter(nome ->  massasBanco
+                .parallelStream()
+                .noneMatch(massa -> massa.getNome().equals(nome)))
+            .forEach(massasPendentes::add);
+
+        if(!massasPendentes.isEmpty()) {
+            var pendentes = String.format("Massas não identificadas para o Cliente '%s': %s",
+                cliente.getNome(),
+                String.join(", ", massasPendentes));
+            log.warn(pendentes);
+            inconformidades.add(pendentes);
         }
-        catch(Exception e) {
-            inconformidades.add(e.getMessage());
-        }
+//        log.info("Validando conflitos entre as variáveis dos Jobs e as configurações da Pipeline.");
+//        try {
+//            execDto.validar();
+//        }
+//        catch(Exception e) {
+//            inconformidades.add(e.getMessage());
+//        }
 
         if(!inconformidades.isEmpty())
             throw new ValidationException(String.join("\n", inconformidades));
 
-        log.info("Aplicando valores das Massas nas variáveis globais.");
+        // ------------- PREPARANDO DADOS -------------
+        log.info("Agrupando inputs declarados pelo usuário com os Jobs da Pipeline.");
+        var jobsPreparados = pipeline.getJobs()
+            .parallelStream()
+            .map(job -> JobPreparation.match(job, execDto.getJobs()))
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .toList();
+
+        log.info("Gerando Massas solicitadas.");
+        var massasPreparada = massasBanco.parallelStream()
+            .map(MassaTabela::toDto)
+            .map(dto -> massaService.mockMassa(ambiente.acessoBanco(), dto))
+            .flatMap(List::parallelStream)
+            .toList();
+
+        // ------------- METADADOS DAS QUERIES -------------
+        var queryAllTables = new HashSet<String>();
+        var queryAllColumns = new HashSet<String>();
+        inputJobs.parallelStream()
+            .map(JobExecuteDTO::getQueries)
+            .flatMap(List::parallelStream)
+            .map(ComandoSql::getSql)
+            .forEach(query -> {
+                var tables = SqlUtils.getTablesNameFromQuery(query);
+                queryAllTables.addAll(tables);
+                var columns = SqlUtils.getColumnsNameFromQuery(query);
+                var existeVariavel = execDto.getConfiguracoes()
+                    .entrySet()
+                    .parallelStream()
+                    .anyMatch(variavel -> columns.contains(variavel.getKey()));
+                if(existeVariavel) queryAllColumns.addAll(columns);
+            });
+        log.info("TABELAS A CONSULTAR:");
+        queryAllTables.forEach(log::info);
+        log.info("COLUNAS A CONSULTAR:");
+        queryAllColumns.forEach(log::info);
+        var tabelasBanco = ambienteService.getMetadatasFromTables(
+            queryAllTables,
+            queryAllColumns,
+            ambiente
+        );
+        log.info("TABELAS E COLUNAS OBTIDAS NO BANCO:");
+        tabelasBanco.forEach(table -> log.info("{}.{}", table.tabela(), table.colunas()));
+
+        // ------------- DEFININDO VARIÁVEIS -------------
+        //TODO:
+        // 1. Após coletado os metadados das tabelas, tentar aplicar conversão dos job-exec.
+        //   - Preciso de um DateTimeFormatter geral.
+        //   - Preciso do TipoColuna de cada coluna.
+        // 2. Já validar se a SQL final é segura e somente de consulta.
+        // * Mover parte desse método para novo endpoint, focado na validação das solicitações no DTO.
+        // * Adicionar padrão da data em Ambiente.bancoDataFormato ou Global.bancoDataFormato.
+        log.info("Aplicando valores das Massas nas variáveis globais da Pipeline.");
         execDto.getConfiguracoes()
             .entrySet()
             .parallelStream()
-            .peek(config -> log.info(" - Variável global: {}.", config))
             .filter(variavel -> variavel.getValue().matches("^\\$[^.]*\\..*"))
-//            .filter(variavel -> variavel.getValue().contains("\\."))
             .forEach(variavel -> {
                 log.info(" - Identificada Variável Global de massa: {}", variavel);
                 var campoArray = variavel.getValue().split("\\.");
-                log.info(" - Array: {}.", String.join(", ", campoArray));
                 var tabelaNome = campoArray[0].substring(1);
                 var colunaNome = campoArray[1];
-                log.info(" - {}:{}.", tabelaNome, colunaNome);
-                massas.parallelStream()
+                massasPreparada.parallelStream()
                     .filter(massa -> massa.getTabela().equalsIgnoreCase(tabelaNome))
-                    .peek(massa -> log.info("Tabela Massa identificada: {}.", massa.getTabela()))
                     .findFirst()
-                    .flatMap(massa -> {
-                        var col = massa.getColunasSqlSintaxe(colunaNome);
-                        if(col.isPresent())
-                            log.info("Coluna Massa identificada: {}.", col);
-                        else
-                            log.info("Coluna Massa não identificada.");
-                        return col;
-                    })
-                    .ifPresent(variavel::setValue);
+                    .flatMap(massa -> massa.getColunasSqlSintaxe(colunaNome))
+                    .ifPresent(valor -> {
+                        log.info(" - Novo valor: {}", valor);
+                        variavel.setValue(valor);
+                    });
             });
-
-        log.info("Aplicando configurações da Pipeline nos Jobs preparados.");
+        log.info("Estado final das variáveis globais:");
+        execDto.getConfiguracoes().forEach(
+            (chave, valor) -> log.info(" - {}: {}", chave, valor)
+        );
+        log.info("Aplicando variáveis glovais nos Jobs unificados.");
         jobsPreparados.parallelStream().forEach(
             job -> job.aplicarConfiguracoes(execDto.getConfiguracoes())
         );
-
         log.info("Obtendo queries para as Massas.");
 //        var massaInsert = new ArrayList<String>();
 //        var massaDelete = new ArrayList<String>();
-        massas.forEach(massa -> {
+        massasPreparada.forEach(massa -> {
 //            massaInsert.add(massa.gerarQueryInsert());
 //            massaDelete.add(massa.gerarQueryDelete());
             var sql = massa.gerarQueryInsert();
@@ -211,13 +280,13 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
             FormatString.substituirVariaveis(sql, massa.getColunasSqlSintaxe());
             log.info(sql);
         });
-
+        //Fim
         return run(new PipelinePreparation(
             pipeline,
             execDto.getAtividade(),
             ambiente,
             jobsPreparados,
-            massas
+            massasPreparada
         ));
     }
 
