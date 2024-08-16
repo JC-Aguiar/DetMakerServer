@@ -4,6 +4,7 @@ import br.com.ppw.dma.cliente.Cliente;
 import br.com.ppw.dma.configQuery.ColumnInfo;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.master.MasterOracleDAO;
+import br.com.ppw.dma.master.TableDB;
 import br.com.ppw.dma.util.SqlUtils;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.ConstraintViolationException;
@@ -150,6 +151,19 @@ public class AmbienteService {
 
         try(val masterDao = new MasterOracleDAO(ambiente)) {
             return masterDao.getColumnInfo(tabela, campos);
+        }
+        catch(SQLException | PersistenceException e) {
+            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+        }
+    }
+
+    public Set<TableDB> getMetadatasFromTables(
+        @NonNull Set<String> tabelas,
+        @NonNull Set<String> colunas,
+        @NonNull Ambiente ambiente) {
+
+        try(val masterDao = new MasterOracleDAO(ambiente)) {
+            return masterDao.getColumnsFromTable(tabelas, colunas);
         }
         catch(SQLException | PersistenceException e) {
             throw new RuntimeException(SqlUtils.getExceptionMainCause(e));

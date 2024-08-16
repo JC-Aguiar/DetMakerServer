@@ -57,7 +57,7 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
             masterDao.validadeQuery(sql);
         }
     }
-    
+
     public void completeAndValidateVariables(
         @NonNull ComandoSql comando,
         @NonNull AmbienteAcessoDTO banco) {
@@ -123,4 +123,6 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
         }
         return configQuery;
     }
+
+
 }

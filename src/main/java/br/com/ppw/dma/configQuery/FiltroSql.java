@@ -11,6 +11,12 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.lang.Nullable;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Valid
 @Setter
@@ -45,24 +51,22 @@ public class FiltroSql implements Serializable {
     @Nullable
     ColumnInfo metaDados;
 
-//    public static final LinkedHashSet<String> OPERADORES_REMOVER = new LinkedHashSet<>();
-//
-//
-//    static {
-//        OPERADORES_REMOVER.add("=");
-//        OPERADORES_REMOVER.add("<>");
-//        OPERADORES_REMOVER.add("!=");
-//        OPERADORES_REMOVER.add("<");
-//        OPERADORES_REMOVER.add(">");
-//        OPERADORES_REMOVER.add("<=");
-//        OPERADORES_REMOVER.add(">=");
-//        OPERADORES_REMOVER.add("IN");
-//        OPERADORES_REMOVER.add("NOT IN");
-//        OPERADORES_REMOVER.add("BETWEEN");
-//        OPERADORES_REMOVER.add("NOT BETWEEN");
-//        OPERADORES_REMOVER.add("LIKE");
-//        OPERADORES_REMOVER.add("NOT LIKE");
-//    };
+
+    public static final List<String> OPERADORES_REMOVER = List.of(
+        "=",
+        "<>",
+        "!=",
+        "<",
+        ">",
+        "<=",
+        ">=",
+        " NOT IN",
+        " NOT BETWEEN",
+        " NOT LIKE",
+        " IN ",
+        " BETWEEN ",
+        " LIKE "
+    );
 
 //    public FiltroSql(String coluna, String nome, boolean array, int index) {
 //        this.coluna = coluna;
@@ -94,35 +98,79 @@ public class FiltroSql implements Serializable {
 
     //TODO: javadoc
     //TODO: criar throw próprio
-//    public static List<FiltroSql> identificar(@NonNull String query) {
-//        val filtros = new ArrayList<FiltroSql>();
-//        var novaQuery = limparQuery(query);
-//        var linhas = novaQuery.split("\\s+");
-//        for(var i = 1; i < linhas.length; i++) {
-//            if(!textoPossuiVariavel(linhas[i])) continue;
-//            var array = variavelArray(linhas[i]);
-//            var variavelNome = extrairNomeVariavel(linhas[i]);
-//
-//            filtros.add(new FiltroSql(
-//                FormatString.extrairConteudoParenteses(linhas[i-1]),
-//                variavelNome,
-//                array,
-//                i
-//            ));
-//        }
-//        return filtros;
-//    }
+    public static List<FiltroSql> identificar(@NonNull String query) {
+        val filtros = new ArrayList<FiltroSql>();
+        var novaQuery = formatQuery(query);
+        System.out.println("NOVA QUERY: " + novaQuery);
+        var whereParametros = getWhereParameters(novaQuery);
+        var regexArray = "\\((.*?)\\)";
+        for(int index = 0; index < whereParametros.size(); index++) {
+            if(index < 1) continue;
+            var coluna = whereParametros.get(index-1);
+            if(coluna.contains("(") && coluna.contains(")")) {
+                Pattern pattern = Pattern.compile(regexArray);
+                Matcher matcher = pattern.matcher(coluna);
+                if(matcher.find()) coluna = matcher.group(1);
+            }
+            var valor = whereParametros.get(index);
+            var array = valor.startsWith("(") && valor.endsWith(")");
+            var filtro = new FiltroSql();
+            filtro.setColuna(coluna);
+            filtro.setVariavel(valor);
+            filtro.setArray(array);
+            filtros.add(filtro);
+        }
+        return filtros;
+/*
+        tabelas:
+        FROM(.*?)(?:\sORDER BY|\sWHERE|\sGROUP BY|\sHAVING|\sLIMIT|\sOFFSET|\sFETCH|\sSELECT|\s$)
+ */
+    }
 
-//    private static String limparQuery(@NonNull String query) {
-//        var novaQuery = new StringBuilder(query.replace("=", " = "));
-//        OPERADORES_REMOVER.forEach(operador -> {
-//            int index;
-//            while ((index = novaQuery.indexOf(operador)) != -1) {
-//                novaQuery.delete(index, index + operador.length());
-//            }
-//        });
-//        return novaQuery.toString();
-//    }
+    private static String formatQuery(@NonNull String query) {
+        var novaQuery = new StringBuilder(
+            query.replaceAll("\r", " ")
+                .replaceAll("\n", " ")
+                .replaceAll("\t", " ")
+                .replaceAll("=", " = ")
+                .replaceAll("<>", " <> ")
+                .replaceAll("!=", " != ")
+                .replaceAll("<", " < ")
+                .replaceAll(">", " > ")
+                .replaceAll("<=", " <= ")
+                .replaceAll(">=", " >= ")
+                .replaceAll("\\s+", " "));
+        OPERADORES_REMOVER.forEach(operador -> {
+            int index;
+            while ((index = novaQuery.indexOf(operador)) != -1) {
+                novaQuery.delete(index, index + operador.length());
+            }
+        });
+        return novaQuery.toString();
+    }
+
+    private static List<String> getWhereParameters(@NonNull String query) {
+        var regex = "WHERE(.*?)" +
+            "(?:\\sORDER BY|\\sGROUP BY|\\sHAVING|\\sLIMIT|\\sOFFSET|\\sFETCH|\\sSELECT|\\s$)";
+        Pattern pattern = Pattern.compile(regex, Pattern.CASE_INSENSITIVE | Pattern.DOTALL);
+        Matcher matcher = pattern.matcher(query);
+
+        List<String> whereMatches = new ArrayList<>();
+        while (matcher.find()) {
+            var whereValue = matcher.group(1);
+            System.out.println("WHERE: " + whereValue);
+            String[] whereMatch = whereValue.split(" ");
+            Arrays.stream(whereMatch)
+                .parallel()
+                .map(String::trim)
+                .filter(trecho -> !OPERADORES_REMOVER.contains(trecho))
+                .filter(trecho -> !trecho.isBlank())
+                .forEach(whereMatches::add);
+        }
+        System.out.println("NOVO WHERE:");
+        whereMatches.forEach(System.out::println);
+        return whereMatches;
+    }
 
 //    private static boolean textoPossuiVariavel(@NonNull String txt) {
 //        return txt.contains("${") && txt.contains("}");

@@ -158,23 +158,32 @@ public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTa
 //        }
     }
 
+    /**
+     * Gera valores aletatórios para daterminada tabela cujas colunas constam mapeados com uma das opções
+     * do enum {@link br.com.ppware.api.FormatoMassa}. Com isso, realiza acesso ao banco de dados para
+     * obter os metadados de cada coluna dessa tabela (obrigatório ao gerador aleatório).
+     * @param banco {@link AmbienteAcessoDTO} contendo os acessos do banco
+     * @param tabelaDto {@link MassaTabelaDTO} contendo o mapeamento das colunas
+     * @return {@link List} {@link MassaPreparada} da tabela e suas respectivas colunas.
+     */
     public List<MassaPreparada> mockMassa(
         @NonNull AmbienteAcessoDTO banco,
-        @NonNull MassaTabelaDTO dto) {
+        @NonNull MassaTabelaDTO tabelaDto) {
 
-        var colunas = dto.getColunas()
+        var colunas = tabelaDto.getColunas()
             .parallelStream()
             .map(MassaColunaDTO::getNome)
             .collect(Collectors.toSet());
 
-        ambienteService.getSqlDataTypes(dto.getNome(), colunas, banco)
+        ambienteService.getSqlDataTypes(tabelaDto.getNome(), colunas, banco)
             .forEach((nome, info) ->
-                dto.getColunas().parallelStream()
+                tabelaDto.getColunas().parallelStream()
                     .filter(col -> col.getNome().equals(nome))
                     .findFirst()
                     .ifPresent(col -> col.setMetadados(info))
             );
-        return GeradorDeMassa.mapearMassa(FormatDate.BRASIL_STYLE, dto);
+        //TODO: o formato de data deveria estar em Ambiente.bancoDataFormato ou Global.bancoDataFormato.
+        return GeradorDeMassa.mapearMassa(FormatDate.BRASIL_STYLE, tabelaDto);
     }
 
     //TODO: javadoc

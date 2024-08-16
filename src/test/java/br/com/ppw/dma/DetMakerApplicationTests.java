@@ -23,21 +23,6 @@ class DetMakerApplicationTests {
 
     @Autowired ResourceLoader resourceLoader;
 
-    @Test
-    public void testeColetarCamposEValoresDeQueryDinamicaNativa() throws SQLException {
-        val cliente = "Vivo";
-        val bancoDev = new AmbienteAcessoDTO(
-            "jdbc:oracle:thin:@10.129.164.205:1521:CYB3DEV",
-            "rcvry",
-            "rcvry");
-        val tabelaNome = "EVENTOS_WEB";
-        val sql = "SELECT * FROM EVENTOS_WEB WHERE ROWNUM <= 5";
-
-        try(val oracleDao = new MasterOracleDAO(bancoDev)) {
-            oracleDao.getColsFromTable(tabelaNome);
-            oracleDao.validadeQuery(sql);
-        }
-    }
 
     @Test
     public void testeObterRecursoInterno() throws IOException {

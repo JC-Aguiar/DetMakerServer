@@ -337,26 +337,4 @@ public class JobService extends MasterService<Long, Job, JobService> {
         return extracoes;
     }
 
-    //TODO: javadoc
-    public List<JobPreparation> prepararJob(@NonNull List<Job> jobs, @NonNull List<JobExecuteDTO> dtos)
-    throws InvalidAttributeValueException {
-        log.info("Obtendo Jobs no banco conforme os inputs declarados para execução.");
-        var jobsIrregulares = new HashSet<String>();
-        var jobsPreparados = new ArrayList<JobPreparation>();
-        dtos.parallelStream().forEach(dto -> {
-            jobs.parallelStream()
-                .filter(job -> job.getId().equals(dto.getId()))
-                .findFirst()
-                .ifPresentOrElse(
-                    job -> jobsPreparados.add(new JobPreparation(job, dto)),
-                    () -> jobsIrregulares.add(String.valueOf(dto.getId()))
-                );
-        });
-        if(!jobsIrregulares.isEmpty()) {
-            throw new InvalidAttributeValueException(
-                "Não existe os Jobs para os IDs: " + String.join(", ", jobsIrregulares));
-        }
-        return jobsPreparados;
-    }
-
 }
