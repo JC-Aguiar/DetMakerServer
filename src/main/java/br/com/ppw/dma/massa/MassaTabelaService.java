@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import javax.management.InvalidAttributeValueException;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -159,31 +160,38 @@ public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTa
     }
 
     /**
-     * Gera valores aletatórios para daterminada tabela cujas colunas constam mapeados com uma das opções
-     * do enum {@link br.com.ppware.api.FormatoMassa}. Com isso, realiza acesso ao banco de dados para
-     * obter os metadados de cada coluna dessa tabela (obrigatório ao gerador aleatório).
+     * Geração de valores aleatórios para as tabelas mapeadas.
+     * Etapas:
+     * <ol>
+     *  <li>Coletar metadados no banco.</li>
+     *  <li>Atualizar metadados da Massas (preferência sempre ao menor valor).</li>
+     *  <li>Gerar valores aleatórios.</li>
+     *  </ol>
      * @param banco {@link AmbienteAcessoDTO} contendo os acessos do banco
-     * @param tabelaDto {@link MassaTabelaDTO} contendo o mapeamento das colunas
+     * @param tabelasDto {@link MassaTabelaDTO} contendo o mapeamento das colunas
      * @return {@link List} {@link MassaPreparada} da tabela e suas respectivas colunas.
      */
     public List<MassaPreparada> mockMassa(
         @NonNull AmbienteAcessoDTO banco,
-        @NonNull MassaTabelaDTO tabelaDto) {
+        @NonNull List<MassaTabelaDTO> tabelasDto) {
 
-        var colunas = tabelaDto.getColunas()
-            .parallelStream()
-            .map(MassaColunaDTO::getNome)
-            .collect(Collectors.toSet());
+        if(tabelasDto.isEmpty()) return List.of();
 
-        ambienteService.getSqlDataTypes(tabelaDto.getNome(), colunas, banco)
-            .forEach((nome, info) ->
-                tabelaDto.getColunas().parallelStream()
-                    .filter(col -> col.getNome().equals(nome))
-                    .findFirst()
-                    .ifPresent(col -> col.setMetadados(info))
-            );
+        log.info("Gerando Massas solicitadas.");
+        var tabelas = new HashSet<String>();
+        var colunas = new HashSet<String>();
+        tabelasDto.parallelStream().forEach(dto -> {
+           tabelas.add(dto.getNome());
+            dto.getColunas()
+                .parallelStream()
+                .map(MassaColunaDTO::getNome)
+                .forEach(colunas::add);
+        });
+        ambienteService.getMetadatasFromTables(tabelas, colunas, banco).forEach(
+            tabelaDb -> tabelasDto.parallelStream().forEach(dto -> dto.atualizar(tabelaDb))
+        );
         //TODO: o formato de data deveria estar em Ambiente.bancoDataFormato ou Global.bancoDataFormato.
-        return GeradorDeMassa.mapearMassa(FormatDate.BRASIL_STYLE, tabelaDto);
+        return GeradorDeMassa.mapearMassa(FormatDate.BRASIL_STYLE, tabelasDto);
     }
 
     //TODO: javadoc

@@ -1,7 +1,7 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.evidencia.Evidencia;
+import br.com.ppw.dma.execQuery.ExecQuery;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -10,6 +10,7 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.validator.constraints.Range;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Valid
 @Data
@@ -21,7 +22,8 @@ public class JobExecuteDTO {
    @NotNull @Range(min = 0) Long id;
    @NotNull @Range(min = 0, max = 999) Integer ordem;
    String argumentos;
-   List<ComandoSql> queries = new ArrayList<>();
+//   List<ComandoSql> queries = new ArrayList<>();
+   Set<String> queries = new HashSet<>();
    List<JobCarga> cargas = new ArrayList<>();
 
    @JsonIgnore
@@ -34,19 +36,20 @@ public class JobExecuteDTO {
       argumentos = evidencia.getArgumentos();
       queries = evidencia.getBanco()
           .stream()
-          .map(ComandoSql::new)
-          .toList();
+//          .map(ComandoSql::new)
+          .map(ExecQuery::getQuery)
+          .collect(Collectors.toSet());
       cargas = evidencia.getCargas()
           .stream()
           .map(JobCarga::new)
           .toList();
    }
 
-   public JobExecuteDTO addQuery(@NonNull ComandoSql...query) {
-      return addQuery(List.of(query));
+   public JobExecuteDTO addQuery(@NonNull String...query) {
+      return addQuery(Set.of(query));
    }
 
-   public JobExecuteDTO addQuery(@NonNull Collection<ComandoSql> queries) {
+   public JobExecuteDTO addQuery(@NonNull Set<String> queries) {
       this.queries.addAll(queries);
       return this;
    }

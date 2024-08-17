@@ -1,19 +1,49 @@
 package br.com.ppw.dma.job;
 
+import br.com.ppw.dma.pipeline.Pipeline;
 import br.com.ppw.dma.util.FormatString;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 public record JobPreparation(
     @NotNull Job job,
     @NotNull JobExecuteDTO jobInputs) {
 
 
+	/**
+	 * Identifica, através do nome, e unifica {@link Job}s com seus respectivos inputs
+	 * ({@link JobExecuteDTO}).
+	 * @param jobs {@link Collection} {@link Job}
+	 * @param dtos {@link Collection} {@link JobExecuteDTO}
+	 * @return {@link Collection} {@link JobPreparation} contendo a unificação
+	 */
+	public static List<JobPreparation> match(
+		@NonNull Collection<Job> jobs,
+		@NonNull Collection<JobExecuteDTO> dtos) {
+
+		log.info("Agrupando Jobs x Inputs.");
+		return jobs.parallelStream()
+			.map(job -> JobPreparation.match(job, dtos))
+			.filter(Optional::isPresent)
+			.map(Optional::get)
+			.toList();
+	}
+
+	/**
+	 * Método de unificação usado no {@link JobPreparation#match(Collection, Collection)}.
+	 * @param job {@link Job}
+	 * @param execDto {@link JobExecuteDTO}
+	 * @return {@link Optional} {@link JobPreparation} contendo ou não a unificação
+	 * @see JobPreparation#match(Collection, Collection)
+	 */
 	public static Optional<JobPreparation> match(
 		@NonNull Job job,
 		@NonNull Collection<JobExecuteDTO> execDto) {

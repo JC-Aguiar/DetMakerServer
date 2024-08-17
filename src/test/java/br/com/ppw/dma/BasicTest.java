@@ -1,17 +1,18 @@
 package br.com.ppw.dma;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
-import br.com.ppw.dma.configQuery.FiltroSql;
 import br.com.ppw.dma.job.JobService;
+import br.com.ppw.dma.master.ColumnDB;
 import br.com.ppw.dma.master.MasterOracleDAO;
+import br.com.ppw.dma.master.TableDB;
 import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.pipeline.PipelineExecDTO;
 import br.com.ppw.dma.util.FormatString;
 import br.com.ppw.dma.util.SqlUtils;
-import br.com.ppw.dma.util.SqlUtils.DqlKeywords;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.lalyos.jfiglet.FigletFont;
+import jakarta.persistence.PersistenceException;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.sshd.client.SshClient;
@@ -19,6 +20,7 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.channel.Channel;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.util.ResourceUtils;
 
@@ -374,39 +376,6 @@ public class BasicTest {
         }
     }
 
-    @Test
-    public void testeObtendoCamposWhereDaQuery() throws SQLException {
-        var query = """
-            SELECT column1, count(column2)
-            FROM table_name
-            WHERE fieldX >= conditionX
-            AND fieldJ EXIST (
-                SELECT column3
-                FROM another_table
-                WHERE fieldK NOT LIKE conditionK
-                OR fieldZ1 = conditionZ1
-                OR fieldZ2 <> conditionZ2
-                ORDER BY column3 ASC
-            )
-            OR fieldY1=conditionY1
-            OR fieldY2>=conditionY2
-            OR fieldY3<=conditionY3
-            OR fieldY4<>conditionY4
-            GROUP BY column1
-            HAVING SUM(column2) > 100
-            ORDER BY column1 DESC
-            LIMIT 10
-            OFFSET 5
-            FETCH FIRST 5 ROWS ONLY
-            UNION ALL
-            SELECT column3, column4, column5
-            FROM another_table
-            WHERE fieldA LIKE conditionA
-            ORDER BY column3 ASC
-            """;
-        var filtros = FiltroSql.identificar(query);
-        filtros.forEach(fitlro -> log.info(filtros.toString()));
-    }
 
 //    @Test
 //    public void testeObterMetaDadosViQuery() {
@@ -434,20 +403,20 @@ public class BasicTest {
             SELECT alias1.column1,   table_name2.  count(column2)
             FROM table_name1 alias1, table_name2 alias2
             INNER JOIN   table_name3
-            ON alias1.algo1A = table_name3.algo3A
-            OR table_name1.algo1B = table_name3.algo3B
-            WHERE fieldX >= conditionX
-            AND EXIST (
+            ON alias1.fieldA = table_name3.conditionA
+            OR table_name1.fieldB = table_name3.conditionB
+            WHERE fieldC >= conditionC
+            AND fieldD EXIST (
                 SELECT column3
                 FROM table_name4
-                WHERE fieldZ = conditionZ1
-                OR fieldZ <> conditionZ2
+                WHERE fieldE = conditionE1
+                OR fieldE <> conditionE2
                 ORDER BY column3 ASC
             )
-            OR fieldY=conditionY1
-            OR fieldY>=conditionY2
-            OR fieldY<=conditionY3
-            OR fieldY<>conditionY4
+            OR fieldF=conditionF1
+            OR fieldF>=conditionF2
+            OR fieldF<=conditionF3
+            OR fieldF<>conditionF4
             GROUP BY column1
             HAVING SUM(column2) > 100
             ORDER BY column1 DESC
@@ -458,13 +427,124 @@ public class BasicTest {
             SELECT column3, column4, column5
             FROM table_name5,
                  table_name6
-            WHERE fieldA LIKE conditionA
+            WHERE fieldG LIKE conditionG
+            AND fieldH NOT LIKE conditionH
+            AND (
+                fieldI IN (conditionI)
+                OR fieldJ NOT IN conditionJ
             ORDER BY column3 ASC
         """;
         var tables = SqlUtils.getTablesNameFromQuery(query);
         var columns = SqlUtils.getColumnsNameFromQuery(query);
+        var filters = SqlUtils.getColumnsFiltersFromQuery(query);
         log.info("TABELAS: {}", String.join(", ", tables));
         log.info("COLUNAS: {}", String.join(", ", columns));
+        log.info("FILTROS: {}", String.join(", ", filters));
+
+        var tabelasEsperadas = Set.of(
+            "table_name1",
+            "table_name2",
+            "table_name3",
+            "table_name4",
+            "table_name5",
+            "table_name6"
+        );
+        var colunasEsperadas = Set.of(
+            "column1",
+            "column2",
+            "column3",
+            "column4",
+            "column5"
+        );
+        var filtrosEsperados = Set.of(
+            "fieldA",
+            "fieldB",
+            "fieldC",
+            "fieldD",
+            "fieldE",
+            "fieldF",
+            "fieldG",
+            "fieldH",
+            "fieldI",
+            "fieldJ"
+        );
+        Assertions.assertTrue(tables.containsAll(tabelasEsperadas), "Existe tabela pendente");
+        Assertions.assertTrue(columns.containsAll(colunasEsperadas), "Existe coluna pendente");
+        Assertions.assertTrue(filters.containsAll(filtrosEsperados), "Existe filtro pendente");
+    }
+
+    @Test
+    public void testeExtrairQueriesMetadadoBancoRemoto() {
+        var queries = Set.of(
+            "SELECT * FROM EVENTOS_WEB WHERE EVTYPE='EV_PAYMENTMODEL' AND EVACCT IN (${contratos}) AND TRUNC(EVDTSOLIC)=TRUNC(${data-evento-salvo}) ORDER BY EVID ASC",
+            "SELECT * FROM TMP_ENTRADA_PAGTO WHERE PBACCT IN (${contratos}) ORDER BY PBID ASC"
+        );
+        var tables = new HashSet<String>();
+        var columns = new HashSet<String>();
+
+        log.info("QUERIES:");
+        queries.stream()
+            .peek(log::info)
+            .parallel()
+            .forEach(query -> {
+                tables.addAll(SqlUtils.getTablesNameFromQuery(query));
+                columns.addAll(SqlUtils.getColumnsNameFromQuery(query));
+                columns.addAll(SqlUtils.getColumnsFiltersFromQuery(query));
+            });
+        var tabelasEsperadas = Set.of(
+            "EVENTOS_WEB",
+            "TMP_ENTRADA_PAGTO"
+        );
+        var colunasEsperadas = Set.of(
+            "EVTYPE",
+            "EVACCT",
+            "EVDTSOLIC",
+            "PBACCT"
+        );
+        log.info("TABELAS: {}", String.join(", ", tables));
+        log.info("COLUNAS: {}", String.join(", ", columns));
+        Assertions.assertTrue(tables.containsAll(tabelasEsperadas), "Existe tabela pendente");
+        Assertions.assertTrue(columns.containsAll(colunasEsperadas), "Existe coluna pendente");
+
+        var ambiente = new AmbienteAcessoDTO(
+            "10.129.164.205:1521:cyb3dev",
+            "rcvry",
+            "rcvry"
+        );
+        try(val masterDao = new MasterOracleDAO(ambiente)) {
+            var tablesDb = masterDao.getColumnsFromTables(tables, columns);
+            log.info("METADADOS DO BANCO:");
+            tablesDb.stream()
+                .flatMap(tableDb -> tableDb.colunas()
+                    .parallelStream()
+                    .map(ColumnDB::toString)
+                    .map(col -> col.replace("[", ""))
+                    .map(col -> col.replace("]", ""))
+                    .map(col -> col.replace(ColumnDB.class.getSimpleName(), ""))
+                    .map(col -> String.format("%s - %s", tableDb.tabela(), col))
+                )
+                .forEach(log::info);
+
+            Assertions.assertTrue(
+                tablesDb.parallelStream()
+                    .map(TableDB::tabela)
+                    .collect(Collectors.toSet())
+                    .containsAll(tabelasEsperadas),
+                "Existe tabela pendente após coleta dos metadados");
+
+            Assertions.assertTrue(
+                tablesDb.parallelStream()
+                    .map(TableDB::getColumnsNames)
+                    .flatMap(Set::parallelStream)
+                    .collect(Collectors.toSet())
+                    .containsAll(colunasEsperadas),
+                "Existe coluna pendente após coleta dos metadados"
+            );
+        }
+        catch(SQLException | PersistenceException e) {
+            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+        }
+
     }
 
     @Test

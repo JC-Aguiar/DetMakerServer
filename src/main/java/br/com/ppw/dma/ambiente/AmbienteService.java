@@ -162,8 +162,84 @@ public class AmbienteService {
         @NonNull Set<String> colunas,
         @NonNull Ambiente ambiente) {
 
+        return getMetadatasFromTables(tabelas, colunas, ambiente.acessoBanco());
+    }
+
+    public Set<TableDB> getMetadatasFromTables(
+        @NonNull Set<String> tabelas,
+        @NonNull Set<String> colunas,
+        @NonNull AmbienteAcessoDTO ambiente) {
+
         try(val masterDao = new MasterOracleDAO(ambiente)) {
-            return masterDao.getColumnsFromTable(tabelas, colunas);
+            return masterDao.getColumnsFromTables(tabelas, colunas);
+        }
+        catch(SQLException | PersistenceException e) {
+            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+        }
+    }
+
+    /**
+     * Com base nas queries informadas, é coletado todos os nomes das tabelas e colunas para então se
+     * conectar no banco remoto e obter os respectivos metadados.
+     * @param queries {@link Set} {@link String} contendo todas as queries
+     * @param ambiente {@link Ambiente} contendo os dados de conexão banco
+     * @return {@link Set} {@link TableDB} das tabelas obtidas e suas respectivas colunas ({@link br.com.ppw.dma.master.ColumnDB})
+     * @see AmbienteService#getMetadatasFromQueries(Set, AmbienteAcessoDTO)
+     * @see AmbienteService#getMetadatasFromTables(Set, Set, AmbienteAcessoDTO)
+     */
+    public Set<TableDB> getMetadatasFromQueries(
+        @NonNull Set<String> queries,
+        @NonNull Ambiente ambiente) {
+
+        return getMetadatasFromQueries(queries, ambiente.acessoBanco());
+    }
+
+    /**
+     * Com base nas queries informadas, é coletado todos os nomes das tabelas e colunas para então se
+     * conectar no banco remoto e obter os respectivos metadados.
+     * @param queries {@link Set} {@link String} contendo todas as queries
+     * @param ambiente {@link AmbienteAcessoDTO} contendo os dados de conexão banco
+     * @return {@link Set} {@link TableDB} das tabelas obtidas e suas respectivas colunas ({@link br.com.ppw.dma.master.ColumnDB})
+     * @see AmbienteService#getMetadatasFromTables(Set, Set, AmbienteAcessoDTO)
+     */
+    public Set<TableDB> getMetadatasFromQueries(
+        @NonNull Set<String> queries,
+        @NonNull AmbienteAcessoDTO ambiente) {
+
+        log.info("Queries a coletar metadados:");
+        var tables = new HashSet<String>();
+        var columns = new HashSet<String>();
+        queries.stream()
+            .peek(log::info)
+            .parallel()
+            .forEach(query -> {
+                tables.addAll(SqlUtils.getTablesNameFromQuery(query));
+                columns.addAll(SqlUtils.getColumnsNameFromQuery(query));
+                columns.addAll(SqlUtils.getColumnsFiltersFromQuery(query));
+            });
+        return getMetadatasFromTables(tables, columns, ambiente);
+    }
+
+    public void validadeQuery(
+        @NonNull Set<String> queries,
+        @NonNull Ambiente ambiente) {
+
+        validadeQuery(queries, ambiente.acessoBanco());
+    }
+
+    public void validadeQuery(
+        @NonNull Set<String> queries,
+        @NonNull AmbienteAcessoDTO ambiente) {
+
+        try(val masterDao = new MasterOracleDAO(ambiente)) {
+            queries.parallelStream().forEach(query -> {
+                try {
+                    masterDao.validadeQuery(query);
+                }
+                catch(SQLException | PersistenceException e) {
+                    throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+                }
+            });
         }
         catch(SQLException | PersistenceException e) {
             throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
