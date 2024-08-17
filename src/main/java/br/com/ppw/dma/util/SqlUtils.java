@@ -28,6 +28,29 @@ public abstract class SqlUtils {
         "JOIN"
     );
 
+    private static final Set<String> LOGIC_OPERATOR_KEYWORDS = Set.of(
+        "=",
+        "<>",
+        "!=",
+        "<",
+        ">",
+        "<=",
+        ">=",
+        "BETWEEN",
+        "LIKE",
+        "IN",
+        "IS NULL",
+        "NOT BETWEEN",
+        "NOT LIKE",
+        "NOT IN",
+        "IS NOT NULL"
+    );
+
+    private static final Set<String> COMBINE_OPERATOR_KEYWORDS = Set.of(
+        "AND",
+        "OR"
+    );
+
     public enum DqlKeywords {
         SELECT(Set.of("SELECT")),
         FROM(Set.of("FROM")),
@@ -46,7 +69,9 @@ public abstract class SqlUtils {
         SEARCH(Set.of("SEARCH")),
         CYCLE(Set.of("CYCLE")),
         ONLY(Set.of("ONLY")),
-        ON(Set.of("ON"));
+        ON(Set.of("ON")),
+        COMBINE_OPERATORS(COMBINE_OPERATOR_KEYWORDS),
+        LOGIC_OPERATORS(LOGIC_OPERATOR_KEYWORDS);
 
         @Getter public final Set<String> keywords;
 
@@ -162,13 +187,13 @@ public abstract class SqlUtils {
             .replaceAll("\r", " ")
             .replaceAll("\n", " ")
             .replaceAll("\t", " ")
-//            .replaceAll("=", " = ")
-//            .replaceAll("<>", " <> ")
-//            .replaceAll("!=", " != ")
-//            .replaceAll("<", " < ")
-//            .replaceAll(">", " > ")
-//            .replaceAll("<=", " <= ")
-//            .replaceAll(">=", " >= ")
+            .replaceAll("=", " = ")
+            .replaceAll("<>", " <> ")
+            .replaceAll("!=", " != ")
+            .replaceAll("<", " < ")
+            .replaceAll(">", " > ")
+            .replaceAll("<=", " <= ")
+            .replaceAll(">=", " >= ")
 //            .replaceAll("\\.\\s+", ".")
             .replaceAll("\\s+", " ");
     }
@@ -179,8 +204,8 @@ public abstract class SqlUtils {
 
         ArrayList<String> resultado = new ArrayList<>();
         query = formatQuery(query);
-        log.info("Query: '{}'", query);
-        log.info("DQLs: {}", Arrays.deepToString(keywords));
+        log.debug("Query: '{}'", query);
+        log.debug("DQLs: {}", Arrays.deepToString(keywords));
         if(keywords.length == 0) return List.of();
 
         // Listando todas as cláusulas DQL
@@ -196,21 +221,26 @@ public abstract class SqlUtils {
             .flatMap(keyword -> keyword.getKeywords().stream())
             .collect(Collectors.toSet());
 
+        // Removendo das demais cláusulas as escolhidas
+        clausulas.removeAll(palavrasAlvo);
+
         // Gerando substring das cláusulas DQL a serem extraídas no regex
         var padraoAlvo = Arrays.stream(keywords)
             .parallel()
             .flatMap(keyword -> keyword.getKeywords().stream())
+            .map(keyword -> " "+keyword+" ")
+            .map(Pattern::quote)
             .collect(Collectors.joining("|"));
-        clausulas.removeAll(palavrasAlvo);
 
         // Gerando substring das cláusulas DQL a serem ignoradas no regex
         var padraoIgnorar = clausulas.parallelStream()
+            .map(keyword -> " "+keyword+" ")
             .map(Pattern::quote)
             .collect(Collectors.joining("|"));
 
         // Regex para extrair conteúdo entre as cláusulas DQL escolhidas x demais cláusulas DQL
         var regexLiteral = String.format("(?s)(?:%s)(?:(?!%s).)*", padraoAlvo, padraoIgnorar);
-        log.info(regexLiteral.toString());
+        log.debug(regexLiteral.toString());
         var matcher = Pattern.compile(regexLiteral).matcher(query);
 
         // Itera sobre os conteúdos DQL encontrados
@@ -229,21 +259,21 @@ public abstract class SqlUtils {
         return resultado;
     }
 
-    private static Set<String> refineTableExtraction(@NonNull String tablesExtraction) {
+    private static Set<String> refineTablesExtraction(@NonNull String tablesExtraction) {
         // Regex para identificar nome das tabelas + alias
         var pattern = Pattern.compile("(\\w+)(?:\\s+(\\w+))?");
 
-        var tabelas = new HashSet<String>();
+        var tables = new HashSet<String>();
         String[] lines = tablesExtraction.split("\\n");
         for(String line : lines) {
             var matcher = pattern.matcher(line);
             while(matcher.find()) {
-                String tableName = matcher.group(1);
+                String tableName = FormatString.extrairConteudoParenteses(matcher.group(1));
                 String alias = Optional.ofNullable(matcher.group(2)).orElse("");
-                tabelas.add(tableName);
+                tables.add(tableName);
             }
         }
-        return tabelas;
+        return tables;
     }
 
     private static Set<String> refineColumnsExtraction(@NonNull String fieldsExtraction) {
@@ -251,6 +281,7 @@ public abstract class SqlUtils {
             .replaceAll("\\.\\s+", ".")
             .replaceAll(",", " ");
         return Arrays.stream(fieldsExtraction.split(" "))
+            .parallel()
             .filter(Predicate.not(String::isBlank))
             .map(line -> {
                 int index = line.indexOf(".");
@@ -261,10 +292,27 @@ public abstract class SqlUtils {
             .collect(Collectors.toSet());
     }
 
+    private static Optional<String> refineFiltersExtraction(@NonNull String filtersExtraction) {
+//        log.info(filtersExtraction);
+        var filtersExtractionArray = filtersExtraction
+            .replaceAll("\\.\\s+", ".")
+            .replaceAll("\\(\\s+", "")
+            .replaceAll("\\)\\s+", "")
+            .split("\\.");
+        var length = filtersExtractionArray.length;
+        var target = FormatString.extrairConteudoParenteses(filtersExtractionArray[length-1]);
+
+        var regex = "(\\b\\w+\\b)";
+        var matcher = Pattern.compile(regex).matcher(target);
+        return Optional.ofNullable(
+            matcher.find() ? matcher.group(1) : null
+        );
+    }
+
     public static Set<String> getTablesNameFromQuery(@NonNull String query) {
         return SqlUtils.extractFromQuery(query, DqlKeywords.FROM, DqlKeywords.JOIN)
             .parallelStream()
-            .map(SqlUtils::refineTableExtraction)
+            .map(SqlUtils::refineTablesExtraction)
             .flatMap(Set::parallelStream)
             .collect(Collectors.toSet());
     }
@@ -274,6 +322,18 @@ public abstract class SqlUtils {
             .parallelStream()
             .map(SqlUtils::refineColumnsExtraction)
             .flatMap(Set::stream)
+            .collect(Collectors.toSet());
+    }
+
+    public static Set<String> getColumnsFiltersFromQuery(@NonNull String query) {
+        return SqlUtils.extractFromQuery(
+                query,
+                DqlKeywords.WHERE,
+                DqlKeywords.ON,
+                DqlKeywords.COMBINE_OPERATORS)
+            .parallelStream()
+            .map(SqlUtils::refineFiltersExtraction)
+            .flatMap(Optional::stream)
             .collect(Collectors.toSet());
     }
 

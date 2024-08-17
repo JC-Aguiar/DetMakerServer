@@ -81,7 +81,7 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
         log.info("Validando mapeamentos de massa no ambiente ID {}.", ambienteId);
 //        log.info("Nenhuma alteração será de fato persistida no banco!");
         var ambiente = ambienteService.findById(ambienteId);
-        var massa = service.mockMassa(ambiente.acessoBanco(), dto);
+        var massa = service.mockMassa(ambiente.acessoBanco(), List.of(dto));
         if(massa.parallelStream().anyMatch(MassaPreparada::isErros)) {
             log.warn("Massa possui erros!");
             throw new RuntimeException(

@@ -1,5 +1,7 @@
 package br.com.ppw.dma.massa;
 
+import br.com.ppw.dma.master.ColumnDB;
+import br.com.ppw.dma.master.TableDB;
 import br.com.ppware.api.MassaTabelaInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
@@ -47,6 +49,19 @@ public class MassaTabelaDTO implements MassaTabelaInfo {
 //		this.tamanho = info.length();
 //		this.precisao = info.precision();
 //		this.escala = info.scale();
+	}
+
+	/**
+	 * Atualiza seus metadados com base numa extração de banco, desde que os nomes das tabelas sejam iguais.
+	 * @param tabelaBanco {@link TableDB} extração de uma tabela de um banco
+	 * @return <b>boolean</b>: sim ou não, para indicar se esse objeto foi atualizado com sucesso.
+	 */
+	public boolean atualizar(@NonNull TableDB tabelaBanco) {
+		if(!nome.equalsIgnoreCase(tabelaBanco.tabela())) return false;
+		tabelaBanco.colunas().parallelStream().forEach(
+			colunaDb -> colunas.parallelStream().forEach(col -> col.atualizar(colunaDb))
+		);
+		return true;
 	}
 
 	@Override

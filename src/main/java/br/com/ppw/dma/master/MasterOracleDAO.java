@@ -8,7 +8,6 @@ import br.com.ppw.dma.util.SqlUtils;
 import br.com.ppware.api.MassaPreparada;
 import br.com.ppware.api.TipoColuna;
 import jakarta.persistence.PersistenceException;
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import lombok.SneakyThrows;
@@ -99,7 +98,7 @@ public class MasterOracleDAO implements AutoCloseable {
         }
     }
 
-    public TableDB getColumnsFromTable(@NonNull String tabela) {
+    public TableDB getColumnsFromTables(@NonNull String tabela) {
         var colunas = new ArrayList<ColumnDB>();
         var sql = "SELECT COLUMN_NAME, DATA_LENGTH, DATA_TYPE, DATA_PRECISION, DATA_SCALE "
             + "FROM ALL_TAB_COLUMNS "
@@ -134,11 +133,11 @@ public class MasterOracleDAO implements AutoCloseable {
     }
 
 
-    public Set<TableDB> getColumnsFromTable(@NonNull Collection<String> tabelas) {
-        return getColumnsFromTable(tabelas);
+    public Set<TableDB> getColumnsFromTables(@NonNull Collection<String> tabelas) {
+        return getColumnsFromTables(tabelas);
     }
 
-    public Set<TableDB> getColumnsFromTable(
+    public Set<TableDB> getColumnsFromTables(
         @NonNull Set<String> tabelas,
         @NonNull Set<String> colunas) {
 
@@ -149,9 +148,10 @@ public class MasterOracleDAO implements AutoCloseable {
         var colunasNomes = colunas.parallelStream()
             .map(nome -> "'" +nome+ "'")
             .collect(Collectors.joining(", "));
-        var sqlAppend = !colunas.isEmpty()
+
+        var sqlAppend = colunas.isEmpty()
             ? ""
-            : "AND COLUMN_NAME IN (" +colunasNomes+ ")";
+            : "AND COLUMN_NAME IN (" +colunasNomes+ ") ";
 
         var sql = "SELECT TABLE_NAME, COLUMN_NAME, DATA_LENGTH, DATA_TYPE, DATA_PRECISION, DATA_SCALE "
             + "FROM ALL_TAB_COLUMNS "
@@ -186,7 +186,7 @@ public class MasterOracleDAO implements AutoCloseable {
                 tabelaAlvo.colunas().add(coluna);
                 tabelasConsultadas.add(tabelaAlvo);
             }
-            log.info("Total de tabelas identificadas: {}", tabelasConsultadas.size());
+            log.info("Total de registros coletados: {}", tabelasConsultadas.size());
             return Set.copyOf(tabelasConsultadas);
         }
         catch(SQLException | PersistenceException e) {
@@ -332,11 +332,9 @@ public class MasterOracleDAO implements AutoCloseable {
     //TODO: javadoc
     private void checkSqlGrammar(@NonNull String sql) {
         log.info("Validando comandos inválidos na query.");
-        sql = sql.replace("\"", "");
-        if(!SqlUtils.isSafeQuery(sql)) {
-            throw new RuntimeException("A queries informada contêm comandos DDL não permitidos.");
-        }
-        log.info("Query aprovada.");
+        if(!SqlUtils.isSafeQuery(sql))
+            throw new RuntimeException("A queries informada contêm comandos DDL/DML não permitidos.");
+        log.info("Query válida para uso.");
     }
 
     //TODO: criar exception própria?
