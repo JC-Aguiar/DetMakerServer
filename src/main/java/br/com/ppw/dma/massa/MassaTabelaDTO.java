@@ -1,7 +1,6 @@
 package br.com.ppw.dma.massa;
 
-import br.com.ppw.dma.master.ColumnDB;
-import br.com.ppw.dma.master.TableDB;
+import br.com.ppw.dma.master.DbTable;
 import br.com.ppware.api.MassaTabelaInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
@@ -41,8 +40,8 @@ public class MassaTabelaDTO implements MassaTabelaInfo {
 			.toList();
 		this.usaPessoa = entidade.getUsaPessoa();
 //
-//		this.nome = entidade.getNome();
-//		this.colunas = entidade.getColunas()
+//		this.name = entidade.getNome();
+//		this.column = entidade.getColunas()
 //			.parallelStream()
 //			.map(MassaColunaDTO::new);
 //		this.opcao = entidade.getOpcao();
@@ -53,15 +52,14 @@ public class MassaTabelaDTO implements MassaTabelaInfo {
 
 	/**
 	 * Atualiza seus metadados com base numa extração de banco, desde que os nomes das tabelas sejam iguais.
-	 * @param tabelaBanco {@link TableDB} extração de uma tabela de um banco
+	 * @param tabelaBanco {@link DbTable} extração de uma table de um banco
 	 * @return <b>boolean</b>: sim ou não, para indicar se esse objeto foi atualizado com sucesso.
 	 */
-	public boolean atualizar(@NonNull TableDB tabelaBanco) {
+	public boolean atualizar(@NonNull DbTable tabelaBanco) {
 		if(!nome.equalsIgnoreCase(tabelaBanco.tabela())) return false;
-		tabelaBanco.colunas().parallelStream().forEach(
-			colunaDb -> colunas.parallelStream().forEach(col -> col.atualizar(colunaDb))
+		return tabelaBanco.colunas().parallelStream().anyMatch(
+			colunaDb -> colunas.parallelStream().anyMatch(col -> col.atualizar(colunaDb))
 		);
-		return true;
 	}
 
 	@Override

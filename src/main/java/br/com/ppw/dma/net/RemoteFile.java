@@ -43,7 +43,7 @@ public record RemoteFile(
     @Override
     public String toString() {
         return "RemoteFile {" +
-            "nome='" + nome + '\'' +
+            "name='" + nome + '\'' +
             ", tamanho=" + tamanho +
             ", dataCriacao=" + dataCriacao.format(BRASIL_STYLE) +
             ", dataModificacao=" + dataModificacao.format(BRASIL_STYLE) +
@@ -62,7 +62,7 @@ public record RemoteFile(
         val builder = new StringBuilder();
         boolean algoIgual = false;
         if(this.nome().equals(outro.nome())) {
-            builder.append("mesmo nome");
+            builder.append("mesmo name");
             algoIgual = true;
         }
         if(this.tamanho == outro.tamanho) {

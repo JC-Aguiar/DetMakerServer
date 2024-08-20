@@ -130,7 +130,7 @@ public class Pipeline implements MasterEntity<Long> {
             .collect(Collectors.joining(", "));
         return "Pipeline{" +
             "id=" + id +
-            ", nome='" + nome + '\'' +
+            ", name='" + nome + '\'' +
             ", cliente=" + cliente +
             ", descricao='" + descricao + '\'' +
             ", jobs=[" + jobsString + "]" +

@@ -151,7 +151,7 @@ public class DetHtml {
             //String que contêm um elemento do array dentro do script JS
             val camposTestecase = preencherTestcase(                //Parâmetros da function 'TabelaTestcase'
                 "EVIDÊNCIA ID " + evidenciaDto.getId(),             //evidenciaId
-                evidenciaDto.getJob(),                              //nome
+                evidenciaDto.getJob(),                              //name
                 evidenciaDto.getJobDescricao(),                     //descricao
                 executarApos,                                       //preCondicoes
                 expectativa,                                        //expectativa
@@ -292,7 +292,7 @@ public class DetHtml {
         //--------------------------------------------------------------------------
         return "\n\tTabelaTestcase(\n\t\t"
             + javascriptString(evidenciaId)     + ",\n\t\t"  //evidenciaId
-            + javascriptString(nome)            + ",\n\t\t"  //nome
+            + javascriptString(nome)            + ",\n\t\t"  //name
             + javascriptString(descricao)       + ",\n\t\t"  //descricao
             + javascriptString(preCondicoes)    + ",\n\t\t"  //preCondicoes
             + javascriptString(expectativa)     + ",\n\t\t"  //expectativa

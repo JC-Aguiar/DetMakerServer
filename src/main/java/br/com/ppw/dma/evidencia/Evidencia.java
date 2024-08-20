@@ -68,7 +68,7 @@ public class Evidencia implements MasterEntity<Long> {
 
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "BANCO_ID") //TODO: mudar o nome para algo melhor
+    @Column(name = "BANCO_ID") //TODO: mudar o name para algo melhor
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     List<ExecQuery> banco = new ArrayList<>();
 
@@ -76,21 +76,21 @@ public class Evidencia implements MasterEntity<Long> {
     @JsonManagedReference
     @Column(name = "CARGAS_ID")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    @Where(clause = "tipo = 'carga'")
+    @Where(clause = "type = 'carga'")
     List<ExecFile> cargas = new ArrayList<>();
 
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "LOG_ID")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    @Where(clause = "tipo = 'log'")
+    @Where(clause = "type = 'log'")
     List<ExecFile> logs = new ArrayList<>();
 
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "SAIDA_ID")
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    @Where(clause = "tipo = 'saída'")
+    @Where(clause = "type = 'saída'")
     List<ExecFile> saidas = new ArrayList<>();
 
     @Column(name = "EXIT_CODE", columnDefinition = "NUMBER(3)")

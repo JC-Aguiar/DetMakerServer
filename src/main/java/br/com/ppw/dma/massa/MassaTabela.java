@@ -61,8 +61,8 @@ public class MassaTabela implements MasterEntity {
 
     public MassaTabelaDTO toDto() {
         return new MassaTabelaDTO(this);
-//        var dto = new MassaTabelaDTO(this.nome);
-//        this.colunas
+//        var dto = new MassaTabelaDTO(this.name);
+//        this.column
 //            .parallelStream()
 //            .map(MassaColuna::toDto)
 //            .forEach(dto::addColuna);

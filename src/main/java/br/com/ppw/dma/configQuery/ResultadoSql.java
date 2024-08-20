@@ -4,48 +4,48 @@ import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NonNull;
+import lombok.ToString;
 import lombok.experimental.FieldDefaults;
-import org.modelmapper.ModelMapper;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 @Getter
-@NoArgsConstructor
+@ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@ToString(callSuper = true)
-public class ResultadoSql extends ComandoSql {
+public class ResultadoSql {
 
+     final String nome;
+     final String query;
      final List<String> campos = new ArrayList<>();
+     boolean successo = false;
+     String mensagemErro = "";
 
      @ToString.Exclude
      final List<List<Object>> resultado = new ArrayList<>();
 
-     boolean successo = false;
 
-     String mensagemErro = "";
+     public ResultadoSql(@NonNull String query) {
+          this("Anônima", query);
+     }
 
-
-     public ResultadoSql(@NonNull ComandoSql comando) {
-          new ModelMapper().map(comando, this);
-          getFiltros().addAll(comando.getFiltros());
-          getValores().putAll(comando.getValores());
-//          setNome(comando.getNome());
-//          setSql(comando.getSql());
-//          setDescricao(comando.getDescricao());
-//          setDinamico(comando.isDinamico());
+     public ResultadoSql(@NonNull String nome, @NonNull String query) {
+          this.nome = nome;
+          this.query = query;
      }
 
      @JsonIgnore
-     public ComandoSql addCampo(@NotBlank String campo) {
+     public ResultadoSql addCampo(@NotBlank String campo) {
           this.campos.add(campo);
           return this;
      }
 
      @JsonIgnore
-     public ComandoSql addCampo(@NotEmpty List<String> campos) {
+     public ResultadoSql addCampo(@NotEmpty List<String> campos) {
           this.campos.addAll(campos);
           return this;
      }
@@ -74,20 +74,22 @@ public class ResultadoSql extends ComandoSql {
                getCampos().addAll(extracao.get(0).keySet());
           }
           resultado.clear();
-          extracao.forEach(
+          extracao.parallelStream().forEach(
               registro -> resultado.add(List.of(registro.values()))
           );
           successo = true;
      }
 
      public void setMensagemErro(@NonNull String mensagemErro) {
+          resultado.clear();
           this.mensagemErro = mensagemErro;
           this.successo = false;
      }
 
      @JsonIgnore
-     private String resumoRegistros(@NotEmpty List<List<Object>> registros) {
-          return String.format("[registros=%d]", registros.size());
+     @ToString.Include
+     private String resumoRegistros() {
+          return String.format("[registros=%d]", resultado.size());
      }
 
 }

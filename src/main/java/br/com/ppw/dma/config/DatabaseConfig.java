@@ -40,7 +40,7 @@
 //
 //    public static BancoAmbiente ambienteInfo;
 //
-//    public record BancoAmbiente(String sistema, String nome) { }
+//    public record BancoAmbiente(String sistema, String name) { }
 //
 //    @Bean
 //    public BancoAmbiente getAmbiente() {

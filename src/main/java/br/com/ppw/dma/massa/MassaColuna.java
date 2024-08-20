@@ -40,15 +40,15 @@ public class MassaColuna {
     FormatoMassa formato;
 
 //    @Column(name = "TAMANHO")//, nullable = false)
-//    @Comment("Se a variável for de uma coluna do tipo texto, aqui consta o tamanho máximo de caracteres")
+//    @Comment("Se a variável for de uma coluna do type texto, aqui consta o tamanho máximo de caracteres")
 //    Integer tamanho;
 //
 //    @Column(name = "PRECISAO")//, nullable = false)
-//    @Comment("Se a variável for de uma coluna do tipo numérica, aqui consta sua precisão")
+//    @Comment("Se a variável for de uma coluna do type numérica, aqui consta sua precisão")
 //    Integer precisao;
 //
 //    @Column(name = "ESCALA")//, nullable = false)
-//    @Comment("Se a variável for de uma coluna do tipo numérica, aqui consta sua escala")
+//    @Comment("Se a variável for de uma coluna do type numérica, aqui consta sua escala")
 //    Integer escala;
 
     @Column(name = "OPCAO", length = 50)
@@ -68,7 +68,7 @@ public class MassaColuna {
         return new MassaColunaDTO(this);
     }
 
-//    public MassaColunaDTO toDto(@NonNull ColumnInfo info) {
+//    public MassaColunaDTO toDto(@NonNull DbColumnMetadata info) {
 //        return new MassaColunaDTO(this, info);
 //    }
 }

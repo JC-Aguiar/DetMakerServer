@@ -1,11 +1,8 @@
 package br.com.ppw.dma.ambiente;
 
 import br.com.ppw.dma.cliente.Cliente;
-import br.com.ppw.dma.configQuery.ColumnInfo;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
-import br.com.ppw.dma.master.MasterOracleDAO;
-import br.com.ppw.dma.master.TableDB;
-import br.com.ppw.dma.util.SqlUtils;
+import br.com.ppw.dma.master.*;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.constraints.NotNull;
@@ -132,11 +129,11 @@ public class AmbienteService {
 //            masterDao.validadeQuery(sql);
 //        }
 //        catch(SQLException | PersistenceException e) {
-//            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+//            throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
 //        }
 //    }
 
-    public Map<String, ColumnInfo> getSqlDataTypes(
+    public DbTable getSqlDataTypes(
         @NonNull String tabela,
         @NonNull Set<String> campos,
         @NonNull Ambiente ambiente) {
@@ -144,7 +141,7 @@ public class AmbienteService {
         return getSqlDataTypes(tabela, campos, ambiente.acessoBanco());
     }
 
-    public Map<String, ColumnInfo> getSqlDataTypes(
+    public DbTable getSqlDataTypes(
         @NonNull String tabela,
         @NonNull Set<String> campos,
         @NonNull AmbienteAcessoDTO ambiente) {
@@ -153,11 +150,11 @@ public class AmbienteService {
             return masterDao.getColumnInfo(tabela, campos);
         }
         catch(SQLException | PersistenceException e) {
-            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+            throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
         }
     }
 
-    public Set<TableDB> getMetadatasFromTables(
+    public Set<DbTable> getMetadatasFromTables(
         @NonNull Set<String> tabelas,
         @NonNull Set<String> colunas,
         @NonNull Ambiente ambiente) {
@@ -165,7 +162,7 @@ public class AmbienteService {
         return getMetadatasFromTables(tabelas, colunas, ambiente.acessoBanco());
     }
 
-    public Set<TableDB> getMetadatasFromTables(
+    public Set<DbTable> getMetadatasFromTables(
         @NonNull Set<String> tabelas,
         @NonNull Set<String> colunas,
         @NonNull AmbienteAcessoDTO ambiente) {
@@ -174,20 +171,20 @@ public class AmbienteService {
             return masterDao.getColumnsFromTables(tabelas, colunas);
         }
         catch(SQLException | PersistenceException e) {
-            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+            throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
         }
     }
 
     /**
-     * Com base nas queries informadas, é coletado todos os nomes das tabelas e colunas para então se
+     * Com base nas queries informadas, é coletado todos os nomes das tabelas e column para então se
      * conectar no banco remoto e obter os respectivos metadados.
      * @param queries {@link Set} {@link String} contendo todas as queries
      * @param ambiente {@link Ambiente} contendo os dados de conexão banco
-     * @return {@link Set} {@link TableDB} das tabelas obtidas e suas respectivas colunas ({@link br.com.ppw.dma.master.ColumnDB})
+     * @return {@link Set} {@link DbTable} das tabelas obtidas e suas respectivas column ({@link DbColumn})
      * @see AmbienteService#getMetadatasFromQueries(Set, AmbienteAcessoDTO)
      * @see AmbienteService#getMetadatasFromTables(Set, Set, AmbienteAcessoDTO)
      */
-    public Set<TableDB> getMetadatasFromQueries(
+    public Set<DbTable> getMetadatasFromQueries(
         @NonNull Set<String> queries,
         @NonNull Ambiente ambiente) {
 
@@ -195,14 +192,14 @@ public class AmbienteService {
     }
 
     /**
-     * Com base nas queries informadas, é coletado todos os nomes das tabelas e colunas para então se
+     * Com base nas queries informadas, é coletado todos os nomes das tabelas e column para então se
      * conectar no banco remoto e obter os respectivos metadados.
      * @param queries {@link Set} {@link String} contendo todas as queries
      * @param ambiente {@link AmbienteAcessoDTO} contendo os dados de conexão banco
-     * @return {@link Set} {@link TableDB} das tabelas obtidas e suas respectivas colunas ({@link br.com.ppw.dma.master.ColumnDB})
+     * @return {@link Set} {@link DbTable} das tabelas obtidas e suas respectivas column ({@link DbColumn})
      * @see AmbienteService#getMetadatasFromTables(Set, Set, AmbienteAcessoDTO)
      */
-    public Set<TableDB> getMetadatasFromQueries(
+    public Set<DbTable> getMetadatasFromQueries(
         @NonNull Set<String> queries,
         @NonNull AmbienteAcessoDTO ambiente) {
 
@@ -212,10 +209,13 @@ public class AmbienteService {
         queries.stream()
             .peek(log::info)
             .parallel()
-            .forEach(query -> {
-                tables.addAll(SqlUtils.getTablesNameFromQuery(query));
-                columns.addAll(SqlUtils.getColumnsNameFromQuery(query));
-                columns.addAll(SqlUtils.getColumnsFiltersFromQuery(query));
+            .map(SqlSintaxe::analyse)
+            .forEach(extraction -> {
+                tables.addAll(extraction.tables());
+                extraction.columns()
+                    .parallelStream()
+                    .map(QueryColumn::column)
+                    .forEach(columns::add);
             });
         return getMetadatasFromTables(tables, columns, ambiente);
     }
@@ -237,12 +237,12 @@ public class AmbienteService {
                     masterDao.validadeQuery(query);
                 }
                 catch(SQLException | PersistenceException e) {
-                    throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+                    throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
                 }
             });
         }
         catch(SQLException | PersistenceException e) {
-            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+            throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
         }
     }
 

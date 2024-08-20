@@ -69,8 +69,8 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
     /**
      * Endpoint para salvar mapeamento de massas aleatórias para tabelas.
      *
-     * @param ambienteId {@link Long} contendo o ID do {@link Cliente} em que a tabela será associada.
-     * @param dto       {@link MassaTabelaDTO} em que há o mapeamento das colunas para determinada tabela
+     * @param ambienteId {@link Long} contendo o ID do {@link Cliente} em que a table será associada.
+     * @param dto       {@link MassaTabelaDTO} em que há o mapeamento das column para determinada table
      * @return {@link ResponseEntity} com status 200 em caso de sucesso
      */
     @PostMapping("ambiente/{ambienteId}/test")
@@ -81,7 +81,7 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
         log.info("Validando mapeamentos de massa no ambiente ID {}.", ambienteId);
 //        log.info("Nenhuma alteração será de fato persistida no banco!");
         var ambiente = ambienteService.findById(ambienteId);
-        var massa = service.mockMassa(ambiente.acessoBanco(), List.of(dto));
+        var massa = service.updateMetadataAndMockValues(ambiente.acessoBanco(), List.of(dto));
         if(massa.parallelStream().anyMatch(MassaPreparada::isErros)) {
             log.warn("Massa possui erros!");
             throw new RuntimeException(
@@ -94,17 +94,17 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
         }
         log.info("Massa gerada com sucesso.");
         return ResponseEntity.ok(massa);
-//        var nome = dto.getNome();
+//        var name = dto.getNome();
 //        dto.setNome(NumeroAleatorio.XDigitosEmString(10));
 //        service.delete(service.save(ambiente, dto)); //TODO: manter?
-//        dto.setNome(nome);
+//        dto.setNome(name);
     }
 
     //TODO: esse método também deveria atualizar caso já exista
     /**
      * Endpoint para salvar mapeamento de massas aleatórias para tabelas.
-     * @param clienteId {@link Long} contendo o ID do {@link Cliente} em que a tabela será associada.
-     * @param dto {@link MassaTabelaDTO} em que há o mapeamento das colunas para determinada tabela
+     * @param clienteId {@link Long} contendo o ID do {@link Cliente} em que a table será associada.
+     * @param dto {@link MassaTabelaDTO} em que há o mapeamento das column para determinada table
      * @return {@link ResponseEntity} com status 200 em caso de sucesso
      */
     @Transactional
@@ -122,7 +122,7 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
     /**
      * Endpoint para gerar massas aleatórias para diferentes tabelas.
      * @param ambienteId {@link Long} contendo o ID do {@link Ambiente} em que será feito insert.
-     * @param dtos um ou mais {@link MassaTabelaDTO} em que há o mapeamento das colunas para determinada tabela
+     * @param dtos um ou mais {@link MassaTabelaDTO} em que há o mapeamento das column para determinada table
      * @return {@link ResponseEntity} contendo o resumo {@link MasterSummary}<{@link String}>
      *           informando quais tabelas obtiveram sucesso ou falha
      */
@@ -133,7 +133,7 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
         @PathVariable("ambienteId") Long ambienteId,
         @Valid @RequestBody MassaTabelaDTO...dtos) {
         //-----------------------------------------------
-        log.info("Iniciando geração de massa para {} tabela(s).", dtos.length);
+        log.info("Iniciando geração de massa para {} table(s).", dtos.length);
         val ambiente = ambienteService.findById(ambienteId);
         val ambienteBanco = AmbienteAcessoDTO.banco(ambiente);
         var resultadoDosInserts = service.newInserts(ambienteBanco, dtos);
@@ -144,8 +144,8 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
     /**
      * Endpoint para gerar massas aleatórias para diferentes tabelas.
      * @param ambienteId {@link Long} contendo o ID do {@link Ambiente} em que será feito insert.
-     * @param massaId um ou mais IDs do tipo {@link Long} que representa registros de mapeamento
-     *                de uma tabela se suas respectivas colunas
+     * @param massaId um ou mais IDs do type {@link Long} que representa registros de mapeamento
+     *                de uma table se suas respectivas column
      * @return {@link ResponseEntity} contendo o resumo {@link MasterSummary}<{@link String}>
      *          informando quais tabelas obtiveram sucesso ou falha
      */
@@ -156,7 +156,7 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
         @PathVariable("ambienteId") Long ambienteId,
         @PathVariable("ids") Long...massaId) {
         //-----------------------------------------------
-        log.info("Iniciando geração de massa para {} tabela(s).", massaId.length);;
+        log.info("Iniciando geração de massa para {} table(s).", massaId.length);;
         var massa = Arrays.stream(massaId)
             .map(service::findById)
             .map(MassaTabela::toDto)

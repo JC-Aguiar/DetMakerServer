@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatDate.SQL_BRASIL_STYLE;
 
@@ -69,17 +68,17 @@ public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTa
     }
 
     public MassaTabela save(@NonNull Cliente cliente, @NonNull MassaTabelaDTO dto) {
-        log.info("Salvando nova massa para tabela '{}'.", dto.getNome());
+        log.info("Salvando nova massa para table '{}'.", dto.getNome());
         log.info("Convertendo DTO para Entidade.");
         var massa = new MassaTabela(dto);
         massa.setCliente(cliente);
         log.info("Entidade gerada:");
         log.info(massa.toString());
 
-        log.info("Salvando mapeamento da tabela '{}' no banco.", dto.getNome());
+        log.info("Salvando mapeamento da table '{}' no banco.", dto.getNome());
         massa = massaTabelaDao.save(massa);
 
-//        log.info("Salvando mapeamento das colunas da tabela '{}' no banco.", dto.getNome());
+//        log.info("Salvando mapeamento das column da table '{}' no banco.", dto.getNome());
 //        massa.getColunas()
 //            .stream()
 //            .map(massaColunaDao::saveAndFlush)
@@ -91,7 +90,7 @@ public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTa
 
     /**
      * Inteligência que busca gerenciar a execução dos inserts das massas de dados geradas aleatoriamente.
-     * Primeiro se converte os DTOs em objetos do tipo {@link MassaPreparada}, para depois tentar processar
+     * Primeiro se converte os DTOs em objetos do type {@link MassaPreparada}, para depois tentar processar
      * um a um suas respectivas queries no banco usando {@link DriverManager#getConnection(String, String, String)}
      * que já consta preparado dentro do {@link MasterOracleDAO}.
      * As {@link MassaPreparada}s são armazenados temporariamente no {@link MasterSummary} com base no seu
@@ -168,10 +167,10 @@ public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTa
      *  <li>Gerar valores aleatórios.</li>
      *  </ol>
      * @param banco {@link AmbienteAcessoDTO} contendo os acessos do banco
-     * @param tabelasDto {@link MassaTabelaDTO} contendo o mapeamento das colunas
-     * @return {@link List} {@link MassaPreparada} da tabela e suas respectivas colunas.
+     * @param tabelasDto {@link MassaTabelaDTO} contendo o mapeamento das column
+     * @return {@link List} {@link MassaPreparada} da table e suas respectivas column.
      */
-    public List<MassaPreparada> mockMassa(
+    public List<MassaPreparada> updateMetadataAndMockValues(
         @NonNull AmbienteAcessoDTO banco,
         @NonNull List<MassaTabelaDTO> tabelasDto) {
 
@@ -215,7 +214,7 @@ public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTa
     }
 
 //    /**
-//     * Converte um {@link MasterSummary} do tipo {@link MassaPreparada} para o tipo {@link String},
+//     * Converte um {@link MasterSummary} do type {@link MassaPreparada} para o type {@link String},
 //     * onde a identificação dos registros é feita pelo atributo {@link MassaPreparada#getNome()}
 //     * @param summaryInserts {@link MasterSummary}<{@link MassaPreparada}> da massa processada
 //     * @return {@link MasterSummary}<{@link String}> com os respectivos identificadores

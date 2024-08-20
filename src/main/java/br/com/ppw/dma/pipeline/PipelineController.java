@@ -2,23 +2,21 @@ package br.com.ppw.dma.pipeline;
 
 import br.com.ppw.dma.ambiente.AmbienteService;
 import br.com.ppw.dma.cliente.ClienteService;
-import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.evidencia.EvidenciaService;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.job.JobExecuteDTO;
 import br.com.ppw.dma.job.JobPreparation;
 import br.com.ppw.dma.job.JobService;
-import br.com.ppw.dma.massa.*;
+import br.com.ppw.dma.massa.MassaTabela;
+import br.com.ppw.dma.massa.MassaTabelaService;
 import br.com.ppw.dma.master.MasterController;
 import br.com.ppw.dma.relatorio.RelatorioHistoricoDTO;
 import br.com.ppw.dma.relatorio.RelatorioService;
 import br.com.ppw.dma.system.FileSystemService;
 import br.com.ppw.dma.util.FormatDate;
 import br.com.ppw.dma.util.FormatString;
-import br.com.ppw.dma.util.SqlUtils;
 import br.com.ppware.api.GeradorDeMassa;
-import br.com.ppware.api.MassaPreparada;
 import jakarta.validation.ValidationException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -32,9 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -203,17 +198,17 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 //        var tabelasParaConsulta = new HashSet<String>();
 //        var colunasParaConsulta = new HashSet<String>();
 
-        //Para cada query declarada, extrair nomes das tabelas e colunas.
+        //Para cada query declarada, extrair nomes das tabelas e column.
 //        inputJobs.parallelStream()
 //            .map(JobExecuteDTO::getQueries)
 //            .flatMap(List::parallelStream)
 //            .map(ComandoSql::getSql)
 //            .forEach(query -> {
-//                var tables = SqlUtils.getTablesNameFromQuery(query);
+//                var tables = SqlSintaxe.getTablesNameFromQuery(query);
 //                tabelasParaConsulta.addAll(tables);
 //
-//                //Considerar apenas as colunas que também constam nas Variáveis da Pipeline.
-//                var columns = SqlUtils.getColumnsNameFromQuery(query);
+//                //Considerar apenas as column que também constam nas Variáveis da Pipeline.
+//                var columns = SqlSintaxe.getColumnsNameFromQuery(query);
 //                var existeVariavel = execDto.getConfiguracoes()
 //                    .entrySet()
 //                    .parallelStream()
@@ -221,7 +216,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 //                if(existeVariavel) colunasParaConsulta.addAll(columns);
 //            });
 
-        //Para cada Massa solicitada, extrair os nomes das tabelas e colunas.
+        //Para cada Massa solicitada, extrair os nomes das tabelas e column.
 //        massasBanco.parallelStream().forEach(massa -> {
 //            tabelasParaConsulta.add(massa.getNome());
 //            massa.getColunas()
@@ -241,11 +236,11 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 //            ambiente
 //        );
 //        log.info("TABELAS E COLUNAS OBTIDAS NO BANCO:");
-//        tabelasBanco.forEach(table -> log.info("{}.{}", table.tabela(), table.colunas()));
+//        tabelasBanco.forEach(table -> log.info("{}.{}", table.table(), table.column()));
 
 
         // ------------- PREPARANDO DADOS -------------
-        //Primeiro atualizando os metadados das colunas das Massas
+        //Primeiro atualizando os metadados das column das Massas
 //        massasBanco.parallelStream().forEach(
 //            tabelaDto -> tabelasBanco.parallelStream().forEach(tabelaDto::atualizar)
 //        );
@@ -289,8 +284,22 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 //                    });
 //            });
         var jobsPreparados = JobPreparation.match(jobs, inputJobs);
-        var massasPreparadas = massaService.mockMassa(ambiente.acessoBanco(), massasBanco);
-        var tabelasBanco = ambienteService.getMetadatasFromQueries(inputQueries, ambiente);
+        var metadadosBanco = ambienteService.getMetadatasFromQueries(inputQueries, ambiente);
+
+        log.info("Metadados obtidos no banco:");
+        metadadosBanco.stream()
+            .peek(tabelaDb -> log.info(tabelaDb.toString()))
+            .parallel()
+            .forEach(
+                tableDb -> massasBanco.parallelStream().forEach(
+                    massa -> massa.atualizar(tableDb)
+            ));
+
+        //TODO: o formato de data deveria estar em Ambiente.bancoDataFormato ou Global.bancoDataFormato.
+        log.info("Gerando Massas com dados atualizados.");
+        var massasPreparadas = GeradorDeMassa.mapearMassa(FormatDate.BRASIL_STYLE, massasBanco);
+        log.info("Massa gerada:");
+        massasPreparadas.forEach(massa -> log.info(massa.toString()));
 
         // ------------- DEFININDO VARIÁVEIS -------------
         //TODO:
@@ -319,15 +328,14 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
                         variavel.setValue(valor);
                     });
             });
-        log.info("Estado final das variáveis globais:");
-        execDto.getConfiguracoes().forEach(
-            (chave, valor) -> log.info(" - {}: {}", chave, valor)
-        );
+        log.info("Estado final das Variáveis da Pipeline:");
+        execDto.getConfiguracoes().entrySet().forEach(variavel -> log.info(variavel.toString()));
+
         log.info("Aplicando variáveis globais nos Jobs unificados.");
         jobsPreparados.parallelStream().forEach(
             job -> job.aplicarConfiguracoes(execDto.getConfiguracoes())
         );
-        log.info("Obtendo queries para as Massas.");
+        log.info("Obtendo queries das Massas.");
 //        var massaInsert = new ArrayList<String>();
 //        var massaDelete = new ArrayList<String>();
         massasPreparadas.forEach(massa -> {
@@ -341,12 +349,11 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
             log.info(sql);
         });
 
-        log.info("ESTADO FINAL DAS JOB-QUERIES:");
+        log.info("Estado final das Job Queries:");
         var jobQueries = jobsPreparados.parallelStream()
             .map(JobPreparation::jobInputs)
             .map(JobExecuteDTO::getQueries)
-            .flatMap(List::parallelStream)
-            .map(ComandoSql::getSqlCompleta)
+            .flatMap(Set::parallelStream)
             .peek(log::info)
             .collect(Collectors.toSet());
         ambienteService.validadeQuery(jobQueries, ambiente);
@@ -384,14 +391,6 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 
         //DESENVOLVIMENTO:
 //        log.info(preparation.toString());
-        log.info("MASSAS: ");
-        preparation.massas().forEach(m -> log.info(" - {}", m));
-        log.info("INPUT QUERIES: ");
-        preparation.jobs().stream()
-            .map(JobPreparation::jobInputs)
-            .flatMap(j -> j.getQueries().stream())
-            .map(ComandoSql::getSql)
-            .forEach(sql -> log.info(" - {}", sql));
         return ResponseEntity.ok(null);
 
         //PRODUÇÃO:
@@ -488,10 +487,10 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         return pipeline;
     }
 
-    @DeleteMapping(value = "clientId/{clientId}/pipeline/{nome}")
+    @DeleteMapping(value = "clientId/{clientId}/pipeline/{name}")
     public ResponseEntity<String> delete(
         @PathVariable(name = "clientId") Long clientId,
-        @PathVariable(name = "nome") String nome) {
+        @PathVariable(name = "name") String nome) {
         //----------------------------------------
         var pipeline = pipelineService.getUniqueOne(nome, clientId);
         if (pipeline.isPresent()) {

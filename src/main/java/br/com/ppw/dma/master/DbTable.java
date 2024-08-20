@@ -9,14 +9,14 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Builder
-public record TableDB(
+public record DbTable(
 	@NonNull String tabela,
 	@Nullable String alias,
-	@NonNull Collection<ColumnDB> colunas) {
+	@NonNull Collection<DbColumn> colunas) {
 
 	public Set<String> getColumnsNames() {
 		return colunas.parallelStream()
-			.map(ColumnDB::nome)
+			.map(DbColumn::name)
 			.collect(Collectors.toSet());
 	}
 

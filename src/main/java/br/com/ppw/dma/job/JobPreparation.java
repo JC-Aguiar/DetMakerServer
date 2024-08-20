@@ -1,6 +1,5 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.pipeline.Pipeline;
 import br.com.ppw.dma.util.FormatString;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
@@ -19,7 +18,7 @@ public record JobPreparation(
 
 
 	/**
-	 * Identifica, através do nome, e unifica {@link Job}s com seus respectivos inputs
+	 * Identifica, através do name, e unifica {@link Job}s com seus respectivos inputs
 	 * ({@link JobExecuteDTO}).
 	 * @param jobs {@link Collection} {@link Job}
 	 * @param dtos {@link Collection} {@link JobExecuteDTO}
@@ -99,11 +98,9 @@ public record JobPreparation(
 			String.join(" ", parametrosPreenchidos.values())
 		);
 		//Aplicando as variáveis nas queries
-		jobInputs.getQueries().forEach(queryDto -> queryDto.setSql(
-			FormatString.substituirVariaveis(
-				queryDto.getSql(),
-				jobInputs.getVariaveis())
-		));
+		jobInputs.getQueries().parallelStream().forEach(
+			query -> FormatString.substituirVariaveis(query, jobInputs.getVariaveis())
+		);
 	}
 
 }

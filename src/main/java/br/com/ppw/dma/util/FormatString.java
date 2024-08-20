@@ -62,12 +62,12 @@ public final class FormatString {
         //Remove caracteres inválidos para nomes de arquivo
         String textoFormatado = input.replaceAll("[\\\\/:*?\"<>|]", "");
 
-        //Limita o tamanho máximo do nome do arquivo para 255 caracteres (limite do Windows)
+        //Limita o tamanho máximo do name do arquivo para 255 caracteres (limite do Windows)
         int maxFileNameLength = 255;
         if(textoFormatado.length() > maxFileNameLength)
             textoFormatado = textoFormatado.substring(0, maxFileNameLength);
 
-        //Remove pontos finais ou espaços em branco no final do nome do arquivo
+        //Remove pontos finais ou espaços em branco no final do name do arquivo
         return textoFormatado.replaceAll("[.\\s]+$", "")
             .replace(" ", "_");
     }
@@ -88,6 +88,12 @@ public final class FormatString {
             resultado.add(matcher.group(1));
         }
         return resultado;
+    }
+
+    public static boolean possuiVariaveis(String input) {
+        var pattern = Pattern.compile("\\$\\{(.*?)\\}");
+        var matcher = pattern.matcher(input);
+        return matcher.find();
     }
 
     public static String substituirVariaveis(String input, String signal) {
@@ -123,6 +129,7 @@ public final class FormatString {
         var builder = new StringBuilder(txt);
         int start = builder.indexOf("(");
         while(start != -1) {
+            if(builder.indexOf(")") == -1) break;
             builder.delete(0, start+1);
             start = builder.indexOf("(");
         }
@@ -131,7 +138,9 @@ public final class FormatString {
             builder.delete(end, builder.length());
             end = builder.indexOf(")");
         }
-        return builder.toString().trim();
+        return builder.toString()
+            .trim()
+            .replaceAll("\\(", "");
     }
 
     public static String abstrairVariavel(@NonNull String texto, @NonNull String regex) {

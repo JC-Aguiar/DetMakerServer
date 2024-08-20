@@ -2,18 +2,15 @@ package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.cliente.Cliente;
-import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.configQuery.ResultadoSql;
 import br.com.ppw.dma.master.MasterOracleDAO;
 import br.com.ppw.dma.master.MasterService;
+import br.com.ppw.dma.master.SqlSintaxe;
 import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
-import br.com.ppw.dma.pipeline.Pipeline;
-import br.com.ppw.dma.pipeline.PipelineExecDTO;
 import br.com.ppw.dma.system.ExcelXLSX;
 import br.com.ppw.dma.system.FileSystemService;
-import br.com.ppw.dma.util.SqlUtils;
 import com.google.gson.Gson;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.constraints.NotBlank;
@@ -28,14 +25,16 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import javax.management.InvalidAttributeValueException;
 import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -238,6 +237,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
     private void executar(@NonNull JobProcess process) {
         val jobInfo = process.getJobInfo();
         val jobInput = process.getJobInputs();
+        var jobInputQueries = jobInput.getQueries();
         val logsPreJob = new ArrayList<SftpFileManager<RemoteFile>>();
         val logsPosJob = new ArrayList<SftpFileManager<RemoteFile>>();
         try {
@@ -255,10 +255,9 @@ public class JobService extends MasterService<Long, Job, JobService> {
                 jobInfo.pathLog().forEach(
                     path -> logsPreJob.add(sftp.downloadMaisRecente(path)));
             }
-            if(!jobInput.getQueries().isEmpty()) {
+            if(!jobInputQueries.isEmpty()) {
                 log.info("Consultando tabelas pré-execução.");
-                process.addTabelasPreJob(
-                    extractTable(jobInput.getQueries()));
+                process.addTabelasPreJob(extractTable(jobInputQueries));
             }
             //Execução
             log.info("Obtendo o sha256 do Job.");
@@ -288,10 +287,9 @@ public class JobService extends MasterService<Long, Job, JobService> {
                 jobInfo.pathLog().forEach(
                     path -> logsPosJob.add(sftp.downloadMaisRecente(path)));
             }
-            if(!jobInput.getQueries().isEmpty()) {
+            if(!jobInputQueries.isEmpty()) {
                 log.info("Consultando tabelas pós-execução.");
-                process.addTabelasPosJob(
-                    extractTable(jobInput.getQueries()));
+                process.addTabelasPosJob(extractTable(jobInputQueries));
             }
             //Com base nos logs pré/pós: comparar cenários de duplicidade para então adicionar ao JobProcess
             for(int i = 0; i < logsPreJob.size(); i++) {
@@ -312,27 +310,31 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: javadoc
-    public List<ResultadoSql> extractTable(@NonNull List<ComandoSql> queries) {
-        val extracoes = queries.stream().map(query -> {
-            var sql = query.getSql();
-            val evidencia = new ResultadoSql(query);
+    public List<ResultadoSql> extractTable(@NonNull Set<String> queries) {
+        var sucessos = new AtomicInteger(0);
+        val extracoes = queries.parallelStream().map(query -> {
+            val resultado = new ResultadoSql(query);
             try(val masterDao = new MasterOracleDAO(banco)) {
-                evidencia.addResultado(masterDao.collectData(sql));
+                resultado.addResultado(masterDao.collectData(query));
+                sucessos.getAndIncrement();
             }
             catch(SQLException | PersistenceException e) {
-                val errorMessage = SqlUtils.getExceptionMainCause(e);
-                log.warn(errorMessage);
-                evidencia.setMensagemErro(errorMessage);
+                val errorMessage = SqlSintaxe.getExceptionMainCause(e);
+                resultado.setMensagemErro(errorMessage);
             }
             catch(Exception e) {
                 e.printStackTrace();
-                evidencia.setMensagemErro(e.getMessage());
+                resultado.setMensagemErro(e.getMessage());
             }
-            return evidencia;
+            return resultado;
+        })
+        .sequential()
+        .peek(resultado -> {
+            if(!resultado.isSuccesso()) log.warn(resultado.getMensagemErro());
         })
         .toList();
 
-        log.info("Total de comandos SQL realizados: {}.", extracoes.size());
+        log.info("Total de comandos SQL realizados com sucesso: {}/{}.", sucessos, extracoes.size());
         return extracoes;
     }
 

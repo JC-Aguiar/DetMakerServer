@@ -49,7 +49,7 @@ public class Arquivos {
     /**
      * Método que localiza se o arquivo informado existe localmente.
      * @param caminho {@link String} diretório do arquivo alvo
-     * @param arquivoNome {@link String} nome do arquivo alvo
+     * @param arquivoNome {@link String} name do arquivo alvo
      * @param permissoes lista {@link TipoPermissao} das permissões a validar
      * @throws CheckedException se o arquivo/diretório não existem, ou não possuem permissões
      */

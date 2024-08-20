@@ -36,7 +36,7 @@ public class FileSystemService implements StorageService {
     @Autowired
     public FileSystemService(StorageProperties properties) {
         if(properties.getLocation().trim().length() == 0) {
-            log.warn("Nenhum nome informado para o diretório temporário. Será usado o padrão 'upload-dir'.");
+            log.warn("Nenhum name informado para o diretório temporário. Será usado o padrão 'upload-dir'.");
             properties.setLocation("upload-dir");
         }
         this.rootLocation = Paths.get(

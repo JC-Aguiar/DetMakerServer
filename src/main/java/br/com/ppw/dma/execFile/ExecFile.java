@@ -48,7 +48,7 @@ public class ExecFile {
     String jobNome;
 
     @Column(name = "TIPO", length = 10, nullable = false)
-    // Informação para descrever se o arquivo é do tipo 'carga', 'saída' ou 'log'
+    // Informação para descrever se o arquivo é do type 'carga', 'saída' ou 'log'
     TipoExecFile tipo;
 
     @Column(name = "ARQUIVO_NOME", length = 200, nullable = true)
@@ -134,7 +134,7 @@ public class ExecFile {
             "id=" + id +
             ", evidencia=" + evidencia +
             ", jobNome='" + jobNome + '\'' +
-            ", tipo='" + tipo + '\'' +
+            ", type='" + tipo + '\'' +
             ", arquivoNome='" + arquivoNome + '\'' +
             ", arquivo=" + getResumoArquivo() +
             '}';

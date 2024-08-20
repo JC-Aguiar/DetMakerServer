@@ -1,6 +1,5 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.configQuery.ComandoSql;
 import br.com.ppw.dma.configQuery.QueryInfoDTO;
 import br.com.ppw.dma.system.ShellPointer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -61,7 +60,7 @@ public class JobInfoDTO implements ShellPointer {
         jobDto.setMascaraEntrada(dividirValores(job.getMascaraEntrada()));
         jobDto.setMascaraSaida(dividirValores(job.getMascaraSaida()));
         jobDto.setMascaraLog(dividirValores(job.getMascaraLog()));
-        jobDto.setQueries(QueryInfoDTO.converterJobConfigQuery(job));
+        jobDto.setQueries(QueryInfoDTO.getFromJob(job));
         log.info("Conversão realizada com sucesso.");
         log.info("{}", jobDto);
         return jobDto;
