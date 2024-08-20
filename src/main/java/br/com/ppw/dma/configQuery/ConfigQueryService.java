@@ -3,11 +3,8 @@ package br.com.ppw.dma.configQuery;
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.job.Job;
-import br.com.ppw.dma.master.MasterOracleDAO;
-import br.com.ppw.dma.master.MasterService;
+import br.com.ppw.dma.master.*;
 import br.com.ppw.dma.util.FormatString;
-import br.com.ppw.dma.util.SqlUtils;
-import jakarta.persistence.PersistenceException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -16,18 +13,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
 public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQueryService> {
 
-    @Autowired
     private final ConfigQueryRepository configQueryDao;
 
-
+    @Autowired
     public ConfigQueryService(ConfigQueryRepository configQueryDao) {
         super(configQueryDao);
         this.configQueryDao = configQueryDao;
@@ -43,50 +38,34 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
         return result;
     }
 
-    public void validadeQuery(@NonNull String sql, @NonNull AmbienteAcessoDTO acessoBanco)
+    public void validadeQuery(@NonNull String query, @NonNull AmbienteAcessoDTO acessoBanco)
     throws SQLGrammarException, SQLException {
         try(val masterDao = new MasterOracleDAO(acessoBanco)) {
-            masterDao.validadeQuery(sql);
-        }
-    }
+            if(FormatString.possuiVariaveis(query)) {
+                log.info("Queries possui variáveis. Extraindo tabelas e column da query.");
+                var extraction = SqlSintaxe.analyse(query);
+                var tables = extraction.tables();
+                var columns = extraction.columns()
+                    .parallelStream()
+                    .map(QueryColumn::column)
+                    .collect(Collectors.toSet());
 
-    public void validadeQuery(@NonNull ComandoSql comando, @NonNull AmbienteAcessoDTO acessoBanco)
-    throws SQLGrammarException, SQLException {
-        var sql = FormatString.substituirVariaveis(comando.getSql(), comando.getValores());
-        try(val masterDao = new MasterOracleDAO(acessoBanco)) {
-            masterDao.validadeQuery(sql);
+                log.info("Iniciando coleta de metadados.");
+                var mapVariables = masterDao.getColumnsFromTables(tables, columns)
+                    .parallelStream()
+                    .map(DbTable::colunas)
+                    .flatMap(Collection::parallelStream)
+                    .map(DbColumn::variablesWithRandomValues)
+                    .map(Map::entrySet)
+                    .flatMap(Set::parallelStream)
+                    .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue
+                    ));
+                query = FormatString.substituirVariaveis(query, mapVariables);
+            }
+            masterDao.validadeQuery(query);
         }
-    }
-
-    public void completeAndValidateVariables(
-        @NonNull ComandoSql comando,
-        @NonNull AmbienteAcessoDTO banco) {
-
-        try(val masterDao = new MasterOracleDAO(banco)) {
-            log.info("Obtendo metadados das variáveis.");
-            comando.groupFiltrosPorTabela().forEach(
-                masterDao::findAndSetColumnInfo
-            );
-            log.info("Criando valores aleatórios para testar as variáveis.");
-            var mapaVariavelValor = comando.getFiltros()
-                .parallelStream()
-                .collect(Collectors.toMap(
-                    FiltroSql::getVariavel,
-                    FiltroSql::gerarValorAleatorio
-                ));
-            var sql = FormatString.substituirVariaveis(comando.getSql(), mapaVariavelValor);
-            masterDao.validadeQuery(sql);
-        }
-        catch(SQLException | PersistenceException e) {
-            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
-        }
-    }
-
-    public List<FiltroSql> getVarsFromQueryId(@NonNull Long id) {
-        return configQueryDao.findAllVarsByQueryId(id)
-            .stream()
-            .map(FiltroSql::new)
-            .toList();
     }
 
     public void deleteVar(@NonNull Long varId) {
@@ -94,7 +73,7 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
     }
 
     /**
-     * Cria ou atualiza uma entidade {@link ConfigQuery} e suas respectivas {@link ConfigQueryVar}
+     * Cria ou atualiza uma entidade {@link ConfigQuery} com base numa query informada.
      * @param job {@link Job} a ser relacionado a entidade dessa configuração de query
      * @param query {@link QueryInfoDTO}
      * @return entidade {@link ConfigQuery}
@@ -102,25 +81,21 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
      */
     public ConfigQuery criarAtualizar(@NonNull Job job, @NonNull QueryInfoDTO query)
     throws DuplicatedRecordException {
-        ConfigQuery configQuery;
         if(query.getId().isPresent()) {
             var id = query.getId().get();
-            log.info("Atualizando ConfigQuery[ID {}] do Job[ID {}] '{}'.", id, job.getId(), job.getNome());
-            configQuery = findById(id);
-            log.info("Antes: {}", configQuery.getVariaveis());
+            log.info("Atualizando Query ID {} (Job ID {}).", id, job.getId());
+            var configQuery = findById(id);
             configQuery.atualizar(query);
-            log.info("Depois: {}", configQuery.getVariaveis());
             configQuery.setJob(job);
             save(configQuery);
-            log.info("ConfigQuery atualizada com sucesso. ID {}.", configQuery.getId());
+            log.info("ConfigQuery atualizada com sucesso: ID {}.", configQuery.getId());
+            return configQuery;
         }
-        else {
-            log.info("Criando nova ConfigQuery para Job[ID {}] '{}'.", job.getId(), job.getNome());
-            configQuery = new ConfigQuery(query);
-            configQuery.setJob(job);
-            save(configQuery);
-            log.info("ConfigQuery gerada com sucesso: ID {}.", configQuery.getId());
-        }
+        log.info("Criando nova Query (Job ID {}).", job.getId());
+        var configQuery = new ConfigQuery(query);
+        configQuery.setJob(job);
+        save(configQuery);
+        log.info("ConfigQuery gerada com sucesso: ID {}.", configQuery.getId());
         return configQuery;
     }
 

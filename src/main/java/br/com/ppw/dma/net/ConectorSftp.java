@@ -359,7 +359,7 @@ public class ConectorSftp {
             if(listaArquivos.isEmpty())
                 throw new OperacaoSftpException(comandoInput, "Nenhum arquivo encontrado.");
 
-            //Por algum motivo estranho o nome dos arquivos retornam concatenados com '\r' e pode causar problemas.
+            //Por algum motivo estranho o name dos arquivos retornam concatenados com '\r' e pode causar problemas.
             val arquivoMaisRecente = listaArquivos.get(0).replace("\r", "");
             log.info("Arquivo mais recente: '{}'", arquivoMaisRecente);
             return download(arquivoMaisRecente);

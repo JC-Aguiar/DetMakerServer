@@ -4,7 +4,10 @@ import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.configQuery.ResultadoSql;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.experimental.FieldDefaults;
 
 import java.io.File;
@@ -93,7 +96,7 @@ public class JobProcess {
     }
 
     public void addTabelasPreJob(@NonNull ResultadoSql evidencia) {
-        if(!evidencia.getSqlCompleta().trim().isEmpty()) {
+        if(!evidencia.getQuery().trim().isEmpty()) {
             this.tabelasPreJob.add(evidencia);
         }
     }
@@ -103,7 +106,7 @@ public class JobProcess {
     }
 
     public void addTabelasPosJob(@NonNull ResultadoSql evidencia) {
-        if(!evidencia.getSqlCompleta().trim().isEmpty()) {
+        if(!evidencia.getQuery().trim().isEmpty()) {
             this.tabelasPosJob.add(evidencia);
         }
     }
@@ -181,13 +184,13 @@ public class JobProcess {
 //        tabelasPendentes.removeAll(job.getTabelas());
 //
 //        val infoTabelas = new StringBuilder();
-//        for (val tabela : tabelas) {
-//            val diff = tabela.getResultado();
-//            diff.removeAll(tabela.getResultadoPreJob());
+//        for (val table : tabelas) {
+//            val diff = table.getResultado();
+//            diff.removeAll(table.getResultadoPreJob());
 //            if (diff.isEmpty())
-//                infoTabelas.append(String.format(SQL_DIFF_ZERO, tabela));
+//                infoTabelas.append(String.format(SQL_DIFF_ZERO, table));
 //            else
-//                infoTabelas.append(String.format(SQL_DIFF_TOTAL, tabela, diff.size()));
+//                infoTabelas.append(String.format(SQL_DIFF_TOTAL, table, diff.size()));
 //        }
 //
 //         analise = String.format(ANALISE_TEMPLATE,

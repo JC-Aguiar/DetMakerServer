@@ -1,8 +1,8 @@
 package br.com.ppw.dma.massa;
 
-import br.com.ppw.dma.configQuery.ColumnInfo;
-import br.com.ppw.dma.master.ColumnDB;
-import br.com.ppw.dma.master.TableDB;
+import br.com.ppw.dma.master.DbColumnMetadata;
+import br.com.ppw.dma.master.DbColumn;
+import br.com.ppw.dma.master.DbTable;
 import br.com.ppware.api.FormatoMassa;
 import br.com.ppware.api.MassaColunaInfo;
 import com.fasterxml.jackson.annotation.JsonFormat;
@@ -46,7 +46,7 @@ public class MassaColunaDTO implements MassaColunaInfo {
 
 	@Nullable
 	@JsonIgnore
-	ColumnInfo metadados;
+	DbColumnMetadata metadados;
 
 
 	public MassaColunaDTO(@NonNull MassaColuna entidade) {
@@ -59,34 +59,36 @@ public class MassaColunaDTO implements MassaColunaInfo {
 	}
 
 	/**
-	 * Atualiza seus metadados com base numa extração de banco, desde que os nomes das colunas sejam iguais.
+	 * Atualiza seus metadados com base numa extração de banco, desde que os nomes das column sejam iguais.
 	 * Recomendamos que esse método não seja chamado externamente e sim pelo
-	 * {@link MassaTabelaDTO#atualizar(TableDB)}.
-	 * @param colunaBanco {@link ColumnDB} extração de uma coluna de um banco
+	 * {@link MassaTabelaDTO#atualizar(DbTable)}.
+	 * @param colunaBanco {@link DbColumn} extração de uma coluna de um banco
 	 * @return <b>boolean</b>: sim ou não, para indicar se esse objeto foi atualizado com sucesso.
 	 */
-	public boolean atualizar(@NonNull ColumnDB colunaBanco) {
-		if(!nome.equalsIgnoreCase(colunaBanco.nome())) return false;
+	public boolean atualizar(@NonNull DbColumn colunaBanco) {
+		if(!nome.equalsIgnoreCase(colunaBanco.name())) return false;
 
 		var tamanhoAtual = Optional.ofNullable(metadados)
-			.map(ColumnInfo::length)
+			.map(DbColumnMetadata::length)
 			.orElse(Integer.MAX_VALUE);
 		var precisaoAtual = Optional.ofNullable(metadados)
-			.map(ColumnInfo::precision)
+			.map(DbColumnMetadata::precision)
 			.orElse(Integer.MAX_VALUE);
 		var escalaAtual = Optional.ofNullable(metadados)
-			.map(ColumnInfo::scale)
+			.map(DbColumnMetadata::scale)
 			.orElse(Integer.MAX_VALUE);
 
-		metadados = new ColumnInfo(
-			Math.min(tamanhoAtual, colunaBanco.tamanho()),
-			Math.min(precisaoAtual, colunaBanco.precisao()),
-			Math.min(escalaAtual, colunaBanco.escala()));
+		metadados = new DbColumnMetadata(
+			colunaBanco.metadata().type(),
+			Math.min(tamanhoAtual, colunaBanco.getTamanho()),
+			Math.min(precisaoAtual, colunaBanco.getPrecisao()),
+			Math.min(escalaAtual, colunaBanco.getEscala())
+		);
 		return true;
 	}
 
-//	public MassaColunaDTO(@NonNull MassaColuna entidade, @NonNull ColumnInfo info) {
-//		this.nome = entidade.getNome();
+//	public MassaColunaDTO(@NonNull MassaColuna entidade, @NonNull DbColumnMetadata info) {
+//		this.name = entidade.getNome();
 //		this.formato = entidade.getFormato();
 //		this.opcao = entidade.getOpcao();
 //		this.tamanho = info.length();

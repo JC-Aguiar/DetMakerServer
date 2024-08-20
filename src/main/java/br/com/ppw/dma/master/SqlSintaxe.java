@@ -1,5 +1,6 @@
-package br.com.ppw.dma.util;
+package br.com.ppw.dma.master;
 
+import br.com.ppw.dma.util.FormatString;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -11,14 +12,16 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static br.com.ppw.dma.master.SqlSintaxe.DqlKeywords.*;
+
 @Slf4j
-public abstract class SqlUtils {
+public abstract class SqlSintaxe {
 
     private static final Set<String> DDL_KEYWORDS = Set.of(
         "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "TRUNCATE", "RENAME", "DROP", "DECLARE"
     );
 
-    private static final Set<String> JOIN_KEYWORDS = Set.of(
+    private static final List<String> JOIN_KEYWORDS = List.of(
         "CROSS JOIN",
         "FULL JOIN",
         "RIGHT JOIN",
@@ -28,22 +31,22 @@ public abstract class SqlUtils {
         "JOIN"
     );
 
-    private static final Set<String> LOGIC_OPERATOR_KEYWORDS = Set.of(
-        "=",
+    private static final List<String> LOGIC_OPERATOR_KEYWORDS = List.of(
         "<>",
         "!=",
-        "<",
-        ">",
         "<=",
         ">=",
-        "BETWEEN",
-        "LIKE",
-        "IN",
-        "IS NULL",
+        "=",
+        "<",
+        ">",
         "NOT BETWEEN",
         "NOT LIKE",
         "NOT IN",
-        "IS NOT NULL"
+        "IS NOT NULL",
+        "BETWEEN",
+        "LIKE",
+        "IN",
+        "IS NULL"
     );
 
     private static final Set<String> COMBINE_OPERATOR_KEYWORDS = Set.of(
@@ -67,15 +70,16 @@ public abstract class SqlUtils {
         MINUS(Set.of("MINUS")),
         WITH(Set.of("WITH")),
         SEARCH(Set.of("SEARCH")),
+        EXIST(Set.of("EXIST")),
         CYCLE(Set.of("CYCLE")),
         ONLY(Set.of("ONLY")),
         ON(Set.of("ON")),
         COMBINE_OPERATORS(COMBINE_OPERATOR_KEYWORDS),
         LOGIC_OPERATORS(LOGIC_OPERATOR_KEYWORDS);
 
-        @Getter public final Set<String> keywords;
+        @Getter public final Collection<String> keywords;
 
-        DqlKeywords(Set<String> keywords) {
+        DqlKeywords(Collection<String> keywords) {
             this.keywords = keywords;
         }
     }
@@ -125,7 +129,7 @@ public abstract class SqlUtils {
 //    }
 
     //TODO: javadoc
-    public static boolean isSafeInsertQuery(String query) {
+    public static boolean isSafeInsert(String query) {
         if(query == null || query.trim().isEmpty()) return true;
         val keywords = DDL_KEYWORDS.stream()
             .filter(k -> !k.equals("INSERT"))
@@ -136,7 +140,7 @@ public abstract class SqlUtils {
     }
 
     //TODO: javadoc
-    public static boolean isSafeDeleteQuery(String query) {
+    public static boolean isSafeDelete(String query) {
         if(query == null || query.trim().isEmpty()) return true;
         val keywords = DDL_KEYWORDS.stream()
             .filter(k -> !k.equals("DELETE"))
@@ -147,7 +151,7 @@ public abstract class SqlUtils {
     }
 
     //TODO: javadoc
-    public static boolean isSafeQuery(String query) {
+    public static boolean isSafeSelect(String query) {
         if(query == null || query.trim().isEmpty()) return true;
         String palavras = String.join("|", DDL_KEYWORDS);
         String ddlPattern = "(?i)(" +palavras+ ")";
@@ -155,9 +159,9 @@ public abstract class SqlUtils {
     }
 
     //TODO: javadoc
-    public static boolean isSafeQuery(List<String> campos) {
+    public static boolean isSafeSelect(List<String> campos) {
         if(campos == null || campos.isEmpty()) return true;
-        return campos.stream().allMatch(SqlUtils::isSafeQuery);
+        return campos.stream().allMatch(SqlSintaxe::isSafeSelect);
     }
 
     public static String getExceptionMainCause(@NonNull Exception e) {
@@ -186,47 +190,56 @@ public abstract class SqlUtils {
         return query
             .replaceAll("\r", " ")
             .replaceAll("\n", " ")
-            .replaceAll("\t", " ")
             .replaceAll("=", " = ")
-            .replaceAll("<>", " <> ")
-            .replaceAll("!=", " != ")
             .replaceAll("<", " < ")
             .replaceAll(">", " > ")
-            .replaceAll("<=", " <= ")
-            .replaceAll(">=", " >= ")
-//            .replaceAll("\\.\\s+", ".")
+            .replaceAll("<\\s+>", " <> ")
+            .replaceAll("!\\s+=", " != ")
+            .replaceAll("<\\s+=", " <= ")
+            .replaceAll(">\\s+=", " >= ")
+            .replaceAll("\\.\\s+", ".")
             .replaceAll("\\s+", " ");
     }
 
-    public static List<String> extractFromQuery(
+    private static List<String> extractFromQuery(
         @NonNull String query,
         @NonNull DqlKeywords...keywords) {
 
+        return extractFromQuery(query, Set.of(keywords), Set.of());
+    }
+
+    private static List<String> extractFromQuery(
+        @NonNull String query,
+        @NonNull Set<DqlKeywords> keywordsInclude,
+        @NonNull Set<DqlKeywords> keywordsExclude) {
+
         ArrayList<String> resultado = new ArrayList<>();
-        query = formatQuery(query);
-        log.debug("Query: '{}'", query);
-        log.debug("DQLs: {}", Arrays.deepToString(keywords));
-        if(keywords.length == 0) return List.of();
+        if(keywordsInclude.size() == 0) return List.of();
 
         // Listando todas as cláusulas DQL
-        var clausulas = Arrays
-            .stream(DqlKeywords.values())
+        var clausulas = Arrays.stream(DqlKeywords.values())
             .parallel()
             .flatMap(keyword -> keyword.getKeywords().stream())
             .collect(Collectors.toCollection(LinkedHashSet::new));
 
         // Mapeando cláusulas DQL do usuário
-        var palavrasAlvo = Arrays.stream(keywords)
-            .parallel()
+        var palavrasAlvo = keywordsInclude.parallelStream()
+            .filter(keyword -> !keywordsExclude.contains(keyword))
             .flatMap(keyword -> keyword.getKeywords().stream())
-            .collect(Collectors.toSet());
+            .toList();
+
+        // Mapeando cláusulas DQL do usuário
+        var palavrasIgnorar = keywordsExclude.parallelStream()
+            .filter(keyword -> !keywordsInclude.contains(keyword))
+            .flatMap(keyword -> keyword.getKeywords().stream())
+            .toList();
 
         // Removendo das demais cláusulas as escolhidas
-        clausulas.removeAll(palavrasAlvo);
+        palavrasAlvo.forEach(clausulas::remove);
+        palavrasIgnorar.forEach(clausulas::remove);
 
         // Gerando substring das cláusulas DQL a serem extraídas no regex
-        var padraoAlvo = Arrays.stream(keywords)
-            .parallel()
+        var padraoAlvo = keywordsInclude.parallelStream()
             .flatMap(keyword -> keyword.getKeywords().stream())
             .map(keyword -> " "+keyword+" ")
             .map(Pattern::quote)
@@ -240,27 +253,32 @@ public abstract class SqlUtils {
 
         // Regex para extrair conteúdo entre as cláusulas DQL escolhidas x demais cláusulas DQL
         var regexLiteral = String.format("(?s)(?:%s)(?:(?!%s).)*", padraoAlvo, padraoIgnorar);
-        log.debug(regexLiteral.toString());
+        log.info(regexLiteral);
         var matcher = Pattern.compile(regexLiteral).matcher(query);
 
-        // Itera sobre os conteúdos DQL encontrados
+        // Itera sobre os conteúdos para remover os DQL encontrados na extração
+        var palavrasRefinar = new ArrayList<>(palavrasAlvo);
+        palavrasRefinar.addAll(palavrasIgnorar);
+
         while(matcher.find()) {
-            val match = new StringBuilder(matcher.group());
+            val text = new StringBuilder(matcher.group());
             // Remove cláusula DQL do texto obtido (se existe)
-            palavrasAlvo.forEach(palavra -> {
-                int startIndex = match.indexOf(palavra);
-                if (startIndex == -1) return ;
-                int endIndex = startIndex + palavra.length();
-                match.delete(startIndex, endIndex);
-            });
+            for(var palavra : palavrasRefinar) {
+                int startIndex = text.indexOf(palavra);
+                while(startIndex != -1) {
+                    int endIndex = startIndex + palavra.length();
+                    text.delete(startIndex, endIndex);
+                    startIndex = text.indexOf(palavra);
+                }
+            }
             // Interpreta e mapeia resultado para tabelas
-            resultado.add(match.toString());
+            resultado.add(text.toString());
         }
         return resultado;
     }
 
     private static Set<String> refineTablesExtraction(@NonNull String tablesExtraction) {
-        // Regex para identificar nome das tabelas + alias
+        // Regex para identificar name das tabelas + alias
         var pattern = Pattern.compile("(\\w+)(?:\\s+(\\w+))?");
 
         var tables = new HashSet<String>();
@@ -277,9 +295,9 @@ public abstract class SqlUtils {
     }
 
     private static Set<String> refineColumnsExtraction(@NonNull String fieldsExtraction) {
-        fieldsExtraction = fieldsExtraction
-            .replaceAll("\\.\\s+", ".")
-            .replaceAll(",", " ");
+        if(fieldsExtraction.contains("*")) return Set.of();
+
+        fieldsExtraction = fieldsExtraction.replaceAll(",", " ");
         return Arrays.stream(fieldsExtraction.split(" "))
             .parallel()
             .filter(Predicate.not(String::isBlank))
@@ -292,49 +310,103 @@ public abstract class SqlUtils {
             .collect(Collectors.toSet());
     }
 
-    private static Optional<String> refineFiltersExtraction(@NonNull String filtersExtraction) {
-//        log.info(filtersExtraction);
+    private static List<QueryColumn> refineFiltersExtraction(@NonNull String filtersExtraction) {
+        var results = new ArrayList<QueryColumn>();
         var filtersExtractionArray = filtersExtraction
-            .replaceAll("\\.\\s+", ".")
-            .replaceAll("\\(\\s+", "")
-            .replaceAll("\\)\\s+", "")
-            .split("\\.");
-        var length = filtersExtractionArray.length;
-        var target = FormatString.extrairConteudoParenteses(filtersExtractionArray[length-1]);
+            .replaceAll(",\\s+", ",")
+            .replaceAll("\\s+", " ")
+            .trim()
+            .split(" ");
+        for(int index = 0; index < filtersExtractionArray.length; index++) {
+            var column = filtersExtractionArray[index];
+            if(FormatString.possuiVariaveis(column)) continue;
 
-        var regex = "(\\b\\w+\\b)";
-        var matcher = Pattern.compile(regex).matcher(target);
-        return Optional.ofNullable(
-            matcher.find() ? matcher.group(1) : null
-        );
+            var columnName = refineColumnName(column);
+            if(columnName.isBlank()) continue;
+
+            var thisResult = results.parallelStream()
+                .filter(queryCol -> queryCol.column().equals(columnName))
+                .findFirst()
+                .orElseGet(() -> new QueryColumn(columnName, new HashSet<>()));
+
+            if(index+1 < filtersExtractionArray.length) {
+                var nextItem = filtersExtractionArray[index+1];
+                if(FormatString.possuiVariaveis(nextItem)) {
+                    index++;
+                    var array = nextItem.startsWith("(") && nextItem.endsWith(")");
+                    var variable = FormatString.extrairVariaveisLista(nextItem).get(0);
+                    thisResult.variables().add(
+                        new QueryVariable(variable, array)
+                    );
+                }
+            }
+            if(results.parallelStream().noneMatch(queryCol -> queryCol.column().equals(columnName)))
+                results.add(thisResult);
+        }
+        return results;
     }
 
-    public static Set<String> getTablesNameFromQuery(@NonNull String query) {
-        return SqlUtils.extractFromQuery(query, DqlKeywords.FROM, DqlKeywords.JOIN)
+    private static String refineColumnName(@NonNull String column) {
+        var builder = new StringBuilder(
+            FormatString.extrairConteudoParenteses(column)
+        );
+        var index = builder.lastIndexOf(".");
+        if(index != -1) builder.delete(0, index+1);
+
+        index = builder.indexOf(",");
+        if(index == -1) return builder.toString();
+
+        return builder
+            .delete(index, builder.length())
+            .toString();
+    }
+
+    private static Set<String> getTablesNameFromQuery(@NonNull String query) {
+        return Set.copyOf(SqlSintaxe.extractFromQuery(query, FROM, JOIN))
             .parallelStream()
-            .map(SqlUtils::refineTablesExtraction)
+            .map(SqlSintaxe::refineTablesExtraction)
             .flatMap(Set::parallelStream)
             .collect(Collectors.toSet());
     }
 
-    public static Set<String> getColumnsNameFromQuery(@NonNull String query) {
-        return SqlUtils.extractFromQuery(query, DqlKeywords.SELECT)
+    private static Set<String> getColumnsNameFromQuery(@NonNull String query) {
+        return Set.copyOf(SqlSintaxe.extractFromQuery(query, SELECT))
             .parallelStream()
-            .map(SqlUtils::refineColumnsExtraction)
+            .map(SqlSintaxe::refineColumnsExtraction)
             .flatMap(Set::stream)
             .collect(Collectors.toSet());
     }
 
-    public static Set<String> getColumnsFiltersFromQuery(@NonNull String query) {
-        return SqlUtils.extractFromQuery(
+    private static List<QueryColumn> getColumnsFiltersFromQuery(@NonNull String query) {
+        var extraction = Set.copyOf(SqlSintaxe.extractFromQuery(
                 query,
-                DqlKeywords.WHERE,
-                DqlKeywords.ON,
-                DqlKeywords.COMBINE_OPERATORS)
+                Set.of(WHERE, ON, COMBINE_OPERATORS),
+                Set.of(LOGIC_OPERATORS)))
             .parallelStream()
-            .map(SqlUtils::refineFiltersExtraction)
-            .flatMap(Optional::stream)
-            .collect(Collectors.toSet());
+            .collect(Collectors.joining(" "));
+        return refineFiltersExtraction(extraction);
+    }
+
+    public static QueryExtraction analyse(String query) {
+        if(query == null)
+            return new QueryExtraction(null, null);
+
+        query = formatQuery(query);
+        var tables = new HashSet<String>();
+        var columnsNames = new LinkedHashSet<String>();
+        var columns = new HashSet<QueryColumn>();
+
+        tables.addAll(SqlSintaxe.getTablesNameFromQuery(query));
+        columns.addAll(SqlSintaxe.getColumnsFiltersFromQuery(query));
+        columnsNames.addAll(SqlSintaxe.getColumnsNameFromQuery(query));
+        columnsNames.parallelStream()
+            .filter(name -> columns
+                .parallelStream()
+                .noneMatch(col -> col.column().equals(name)))
+            .map(name -> new QueryColumn(name, new HashSet<>()))
+            .forEach(columns::add);
+
+        return new QueryExtraction(tables, columns);
     }
 
 }

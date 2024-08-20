@@ -102,7 +102,7 @@ public class PipelineExecDTO {
         }
         ...
     Se o valor nas `configuracoes` não for definido usando `${ }`, o valor será considerado um literal.
-    Se a tabela ou a coluna da tabela especificada não estiver disponível na massa produzida, a operação
+    Se a table ou a coluna da table especificada não estiver disponível na massa produzida, a operação
     toda será cancelada.
      */
 

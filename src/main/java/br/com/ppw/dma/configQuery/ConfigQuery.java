@@ -56,46 +56,15 @@ public class ConfigQuery implements MasterEntity<Long> {
         + "Exemplo: SELECT * FROM EVENTOS_WEB WHERE EVACCT IN (${contratos})")
     String sql;
 
-    @ToString.Exclude
-    @JsonManagedReference
-    @Column(name = "VARIAVEIS")
-    @OneToMany(fetch = LAZY, cascade = ALL, orphanRemoval = true, mappedBy = "query")
-    @Comment("Indica a lista das variáveis que constam dentro da SQL")
-    List<ConfigQueryVar> variaveis = new ArrayList<>();
 
-
-    public ConfigQuery(@NonNull ComandoSql dto) {
+    public ConfigQuery(@NonNull QueryInfoDTO dto) {
         atualizar(dto);
     }
 
-    public void atualizar(@NonNull ComandoSql dto) {
+    public void atualizar(@NonNull QueryInfoDTO dto) {
         this.nome = dto.getNome();
         this.descricao = dto.getDescricao();
         this.sql = dto.getSql();
-        this.variaveis.forEach(queryVar -> {
-            if (!dto.getFiltros().isEmpty()) {
-                var filtro = dto.getFiltros().remove(0);
-                queryVar.atualizar(filtro);
-            }
-        });
-        dto.getFiltros().forEach(
-            filtro -> addVariaveis(new ConfigQueryVar(filtro))
-        );
-    }
-
-    public void setVariaveis(List<ConfigQueryVar> variaveis) {
-        this.variaveis = variaveis;
-        this.variaveis.forEach(variavel -> variavel.setQuery(this));
-    }
-
-    public void addVariaveis(List<ConfigQueryVar> variaveis) {
-        variaveis.forEach(variavel -> variavel.setQuery(this));
-        this.variaveis.addAll(variaveis);
-    }
-
-    public void addVariaveis(ConfigQueryVar variavel) {
-        variavel.setQuery(this);
-        this.variaveis.add(variavel);
     }
 
     @Override

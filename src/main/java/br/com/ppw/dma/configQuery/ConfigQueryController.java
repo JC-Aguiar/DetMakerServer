@@ -5,7 +5,7 @@ import br.com.ppw.dma.ambiente.AmbienteService;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.job.JobService;
 import br.com.ppw.dma.master.MasterController;
-import br.com.ppw.dma.util.SqlUtils;
+import br.com.ppw.dma.master.SqlSintaxe;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -87,27 +87,7 @@ public class ConfigQueryController extends MasterController<Long, ConfigQuery, C
 //    }
 
     //TODO: javadoc
-    @PostMapping(value = "validade/dynamic/ambiente/{ambienteId}")
-    public ResponseEntity<String> validarQuery(
-        @PathVariable Long ambienteId,
-        @RequestBody ComandoSql comandoSql) {
-        //----------------------------------------------------------
-        val ambiente = ambienteService.findById(ambienteId);
-        val acessoBanco = AmbienteAcessoDTO.banco(ambiente);
-        try {
-            service.validadeQuery(comandoSql, acessoBanco);
-            return ResponseEntity.ok("Query aprovada.");
-        }
-        catch(SQLException | PersistenceException e) {
-            var mensagem = "Query reprovada: " + SqlUtils.getExceptionMainCause(e);
-            log.warn(mensagem);
-            return ResponseEntity.badRequest().body(mensagem);
-        }
-        //catch() TODO: cath da Exceção personalizada (?)
-    }
-
-
-    //TODO: javadoc
+    //      sincronizar com front !
     @PostMapping(value = "validade/manual/ambiente/{ambienteId}")
     public ResponseEntity<String> validarQuery(
         @PathVariable Long ambienteId,
@@ -117,46 +97,46 @@ public class ConfigQueryController extends MasterController<Long, ConfigQuery, C
         val banco = AmbienteAcessoDTO.banco(ambiente);
         String mensagem = null;
         try {
-            log.info("Validando SQL: '{}'", sql); //TODO: adicionar ID da ConfigQuery
+            log.info("Validando SQL: '{}'", sql);
             service.validadeQuery(sql, banco);
             mensagem = "Query aprovada.";
             log.info(mensagem);
             return ResponseEntity.ok(mensagem);
         }
         catch(SQLException | PersistenceException e) {
-            mensagem = "Query reprovada: " + SqlUtils.getExceptionMainCause(e);
+            mensagem = "Query reprovada: " + SqlSintaxe.getExceptionMainCause(e);
             log.warn(mensagem);
             return ResponseEntity.badRequest().body(mensagem);
         }
     }
 
 
-    //TODO: javadoc
-    @GetMapping(value = "{queryId}/vars")
-    public ResponseEntity<List<FiltroSql>> obterVariaveisDaQuery(@PathVariable Long queryId) {
-        var variaveis = service.getVarsFromQueryId(queryId);
-        return ResponseEntity.ok(variaveis);
-    }
+    //TODO: sincronizar com front !!!
+//    @GetMapping(value = "{queryId}/vars")
+//    public ResponseEntity<List<FiltroSql>> obterVariaveisDaQuery(@PathVariable Long queryId) {
+//        var variaveis = service.getVarsFromQueryId(queryId);
+//        return ResponseEntity.ok(variaveis);
+//    }
 
+    //TODO: sincronizar com front !!!
     /**
-     * Cria ou atualiza uma entidade {@link ConfigQuery} e suas respectivas {@link ConfigQueryVar} para
-     * detemrinado cliente.
+     * Cria ou atualiza uma entidade {@link ConfigQuery} para determinado cliente.
      * @param ambienteId {@link Long} obtido no path da uri
-     * @param query {@link QueryInfoDTO}
+     * @param dto {@link QueryInfoDTO}
      * @return {@link ResponseEntity} da mesma {@link QueryInfoDTO} enviada, so que atualizada com o banco.
      * @throws DuplicatedRecordException em caso de duplicidade no banco.
      */
     @PostMapping(value = "ambiente/{ambienteId}")
     public ResponseEntity<QueryInfoDTO> criarAtualizarQuery(
         @PathVariable Long ambienteId,
-        @Valid @RequestBody QueryInfoDTO query)
-    throws DuplicatedRecordException {
+        @Valid @RequestBody QueryInfoDTO dto)
+    throws DuplicatedRecordException, SQLException {
 
         val ambiente = ambienteService.findById(ambienteId);
         var banco = AmbienteAcessoDTO.banco(ambiente);
-        var job = jobService.findById(query.getJobId());
-        service.completeAndValidateVariables(query, banco);
-        var configQuery = service.criarAtualizar(job, query);
+        var job = jobService.findById(dto.getJobId());
+        service.validadeQuery(dto.getSql(), banco);
+        var configQuery = service.criarAtualizar(job, dto);
         return ResponseEntity.ok(new QueryInfoDTO(configQuery));
     }
 

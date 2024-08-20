@@ -2,13 +2,10 @@ package br.com.ppw.dma;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.job.JobService;
-import br.com.ppw.dma.master.ColumnDB;
-import br.com.ppw.dma.master.MasterOracleDAO;
-import br.com.ppw.dma.master.TableDB;
+import br.com.ppw.dma.master.*;
 import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.pipeline.PipelineExecDTO;
 import br.com.ppw.dma.util.FormatString;
-import br.com.ppw.dma.util.SqlUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.lalyos.jfiglet.FigletFont;
@@ -39,6 +36,7 @@ import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatString.dividirValores;
+import static br.com.ppw.dma.master.SqlSintaxe.*;
 
 @Slf4j
 public class BasicTest {
@@ -235,7 +233,7 @@ public class BasicTest {
 
     @Test
     public void testarConversaoModelMapper_PipelineExecDTO() throws JsonProcessingException {
-        val json = "{\"clienteId\":1,\"ambienteId\":1,\"pipeline\":{\"id\":141,\"nome\":\"Carga Eventual de Produtos\",\"descricao\":\"\",\"clienteId\":1,\"jobs\":[\"cy3_ent_carga_ev_IE008.ksh\"]},\"relatorio\":{\"idProjeto\":\"IN1920\",\"nomeProjeto\":\"FENIX\",\"nomeAtividade\":\"Carga válida de produtos com validação mensal\",\"consideracoes\":\"\",\"testeTipo\":\"\"},\"userInfo\":{\"nome\":\"João Aguiar\",\"empresa\":\"Peopleware\",\"papel\":\"DEV\",\"email\":\"joao.aguiar@ppware.com.br\",\"telefone\":\"\"},\"jobs\":[{\"id\":300,\"ordem\":0,\"argumentos\":\"20230621 mensal\",\"queries\":[]}]}\n";
+        val json = "{\"clienteId\":1,\"ambienteId\":1,\"pipeline\":{\"id\":141,\"name\":\"Carga Eventual de Produtos\",\"descricao\":\"\",\"clienteId\":1,\"jobs\":[\"cy3_ent_carga_ev_IE008.ksh\"]},\"relatorio\":{\"idProjeto\":\"IN1920\",\"nomeProjeto\":\"FENIX\",\"nomeAtividade\":\"Carga válida de produtos com validação mensal\",\"consideracoes\":\"\",\"testeTipo\":\"\"},\"userInfo\":{\"name\":\"João Aguiar\",\"empresa\":\"Peopleware\",\"papel\":\"DEV\",\"email\":\"joao.aguiar@ppware.com.br\",\"telefone\":\"\"},\"jobs\":[{\"id\":300,\"ordem\":0,\"argumentos\":\"20230621 mensal\",\"queries\":[]}]}\n";
         log.info("JSON:");
         log.info(json);
         val execDto = new ObjectMapper().readValue(json, PipelineExecDTO.class);
@@ -279,13 +277,13 @@ public class BasicTest {
         String sql = "SELECT INSERT * FROM DELQUDA_1_CLI WHERE ROWNUM <= 50";
         log.info("SQL: {}", sql);
 
-        boolean valido = SqlUtils.isSafeQuery(sql);
+        boolean valido = isSafeSelect(sql);
         log.info("Valido: {}", valido);
 
         sql = "SELECT * FROM DELQUDA_1_CLI WHERE ROWNUM <= 50";
         log.info("SQL: {}", sql);
 
-        valido = SqlUtils.isSafeQuery(sql);
+        valido = isSafeSelect(sql);
         log.info("Valido: {}", valido);
     }
 
@@ -389,7 +387,7 @@ public class BasicTest {
 //
 //        try (var dao = new MasterOracleDAO(ambiente)) {
 //            dao.getColumnsFromTable("DELQMST", "UDA1").forEach(
-//                tabela -> log.info(tabela.toString())
+//                table -> log.info(table.toString())
 //            );
 //        }
 //        catch(Exception e) {
@@ -398,48 +396,88 @@ public class BasicTest {
 //    }
 
     @Test
+    public void extrairParenteses() {
+        var palavras = Set.of(
+            "(column1)",
+            "count2(column2)",
+            "count3((column3)",
+            "count4(column4))",
+            "count5(((column5)))",
+            "(count6)((column6))",
+            "((count7)((column7)))",
+            "((((((count8)))))((column8)))"
+        );
+        var expectativas = Set.of(
+            "column1",
+            "column2",
+            "column3",
+            "column4",
+            "column5",
+            "(count6)((column6))",
+            "((count7)((column7)))",
+            "((((((count8)))))((column8)))"
+        );
+    }
+
+    @Test
     public void testeRegexExtrairNomeDasTabelas() {
         var query = """
-            SELECT alias1.column1,   table_name2.  count(column2)
-            FROM table_name1 alias1, table_name2 alias2
-            INNER JOIN   table_name3
-            ON alias1.fieldA = table_name3.conditionA
-            OR table_name1.fieldB = table_name3.conditionB
-            WHERE fieldC >= conditionC
-            AND fieldD EXIST (
-                SELECT column3
-                FROM table_name4
-                WHERE fieldE = conditionE1
-                OR fieldE <> conditionE2
+                SELECT alias1.column1,   table_name2.  count(column2)
+                FROM table_name1 alias1, table_name2 alias2
+                INNER JOIN   table_name3
+                ON alias1.fieldA = table_name3.fieldZ
+                OR table_name1.fieldB = table_name3.fieldY
+                WHERE NVL(fieldC, 0) >= userInputC
+                AND fieldD EXIST (
+                    SELECT column3
+                    FROM table_name4
+                    WHERE TO_DATE(fieldE, 'DD/MM/YY') = userInputE1
+                    OR fieldE <> ${variableE2}
+                    ORDER BY column3 ASC
+                )
+                OR (fieldF=${variableF1})
+                OR fieldF>=userInputF2
+                OR fieldF<=userInputF3
+                OR fieldF<>${variableF4}
+                GROUP BY column1
+                HAVING SUM(column2) > 100
+                ORDER BY column1 DESC
+                LIMIT 10
+                OFFSET 5
+                FETCH FIRST 5 ROWS ONLY
+                UNION ALL
+                SELECT column4, column5, column6
+                FROM table_name5,
+                     table_name6
+                WHERE fieldG LIKE userInputG
+                AND fieldH NOT LIKE ${variableH}
+                AND (
+                    UPPER(fieldI) IN (${variableI})
+                    OR fieldJ NOT IN userInputJ
+                )
                 ORDER BY column3 ASC
-            )
-            OR fieldF=conditionF1
-            OR fieldF>=conditionF2
-            OR fieldF<=conditionF3
-            OR fieldF<>conditionF4
-            GROUP BY column1
-            HAVING SUM(column2) > 100
-            ORDER BY column1 DESC
-            LIMIT 10
-            OFFSET 5
-            FETCH FIRST 5 ROWS ONLY
-            UNION ALL
-            SELECT column3, column4, column5
-            FROM table_name5,
-                 table_name6
-            WHERE fieldG LIKE conditionG
-            AND fieldH NOT LIKE conditionH
-            AND (
-                fieldI IN (conditionI)
-                OR fieldJ NOT IN conditionJ
-            ORDER BY column3 ASC
-        """;
-        var tables = SqlUtils.getTablesNameFromQuery(query);
-        var columns = SqlUtils.getColumnsNameFromQuery(query);
-        var filters = SqlUtils.getColumnsFiltersFromQuery(query);
+                MINUS
+                SELECT *
+                FROM (
+                    SELECT column7, MAX(column8)
+                    FROM table_name7 GROUP BY column7
+                )
+            """;
+        var extraction = SqlSintaxe.analyse(query);
+        var tables = extraction.tables();
+        var columns = extraction.columns()
+            .parallelStream()
+            .map(QueryColumn::column)
+            .collect(Collectors.toSet());
+        var filters = extraction.columns()
+            .parallelStream()
+            .map(QueryColumn::variables)
+            .flatMap(Set::parallelStream)
+            .collect(Collectors.toSet());
         log.info("TABELAS: {}", String.join(", ", tables));
         log.info("COLUNAS: {}", String.join(", ", columns));
-        log.info("FILTROS: {}", String.join(", ", filters));
+        log.info("FILTROS:");
+        filters.forEach(filter -> log.info(" - {}", filter));
 
         var tabelasEsperadas = Set.of(
             "table_name1",
@@ -447,30 +485,66 @@ public class BasicTest {
             "table_name3",
             "table_name4",
             "table_name5",
-            "table_name6"
+            "table_name6",
+            "table_name7"
         );
         var colunasEsperadas = Set.of(
             "column1",
             "column2",
             "column3",
             "column4",
-            "column5"
+            "column5",
+            "column6",
+            "column7",
+            "column8"
         );
         var filtrosEsperados = Set.of(
-            "fieldA",
-            "fieldB",
-            "fieldC",
-            "fieldD",
-            "fieldE",
-            "fieldF",
-            "fieldG",
-            "fieldH",
-            "fieldI",
-            "fieldJ"
+            new QueryColumn("fieldA", Set.of()),
+            new QueryColumn("fieldB", Set.of()),
+            new QueryColumn("fieldC", Set.of()),
+            new QueryColumn("userInputC", Set.of()),
+            new QueryColumn("fieldD", Set.of()),
+            new QueryColumn("fieldE", Set.of(
+                new QueryVariable("variableE2", false))),
+            new QueryColumn("userInputE1", Set.of()),
+            new QueryColumn("fieldF", Set.of(
+                new QueryVariable("variableF1", false),
+                new QueryVariable("variableF4", false))),
+            new QueryColumn("userInputF2", Set.of()),
+            new QueryColumn("userInputF3", Set.of()),
+            new QueryColumn("fieldG", Set.of()),
+            new QueryColumn("userInputG", Set.of()),
+            new QueryColumn("fieldH", Set.of(
+                new QueryVariable("variableH", false))),
+            new QueryColumn("fieldI", Set.of(
+                new QueryVariable("variableI", true))),
+            new QueryColumn("fieldJ", Set.of()),
+            new QueryColumn("userInputJ", Set.of()),
+            new QueryColumn("fieldZ", Set.of()),
+            new QueryColumn("fieldY", Set.of())
         );
-        Assertions.assertTrue(tables.containsAll(tabelasEsperadas), "Existe tabela pendente");
+        log.info("TABELAS ESPERADAS: {}", String.join(", ", tabelasEsperadas));
+        log.info("COLUNAS ESPERADAS: {}", String.join(", ", colunasEsperadas));
+        log.info("FILTROS ESPERADOS:");
+        filtrosEsperados.forEach(filter -> log.info(" - {}", filter));
+
+        Assertions.assertTrue(tables.containsAll(tabelasEsperadas), "Existe table pendente");
+        Assertions.assertTrue(tabelasEsperadas.containsAll(tables), "Existe table a mais");
+
         Assertions.assertTrue(columns.containsAll(colunasEsperadas), "Existe coluna pendente");
-        Assertions.assertTrue(filters.containsAll(filtrosEsperados), "Existe filtro pendente");
+        Assertions.assertTrue(colunasEsperadas.containsAll(columns), "Existe coluna a mais");
+
+        Assertions.assertTrue(
+            filters.parallelStream().allMatch(
+                filter -> filtrosEsperados.parallelStream().anyMatch(esperado -> esperado.equals(filter))),
+            "Existe filtro pendente"
+        );
+        Assertions.assertTrue(
+            filtrosEsperados.parallelStream().allMatch(
+                esperado -> filters.parallelStream().anyMatch(filter -> filter.equals(esperado))),
+            "Existe filtro a mais"
+        );
+
     }
 
     @Test
@@ -486,11 +560,17 @@ public class BasicTest {
         queries.stream()
             .peek(log::info)
             .parallel()
-            .forEach(query -> {
-                tables.addAll(SqlUtils.getTablesNameFromQuery(query));
-                columns.addAll(SqlUtils.getColumnsNameFromQuery(query));
-                columns.addAll(SqlUtils.getColumnsFiltersFromQuery(query));
+            .map(SqlSintaxe::analyse)
+            .forEach(extraction -> {
+                tables.addAll(extraction.tables());
+                extraction.columns()
+                    .parallelStream()
+                    .map(QueryColumn::column)
+                    .forEach(columns::add);
             });
+        log.info("TABELAS: {}", String.join(", ", tables));
+        log.info("COLUNAS: {}", String.join(", ", columns));
+
         var tabelasEsperadas = Set.of(
             "EVENTOS_WEB",
             "TMP_ENTRADA_PAGTO"
@@ -501,10 +581,19 @@ public class BasicTest {
             "EVDTSOLIC",
             "PBACCT"
         );
-        log.info("TABELAS: {}", String.join(", ", tables));
-        log.info("COLUNAS: {}", String.join(", ", columns));
-        Assertions.assertTrue(tables.containsAll(tabelasEsperadas), "Existe tabela pendente");
+        var filtrosEsperados = Set.of(
+            new QueryColumn("EVTYPE", Set.of()),
+            new QueryColumn("EVACCT", Set.of(
+                new QueryVariable("contratos", true))),
+            new QueryColumn("EVDTSOLIC", Set.of(
+                new QueryVariable("data-evento-salvo", false))),
+            new QueryColumn("PBACCT", Set.of(
+                new QueryVariable("contratos", true)))
+        );
+        Assertions.assertTrue(tables.containsAll(tabelasEsperadas), "Existe table pendente");
+        Assertions.assertTrue(tabelasEsperadas.containsAll(tables), "Existe table a mais");
         Assertions.assertTrue(columns.containsAll(colunasEsperadas), "Existe coluna pendente");
+        Assertions.assertTrue(colunasEsperadas.containsAll(columns), "Existe coluna a mais");
 
         var ambiente = new AmbienteAcessoDTO(
             "10.129.164.205:1521:cyb3dev",
@@ -517,24 +606,24 @@ public class BasicTest {
             tablesDb.stream()
                 .flatMap(tableDb -> tableDb.colunas()
                     .parallelStream()
-                    .map(ColumnDB::toString)
+                    .map(DbColumn::toString)
                     .map(col -> col.replace("[", ""))
                     .map(col -> col.replace("]", ""))
-                    .map(col -> col.replace(ColumnDB.class.getSimpleName(), ""))
+                    .map(col -> col.replace(DbColumn.class.getSimpleName(), ""))
                     .map(col -> String.format("%s - %s", tableDb.tabela(), col))
                 )
                 .forEach(log::info);
 
             Assertions.assertTrue(
                 tablesDb.parallelStream()
-                    .map(TableDB::tabela)
+                    .map(DbTable::tabela)
                     .collect(Collectors.toSet())
                     .containsAll(tabelasEsperadas),
-                "Existe tabela pendente após coleta dos metadados");
+                "Existe table pendente após coleta dos metadados");
 
             Assertions.assertTrue(
                 tablesDb.parallelStream()
-                    .map(TableDB::getColumnsNames)
+                    .map(DbTable::getColumnsNames)
                     .flatMap(Set::parallelStream)
                     .collect(Collectors.toSet())
                     .containsAll(colunasEsperadas),
@@ -542,7 +631,7 @@ public class BasicTest {
             );
         }
         catch(SQLException | PersistenceException e) {
-            throw new RuntimeException(SqlUtils.getExceptionMainCause(e));
+            throw new RuntimeException(getExceptionMainCause(e));
         }
 
     }

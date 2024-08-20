@@ -67,9 +67,9 @@ public class ExcelXLSX {
                         celula.setCellType(CellType.STRING);
                         val colIndex = celula.getColumnIndex();
                         val valor = celula.getStringCellValue();
-                        //Comece a contar a quantidade de colunas ao identificar a célula "ID"
+                        //Comece a contar a quantidade de column ao identificar a célula "ID"
                         //Se a contagem foi iniciada e não consta finalizada, incremente a contagem
-                        //Se estiver no meio da contagem de colunas e encontrar valor vazio, finalize a contagem
+                        //Se estiver no meio da contagem de column e encontrar valor vazio, finalize a contagem
                         //Se a contagem estiver fechada, colete os registros cujo índice da coluna consta no mapeamento
                         if(!colunasFechadas) {
                             if(!valor.isEmpty()) {
@@ -92,7 +92,7 @@ public class ExcelXLSX {
                                     colunasFechadas = true;
                                     log.info("Cabeçalho Identificado.");
                                     log.info("{}", String.join(", ", mapColunas.values()));
-                                    log.info("Inicia na {}, finalizada na {}. Total de colunas = {}.",
+                                    log.info("Inicia na {}, finalizada na {}. Total de column = {}.",
                                         indexZero, quantColunas - indexZero, quantColunas);
                                     log.info("-- PLANILHA '{}' {} LENDO REGISTROS",
                                         planilha.getSheetName(), LINHA_HIFENS);
@@ -100,7 +100,7 @@ public class ExcelXLSX {
                             }
                         }
                         //Processo de preenchimento de valores,
-                        //uma vez que o mapeamento das colunas já se encerrou
+                        //uma vez que o mapeamento das column já se encerrou
                         else if(colIndex >= indexZero && colIndex < quantColunas - indexZero) {
                             //Caso conteúdo do campo ID esteja vazio = pular linha
                             if(colIndex == indexZero && valor.isEmpty()) break;

@@ -20,8 +20,8 @@ public interface ConfigQueryRepository extends JpaRepository<ConfigQuery, Long> 
         "WHERE pj.CLIENTE_ID = :clienteId")
     List<ConfigQuery> findAllByClienteId(@NotNull Long clienteId);
 
-    @Query(value = "SELECT * FROM PPW_CONFIG_QUERY_VAR WHERE CONFIG_QUERY_ID = :id", nativeQuery = true)
-    List<ConfigQueryVar> findAllVarsByQueryId(@NotNull Long id);
+//    @Query(value = "SELECT * FROM PPW_CONFIG_QUERY_VAR WHERE CONFIG_QUERY_ID = :id", nativeQuery = true)
+//    List<ConfigQueryVar> findAllVarsByQueryId(@NotNull Long id);
 
     @Modifying
     @Query(value = "DELETE FROM PPW_CONFIG_QUERY_VAR WHERE ID = :id", nativeQuery = true)

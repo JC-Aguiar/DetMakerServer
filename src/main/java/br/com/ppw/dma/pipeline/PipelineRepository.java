@@ -10,7 +10,7 @@ import java.util.List;
 @Repository
 public interface PipelineRepository extends JpaRepository<Pipeline, PipelineProps> {
 
-    @Query(value = "SELECT * FROM PPW_PIPELINE p WHERE p.NOME = :nome AND p.CLIENTE_ID = :clienteId",
+    @Query(value = "SELECT * FROM PPW_PIPELINE p WHERE p.NOME = :name AND p.CLIENTE_ID = :clienteId",
         nativeQuery = true)
     Pipeline findByNomeAndCliente(@NotNull String nome, @NotNull Long clienteId);
 
@@ -18,7 +18,7 @@ public interface PipelineRepository extends JpaRepository<Pipeline, PipelineProp
         value = "SELECT * FROM PPW_PIPELINE p WHERE p.CLIENTE_ID = :clienteId AND p.OCULTAR < 1")
     List<Pipeline> findAllByClienteId(@NotNull Long clienteId);
 
-//    Ambiente findAllByNome(@NotNull String nome);
+//    Ambiente findAllByNome(@NotNull String name);
     boolean existsByNome(@NotNull String nome);
 
 }

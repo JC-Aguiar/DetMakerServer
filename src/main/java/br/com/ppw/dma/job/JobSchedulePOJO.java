@@ -131,14 +131,14 @@ public class JobSchedulePOJO {
 //        );
 //    }
 //
-//    private static List<String> montarPath(String diretorio, String nome) {
+//    private static List<String> montarPath(String diretorio, String name) {
 //        if(!diretorio.endsWith("/")) diretorio = diretorio + "/";
 //
-//        if(valorVazio(diretorio).isEmpty() || valorVazio(nome).isEmpty())
+//        if(valorVazio(diretorio).isEmpty() || valorVazio(name).isEmpty())
 //            return new ArrayList<>();
 //
 //        val finalDiretorio = diretorio;
-//        return dividirValores(nome)
+//        return dividirValores(name)
 //            .stream()
 //            .map(log -> finalDiretorio + log)
 //            .collect(Collectors.toList());

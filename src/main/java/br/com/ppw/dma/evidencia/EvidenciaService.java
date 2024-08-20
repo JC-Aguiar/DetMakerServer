@@ -6,7 +6,7 @@ import br.com.ppw.dma.execQuery.ExecQuery;
 import br.com.ppw.dma.execQuery.ExecQueryService;
 import br.com.ppw.dma.job.JobProcess;
 import br.com.ppw.dma.master.MasterService;
-import br.com.ppw.dma.util.SqlUtils;
+import br.com.ppw.dma.master.SqlSintaxe;
 import com.google.gson.Gson;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.constraints.NotNull;
@@ -17,7 +17,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,14 +93,14 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             evidenciaDao.flush();
             log.info(evidencia.toString());
 
+            val banco = new ArrayList<ExecQuery>();
             if (process.possuiTabelas())
                 log.info("Criando novos registros ExecQuery para cada resultado no banco (pré e pós Job).");
-            val banco = new ArrayList<ExecQuery>();
+            //TODO: Melhorar! Aplicar paralelismo!
             for (int i = 0; i < process.getTabelasPosJob().size(); i++) {
                 val tabelaPre = process.getTabelasPreJob().get(i);
                 val tabelaPos = process.getTabelasPosJob().get(i);
-                if (!tabelaPre.getNome().equals(tabelaPos.getNome()))
-                    continue;
+                if (!tabelaPre.getQuery().equals(tabelaPos.getQuery())) continue;
                 val query = ExecQuery.montarEvidencia(evidencia, tabelaPre, tabelaPos);
                 banco.add(execQueryService.persist(query));
             }
@@ -152,7 +151,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             return EvidenciaProcess.ok(evidencia);
         }
         catch(PersistenceException e) {
-            var mensagem = criarMensagemErro.apply(SqlUtils.getExceptionMainCause(e));
+            var mensagem = criarMensagemErro.apply(SqlSintaxe.getExceptionMainCause(e));
             log.error(mensagem);
             return EvidenciaProcess.erro(criarMensagemErro.apply(mensagem));
         }

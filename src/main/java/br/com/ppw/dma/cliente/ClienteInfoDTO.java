@@ -31,7 +31,7 @@ public class ClienteInfoDTO {
     public String toString() {
         return "ClienteInfoDTO{" +
             "id=" + id +
-            ", nome='" + nome + '\'' +
+            ", name='" + nome + '\'' +
             ", banner=[" + banner.length + "Kbs]" +
             ", ambientes=" + ambientes +
             '}';

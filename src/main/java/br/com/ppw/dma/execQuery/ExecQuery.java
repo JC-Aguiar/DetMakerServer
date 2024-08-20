@@ -51,12 +51,12 @@ public class ExecQuery {
 
     @ToString.Exclude
     @Column(name = "RESULTADO_PRE_JOB", columnDefinition = "CLOB") //nullable = false ?
-    // Conteúdo da tabela extraída
+    // Conteúdo da table extraída
     String resultadoPreJob = "";
 
     @ToString.Exclude
     @Column(name = "RESULTADO_POS_JOB", columnDefinition = "CLOB") //nullable = false ?
-    // Conteúdo da tabela extraída
+    // Conteúdo da table extraída
     String resultadoPosJob = "";
 
     @Column(name = "INCONFORMIDADE", columnDefinition = "VARCHAR2(200)")
@@ -68,17 +68,16 @@ public class ExecQuery {
         @NonNull ResultadoSql tabelaPre,
         @NonNull ResultadoSql tabelaPos) {
         //-----------------------------------
-        val separador = tabelaPre.getMensagemErro() == null
-            || tabelaPre.getMensagemErro().isEmpty() ?
-            "" : "\n";
+
         return ExecQuery.builder()
             .evidencia(evidencia)
             .jobNome(evidencia.getJob().getNome())
             .queryNome(tabelaPos.getNome())
-            .query(tabelaPos.getSqlCompleta())
+            .query(tabelaPos.getQuery())
             .resultadoPreJob(tabelaPre.resumo())
             .resultadoPosJob(tabelaPos.resumo())
-            .inconformidade(tabelaPre.getMensagemErro() + separador + tabelaPos.getMensagemErro())
+            .inconformidade(
+                String.join("\n", tabelaPre.getMensagemErro(), tabelaPos.getMensagemErro()))
             //TODO: ?informações da pipeline?
             .build();
     }
