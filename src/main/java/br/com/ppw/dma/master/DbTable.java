@@ -4,7 +4,6 @@ import jakarta.annotation.Nullable;
 import lombok.Builder;
 import lombok.NonNull;
 
-import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -12,7 +11,7 @@ import java.util.stream.Collectors;
 public record DbTable(
 	@NonNull String tabela,
 	@Nullable String alias,
-	@NonNull Collection<DbColumn> colunas) {
+	@NonNull Set<DbColumn> colunas) {
 
 	public Set<String> getColumnsNames() {
 		return colunas.parallelStream()

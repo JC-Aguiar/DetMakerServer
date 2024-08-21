@@ -45,9 +45,9 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
                 log.info("Queries possui variáveis. Extraindo tabelas e column da query.");
                 var extraction = SqlSintaxe.analyse(query);
                 var tables = extraction.tables();
-                var columns = extraction.columns()
+                var columns = extraction.filters()
                     .parallelStream()
-                    .map(QueryColumn::column)
+                    .map(QueryFilter::column)
                     .collect(Collectors.toSet());
 
                 log.info("Iniciando coleta de metadados.");

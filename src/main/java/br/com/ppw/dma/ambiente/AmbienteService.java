@@ -133,7 +133,7 @@ public class AmbienteService {
 //        }
 //    }
 
-    public DbTable getSqlDataTypes(
+    public Optional<DbTable> getSqlDataTypes(
         @NonNull String tabela,
         @NonNull Set<String> campos,
         @NonNull Ambiente ambiente) {
@@ -141,20 +141,23 @@ public class AmbienteService {
         return getSqlDataTypes(tabela, campos, ambiente.acessoBanco());
     }
 
-    public DbTable getSqlDataTypes(
+    public Optional<DbTable> getSqlDataTypes(
         @NonNull String tabela,
         @NonNull Set<String> campos,
         @NonNull AmbienteAcessoDTO ambiente) {
 
         try(val masterDao = new MasterOracleDAO(ambiente)) {
-            return masterDao.getColumnInfo(tabela, campos);
+            var result = masterDao.getColumnsFromTables(Set.of(tabela), campos);
+            var hasContent = !result.isEmpty();
+            return Optional.ofNullable(hasContent ? result.get(0) : null);
+
         }
         catch(SQLException | PersistenceException e) {
             throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
         }
     }
 
-    public Set<DbTable> getMetadatasFromTables(
+    public List<DbTable> getMetadatasFromTables(
         @NonNull Set<String> tabelas,
         @NonNull Set<String> colunas,
         @NonNull Ambiente ambiente) {
@@ -162,7 +165,7 @@ public class AmbienteService {
         return getMetadatasFromTables(tabelas, colunas, ambiente.acessoBanco());
     }
 
-    public Set<DbTable> getMetadatasFromTables(
+    public List<DbTable> getMetadatasFromTables(
         @NonNull Set<String> tabelas,
         @NonNull Set<String> colunas,
         @NonNull AmbienteAcessoDTO ambiente) {
@@ -184,7 +187,7 @@ public class AmbienteService {
      * @see AmbienteService#getMetadatasFromQueries(Set, AmbienteAcessoDTO)
      * @see AmbienteService#getMetadatasFromTables(Set, Set, AmbienteAcessoDTO)
      */
-    public Set<DbTable> getMetadatasFromQueries(
+    public List<DbTable> getMetadatasFromQueries(
         @NonNull Set<String> queries,
         @NonNull Ambiente ambiente) {
 
@@ -199,7 +202,7 @@ public class AmbienteService {
      * @return {@link Set} {@link DbTable} das tabelas obtidas e suas respectivas column ({@link DbColumn})
      * @see AmbienteService#getMetadatasFromTables(Set, Set, AmbienteAcessoDTO)
      */
-    public Set<DbTable> getMetadatasFromQueries(
+    public List<DbTable> getMetadatasFromQueries(
         @NonNull Set<String> queries,
         @NonNull AmbienteAcessoDTO ambiente) {
 
@@ -212,9 +215,9 @@ public class AmbienteService {
             .map(SqlSintaxe::analyse)
             .forEach(extraction -> {
                 tables.addAll(extraction.tables());
-                extraction.columns()
+                extraction.filters()
                     .parallelStream()
-                    .map(QueryColumn::column)
+                    .map(QueryFilter::column)
                     .forEach(columns::add);
             });
         return getMetadatasFromTables(tables, columns, ambiente);

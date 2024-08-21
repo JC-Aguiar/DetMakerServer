@@ -253,7 +253,6 @@ public abstract class SqlSintaxe {
 
         // Regex para extrair conteúdo entre as cláusulas DQL escolhidas x demais cláusulas DQL
         var regexLiteral = String.format("(?s)(?:%s)(?:(?!%s).)*", padraoAlvo, padraoIgnorar);
-        log.info(regexLiteral);
         var matcher = Pattern.compile(regexLiteral).matcher(query);
 
         // Itera sobre os conteúdos para remover os DQL encontrados na extração
@@ -310,8 +309,8 @@ public abstract class SqlSintaxe {
             .collect(Collectors.toSet());
     }
 
-    private static List<QueryColumn> refineFiltersExtraction(@NonNull String filtersExtraction) {
-        var results = new ArrayList<QueryColumn>();
+    private static List<QueryFilter> refineFiltersExtraction(@NonNull String filtersExtraction) {
+        var results = new ArrayList<QueryFilter>();
         var filtersExtractionArray = filtersExtraction
             .replaceAll(",\\s+", ",")
             .replaceAll("\\s+", " ")
@@ -319,15 +318,17 @@ public abstract class SqlSintaxe {
             .split(" ");
         for(int index = 0; index < filtersExtractionArray.length; index++) {
             var column = filtersExtractionArray[index];
-            if(FormatString.possuiVariaveis(column)) continue;
-
             var columnName = refineColumnName(column);
-            if(columnName.isBlank()) continue;
+            var invalid = columnName.isBlank()
+                || FormatString.possuiVariaveis(column)
+                || isUserInput(column)
+                || isUserInput(columnName);
+            if(invalid) continue;
 
             var thisResult = results.parallelStream()
                 .filter(queryCol -> queryCol.column().equals(columnName))
                 .findFirst()
-                .orElseGet(() -> new QueryColumn(columnName, new HashSet<>()));
+                .orElseGet(() -> new QueryFilter(columnName, new HashSet<>()));
 
             if(index+1 < filtersExtractionArray.length) {
                 var nextItem = filtersExtractionArray[index+1];
@@ -344,6 +345,13 @@ public abstract class SqlSintaxe {
                 results.add(thisResult);
         }
         return results;
+    }
+
+    private static boolean isUserInput(@NonNull String text) {
+        var regex = "^(?:'[^']*'|[0-9]+)$";
+        return Pattern.compile(regex)
+            .matcher(text)
+            .find();
     }
 
     private static String refineColumnName(@NonNull String column) {
@@ -377,7 +385,7 @@ public abstract class SqlSintaxe {
             .collect(Collectors.toSet());
     }
 
-    private static List<QueryColumn> getColumnsFiltersFromQuery(@NonNull String query) {
+    private static List<QueryFilter> getColumnsFiltersFromQuery(@NonNull String query) {
         var extraction = Set.copyOf(SqlSintaxe.extractFromQuery(
                 query,
                 Set.of(WHERE, ON, COMBINE_OPERATORS),
@@ -388,25 +396,14 @@ public abstract class SqlSintaxe {
     }
 
     public static QueryExtraction analyse(String query) {
-        if(query == null)
-            return new QueryExtraction(null, null);
+        log.info("Analisando query...");
+        if(query == null) return QueryExtraction.empty();
 
         query = formatQuery(query);
-        var tables = new HashSet<String>();
-        var columnsNames = new LinkedHashSet<String>();
-        var columns = new HashSet<QueryColumn>();
-
-        tables.addAll(SqlSintaxe.getTablesNameFromQuery(query));
-        columns.addAll(SqlSintaxe.getColumnsFiltersFromQuery(query));
-        columnsNames.addAll(SqlSintaxe.getColumnsNameFromQuery(query));
-        columnsNames.parallelStream()
-            .filter(name -> columns
-                .parallelStream()
-                .noneMatch(col -> col.column().equals(name)))
-            .map(name -> new QueryColumn(name, new HashSet<>()))
-            .forEach(columns::add);
-
-        return new QueryExtraction(tables, columns);
+        var tables = SqlSintaxe.getTablesNameFromQuery(query);
+        var columns = SqlSintaxe.getColumnsNameFromQuery(query);
+        var filters = SqlSintaxe.getColumnsFiltersFromQuery(query);
+        return new QueryExtraction(tables, columns, filters);
     }
 
 }

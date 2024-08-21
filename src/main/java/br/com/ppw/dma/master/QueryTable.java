@@ -14,17 +14,17 @@ import java.util.stream.Collectors;
 public record QueryTable(
 	@NonNull String table,
 	@Nullable String alias,
-	List<QueryColumn> columns) {
+	List<QueryFilter> columns) {
 
 	@Override
-	public List<QueryColumn> columns() {
+	public List<QueryFilter> columns() {
 		return Optional.ofNullable(columns)
 			.orElseGet(ArrayList::new);
 	}
 
 	public Set<String> getColumnsNames() {
 		return columns().parallelStream()
-			.map(QueryColumn::column)
+			.map(QueryFilter::column)
 			.collect(Collectors.toSet());
 	}
 
