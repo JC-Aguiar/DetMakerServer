@@ -43,101 +43,21 @@ public class MasterOracleDAO implements AutoCloseable {
         log.info("Conexão realizada com sucesso.");
     }
 
-    public DbTable getColumnInfo(
-        @NonNull String tabela,
-        @NonNull Set<String> colunas) {
-        //----------------------------------------
-        var colunasString = colunas.parallelStream()
-            .map(col -> "'" +col+ "'")
-            .collect(Collectors.joining(", "));
-
-        var sql = "SELECT COLUMN_NAME, DATA_LENGTH, DATA_TYPE, DATA_PRECISION, DATA_SCALE "
-            + "FROM ALL_TAB_COLUMNS "
-            + "WHERE TABLE_NAME = '" +tabela+ "'"
-            + "AND COLUMN_NAME IN (" +colunasString+ ")";
-        log.info("SQL: {}", sql);
-
-        try(val statement = conn.prepareStatement(sql);
-            var resultado = statement.executeQuery()) {
-
-            log.info("Query executada com sucesso. Resultado obtido:");
-            var tabelaBanco = new DbTable(tabela, null, new ArrayList<>());
-            while(resultado.next()) {
-                var nome = resultado.getString("COLUMN_NAME");
-                var type = resultado.getString("DATA_TYPE");
-                var metaDados = new DbColumnMetadata(
-                    TipoColuna.from(type),
-                    resultado.getInt("DATA_LENGTH"),
-                    resultado.getInt("DATA_PRECISION"),
-                    resultado.getInt("DATA_SCALE")
-                );
-                var colunaBanco = new DbColumn(nome, metaDados, new HashSet<>());
-                tabelaBanco.colunas().add(colunaBanco);
-                log.info(" - {}: {}", colunaBanco.name(), colunaBanco.metadata());
-            }
-            var pendentes = colunas.parallelStream()
-                .filter(col -> tabelaBanco.colunas().parallelStream().noneMatch(col::equals))
-                .collect(Collectors.joining(", "));
-            log.info("Total de colunas coletadas: {}/{}", tabelaBanco.colunas().size(), colunas.size());
-
-            //TODO: criar exception própria
-            if(!pendentes.isEmpty())
-                throw new RuntimeException("Existem column não identificadas: " + pendentes);
-
-            return tabelaBanco;
-        }
-        catch(SQLException | PersistenceException e) {
-            throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
-        }
+    public List<DbTable> getColumnsFromTables(@NonNull String tabela) {
+        return getColumnsFromTables(Set.of(tabela), Set.of());
     }
 
-    public DbTable getColumnsFromTables(@NonNull String tabela) {
-        var colunas = new ArrayList<DbColumn>();
-        var sql = "SELECT COLUMN_NAME, DATA_LENGTH, DATA_TYPE, DATA_PRECISION, DATA_SCALE "
-            + "FROM ALL_TAB_COLUMNS "
-            + "WHERE TABLE_NAME = '" +tabela+ "'";
-        log.info("SQL: {}", sql);
-
-        try(val statement = conn.prepareStatement(sql);
-            var resultado = statement.executeQuery()) {
-
-            log.info("Query executada com sucesso. Coletando dados da table.");
-            while(resultado.next()) {
-                var metadata = DbColumnMetadata.builder()
-                    .type(TipoColuna.from(resultado.getString("DATA_TYPE")))
-                    .length(resultado.getInt("DATA_LENGTH"))
-                    .precision(resultado.getInt("DATA_PRECISION"))
-                    .scale(resultado.getInt("DATA_SCALE"))
-                    .build();
-                var coluna = DbColumn.builder()
-                    .name(resultado.getString("COLUMN_NAME"))
-                    .metadata(metadata)
-                    .variables(Set.of())
-                    .build();
-                colunas.add(coluna);
-            }
-            log.info("Total de column identificadas: {}", colunas.size());
-            return DbTable.builder()
-                .tabela(tabela)
-                .colunas(colunas)
-                .build();
-        }
-        catch(SQLException | PersistenceException e) {
-            throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
-        }
-    }
-
-    public Set<DbTable> getColumnsFromTables(@NonNull Set<String> tabelas) {
+    public List<DbTable> getColumnsFromTables(@NonNull Set<String> tabelas) {
         return getColumnsFromTables(tabelas, Set.of());
     }
 
-    public Set<DbTable> getColumnsFromTables(
+    public List<DbTable> getColumnsFromTables(
         @NonNull Set<String> tabelas,
         @NonNull Set<String> colunas) {
 
-        if(tabelas.isEmpty()) return Set.of();
+        if(tabelas.isEmpty()) return List.of();
 
-        var tabelasConsultadas = new HashSet<DbTable>();
+        var tabelasConsultadas = new ArrayList<DbTable>();
         var sql = queryForMetadates(tabelas, colunas);
         try(val statement = conn.prepareStatement(sql);
             var resultado = statement.executeQuery()) {
@@ -145,14 +65,6 @@ public class MasterOracleDAO implements AutoCloseable {
             log.info("Query executada com sucesso. Coletando dados das tabelas.");
             while(resultado.next()) {
                 var nomeTabela = resultado.getString("TABLE_NAME");
-                var tabelaAlvo = tabelasConsultadas.parallelStream()
-                    .filter(t -> t.tabela().equalsIgnoreCase(nomeTabela))
-                    .findFirst()
-                    .orElseGet(() -> DbTable.builder()
-                        .tabela(nomeTabela)
-                        .colunas(new ArrayList<>())
-                        .build()
-                    );
                 var metadata = DbColumnMetadata.builder()
                     .type(TipoColuna.from(resultado.getString("DATA_TYPE")))
                     .length(resultado.getInt("DATA_LENGTH"))
@@ -162,10 +74,17 @@ public class MasterOracleDAO implements AutoCloseable {
                 var coluna = DbColumn.builder()
                     .name(resultado.getString("COLUMN_NAME"))
                     .metadata(metadata)
-                    .variables(Set.of())
+                    .variables(new HashSet<>())
                     .build();
-                tabelaAlvo.colunas().add(coluna);
-                tabelasConsultadas.add(tabelaAlvo);
+
+                tabelasConsultadas.parallelStream()
+                    .filter(t -> t.tabela().equalsIgnoreCase(nomeTabela))
+                    .findFirst()
+                    .ifPresentOrElse(
+                        t -> t.colunas().add(coluna),
+                        () -> tabelasConsultadas.add(
+                            new DbTable(nomeTabela, null, new HashSet<>(Set.of(coluna)))
+                    ));
             }
             log.info("Total de registros coletados: {}", tabelasConsultadas.size());
             return tabelasConsultadas;

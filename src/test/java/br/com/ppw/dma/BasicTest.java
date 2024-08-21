@@ -395,29 +395,6 @@ public class BasicTest {
 //        }
 //    }
 
-    @Test
-    public void extrairParenteses() {
-        var palavras = Set.of(
-            "(column1)",
-            "count2(column2)",
-            "count3((column3)",
-            "count4(column4))",
-            "count5(((column5)))",
-            "(count6)((column6))",
-            "((count7)((column7)))",
-            "((((((count8)))))((column8)))"
-        );
-        var expectativas = Set.of(
-            "column1",
-            "column2",
-            "column3",
-            "column4",
-            "column5",
-            "(count6)((column6))",
-            "((count7)((column7)))",
-            "((((((count8)))))((column8)))"
-        );
-    }
 
     @Test
     public void testeRegexExtrairNomeDasTabelas() {
@@ -427,17 +404,17 @@ public class BasicTest {
                 INNER JOIN   table_name3
                 ON alias1.fieldA = table_name3.fieldZ
                 OR table_name1.fieldB = table_name3.fieldY
-                WHERE NVL(fieldC, 0) >= userInputC
+                WHERE NVL(fieldC, 0) >= 50.10
                 AND fieldD EXIST (
                     SELECT column3
                     FROM table_name4
-                    WHERE TO_DATE(fieldE, 'DD/MM/YY') = userInputE1
+                    WHERE TO_DATE(fieldE, 'DD/MM/YY') = TO_DATE('userInputE1', 'DD/MM/YY')
                     OR fieldE <> ${variableE2}
                     ORDER BY column3 ASC
                 )
                 OR (fieldF=${variableF1})
-                OR fieldF>=userInputF2
-                OR fieldF<=userInputF3
+                OR fieldF>='userInputF2'
+                OR fieldF<='userInputF3'
                 OR fieldF<>${variableF4}
                 GROUP BY column1
                 HAVING SUM(column2) > 100
@@ -449,11 +426,11 @@ public class BasicTest {
                 SELECT column4, column5, column6
                 FROM table_name5,
                      table_name6
-                WHERE fieldG LIKE userInputG
+                WHERE fieldG LIKE '%userInputG%'
                 AND fieldH NOT LIKE ${variableH}
                 AND (
                     UPPER(fieldI) IN (${variableI})
-                    OR fieldJ NOT IN userInputJ
+                    OR fieldJ NOT IN ('userInputJ')
                 )
                 ORDER BY column3 ASC
                 MINUS
@@ -465,15 +442,8 @@ public class BasicTest {
             """;
         var extraction = SqlSintaxe.analyse(query);
         var tables = extraction.tables();
-        var columns = extraction.columns()
-            .parallelStream()
-            .map(QueryColumn::column)
-            .collect(Collectors.toSet());
-        var filters = extraction.columns()
-            .parallelStream()
-            .map(QueryColumn::variables)
-            .flatMap(Set::parallelStream)
-            .collect(Collectors.toSet());
+        var columns = extraction.columns();
+        var filters = extraction.filters();
         log.info("TABELAS: {}", String.join(", ", tables));
         log.info("COLUNAS: {}", String.join(", ", columns));
         log.info("FILTROS:");
@@ -499,29 +469,23 @@ public class BasicTest {
             "column8"
         );
         var filtrosEsperados = Set.of(
-            new QueryColumn("fieldA", Set.of()),
-            new QueryColumn("fieldB", Set.of()),
-            new QueryColumn("fieldC", Set.of()),
-            new QueryColumn("userInputC", Set.of()),
-            new QueryColumn("fieldD", Set.of()),
-            new QueryColumn("fieldE", Set.of(
+            new QueryFilter("fieldA", Set.of()),
+            new QueryFilter("fieldB", Set.of()),
+            new QueryFilter("fieldC", Set.of()),
+            new QueryFilter("fieldD", Set.of()),
+            new QueryFilter("fieldE", Set.of(
                 new QueryVariable("variableE2", false))),
-            new QueryColumn("userInputE1", Set.of()),
-            new QueryColumn("fieldF", Set.of(
+            new QueryFilter("fieldF", Set.of(
                 new QueryVariable("variableF1", false),
                 new QueryVariable("variableF4", false))),
-            new QueryColumn("userInputF2", Set.of()),
-            new QueryColumn("userInputF3", Set.of()),
-            new QueryColumn("fieldG", Set.of()),
-            new QueryColumn("userInputG", Set.of()),
-            new QueryColumn("fieldH", Set.of(
+            new QueryFilter("fieldG", Set.of()),
+            new QueryFilter("fieldH", Set.of(
                 new QueryVariable("variableH", false))),
-            new QueryColumn("fieldI", Set.of(
+            new QueryFilter("fieldI", Set.of(
                 new QueryVariable("variableI", true))),
-            new QueryColumn("fieldJ", Set.of()),
-            new QueryColumn("userInputJ", Set.of()),
-            new QueryColumn("fieldZ", Set.of()),
-            new QueryColumn("fieldY", Set.of())
+            new QueryFilter("fieldJ", Set.of()),
+            new QueryFilter("fieldZ", Set.of()),
+            new QueryFilter("fieldY", Set.of())
         );
         log.info("TABELAS ESPERADAS: {}", String.join(", ", tabelasEsperadas));
         log.info("COLUNAS ESPERADAS: {}", String.join(", ", colunasEsperadas));
@@ -555,6 +519,7 @@ public class BasicTest {
         );
         var tables = new HashSet<String>();
         var columns = new HashSet<String>();
+        var filters = new HashSet<QueryFilter>();
 
         log.info("QUERIES:");
         queries.stream()
@@ -563,31 +528,26 @@ public class BasicTest {
             .map(SqlSintaxe::analyse)
             .forEach(extraction -> {
                 tables.addAll(extraction.tables());
-                extraction.columns()
-                    .parallelStream()
-                    .map(QueryColumn::column)
-                    .forEach(columns::add);
+                columns.addAll(extraction.columns());
+                filters.addAll(extraction.filters());
             });
         log.info("TABELAS: {}", String.join(", ", tables));
         log.info("COLUNAS: {}", String.join(", ", columns));
+        log.info("FILTROS:");
+        filters.forEach(filter -> log.info(" - {}", filter));
 
         var tabelasEsperadas = Set.of(
             "EVENTOS_WEB",
             "TMP_ENTRADA_PAGTO"
         );
-        var colunasEsperadas = Set.of(
-            "EVTYPE",
-            "EVACCT",
-            "EVDTSOLIC",
-            "PBACCT"
-        );
+        var colunasEsperadas = Set.of();
         var filtrosEsperados = Set.of(
-            new QueryColumn("EVTYPE", Set.of()),
-            new QueryColumn("EVACCT", Set.of(
+            new QueryFilter("EVTYPE", Set.of()),
+            new QueryFilter("EVACCT", Set.of(
                 new QueryVariable("contratos", true))),
-            new QueryColumn("EVDTSOLIC", Set.of(
+            new QueryFilter("EVDTSOLIC", Set.of(
                 new QueryVariable("data-evento-salvo", false))),
-            new QueryColumn("PBACCT", Set.of(
+            new QueryFilter("PBACCT", Set.of(
                 new QueryVariable("contratos", true)))
         );
         Assertions.assertTrue(tables.containsAll(tabelasEsperadas), "Existe table pendente");
@@ -601,18 +561,12 @@ public class BasicTest {
             "rcvry"
         );
         try(val masterDao = new MasterOracleDAO(ambiente)) {
+            filters.parallelStream()
+                .map(QueryFilter::column)
+                .forEach(columns::add);
             var tablesDb = masterDao.getColumnsFromTables(tables, columns);
             log.info("METADADOS DO BANCO:");
-            tablesDb.stream()
-                .flatMap(tableDb -> tableDb.colunas()
-                    .parallelStream()
-                    .map(DbColumn::toString)
-                    .map(col -> col.replace("[", ""))
-                    .map(col -> col.replace("]", ""))
-                    .map(col -> col.replace(DbColumn.class.getSimpleName(), ""))
-                    .map(col -> String.format("%s - %s", tableDb.tabela(), col))
-                )
-                .forEach(log::info);
+            tablesDb.stream().forEach(table -> log.info(table.toString()));
 
             Assertions.assertTrue(
                 tablesDb.parallelStream()
@@ -627,6 +581,19 @@ public class BasicTest {
                     .flatMap(Set::parallelStream)
                     .collect(Collectors.toSet())
                     .containsAll(colunasEsperadas),
+                "Existe coluna pendente após coleta dos metadados"
+            );
+
+            Assertions.assertTrue(
+                tablesDb.parallelStream()
+                    .map(DbTable::getColumnsNames)
+                    .flatMap(Set::parallelStream)
+                    .collect(Collectors.toSet())
+                    .containsAll(
+                        filtrosEsperados.parallelStream()
+                            .map(QueryFilter::column)
+                            .collect(Collectors.toSet())
+                    ),
                 "Existe coluna pendente após coleta dos metadados"
             );
         }

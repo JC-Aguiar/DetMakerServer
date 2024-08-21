@@ -208,12 +208,12 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 //                tabelasParaConsulta.addAll(tables);
 //
 //                //Considerar apenas as column que também constam nas Variáveis da Pipeline.
-//                var columns = SqlSintaxe.getColumnsNameFromQuery(query);
+//                var filters = SqlSintaxe.getColumnsNameFromQuery(query);
 //                var existeVariavel = execDto.getConfiguracoes()
 //                    .entrySet()
 //                    .parallelStream()
-//                    .anyMatch(variavel -> columns.contains(variavel.getKey()));
-//                if(existeVariavel) colunasParaConsulta.addAll(columns);
+//                    .anyMatch(variavel -> filters.contains(variavel.getKey()));
+//                if(existeVariavel) colunasParaConsulta.addAll(filters);
 //            });
 
         //Para cada Massa solicitada, extrair os nomes das tabelas e column.

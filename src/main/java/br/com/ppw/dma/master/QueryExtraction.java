@@ -1,21 +1,27 @@
 package br.com.ppw.dma.master;
 
+import lombok.NonNull;
+
 import java.util.HashSet;
-import java.util.Optional;
+import java.util.List;
 import java.util.Set;
 
-public record QueryExtraction(Set<String> tables, Set<QueryColumn> columns) {
+public record QueryExtraction(
+	@NonNull Set<String> tables,
+	@NonNull Set<String> columns,
+	@NonNull List<QueryFilter> filters) {
 
-	@Override
-	public Set<String> tables() {
-		return Optional.ofNullable(tables)
-			.orElseGet(HashSet::new);
+
+	public static QueryExtraction empty() {
+		return new QueryExtraction(Set.of(), Set.of(), List.of());
 	}
 
-	@Override
-	public Set<QueryColumn> columns() {
-		return Optional.ofNullable(columns)
-			.orElseGet(HashSet::new);
+	public Set<String> getAllColumnNames() {
+		var allColumns = new HashSet<>(columns);
+		filters.parallelStream()
+			.map(QueryFilter::column)
+			.forEach(allColumns::add);
+		return allColumns;
 	}
 
 }
