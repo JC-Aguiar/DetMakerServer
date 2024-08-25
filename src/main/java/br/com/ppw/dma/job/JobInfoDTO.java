@@ -46,11 +46,11 @@ public class JobInfoDTO implements ShellPointer {
     String escalation;
     LocalDate dataAtualizacao;
     String atualizadoPor;
-    List<QueryInfoDTO> queries = new ArrayList<>();
+    //List<QueryInfoDTO> queries = new ArrayList<>();
 
 
     public static JobInfoDTO converterJob(@NonNull Job job) {
-        log.info("Convertendo entidade Job.");
+        log.info("Convertendo entidade Job em DTO.");
         val jobDto = new ModelMapper().map(job, JobInfoDTO.class);
         jobDto.setExecutarAposJob(dividirValores(job.getExecutarAposJob()));
         jobDto.setPrograma(dividirValores(job.getPrograma()));
@@ -60,9 +60,9 @@ public class JobInfoDTO implements ShellPointer {
         jobDto.setMascaraEntrada(dividirValores(job.getMascaraEntrada()));
         jobDto.setMascaraSaida(dividirValores(job.getMascaraSaida()));
         jobDto.setMascaraLog(dividirValores(job.getMascaraLog()));
-        jobDto.setQueries(QueryInfoDTO.getFromJob(job));
-        log.info("Conversão realizada com sucesso.");
-        log.info("{}", jobDto);
+        //jobDto.setQueries(QueryInfoDTO.getFromJob(job));
+//        log.info("Conversão realizada com sucesso.");
+//        log.info("{}", jobDto);
         return jobDto;
     }
 
