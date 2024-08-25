@@ -43,15 +43,37 @@ public class MasterOracleDAO implements AutoCloseable {
         log.info("Conexão realizada com sucesso.");
     }
 
-    public List<DbTable> getColumnsFromTables(@NonNull String tabela) {
-        return getColumnsFromTables(Set.of(tabela), Set.of());
+    public List<DbTable> extractInfoFromTables(@NonNull String tabela) {
+        return extractInfoFromTables(Set.of(tabela), Set.of());
     }
 
-    public List<DbTable> getColumnsFromTables(@NonNull Set<String> tabelas) {
-        return getColumnsFromTables(tabelas, Set.of());
+    public List<DbTable> extractInfoFromTables(@NonNull Set<String> tabelas) {
+        return extractInfoFromTables(tabelas, Set.of());
     }
 
-    public List<DbTable> getColumnsFromTables(
+    public List<DbTable> extractInfoFromTables(@NonNull QueryExtraction extraction) {
+        var tables = extraction.tables();
+        var columns = extraction.columns();
+        extraction.filters()
+            .parallelStream()
+            .map(QueryFilter::column)
+            .forEach(columns::add);
+
+        log.info("Iniciando coleta de metadados.");
+        var dbInfo = extractInfoFromTables(tables, columns);
+
+        log.info("Vinculando variáveis das queries no resultado do banco.");
+        extraction.filters().parallelStream().forEach(
+            queryFilter -> dbInfo
+                .parallelStream()
+                .map(DbTable::colunas)
+                .flatMap(Set::parallelStream)
+                .forEach(dbCol -> dbCol.addVariable(queryFilter))
+        );
+        return dbInfo;
+    }
+
+    public List<DbTable> extractInfoFromTables(
         @NonNull Set<String> tabelas,
         @NonNull Set<String> colunas) {
 

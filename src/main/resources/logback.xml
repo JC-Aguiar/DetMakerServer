@@ -12,7 +12,7 @@
     </appender>
 
     <appender name="CUSTOM" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="br.com.ppw.dma.config.CustomLog3">
+        <encoder class="br.com.ppw.dma.config.CustomAspectLog">
             <pattern>%date{yyyy/MM/dd HH:mm:ss} - %thread - %msg</pattern>
         </encoder>
     </appender>

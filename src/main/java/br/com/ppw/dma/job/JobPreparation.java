@@ -56,7 +56,7 @@ public record JobPreparation(
 	public void aplicarConfiguracoes(@NonNull Map<String, String> configuracoes) {
 		configuracoes.entrySet()
 			.parallelStream()
-			.forEach(conf -> jobInputs.getVariaveis().putIfAbsent(
+			.forEach(conf -> jobInputs.getVariaveis().put(
 				conf.getKey(),
 				conf.getValue()
 			));
@@ -98,9 +98,12 @@ public record JobPreparation(
 			String.join(" ", parametrosPreenchidos.values())
 		);
 		//Aplicando as variáveis nas queries
-		jobInputs.getQueries().parallelStream().forEach(
-			query -> FormatString.substituirVariaveis(query, jobInputs.getVariaveis())
-		);
+		var novasQueries = jobInputs.getQueries()
+			.parallelStream()
+			.map(query -> FormatString.substituirVariaveis(query, jobInputs.getVariaveis()))
+			.collect(Collectors.toSet());
+		jobInputs.setQueries(novasQueries);
+		//aqui
 	}
 
 }

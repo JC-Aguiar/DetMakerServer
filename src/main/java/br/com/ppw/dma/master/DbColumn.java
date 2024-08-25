@@ -1,7 +1,6 @@
 package br.com.ppw.dma.master;
 
 import br.com.ppware.api.ColunaDataInfo;
-import jakarta.annotation.Nullable;
 import lombok.Builder;
 import lombok.NonNull;
 
@@ -15,9 +14,17 @@ public record DbColumn(
 	@NonNull Set<QueryVariable> variables)
 implements ColunaDataInfo {
 
+	public boolean addVariable(@NonNull QueryFilter queryFilter) {
+		if(!this.name.equalsIgnoreCase(queryFilter.column()))
+			return false;
+
+		this.variables.addAll(queryFilter.variables());
+		return true;
+	}
+
 	public Map<String, String> variablesWithRandomValues() {
 		return variables().parallelStream().collect(Collectors.toMap(
-			QueryVariable::variable,
+			QueryVariable::name,
 			variable -> metadata.type().valorAleatorio(this)
 		));
 	}
