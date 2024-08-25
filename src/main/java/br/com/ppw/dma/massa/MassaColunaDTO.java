@@ -44,6 +44,7 @@ public class MassaColunaDTO implements MassaColunaInfo {
 
 	String opcao = "";
 
+	//TODO: mover atributos da classe aqui para a raiz?
 	@Nullable
 	@JsonIgnore
 	DbColumnMetadata metadados;

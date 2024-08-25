@@ -147,7 +147,7 @@ public class AmbienteService {
         @NonNull AmbienteAcessoDTO ambiente) {
 
         try(val masterDao = new MasterOracleDAO(ambiente)) {
-            var result = masterDao.getColumnsFromTables(Set.of(tabela), campos);
+            var result = masterDao.extractInfoFromTables(Set.of(tabela), campos);
             var hasContent = !result.isEmpty();
             return Optional.ofNullable(hasContent ? result.get(0) : null);
 
@@ -171,7 +171,7 @@ public class AmbienteService {
         @NonNull AmbienteAcessoDTO ambiente) {
 
         try(val masterDao = new MasterOracleDAO(ambiente)) {
-            return masterDao.getColumnsFromTables(tabelas, colunas);
+            return masterDao.extractInfoFromTables(tabelas, colunas);
         }
         catch(SQLException | PersistenceException e) {
             throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));

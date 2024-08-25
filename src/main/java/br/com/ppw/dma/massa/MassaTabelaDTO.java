@@ -57,8 +57,10 @@ public class MassaTabelaDTO implements MassaTabelaInfo {
 	 */
 	public boolean atualizar(@NonNull DbTable tabelaBanco) {
 		if(!nome.equalsIgnoreCase(tabelaBanco.tabela())) return false;
-		return tabelaBanco.colunas().parallelStream().anyMatch(
-			colunaDb -> colunas.parallelStream().anyMatch(col -> col.atualizar(colunaDb))
+		return tabelaBanco.colunas().parallelStream().allMatch(
+			colunaDb -> this.colunas.parallelStream().anyMatch(
+				col -> col.atualizar(colunaDb)
+			)
 		);
 	}
 

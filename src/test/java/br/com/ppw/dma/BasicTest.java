@@ -564,7 +564,7 @@ public class BasicTest {
             filters.parallelStream()
                 .map(QueryFilter::column)
                 .forEach(columns::add);
-            var tablesDb = masterDao.getColumnsFromTables(tables, columns);
+            var tablesDb = masterDao.extractInfoFromTables(tables, columns);
             log.info("METADADOS DO BANCO:");
             tablesDb.stream().forEach(table -> log.info(table.toString()));
 

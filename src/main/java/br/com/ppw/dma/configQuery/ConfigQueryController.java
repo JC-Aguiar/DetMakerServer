@@ -88,7 +88,7 @@ public class ConfigQueryController extends MasterController<Long, ConfigQuery, C
 
     //TODO: javadoc
     //      sincronizar com front !
-    @PostMapping(value = "validade/manual/ambiente/{ambienteId}")
+    @PostMapping(value = "validade/ambiente/{ambienteId}")
     public ResponseEntity<String> validarQuery(
         @PathVariable Long ambienteId,
         @Valid @NotBlank @RequestBody String sql) {
@@ -147,15 +147,5 @@ public class ConfigQueryController extends MasterController<Long, ConfigQuery, C
         return ResponseEntity.ok("Query removida com sucesso.");
     }
 
-    @DeleteMapping("{queryId}/var/{varId}")
-    public ResponseEntity<QueryInfoDTO> deletarQueryVar(
-        @PathVariable Long queryId,
-        @PathVariable Long varId) {
-
-        service.deleteVar(varId);
-        log.info("Removida Variável ID {} da Query ID {}.", varId, queryId);
-        var dto = new QueryInfoDTO(service.findById(queryId));
-        return ResponseEntity.ok(dto);
-    }
 
 }

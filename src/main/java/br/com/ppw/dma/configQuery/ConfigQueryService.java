@@ -44,17 +44,10 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
             if(FormatString.possuiVariaveis(query)) {
                 log.info("Queries possui variáveis. Extraindo tabelas e column da query.");
                 var extraction = SqlSintaxe.analyse(query);
-                var tables = extraction.tables();
-                var columns = extraction.filters()
-                    .parallelStream()
-                    .map(QueryFilter::column)
-                    .collect(Collectors.toSet());
-
-                log.info("Iniciando coleta de metadados.");
-                var mapVariables = masterDao.getColumnsFromTables(tables, columns)
+                var mapVariables = masterDao.extractInfoFromTables(extraction)
                     .parallelStream()
                     .map(DbTable::colunas)
-                    .flatMap(Collection::parallelStream)
+                    .flatMap(Set::parallelStream)
                     .map(DbColumn::variablesWithRandomValues)
                     .map(Map::entrySet)
                     .flatMap(Set::parallelStream)
