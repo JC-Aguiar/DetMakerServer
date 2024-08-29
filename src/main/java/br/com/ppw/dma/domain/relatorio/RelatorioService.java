@@ -1,10 +1,10 @@
 package br.com.ppw.dma.domain.relatorio;
 
-import br.com.ppw.dma.domain.pipeline.Pipeline;
-import br.com.ppw.dma.domain.pipeline.PipelinePreparation;
 import br.com.ppw.dma.domain.evidencia.Evidencia;
 import br.com.ppw.dma.domain.evidencia.EvidenciaProcess;
 import br.com.ppw.dma.domain.master.MasterService;
+import br.com.ppw.dma.domain.pipeline.Pipeline;
+import br.com.ppw.dma.domain.pipeline.PipelinePreparation;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -93,7 +93,7 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
         }
         log.info("Convertendo Relatório DTO em Entidade.");
         var relatorio = Relatorio.builder()
-            .nomeAtividade(preparation.relatorio().getNomeAtividade())
+//            .nomeAtividade(preparation.relatorio().getNomeAtividade())
             .consideracoes(consideracoes.toString())
             .cliente(preparation.ambiente().getCliente().getNome())
             .ambiente(preparation.ambiente())
@@ -103,12 +103,12 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
             .data(LocalDate.now(RELOGIO))
             .dataCompleta(OffsetDateTime.now(RELOGIO))
             .build();
-        relatorio.setIdProjeto(preparation.relatorio().getIdProjeto());
-        relatorio.setNomeProjeto(preparation.relatorio().getNomeProjeto());
-        relatorio.setTesteTipo(TiposDeTeste
-            .identificar(preparation.relatorio().getTesteTipo())
-            .orElse(null)
-        );
+//        relatorio.setIdProjeto(preparation.relatorio().getIdProjeto());
+//        relatorio.setNomeProjeto(preparation.relatorio().getNomeProjeto());
+//        relatorio.setTesteTipo(TiposDeTeste
+//            .identificar(preparation.relatorio().getTesteTipo())
+//            .orElse(null)
+//        );
         relatorio = persist(relatorio);
         return relatorio;
     }

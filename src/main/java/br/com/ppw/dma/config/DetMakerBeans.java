@@ -10,7 +10,7 @@ import org.springframework.web.multipart.support.StandardServletMultipartResolve
 
 @EnableAspectJAutoProxy
 @Configuration
-public class ApiBeans {
+public class DetMakerBeans {
 
 //    @Bean(name = "multipartResolver")
 //    public CommonsMultipartResolver multipartResolver() {
@@ -29,12 +29,17 @@ public class ApiBeans {
         return new ModelMapper();
     }
 
+    /**
+     * Operações automáticas a serem executadas após inicialização do Spring
+     * @param storageService {@link StorageService} gerenciado pelo Spring
+     * @return {@link CommandLineRunner} gerenciado pelo Spring
+     */
     @Bean
     CommandLineRunner init(StorageService storageService) {
-        return (args) -> {
-            storageService.deleteAll();
-            storageService.init();
-        };
+        return (args) -> {};
+//            storageService.deleteAll();
+//            storageService.init();
+//        };
     }
 
 }
