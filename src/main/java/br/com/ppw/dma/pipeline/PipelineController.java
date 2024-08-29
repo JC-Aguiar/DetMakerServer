@@ -120,7 +120,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
      */
     @Transactional
     @PostMapping(value = "run") //"run/pipelineId/{pipelineId}/ambienteId/{ambienteId}")
-    public ResponseEntity<RelatorioHistoricoDTO> validadeToStack(@RequestBody PipelineExecDTO execDto) {
+    public ResponseEntity<RelatorioHistoricoDTO> validadeToEnqueu(@RequestBody PipelineExecDTO execDto) {
         //TODO: validar Ambiente?
         log.info("Obtendo e validando Ambiente e Pipeline.");
         var ambiente = ambienteService.findById(execDto.getAmbienteId());
@@ -238,9 +238,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         massasPreparadas.forEach(massa -> log.info(massa.toString()));
 
         // ------------- APLICANDO VARIÁVEIS -------------
-        //TODO:
-        // 1. Validar se alguma variável nas queries ficou pendente
-        // 2. Mover parte desse método para novo endpoint, focado na validação das solicitações no DTO.
+        //TODO: Mover parte desse método para novo endpoint, focado na validação das solicitações no DTO.
         log.info("Aplicando valores das Massas nas variáveis globais da Pipeline.");
         execDto.getConfiguracoes()
             .entrySet()
@@ -301,7 +299,6 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         //Fim
         return run(new PipelinePreparation(
             pipeline,
-            execDto.getAtividade(),
             ambiente,
             jobsPreparados,
             massasPreparadas

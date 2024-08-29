@@ -185,10 +185,8 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
         val pipeline = relatorio.getPipeline();
         val ambiente = relatorio.getAmbiente();
         val jobs = relatorio.getEvidencias()
-            .stream()
-            .map(ev -> {
-                log.info("Recriando as propriedades executadas na Evidência ID {}", ev.getId());
-                return new JobPreparation(ev.getJob(), new JobExecuteDTO(ev));
+            .parallelStream()
+            .map(ev -> new JobPreparation(ev.getJob(), new JobExecuteDTO(ev)))
 //                val process = JobPreparation(ev);
 //                log.info("Convertendo registro ExecFile em arquivos temporários para envio SFTP.");
 //                val cargas = ev.getCargas()
@@ -198,11 +196,9 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
 //                process.setCargas(cargas);
 //                log.info(process.toString());
 //                return process;
-            })
             .toList();
         return pipelineController.run(new PipelinePreparation(
             pipeline,
-            new AtividadeInfoDTO(relatorio),
             ambiente,
             jobs,
             List.of()
