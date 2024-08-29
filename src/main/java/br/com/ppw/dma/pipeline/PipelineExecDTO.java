@@ -35,8 +35,7 @@ public class PipelineExecDTO {
     @NotNull Long clienteId;
     @NotNull Long ambienteId;
     @NotNull Long pipelineId;
-    @NotNull AtividadeInfoDTO atividade;
-    @NotNull UserInfoDTO user;
+    @NotNull String user;
     Set<String> massas = new HashSet<>();
     @NotEmpty List<JobExecuteDTO> jobs = new ArrayList<>();
     Map<String, String> configuracoes = new HashMap<>();
