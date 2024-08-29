@@ -2,7 +2,7 @@ package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.ambiente.AmbienteService;
 import br.com.ppw.dma.cliente.ClienteService;
-import br.com.ppw.dma.configQuery.ConfigQueryController;
+import br.com.ppw.dma.jobQuery.JobQueryController;
 import br.com.ppw.dma.evidencia.EvidenciaController;
 import br.com.ppw.dma.master.MasterController;
 import lombok.NonNull;
@@ -34,7 +34,7 @@ public class JobController extends MasterController<Long, Job, JobController> {
 
     private EvidenciaController evidenciaController;
 
-    private ConfigQueryController queryController;
+    private JobQueryController queryController;
 
     private ClienteService clienteService;
 
@@ -44,7 +44,7 @@ public class JobController extends MasterController<Long, Job, JobController> {
     public JobController(
         @Autowired JobService jobService,
         @Autowired EvidenciaController evidenciaController,
-        @Autowired ConfigQueryController queryController,
+        @Autowired JobQueryController queryController,
         @Autowired ClienteService clienteService,
         @Autowired AmbienteService ambienteService) {
         //-------------------------------------

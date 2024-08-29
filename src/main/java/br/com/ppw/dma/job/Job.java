@@ -1,7 +1,7 @@
 package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.cliente.Cliente;
-import br.com.ppw.dma.configQuery.ConfigQuery;
+import br.com.ppw.dma.jobQuery.JobQuery;
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.master.MasterEntity;
 import br.com.ppw.dma.pipeline.Pipeline;
@@ -30,7 +30,7 @@ import static jakarta.persistence.FetchType.LAZY;
 @ToString
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_JOB")
-@Table(name = "PPW_JOB", uniqueConstraints = {@UniqueConstraint(columnNames = {"NOME", "CLIENTE_ID"})})
+@Table(name = "PPW_JOB", uniqueConstraints = @UniqueConstraint(columnNames = { "NOME", "CLIENTE_ID" } ))
 @SequenceGenerator(name = "SEQ_JOB_ID", sequenceName = "RCVRY.SEQ_JOB_ID", allocationSize = 1)
 public class Job implements MasterEntity<Long> {
 
@@ -151,10 +151,10 @@ public class Job implements MasterEntity<Long> {
 
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "CONFIG_QUERY")
+    @Column(name = "JOB_QUERY")
     @OneToMany(fetch = LAZY, mappedBy = "job")
     // IDs das configurações de queries relacionadas a este job
-    List<ConfigQuery> queries = new ArrayList<>();
+    List<JobQuery> queries = new ArrayList<>();
 
     @ToString.Exclude
     @JsonManagedReference

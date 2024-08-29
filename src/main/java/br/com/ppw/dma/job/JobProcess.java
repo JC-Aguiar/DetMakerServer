@@ -1,7 +1,7 @@
 package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
-import br.com.ppw.dma.configQuery.ResultadoSql;
+import br.com.ppw.dma.jobQuery.ResultadoSql;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
 import lombok.AccessLevel;

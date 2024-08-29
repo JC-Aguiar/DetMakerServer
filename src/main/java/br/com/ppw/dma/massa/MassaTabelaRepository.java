@@ -1,6 +1,5 @@
 package br.com.ppw.dma.massa;
 
-import br.com.ppw.dma.configQuery.ConfigQuery;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

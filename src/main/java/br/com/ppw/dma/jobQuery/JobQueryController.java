@@ -1,4 +1,4 @@
-package br.com.ppw.dma.configQuery;
+package br.com.ppw.dma.jobQuery;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.ambiente.AmbienteService;
@@ -22,34 +22,34 @@ import java.util.List;
 @RestController
 @RequestMapping("query")
 @Slf4j
-public class ConfigQueryController extends MasterController<Long, ConfigQuery, ConfigQueryController> {
+public class JobQueryController extends MasterController<Long, JobQuery, JobQueryController> {
 
-    private ConfigQueryService service;
+    private JobQueryService queryService;
 
     private AmbienteService ambienteService;
 
     private JobService jobService;
 
-
-    public ConfigQueryController(
-        @Autowired ConfigQueryService service,
-        @Autowired AmbienteService ambienteService,
-        @Autowired JobService jobService) {
-        //--------------------------------------------
-        super(service);
-        this.service = service;
+    @Autowired
+    public JobQueryController(
+        JobQueryService queryService,
+        AmbienteService ambienteService,
+        JobService jobService) {
+        //--------------------------------
+        super(queryService);
+        this.queryService = queryService;
         this.ambienteService = ambienteService;
         this.jobService = jobService;
     }
 
     @Override
-    public ResponseEntity<?> parseOne(ConfigQuery entity) {
+    public ResponseEntity<?> parseOne(JobQuery entity) {
 //        val comandoSqls = new ComandoSql(entity);
         return ResponseEntity.ok(entity);
     }
 
     @Override
-    public ResponseEntity<?> parseAll(Page<ConfigQuery> configQueries) {
+    public ResponseEntity<?> parseAll(Page<JobQuery> configQueries) {
 //        val comandoSqls = configQueries.map(ComandoSql::new);
         return ResponseEntity.ok(configQueries);
     }
@@ -58,7 +58,7 @@ public class ConfigQueryController extends MasterController<Long, ConfigQuery, C
     public ResponseEntity<List<QueryInfoDTO>> getAllByCliente(
         @PathVariable(name = "clienteId") Long clienteId) {
 
-        final List<QueryInfoDTO> dtos = service.findAllByCliente(clienteId)
+        final List<QueryInfoDTO> dtos = queryService.findAllByCliente(clienteId)
             .stream()
             .map(QueryInfoDTO::new)
             .toList();
@@ -66,21 +66,21 @@ public class ConfigQueryController extends MasterController<Long, ConfigQuery, C
     }
 
     //TODO: frontend não consta usando esse endoint, se ainda for usar
-    // alterar o mapeamento ConfigQuery -> ComandoSQL
+    // alterar o mapeamento JobQuery -> ComandoSQL
 //    @GetMapping(value = "job/{jobId}")
 //    public ResponseEntity<List<ComandoSql>> getAllByJob(@PathVariable Long jobId) {
 //        if(jobId == null) throw new RuntimeException("Informe o ID do Job.");
 //
-//        log.info("Obtendo todas as ConfigQuery's do Job ID {}.", jobId);
+//        log.info("Obtendo todas as JobQuery's do Job ID {}.", jobId);
 //        val resultado = service.findAllByJobId(jobId)
 //            .stream()
 //            .map(ComandoSql::new)
 //            .toList();
-//        log.info("Total de ConfigQuery's encontradas: {}", resultado.size());
+//        log.info("Total de JobQuery's encontradas: {}", resultado.size());
 //
 //        if(resultado.isEmpty()) {
 //            throw new NoSuchElementException(
-//                "Nenhuma ConfigQuery disponível para o Job ID " + jobId);
+//                "Nenhuma JobQuery disponível para o Job ID " + jobId);
 //        }
 //        resultado.forEach(cq -> log.info(" - {}", cq));
 //        return ResponseEntity.ok(resultado);
@@ -98,7 +98,7 @@ public class ConfigQueryController extends MasterController<Long, ConfigQuery, C
         String mensagem = null;
         try {
             log.info("Validando SQL: '{}'", sql);
-            service.validadeQuery(sql, banco);
+            queryService.validadeQuery(sql, banco);
             mensagem = "Query aprovada.";
             log.info(mensagem);
             return ResponseEntity.ok(mensagem);
@@ -120,7 +120,7 @@ public class ConfigQueryController extends MasterController<Long, ConfigQuery, C
 
     //TODO: sincronizar com front !!!
     /**
-     * Cria ou atualiza uma entidade {@link ConfigQuery} para determinado cliente.
+     * Cria ou atualiza uma entidade {@link JobQuery} para determinado cliente.
      * @param ambienteId {@link Long} obtido no path da uri
      * @param dto {@link QueryInfoDTO}
      * @return {@link ResponseEntity} da mesma {@link QueryInfoDTO} enviada, so que atualizada com o banco.
@@ -135,14 +135,14 @@ public class ConfigQueryController extends MasterController<Long, ConfigQuery, C
         val ambiente = ambienteService.findById(ambienteId);
         var banco = AmbienteAcessoDTO.banco(ambiente);
         var job = jobService.findById(dto.getJobId());
-        service.validadeQuery(dto.getSql(), banco);
-        var configQuery = service.criarAtualizar(job, dto);
+        queryService.validadeQuery(dto.getSql(), banco);
+        var configQuery = queryService.criarAtualizar(job, dto);
         return ResponseEntity.ok(new QueryInfoDTO(configQuery));
     }
 
     @DeleteMapping("{queryId}")
     public ResponseEntity<String> deletarQuery(@PathVariable Long queryId) {
-        service.delete(service.findById(queryId));
+        queryService.delete(queryService.findById(queryId));
         log.info("Removida Query ID {}.", queryId);
         return ResponseEntity.ok("Query removida com sucesso.");
     }
