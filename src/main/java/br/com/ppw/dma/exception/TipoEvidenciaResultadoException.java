@@ -1,6 +1,6 @@
 package br.com.ppw.dma.exception;
 
-import br.com.ppw.dma.evidencia.TipoEvidenciaResultado;
+import br.com.ppw.dma.domain.evidencia.TipoEvidenciaResultado;
 import lombok.NonNull;
 import lombok.val;
 

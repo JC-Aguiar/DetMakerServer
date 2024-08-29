@@ -1,10 +1,11 @@
 package br.com.ppw.dma;
 
-import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
-import br.com.ppw.dma.job.JobService;
+import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
+import br.com.ppw.dma.domain.job.JobService;
+import br.com.ppw.dma.domain.master.*;
 import br.com.ppw.dma.master.*;
 import br.com.ppw.dma.net.ConectorSftp;
-import br.com.ppw.dma.pipeline.PipelineExecDTO;
+import br.com.ppw.dma.domain.pipeline.PipelineExecDTO;
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -36,7 +37,7 @@ import java.util.jar.Manifest;
 import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatString.dividirValores;
-import static br.com.ppw.dma.master.SqlSintaxe.*;
+import static br.com.ppw.dma.domain.master.SqlSintaxe.*;
 
 @Slf4j
 public class BasicTest {

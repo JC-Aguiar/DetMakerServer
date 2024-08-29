@@ -16,6 +16,8 @@ import static br.com.ppw.dma.util.FormatString.LINHA_HORINZONTAL;
 @ControllerAdvice
 public class HandlerException {
 
+    //TODO: mover a coleta dessas mensagens para arquivo properties/yaml
+
     public static final String ERRO_PADRAO = "Erro inesperado ocorreu durante o processo.\n" +
         "Veja no log para mais detalhes (%s).\n" +
         "Mensagem do exception: %s.";

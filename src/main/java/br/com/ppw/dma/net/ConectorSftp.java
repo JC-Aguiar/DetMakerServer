@@ -1,9 +1,9 @@
 package br.com.ppw.dma.net;
 
-import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
+import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.exception.FtpHostException;
 import br.com.ppw.dma.exception.OperacaoSftpException;
-import br.com.ppw.dma.system.ExitCodes;
+import br.com.ppw.dma.util.ExitCodes;
 import com.jcraft.jsch.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
