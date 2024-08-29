@@ -1,6 +1,6 @@
 package br.com.ppw.dma.execQuery;
 
-import br.com.ppw.dma.configQuery.ResultadoSql;
+import br.com.ppw.dma.jobQuery.ResultadoSql;
 import br.com.ppw.dma.evidencia.Evidencia;
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonBackReference;

@@ -1,21 +1,16 @@
-package br.com.ppw.dma.configQuery;
+package br.com.ppw.dma.jobQuery;
 
 import br.com.ppw.dma.job.Job;
 import br.com.ppw.dma.master.MasterEntity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.Comment;
 import org.hibernate.proxy.HibernateProxy;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
-import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.FetchType.LAZY;
 
 
@@ -26,13 +21,13 @@ import static jakarta.persistence.FetchType.LAZY;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-@Entity(name = "PPW_CONFIG_QUERY")
-@Table(name = "PPW_CONFIG_QUERY")
-@SequenceGenerator(name = "SEQ_CONFIG_QUERY_ID", sequenceName = "RCVRY.SEQ_CONFIG_QUERY_ID", allocationSize = 1)
-public class ConfigQuery implements MasterEntity<Long> {
+@Entity(name = "PPW_JOB_QUERY")
+@Table(name = "PPW_JOB_QUERY")
+@SequenceGenerator(name = "SEQ_JOB_QUERY_ID", sequenceName = "RCVRY.SEQ_JOB_QUERY_ID", allocationSize = 1)
+public class JobQuery implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CONFIG_QUERY_ID")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_JOB_QUERY_ID")
     @Comment("Identificador numérico dessa query")
     Long id;
 
@@ -57,7 +52,7 @@ public class ConfigQuery implements MasterEntity<Long> {
     String sql;
 
 
-    public ConfigQuery(@NonNull QueryInfoDTO dto) {
+    public JobQuery(@NonNull QueryInfoDTO dto) {
         atualizar(dto);
     }
 
@@ -78,7 +73,7 @@ public class ConfigQuery implements MasterEntity<Long> {
             ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() :
             this.getClass();
         if(thisEffectiveClass != oEffectiveClass) return false;
-        ConfigQuery execFile = (ConfigQuery) o;
+        JobQuery execFile = (JobQuery) o;
         return getId() != null && Objects.equals(getId(), execFile.getId());
     }
 

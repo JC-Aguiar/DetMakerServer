@@ -1,4 +1,4 @@
-package br.com.ppw.dma.configQuery;
+package br.com.ppw.dma.jobQuery;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
@@ -13,27 +13,30 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
 @Slf4j
-public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQueryService> {
+public class JobQueryService extends MasterService<Long, JobQuery, JobQueryService> {
 
-    private final ConfigQueryRepository configQueryDao;
+    private final JobQueryRepository jobQueryDao;
 
     @Autowired
-    public ConfigQueryService(ConfigQueryRepository configQueryDao) {
-        super(configQueryDao);
-        this.configQueryDao = configQueryDao;
+    public JobQueryService(JobQueryRepository jobQueryDao) {
+        super(jobQueryDao);
+        this.jobQueryDao = jobQueryDao;
     }
 
-    public List<ConfigQuery> findAllByJobId(@NonNull Long id) {
-        return configQueryDao.findAllByJobId(id);
+    public List<JobQuery> findAllByJobId(@NonNull Long id) {
+        return jobQueryDao.findAllByJobId(id);
     }
 
-    public List<ConfigQuery> findAllByCliente(@NonNull Long clienteId) {
-        val result = configQueryDao.findAllByClienteId(clienteId);
+    public List<JobQuery> findAllByCliente(@NonNull Long clienteId) {
+        val result = jobQueryDao.findAllByClienteId(clienteId);
         if(result.isEmpty()) throw new NoSuchElementException();
         return result;
     }
@@ -61,18 +64,14 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
         }
     }
 
-    public void deleteVar(@NonNull Long varId) {
-        configQueryDao.deleteQueryVarById(varId);
-    }
-
     /**
-     * Cria ou atualiza uma entidade {@link ConfigQuery} com base numa query informada.
+     * Cria ou atualiza uma entidade {@link JobQuery} com base numa query informada.
      * @param job {@link Job} a ser relacionado a entidade dessa configuração de query
      * @param query {@link QueryInfoDTO}
-     * @return entidade {@link ConfigQuery}
+     * @return entidade {@link JobQuery}
      * @throws DuplicatedRecordException em caso de duplicidade no banco
      */
-    public ConfigQuery criarAtualizar(@NonNull Job job, @NonNull QueryInfoDTO query)
+    public JobQuery criarAtualizar(@NonNull Job job, @NonNull QueryInfoDTO query)
     throws DuplicatedRecordException {
         if(query.getId().isPresent()) {
             var id = query.getId().get();
@@ -81,14 +80,14 @@ public class ConfigQueryService extends MasterService<Long, ConfigQuery, ConfigQ
             configQuery.atualizar(query);
             configQuery.setJob(job);
             save(configQuery);
-            log.info("ConfigQuery atualizada com sucesso: ID {}.", configQuery.getId());
+            log.info("JobQuery atualizada com sucesso: ID {}.", configQuery.getId());
             return configQuery;
         }
         log.info("Criando nova Query (Job ID {}).", job.getId());
-        var configQuery = new ConfigQuery(query);
+        var configQuery = new JobQuery(query);
         configQuery.setJob(job);
         save(configQuery);
-        log.info("ConfigQuery gerada com sucesso: ID {}.", configQuery.getId());
+        log.info("JobQuery gerada com sucesso: ID {}.", configQuery.getId());
         return configQuery;
     }
 

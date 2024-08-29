@@ -1,4 +1,4 @@
-package br.com.ppw.dma.configQuery;
+package br.com.ppw.dma.jobQuery;
 
 import br.com.ppw.dma.job.Job;
 import jakarta.validation.Valid;
@@ -26,16 +26,16 @@ public class QueryInfoDTO {
     @NotBlank String sql;
 
 
-    public QueryInfoDTO(ConfigQuery configQuery) {
-        this.id = Optional.of(configQuery.getId());
-        this.jobId = configQuery.getJob().getId();
-        atualizar(configQuery);
+    public QueryInfoDTO(JobQuery jobQuery) {
+        this.id = Optional.of(jobQuery.getId());
+        this.jobId = jobQuery.getJob().getId();
+        atualizar(jobQuery);
     }
 
-    private void atualizar(@NonNull ConfigQuery configQuery) {
-        this.nome = (configQuery.getNome());
-        this.descricao = (configQuery.getDescricao());
-        this.sql = (configQuery.getSql());
+    private void atualizar(@NonNull JobQuery jobQuery) {
+        this.nome = (jobQuery.getNome());
+        this.descricao = (jobQuery.getDescricao());
+        this.sql = (jobQuery.getSql());
     }
 
     public static List<QueryInfoDTO> getFromJob(@NonNull Job job) {

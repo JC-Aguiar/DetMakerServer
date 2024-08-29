@@ -1,4 +1,4 @@
-package br.com.ppw.dma.configQuery;
+package br.com.ppw.dma.jobQuery;
 
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonIgnore;

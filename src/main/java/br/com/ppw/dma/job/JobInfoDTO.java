@@ -1,6 +1,5 @@
 package br.com.ppw.dma.job;
 
-import br.com.ppw.dma.configQuery.QueryInfoDTO;
 import br.com.ppw.dma.system.ShellPointer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;

@@ -2,7 +2,7 @@ package br.com.ppw.dma.job;
 
 import br.com.ppw.dma.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.cliente.Cliente;
-import br.com.ppw.dma.configQuery.ResultadoSql;
+import br.com.ppw.dma.jobQuery.ResultadoSql;
 import br.com.ppw.dma.master.MasterOracleDAO;
 import br.com.ppw.dma.master.MasterService;
 import br.com.ppw.dma.master.SqlSintaxe;
