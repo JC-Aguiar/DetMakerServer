@@ -1,10 +1,9 @@
 package br.com.ppw.dma.domain.jobQuery;
 
 import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
+import br.com.ppw.dma.domain.job.Job;
 import br.com.ppw.dma.domain.master.*;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
-import br.com.ppw.dma.domain.job.Job;
-import br.com.ppw.dma.master.*;
 import br.com.ppw.dma.util.FormatString;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;

@@ -3,7 +3,6 @@ package br.com.ppw.dma.util;
 import lombok.NonNull;
 
 import java.util.function.Function;
-import java.util.regex.Pattern;
 
 import static br.com.ppw.dma.util.FormatString.abstrairVariavel;
 
