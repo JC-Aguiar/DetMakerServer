@@ -1,6 +1,6 @@
 package br.com.ppw.dma;
 
-import br.com.ppw.dma.system.StorageProperties;
+import br.com.ppw.dma.config.StorageProperties;
 import com.github.lalyos.jfiglet.FigletFont;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;

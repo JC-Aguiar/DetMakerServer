@@ -5,9 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
 
-import static br.com.ppw.dma.net.RemoteFileComparetorStatus.*;
-import static br.com.ppw.dma.net.RemoteFileComparetorStatus.SUCCESS;
-
 @Slf4j
 @Getter
 @ToString

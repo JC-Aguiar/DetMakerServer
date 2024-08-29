@@ -1,7 +1,6 @@
 package br.com.ppw.dma.net;
 
 import br.com.ppw.dma.util.FormatString;
-import jakarta.validation.constraints.NotBlank;
 import lombok.val;
 
 import java.time.Instant;

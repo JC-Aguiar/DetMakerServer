@@ -6,8 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
 
-import static br.com.ppw.dma.net.RemoteFileComparetorStatus.*;
-
 @Slf4j
 @Data
 //TODO: Javadoc
@@ -32,15 +30,15 @@ public class RemoteFileComparator {
     public RemoteFileComparetorStatus getStatus() {
         printFiles();
         if(postFile.isEmpty())
-            return NOT_FOUND;
+            return RemoteFileComparetorStatus.NOT_FOUND;
 
         if(preFile.isPresent()) {
             if(preFile.get().iguais(postFile.get()))
-                return DUPLICATED;
+                return RemoteFileComparetorStatus.DUPLICATED;
             else
-                return SUCCESS;
+                return RemoteFileComparetorStatus.SUCCESS;
         }
-        return SUCCESS;
+        return RemoteFileComparetorStatus.SUCCESS;
     }
 
     public void printFiles() {

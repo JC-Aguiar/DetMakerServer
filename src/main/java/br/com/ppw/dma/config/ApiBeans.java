@@ -1,6 +1,6 @@
 package br.com.ppw.dma.config;
 
-import br.com.ppw.dma.system.StorageService;
+import br.com.ppw.dma.domain.storage.StorageService;
 import org.modelmapper.ModelMapper;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;

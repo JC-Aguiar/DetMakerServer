@@ -1,9 +1,9 @@
 package br.com.ppw.dma.util;
 
 import br.com.ppw.dma.DetMakerApplication;
-import br.com.ppw.dma.execFile.AnexoInfoDTO;
-import br.com.ppw.dma.evidencia.EvidenciaInfoDTO;
-import br.com.ppw.dma.relatorio.DetDTO;
+import br.com.ppw.dma.domain.execFile.AnexoInfoDTO;
+import br.com.ppw.dma.domain.evidencia.EvidenciaInfoDTO;
+import br.com.ppw.dma.domain.relatorio.DetDTO;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.NonNull;
@@ -193,7 +193,7 @@ public class DetHtml {
 
         //Unificando arquivos CSS e JS no HTML
         val conteudoJs = "<script>\n" +
-            arquivoJs + //Arquivos.lerArquivo(arquivoJs) +
+            arquivoJs +
             scriptIdentificacao +
             scriptDetalhamento +
             scriptTestecase +
@@ -201,10 +201,8 @@ public class DetHtml {
             String.join("\n\n", tabelasPreJobMap.values()) +
             String.join("\n\n", tabelasPosJobMap.values()) +
             "\n</script>";
-        val conteudoCss = "<style>\n" +
-            arquivoCss + //Arquivos.lerArquivo(arquivoCss) +
-            "\n</style>";
-        val conteudoHtml = arquivoHtml//Arquivos.lerArquivo(arquivoHtml)
+        val conteudoCss = "<style>\n" +arquivoCss+ "\n</style>";
+        val conteudoHtml = arquivoHtml
             .replace(TAG_JS, conteudoJs)
             .replace(TAG_CSS, conteudoCss);
 
