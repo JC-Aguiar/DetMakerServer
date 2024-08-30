@@ -30,19 +30,18 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 @ToString
 public class FileSystemService implements StorageService {
 
-    private final Path rootLocation;
+    private final Path pathLocation;
 
     @Autowired
     public FileSystemService(StorageProperties properties) {
-        if(properties.getLocation().trim().length() == 0) {
-            log.warn("Nenhum name informado para o diretório temporário. Será usado o padrão 'upload-dir'.");
-            properties.setLocation("upload-dir");
-        }
-        this.rootLocation = Paths.get(
-            System.getProperty("java.io.tmpdir"),
+        this.pathLocation = Paths.get(
+            System.getProperty("user.home"),
             properties.getLocation());
-        if(!this.rootLocation.toFile().exists()) this.rootLocation.toFile().mkdir();
-        log.info("Diretório temporário: '{}'.", this.rootLocation.toAbsolutePath());
+        if(!this.pathLocation.toFile().exists()) {
+            if(!this.pathLocation.toFile().mkdir())
+                throw new RuntimeException("Não foi possível criar diretório do DetMaker: " + pathLocation);
+        }
+        log.info("Diretório do DetMaker: '{}'.", this.pathLocation.toAbsolutePath());
     }
 
     @Override
@@ -95,7 +94,7 @@ public class FileSystemService implements StorageService {
     }
 
     private Path doFilePath(String name) {
-        return this.rootLocation
+        return this.pathLocation
             .resolve(Paths.get(name))
             .normalize()
             .toAbsolutePath();
@@ -103,7 +102,7 @@ public class FileSystemService implements StorageService {
 
     //Validação de segurança
     private void validade(Path destinationFile) {
-        if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
+        if (!destinationFile.getParent().equals(this.pathLocation.toAbsolutePath())) {
             throw new StorageException("Não é permitido salvar arquivos fora do diretório configurado!");
         }
     }
@@ -116,9 +115,9 @@ public class FileSystemService implements StorageService {
     @Override
     public Stream<Path> loadAll() {
         try {
-            return Files.walk(this.rootLocation, 1)
-                .filter(path -> !path.equals(this.rootLocation))
-                .map(this.rootLocation::relativize);
+            return Files.walk(this.pathLocation, 1)
+                .filter(path -> !path.equals(this.pathLocation))
+                .map(this.pathLocation::relativize);
         }
         catch(IOException e) {
             throw new StorageException("Erro ao tentar ler arquivo!", e);
@@ -127,7 +126,7 @@ public class FileSystemService implements StorageService {
 
     @Override
     public Path load(String filename) {
-        return rootLocation.resolve(filename);
+        return pathLocation.resolve(filename);
     }
 
     @Override
@@ -146,7 +145,7 @@ public class FileSystemService implements StorageService {
     @Override
     public void deleteAll() {
         try {
-            val totalArquivos = Files.walk(rootLocation)
+            val totalArquivos = Files.walk(pathLocation)
                 .filter(Files::isRegularFile)
                 .count();
             log.info("Total de arquivos temporários a deletar: {}.", totalArquivos);
@@ -154,13 +153,13 @@ public class FileSystemService implements StorageService {
         catch(IOException e) {
             log.error("Não foi possível acessar/ler os conteúdos no diretório temporário: {}", e.getMessage());
         }
-        FileSystemUtils.deleteRecursively(rootLocation.toFile());
+        FileSystemUtils.deleteRecursively(pathLocation.toFile());
     }
 
     @Override
     public void init() {
         try {
-            Files.createDirectories(rootLocation);
+            Files.createDirectories(pathLocation);
         }
         catch (IOException e) {
             throw new StorageException("Não foi possível inicializar diretório de arquivos!", e);
