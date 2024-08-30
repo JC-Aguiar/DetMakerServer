@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.Comment;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.util.Objects;
@@ -22,45 +23,48 @@ import static jakarta.persistence.FetchType.LAZY;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_EXEC_QUERY")
 @Table(name = "PPW_EXEC_QUERY")
-@SequenceGenerator(name = "SEQ_EXEC_QUERY_ID", sequenceName = "RCVRY.SEQ_EXEC_QUERY_ID", allocationSize = 1)
 public class ExecQuery {
 
     @Id @Column(name = "ID")
+    @SequenceGenerator(
+        name = "SEQ_EXEC_QUERY_ID",
+        sequenceName = "RCVRY.SEQ_EXEC_QUERY_ID",
+        allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_EXEC_QUERY_ID")
-    // Identificador numérico dessa queries pós-execução da evidência
     Long id;
 
     @ToString.Exclude
     @JsonBackReference
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "EVIDENCIA_ID")
-    // ID da evidência relacionada com esse queries pós-execução
+    @Comment("ID da evidência relacionada com esse queries pós-execução")
     Evidencia evidencia;
 
     @Column(name = "JOB_NOME", length = 100, nullable = false)
-    // Nome do job que gerou essa query
+    @Comment("Nome do job que gerou essa query")
     String jobNome;
 
     @Column(name = "QUERY_NOME", length = 150, nullable = false)
-    // Nome da query usada na queries
+    @Comment("Nome da query usada na queries")
     String queryNome;
 
     @Column(name = "QUERY", length = 500, nullable = false)
-    // SQL usada na evidência desse queries pós-execução
+    @Comment("SQL usada na evidência desse queries pós-execução")
     String query;
 
     @ToString.Exclude
     @Column(name = "RESULTADO_PRE_JOB", columnDefinition = "CLOB") //nullable = false ?
-    // Conteúdo da table extraída
+    @Comment("Conteúdo da table extraída")
     String resultadoPreJob = "";
 
     @ToString.Exclude
     @Column(name = "RESULTADO_POS_JOB", columnDefinition = "CLOB") //nullable = false ?
-    // Conteúdo da table extraída
+    @Comment("Conteúdo da table extraída")
     String resultadoPosJob = "";
 
     @Column(name = "INCONFORMIDADE", columnDefinition = "VARCHAR2(200)")
-    String inconformidade;
+    @Comment("Mensagem do erro, caso tenha ocorrido algum")
+    String inconformidade = "";
 
 
     public static ExecQuery montarEvidencia(
