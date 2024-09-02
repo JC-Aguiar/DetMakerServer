@@ -4,7 +4,7 @@ import br.com.ppw.dma.domain.evidencia.Evidencia;
 import br.com.ppw.dma.domain.evidencia.EvidenciaProcess;
 import br.com.ppw.dma.domain.master.MasterService;
 import br.com.ppw.dma.domain.pipeline.Pipeline;
-import br.com.ppw.dma.domain.pipeline.PipelinePreparation;
+import br.com.ppw.dma.domain.queue.QueuePayload;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -81,7 +81,7 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
 
     @Transactional
     public Relatorio buildAndPersist(
-        @NonNull PipelinePreparation preparation,
+        @NonNull QueuePayload preparation,
         @NotNull List<EvidenciaProcess> evidencias) {
 
         log.debug("Separando Evidências persistidas com sucesso daquelas com erro.");

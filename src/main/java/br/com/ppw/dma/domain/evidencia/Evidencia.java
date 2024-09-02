@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.Comment;
 import org.hibernate.annotations.Where;
 import org.hibernate.proxy.HibernateProxy;
 
@@ -20,7 +21,10 @@ import java.util.List;
 import java.util.Objects;
 
 import static jakarta.persistence.CascadeType.ALL;
+import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.GenerationType.SEQUENCE;
+import static lombok.AccessLevel.PRIVATE;
 
 @Getter
 @Setter
@@ -28,35 +32,37 @@ import static jakarta.persistence.FetchType.LAZY;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldDefaults(level = PRIVATE)
 @Entity(name = "PPW_EVIDENCIA")
 @Table(name = "PPW_EVIDENCIA")
-@SequenceGenerator(name = "SEQ_EVIDENCIA_ID", sequenceName = "RCVRY.SEQ_EVIDENCIA_ID", allocationSize = 1)
 public class Evidencia implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_EVIDENCIA_ID")
+    @SequenceGenerator(
+        name = "SEQ_EVIDENCIA_ID",
+        sequenceName = "RCVRY.SEQ_EVIDENCIA_ID",
+        allocationSize = 1)
+    @GeneratedValue(strategy = SEQUENCE, generator = "SEQ_EVIDENCIA_ID")
     Long id;
+
+    @Column(name = "TICKET", length = 100, nullable = false)
+    @Comment("Identificador da solicitação de um acionamento")
+    String ticket;
 
     @Column(name = "ORDEM")
     Integer ordem;
 
+    //TODO: Trocar relacionamento direto com entidade Job para apenas apontamento ao nome do Job
     @ToString.Exclude
     @JsonBackReference
     @ManyToOne(fetch = LAZY)
-    @JoinColumns({
-        @JoinColumn(name = "JOB_ID", referencedColumnName = "ID")
-        //@JoinColumn(name = "JOB_NOME", referencedColumnName = "NOME")
-    })
+    @JoinColumns(@JoinColumn(name = "JOB_ID", referencedColumnName = "ID"))
     Job job;
 
     @ToString.Exclude
     @JsonBackReference
     @ManyToOne(fetch = LAZY)
-    @JoinColumns({
-        @JoinColumn(name = "RELATORIO_ID", referencedColumnName = "ID")
-        //@JoinColumn(name = "JOB_NOME", referencedColumnName = "NOME")
-    })
+    @JoinColumns(@JoinColumn(name = "RELATORIO_ID", referencedColumnName = "ID"))
     Relatorio relatorio;
 
     @Column(name = "ARGUMENTOS", length = 300)
@@ -67,27 +73,27 @@ public class Evidencia implements MasterEntity<Long> {
 
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "BANCO_ID") //TODO: mudar o name para algo melhor
+    @Column(name = "QUERY_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    List<ExecQuery> banco = new ArrayList<>();
+    List<ExecQuery> queries = new ArrayList<>();
 
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "CARGAS_ID")
+    @Column(name = "CARGAS_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     @Where(clause = "type = 'carga'")
     List<ExecFile> cargas = new ArrayList<>();
 
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "LOG_ID")
+    @Column(name = "LOG_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     @Where(clause = "type = 'log'")
     List<ExecFile> logs = new ArrayList<>();
 
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "SAIDA_ID")
+    @Column(name = "SAIDA_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     @Where(clause = "type = 'saída'")
     List<ExecFile> saidas = new ArrayList<>();
@@ -105,26 +111,32 @@ public class Evidencia implements MasterEntity<Long> {
 //    @Column(name = "SUCESSO")
 //    Boolean sucesso = false;
 
-    @Column(name = "DATA_INICIO", columnDefinition = "DATE")
+    @Column(name = "DATA_INICIO", columnDefinition = "DATE", nullable = false)
     OffsetDateTime dataInicio;
 
-    @Column(name = "DATA_FIM", columnDefinition = "DATE")
+    @Column(name = "DATA_FIM", columnDefinition = "DATE", nullable = false)
     OffsetDateTime dataFim;
 
-    @Column(name = "REVISOR", columnDefinition = "VARCHAR2(100)")
+    @Column(name = "REVISOR", length = 100)
     String revisor;
 
     @Column(name = "DATA_REVISAO", columnDefinition = "DATE")
     OffsetDateTime dataRevisao;
 
-    @Column(name = "REQUISITOS", columnDefinition = "VARCHAR2(500)")
+    @Column(name = "REQUISITOS", length = 500)
     String requisitos;
 
-    @Column(name = "COMENTARIO", columnDefinition = "VARCHAR2(280)")
+    @Column(name = "COMENTARIO", length = 280)
     String comentario;
 
-    @Column(name = "RESULTADO", columnDefinition = "VARCHAR2(10)")
+    @Enumerated(STRING)
+    @Column(name = "RESULTADO", length = 10, nullable = false)
     TipoEvidenciaResultado resultado;
+
+    @Enumerated(STRING)
+    @Column(name = "status", length = 12, nullable = false)
+    @Comment("Tipo de execução evidenciada.")
+    EvidenciaEscopo status;
 
 
     public Evidencia(@NonNull JobProcess process) {
@@ -148,12 +160,12 @@ public class Evidencia implements MasterEntity<Long> {
     public final boolean equals(Object o) {
         if(this == o) return true;
         if(o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy ?
-            ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() :
-            o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy ?
-            ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() :
-            this.getClass();
+        Class<?> oEffectiveClass = o instanceof HibernateProxy
+            ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass()
+            : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy
+            ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass()
+            : this.getClass();
         if(thisEffectiveClass != oEffectiveClass) return false;
         Evidencia evidencia = (Evidencia) o;
         return getId() != null && Objects.equals(getId(), evidencia.getId());

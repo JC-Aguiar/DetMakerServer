@@ -1,13 +1,12 @@
-package br.com.ppw.dma.domain.job;
+package br.com.ppw.dma.domain.pipeline.execution;
 
 import br.com.ppw.dma.domain.evidencia.Evidencia;
-import br.com.ppw.dma.domain.execQuery.ExecQuery;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
-import org.hibernate.validator.constraints.Range;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -17,39 +16,38 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class JobExecuteDTO {
+public class PipelineJobInputDTO {
 
-   @NotNull @Range(min = 0) Long id;
-   @NotNull @Range(min = 0, max = 999) Integer ordem;
+   @NotNull @Min(0) Long id;
+   @NotNull @Min(0) Integer ordem;
    String argumentos;
 //   List<ComandoSql> queries = new ArrayList<>();
-   Set<String> queries = new HashSet<>();
-   List<JobCarga> cargas = new ArrayList<>();
+   Set<PipelineQueryInputDTO> queries = new HashSet<>();
+   List<PipelineJobCargaDTO> cargas = new ArrayList<>();
 
    @JsonIgnore
    Map<String, String> variaveis = new HashMap<>();
 
 
-   public JobExecuteDTO(@NonNull Evidencia evidencia) {
+   public PipelineJobInputDTO(@NonNull Evidencia evidencia) {
       id = evidencia.getJob().getId();
       ordem = evidencia.getOrdem();
       argumentos = evidencia.getArgumentos();
-      queries = evidencia.getBanco()
+      queries = evidencia.getQueries()
           .stream()
-//          .map(ComandoSql::new)
-          .map(ExecQuery::getQuery)
+          .map(PipelineQueryInputDTO::new)
           .collect(Collectors.toSet());
       cargas = evidencia.getCargas()
           .stream()
-          .map(JobCarga::new)
+          .map(PipelineJobCargaDTO::new)
           .toList();
    }
 
-   public JobExecuteDTO addQuery(@NonNull String...query) {
+   public PipelineJobInputDTO addQuery(@NonNull PipelineQueryInputDTO...query) {
       return addQuery(Set.of(query));
    }
 
-   public JobExecuteDTO addQuery(@NonNull Set<String> queries) {
+   public PipelineJobInputDTO addQuery(@NonNull Set<PipelineQueryInputDTO> queries) {
       this.queries.addAll(queries);
       return this;
    }

@@ -1,7 +1,7 @@
 package br.com.ppw.dma.domain.storage;
 
 import br.com.ppw.dma.domain.execFile.ExecFile;
-import br.com.ppw.dma.domain.job.JobCarga;
+import br.com.ppw.dma.domain.pipeline.execution.PipelineJobCargaDTO;
 import br.com.ppw.dma.exception.StorageException;
 import br.com.ppw.dma.exception.StorageFileNotFoundException;
 import br.com.ppw.dma.config.StorageProperties;
@@ -60,7 +60,7 @@ public class FileSystemService implements StorageService {
         }
     }
 
-    public File store(JobCarga file) {
+    public File store(PipelineJobCargaDTO file) {
         try {
             if(file.getConteudo().isEmpty()) throw new StorageException("O arquivo enviado está vazio!");
 

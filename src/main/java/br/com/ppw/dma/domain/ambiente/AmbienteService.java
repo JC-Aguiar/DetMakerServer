@@ -108,40 +108,17 @@ public class AmbienteService {
         return resutlado;
     }
 
-    //TODO: teste de Queries poderia ser por aqui?
-//    public void completeAndValidateSqlVariables(
-//        @NonNull ComandoSql comando,
-//        @NonNull Ambiente ambiente) {
-//
-//        try(val masterDao = new MasterOracleDAO(ambiente)) {
-//            log.info("Obtendo metadados das variáveis.");
-//            comando.groupFiltrosPorTabela().forEach(
-//                masterDao::findAndSetColumnInfo
-//            );
-//            log.info("Criando valores aleatórios para testar as variáveis.");
-//            var mapaVariavelValor = comando.getFiltros()
-//                .parallelStream()
-//                .collect(Collectors.toMap(
-//                    FiltroSql::getVariavel,
-//                    FiltroSql::gerarValorAleatorio
-//                ));
-//            var sql = FormatString.substituirVariaveis(comando.getSql(), mapaVariavelValor);
-//            masterDao.validadeQuery(sql);
-//        }
-//        catch(SQLException | PersistenceException e) {
-//            throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
-//        }
-//    }
-
-    public Optional<DbTable> getSqlDataTypes(
+    //Obtêm todos os metadados do banco remoto para as colunas de uma tabela
+    public Optional<DbTable> getMetadatasFromTables(
         @NonNull String tabela,
         @NonNull Set<String> campos,
         @NonNull Ambiente ambiente) {
 
-        return getSqlDataTypes(tabela, campos, ambiente.acessoBanco());
+        return getMetadatasFromTables(tabela, campos, ambiente.acessoBanco());
     }
 
-    public Optional<DbTable> getSqlDataTypes(
+    //Obtêm todos os metadados do banco remoto para as colunas de uma tabela
+    public Optional<DbTable> getMetadatasFromTables(
         @NonNull String tabela,
         @NonNull Set<String> campos,
         @NonNull AmbienteAcessoDTO ambiente) {
@@ -157,6 +134,7 @@ public class AmbienteService {
         }
     }
 
+    //Obtêm todos os metadados do banco remoto para determinado conjunto de tabelas e colunas
     public List<DbTable> getMetadatasFromTables(
         @NonNull Set<String> tabelas,
         @NonNull Set<String> colunas,
@@ -165,6 +143,7 @@ public class AmbienteService {
         return getMetadatasFromTables(tabelas, colunas, ambiente.acessoBanco());
     }
 
+    //Obtêm todos os metadados do banco remoto para determinado conjunto de tabelas e colunas
     public List<DbTable> getMetadatasFromTables(
         @NonNull Set<String> tabelas,
         @NonNull Set<String> colunas,
@@ -223,21 +202,51 @@ public class AmbienteService {
         return getMetadatasFromTables(tables, columns, ambiente);
     }
 
-    public void validadeQuery(
+    //Valida e executa (com ROWNUM = 1) queries DQL (de consulta)
+    public void validadeQueryDQL(
         @NonNull Set<String> queries,
         @NonNull Ambiente ambiente) {
 
-        validadeQuery(queries, ambiente.acessoBanco());
+        validadeQueryDQL(queries, ambiente.acessoBanco());
     }
 
-    public void validadeQuery(
+    //Valida e executa (com ROWNUM = 1) queries DQL (de consulta)
+    public void validadeQueryDQL(
         @NonNull Set<String> queries,
         @NonNull AmbienteAcessoDTO ambiente) {
 
         try(val masterDao = new MasterOracleDAO(ambiente)) {
             queries.parallelStream().forEach(query -> {
                 try {
-                    masterDao.validadeQuery(query);
+                    masterDao.runDQL(query);
+                }
+                catch(SQLException | PersistenceException e) {
+                    throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
+                }
+            });
+        }
+        catch(SQLException | PersistenceException e) {
+            throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
+        }
+    }
+
+    //Valida e executa (com ROWNUM = 1) queries DML (de registro)
+    public void validadeQueryDML(
+        @NonNull Set<String> queries,
+        @NonNull Ambiente ambiente) {
+
+        validadeQueryDML(queries, ambiente.acessoBanco());
+    }
+
+    //Valida e executa (com ROWNUM = 1) queries DQL (de registro)
+    public void validadeQueryDML(
+        @NonNull Set<String> queries,
+        @NonNull AmbienteAcessoDTO ambiente) {
+
+        try(val masterDao = new MasterOracleDAO(ambiente)) {
+            queries.parallelStream().forEach(query -> {
+                try {
+                    masterDao.runDML(query);
                 }
                 catch(SQLException | PersistenceException e) {
                     throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));

@@ -2,6 +2,8 @@ package br.com.ppw.dma.domain.job;
 
 import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.domain.jobQuery.ResultadoSql;
+import br.com.ppw.dma.domain.pipeline.execution.PipelineJobInputDTO;
+import br.com.ppw.dma.domain.queue.QueuePayloadJob;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
 import lombok.AccessLevel;
@@ -23,7 +25,7 @@ public class JobProcess {
 
     Job job;
     JobInfoDTO jobInfo;
-    JobExecuteDTO jobInputs;
+    PipelineJobInputDTO jobInputs;
     AmbienteAcessoDTO banco;
     String sha256;
     List<String> terminal = new ArrayList<>();
@@ -73,7 +75,7 @@ public class JobProcess {
 //         - Total de arquivos produzidos: %d
 //        """;
 
-    public JobProcess(@NonNull JobPreparation dados) {
+    public JobProcess(@NonNull QueuePayloadJob dados) {
         setJob(dados.job());
         setJobInfo(JobInfoDTO.converterJob(dados.job()));
         setJobInputs(dados.jobInputs());

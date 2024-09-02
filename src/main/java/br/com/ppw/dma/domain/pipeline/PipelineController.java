@@ -2,29 +2,32 @@ package br.com.ppw.dma.domain.pipeline;
 
 import br.com.ppw.dma.domain.ambiente.AmbienteService;
 import br.com.ppw.dma.domain.cliente.ClienteService;
-import br.com.ppw.dma.domain.evidencia.EvidenciaService;
-import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.domain.job.Job;
-import br.com.ppw.dma.domain.job.JobExecuteDTO;
-import br.com.ppw.dma.domain.job.JobPreparation;
+import br.com.ppw.dma.domain.job.JobInfoDTO;
 import br.com.ppw.dma.domain.job.JobService;
 import br.com.ppw.dma.domain.massa.MassaColunaDTO;
 import br.com.ppw.dma.domain.massa.MassaTabela;
 import br.com.ppw.dma.domain.massa.MassaTabelaService;
 import br.com.ppw.dma.domain.master.MasterController;
 import br.com.ppw.dma.domain.master.QueryFilter;
+import br.com.ppw.dma.domain.master.QueryMethod;
 import br.com.ppw.dma.domain.master.SqlSintaxe;
+import br.com.ppw.dma.domain.pipeline.execution.PipelineExecDTO;
+import br.com.ppw.dma.domain.pipeline.execution.PipelineJobInputDTO;
+import br.com.ppw.dma.domain.pipeline.execution.PipelineQueryInputDTO;
+import br.com.ppw.dma.domain.queue.*;
 import br.com.ppw.dma.domain.relatorio.RelatorioHistoricoDTO;
-import br.com.ppw.dma.domain.relatorio.RelatorioService;
 import br.com.ppw.dma.domain.storage.FileSystemService;
+import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.util.FormatDate;
 import br.com.ppw.dma.util.FormatString;
 import br.com.ppware.api.GeradorDeMassa;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ValidationException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -40,43 +43,34 @@ import java.util.stream.Collectors;
 @RequestMapping("pipeline")
 public class PipelineController extends MasterController<Long, Pipeline, PipelineController> {
 
-    @Autowired
-    private ModelMapper mapper;
-
+    private ObjectMapper objectMapper;
     private PipelineService pipelineService;
-
     private ClienteService clienteService;
-
     private AmbienteService ambienteService;
-
     private JobService jobService;
-
-    private RelatorioService relatorioService;
-
-    private EvidenciaService evidenciaService;
-
+    private QueueService queueService;
     private MassaTabelaService massaService;
-
     private FileSystemService fileSystemService;
 
 
+    @Autowired
     public PipelineController(
-        @Autowired PipelineService pipelineService,
-        @Autowired ClienteService clienteService,
-        @Autowired AmbienteService ambienteService,
-        @Autowired JobService jobService,
-        @Autowired RelatorioService relatorioService,
-        @Autowired EvidenciaService evidenciaService,
-        @Autowired MassaTabelaService massaService,
-        @Autowired FileSystemService fileSystemService) {
+        ObjectMapper objectMapper,
+        PipelineService pipelineService,
+        ClienteService clienteService,
+        AmbienteService ambienteService,
+        JobService jobService,
+        QueueService queueService,
+        MassaTabelaService massaService,
+        FileSystemService fileSystemService) {
         //--------------------------------------------
         super(pipelineService);
+        this.objectMapper = objectMapper;
         this.pipelineService = pipelineService;
         this.clienteService = clienteService;
         this.ambienteService = ambienteService;
         this.jobService = jobService;
-        this.relatorioService = relatorioService;
-        this.evidenciaService = evidenciaService;
+        this.queueService = queueService;
         this.massaService = massaService;
         this.fileSystemService = fileSystemService;
     }
@@ -120,28 +114,33 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
      */
     @Transactional
     @PostMapping(value = "run") //"run/pipelineId/{pipelineId}/ambienteId/{ambienteId}")
-    public ResponseEntity<RelatorioHistoricoDTO> validadeToEnqueu(@RequestBody PipelineExecDTO execDto) {
-        //TODO: validar Ambiente?
+    public ResponseEntity<QueuePushResponseDTO> validadeToEnqueue(
+        @RequestBody PipelineExecDTO execDto)
+    throws JsonProcessingException {
         log.info("Obtendo e validando Ambiente e Pipeline.");
         var ambiente = ambienteService.findById(execDto.getAmbienteId());
         var pipeline = pipelineService.findById(execDto.getPipelineId());
         var cliente = ambiente.getCliente();
-        var jobs = pipeline.getJobs();
+        var jobsInfo = pipeline.getJobs()
+            .stream()
+            .map(JobInfoDTO::converterJob)
+            .collect(Collectors.toList());
         var inputJobs = execDto.getJobs();
-        var inputQueries = inputJobs.parallelStream()
-            .map(JobExecuteDTO::getQueries)
-            .flatMap(Set::parallelStream)
+        var inputQueries = inputJobs.stream()
+            .map(PipelineJobInputDTO::getQueries)
+            .flatMap(Set::stream)
             .collect(Collectors.toSet());
         var massasNome = execDto.getMassas();
         var inconformidades = new ArrayList<String>();
+        var usuario = execDto.getUser();
 
         // ------------- VALIDANDO INPUT JOBS -------------
         log.info("Comparando Jobs declarados x Jobs na Pipeline.");
-        var jobsIds = jobs.parallelStream()
-            .map(Job::getId)
+        var jobsIds = jobsInfo.stream()
+            .map(JobInfoDTO::getId)
             .collect(Collectors.toSet());
-        var inputsJobsIds = inputJobs.parallelStream()
-            .map(JobExecuteDTO::getId)
+        var inputsJobsIds = inputJobs.stream()
+            .map(PipelineJobInputDTO::getId)
             .collect(Collectors.toSet());
 
         var jobsIdsPendentes = new LinkedList<Long>(jobsIds);
@@ -151,7 +150,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 
         if(!jobsIdsPendentes.isEmpty()) {
             var pendentes = "Jobs da Pipeline não declarados: " + jobsIdsPendentes
-                .parallelStream()
+                .stream()
                 .map(String::valueOf)
                 .collect(Collectors.joining(", "));
             log.warn(pendentes);
@@ -159,7 +158,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         }
         if(!inputsJobsIdsPendentes.isEmpty()) {
             var pendentes = "Jobs declarados não encontrados na Pipeline: " + inputsJobsIdsPendentes
-                .parallelStream()
+                .stream()
                 .map(String::valueOf)
                 .collect(Collectors.joining(", "));
             log.warn(pendentes);
@@ -169,13 +168,13 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         log.info("Obtendo as Massas declaradas para validar pendências.");
         var massasPendentes = new ArrayList<String>();
         var massasBanco = massaService.findByClienteIdAndNomes(cliente.getId(), massasNome)
-            .parallelStream()
+            .stream()
             .map(MassaTabela::toDto)
             .toList();
 
-        massasNome.parallelStream()
+        massasNome.stream()
             .filter(nome ->  massasBanco
-                .parallelStream()
+                .stream()
                 .noneMatch(massa -> massa.getNome().equals(nome)))
             .forEach(massasPendentes::add);
 
@@ -198,22 +197,23 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
             throw new ValidationException(String.join("\n", inconformidades));
 
         // ------------- PREPARANDO DADOS -------------
-        var jobsPreparados = JobPreparation.match(jobs, inputJobs);
+        var jobsQueue = QueuePayloadJob.match(jobsInfo, inputJobs);
         var tables = new HashSet<String>();
         var columns = new HashSet<String>();
-        inputQueries.parallelStream()
+        inputQueries.stream()
+            .map(PipelineQueryInputDTO::getSql)
             .map(SqlSintaxe::analyse)
             .forEach(extraction -> {
                 tables.addAll(extraction.tables());
                 extraction.filters()
-                    .parallelStream()
+                    .stream()
                     .map(QueryFilter::column)
                     .forEach(columns::add);
             });
-        massasBanco.parallelStream().forEach(massa -> {
+        massasBanco.forEach(massa -> {
             tables.add(massa.getNome());
             massa.getColunas()
-                .parallelStream()
+                .stream()
                 .map(MassaColunaDTO::getNome)
                 .forEach(columns::add);
         });
@@ -224,7 +224,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
             .peek(tabelaDb -> log.info(tabelaDb.toString()))
             .parallel()
             .forEach(
-                tableDb -> massasBanco.parallelStream().forEach(
+                tableDb -> massasBanco.stream().forEach(
                     massa -> massa.atualizar(tableDb)
             ));
         log.info("Estado das Massas atualizadas:");
@@ -242,14 +242,14 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         log.info("Aplicando valores das Massas nas variáveis globais da Pipeline.");
         execDto.getConfiguracoes()
             .entrySet()
-            .parallelStream()
+            .stream()
             .filter(variavel -> variavel.getValue().matches("^\\$[^.]*\\..*"))
             .forEach(variavel -> {
                 log.info(" - Identificada Variável Global solicitando Massa: {}", variavel);
                 var campoArray = variavel.getValue().split("\\.");
                 var tabelaNome = campoArray[0].substring(1);
                 var colunaNome = campoArray[1];
-                massasPreparadas.parallelStream()
+                massasPreparadas.stream()
                     .filter(massa -> massa.getTabela().equalsIgnoreCase(tabelaNome))
                     .findFirst()
                     .flatMap(massa -> massa.getColunasSqlSintaxe(colunaNome))
@@ -261,7 +261,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         log.info("Estado final das Variáveis da Pipeline:");
         var variaveisPendentes = execDto.getConfiguracoes()
             .entrySet()
-            .parallelStream()
+            .stream()
             .peek(variavel -> log.info(variavel.toString()))
             .map(Map.Entry::getValue)
             .filter(FormatString::possuiVariaveis)
@@ -269,43 +269,58 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         if(!variaveisPendentes.isBlank())
             throw new ValidationException("Variáveis pendentes: " + variaveisPendentes);
 
-        log.info("Aplicando variáveis globais nos Jobs unificados.");
-        jobsPreparados.parallelStream().forEach(
+        log.info("Aplicando as Variáveis da Pipeline nos Jobs solicitados.");
+        jobsQueue.stream().forEach(
             job -> job.aplicarConfiguracoes(execDto.getConfiguracoes())
         );
-        log.info("Obtendo queries das Massas.");
-//        var massaInsert = new ArrayList<String>();
-//        var massaDelete = new ArrayList<String>();
-        massasPreparadas.forEach(massa -> {
-//            massaInsert.add(massa.gerarQueryInsert());
-//            massaDelete.add(massa.gerarQueryDelete());
-            var sql = massa.gerarQueryInsert();
-            FormatString.substituirVariaveis(sql, massa.getColunasSqlSintaxe());
-            log.info(sql);
-            sql = massa.gerarQueryDelete();
-            FormatString.substituirVariaveis(sql, massa.getColunasSqlSintaxe());
-            log.info(sql);
-        });
-
-        log.info("Estado final das Job Queries:");
-        var jobQueries = jobsPreparados.parallelStream()
-            .map(JobPreparation::jobInputs)
-            .map(JobExecuteDTO::getQueries)
-            .flatMap(Set::parallelStream)
+        // ------------- TRATAMENTO FINAL DE QUERIES -------------
+        log.info("Estado final das queries dos Jobs:");
+        var queriesToTest = jobsQueue.stream()
+            .map(QueuePayloadJob::getJobInputs)
+            .map(PipelineJobInputDTO::getQueries)
+            .flatMap(Set::stream)
+            .map(PipelineQueryInputDTO::getSql)
             .peek(log::info)
             .collect(Collectors.toSet());
-        ambienteService.validadeQuery(jobQueries, ambiente);
 
-        //Fim
-        return run(new PipelinePreparation(
-            pipeline,
+        log.info("Estado final das queries das Massas.");
+        var massaQueue = new ArrayList<QueuePayloadQuery>();
+        massasPreparadas.forEach(massa -> {
+            var sql = massa.gerarQueryInsert();
+            var nome = "Insert " + massa.getTabela();
+            sql = FormatString.substituirVariaveis(sql, massa.getColunasSqlSintaxe());
+            queriesToTest.add(sql);
+            log.info(sql);
+            massaQueue.add(new QueuePayloadQuery(nome, sql, QueryMethod.DML));
+
+            sql = massa.gerarQueryDelete();
+            nome = "Delete " + massa.getTabela();
+            sql = FormatString.substituirVariaveis(sql, massa.getColunasSqlSintaxe());
+            queriesToTest.add(sql);
+            log.info(sql);
+            massaQueue.add(new QueuePayloadQuery(nome, sql, QueryMethod.DML));
+        });
+        log.info("Validando estado final das queries nos Jobs e Massas.");
+        ambienteService.validadeQueryDQL(queriesToTest, ambiente);
+
+        // ------------- GERANDO SOLICITAÇÃO NA FILA DE EXECUÇÃO -------------
+        var solicitacao = QueuePayload.builder()
+            .pipelineNome(pipeline.getNome())
+            .pipelineDescricao(pipeline.getDescricao())
+            .massas(massaQueue)
+            .jobs(jobsQueue)
+            .build();
+        var queueResponse = queueService.pushQueueItem(
             ambiente,
-            jobsPreparados,
-            massasPreparadas
-        ));
+            pipeline,
+            usuario,
+            solicitacao);
+        if(queueResponse.getQueueSize() > 0)
+            return ResponseEntity.unprocessableEntity().body(queueResponse);
+        return ResponseEntity.ok(queueResponse);
     }
 
-    public ResponseEntity<RelatorioHistoricoDTO> run(@NonNull PipelinePreparation preparation) {
+    public ResponseEntity<RelatorioHistoricoDTO> run(@NonNull QueuePayload preparation) {
 //        var resumoMassasGeradas = new MasterSummary<MassaPreparada>();
 //        try {
 //            if(preparation.massas() != null && preparation.massas().size() > 0) {
@@ -388,7 +403,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 //        log.info("Obtendo todos os Jobs listados no DTO.");
 //        val jobIds = execDTO.getJobs()
 //            .stream()
-//            .map(JobExecuteDTO::getId)
+//            .map(PipelineJobInputDTO::getId)
 //            .toList();
 //        final List<Job> jobs = jobService.findAllById(jobIds);
 //        val jobsNome = jobs.stream()

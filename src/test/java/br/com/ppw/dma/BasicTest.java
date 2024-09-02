@@ -5,7 +5,7 @@ import br.com.ppw.dma.domain.job.JobService;
 import br.com.ppw.dma.domain.master.*;
 import br.com.ppw.dma.master.*;
 import br.com.ppw.dma.net.ConectorSftp;
-import br.com.ppw.dma.domain.pipeline.PipelineExecDTO;
+import br.com.ppw.dma.domain.pipeline.execution.PipelineExecDTO;
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

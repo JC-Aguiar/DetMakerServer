@@ -11,12 +11,12 @@ import lombok.experimental.FieldDefaults;
 import java.util.List;
 import java.util.Optional;
 
+import static lombok.AccessLevel.*;
+
 @Valid
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
-@ToString(callSuper = true)
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldDefaults(level = PRIVATE)
 public class QueryInfoDTO {
 
     Optional<@Min(0) Long> id = Optional.empty();

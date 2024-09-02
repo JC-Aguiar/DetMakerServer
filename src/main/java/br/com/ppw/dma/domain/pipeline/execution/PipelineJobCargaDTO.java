@@ -1,4 +1,4 @@
-package br.com.ppw.dma.domain.job;
+package br.com.ppw.dma.domain.pipeline.execution;
 
 import br.com.ppw.dma.domain.execFile.ExecFile;
 import lombok.*;
@@ -8,13 +8,13 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class JobCarga {
+public class PipelineJobCargaDTO {
 
     String nome;
     String conteudo;
     String tipo;
 
-    public JobCarga(@NonNull ExecFile file) {
+    public PipelineJobCargaDTO(@NonNull ExecFile file) {
         nome = file.getArquivoNome();
         conteudo = file.getArquivo();
         tipo = "tmp";

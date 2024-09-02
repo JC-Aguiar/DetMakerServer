@@ -52,7 +52,7 @@ public class EvidenciaInfoDTO {
         val queriesNome = new ArrayList<String>();
         val bancoPreJob = new ArrayList<String>();
         val bancoPosJob = new ArrayList<String>();
-        for(val execQuery : evidencia.getBanco()) {
+        for(val execQuery : evidencia.getQueries()) {
             queries.add(execQuery.getQuery());
             queriesNome.add(execQuery.getQueryNome());
             bancoPreJob.add(execQuery.getResultadoPreJob());
