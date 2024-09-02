@@ -1,23 +1,25 @@
-package br.com.ppw.dma.domain.pipeline;
+package br.com.ppw.dma.domain.pipeline.execution;
 
-import br.com.ppw.dma.domain.job.JobExecuteDTO;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import lombok.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 
 import javax.management.InvalidAttributeValueException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Data
+import static lombok.AccessLevel.PRIVATE;
+
 @Valid
-@ToString()
+@Data
 @NoArgsConstructor
-@EqualsAndHashCode()
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldDefaults(level = PRIVATE)
 public class PipelineExecDTO {
 
     //TODO:
@@ -29,29 +31,28 @@ public class PipelineExecDTO {
     // 6. Obter entidade Pipeline com base no `pipelineNome + clienteNome`
     // 7. Remover `AtividadeInfoDTO.testeTipo`
 
-    @NotNull Long clienteId;
-    @NotNull Long ambienteId;
-    @NotNull Long pipelineId;
-    @NotNull String user;
+    @NotNull @Min(0) Long clienteId;
+    @NotNull @Min(0) Long ambienteId;
+    @NotNull @Min(0) Long pipelineId;
+    @NotBlank String user;
     Set<String> massas = new HashSet<>();
-    @NotEmpty List<JobExecuteDTO> jobs = new ArrayList<>();
+    @NotEmpty List<PipelineJobInputDTO> jobs = new ArrayList<>();
     Map<String, String> configuracoes = new HashMap<>();
     boolean resetMassaNoFim = true;
     boolean sobrescreverVariaveis = false;
 
 
-
     public List<Long> getJobsId() {
         return getJobs()
             .stream()
-            .map(JobExecuteDTO::getId)
+            .map(PipelineJobInputDTO::getId)
             .toList();
     }
 
     @JsonIgnore
     public Map<String, String> getConfiguracoesDinamicas() {
         return configuracoes.entrySet()
-            .parallelStream()
+            .stream()
             .filter(variavel -> variavel.getValue().matches("^\\$[^.]*\\..*"))
             .collect(Collectors.toMap(
                Map.Entry::getKey,
@@ -60,12 +61,12 @@ public class PipelineExecDTO {
     }
 
     @JsonIgnore
-    public Map<JobExecuteDTO, String> getConfiguracoesConflitantes() {
-        var conflitos = new HashMap<JobExecuteDTO, String>();
+    public Map<PipelineJobInputDTO, String> getConfiguracoesConflitantes() {
+        var conflitos = new HashMap<PipelineJobInputDTO, String>();
         for(var job : jobs) {
             job.getVariaveis()
                 .keySet()
-                .parallelStream()
+                .stream()
                 .filter(configuracoes::containsKey)
                 .forEach(variavelNome -> conflitos.put(job, variavelNome));
         }

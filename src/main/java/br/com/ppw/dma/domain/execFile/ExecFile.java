@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.Comment;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.io.File;
@@ -32,6 +33,10 @@ public class ExecFile {
     @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_EXEC_FILE_ID")
     // Identificador numérico do arquivo pós-execução da evidência
     Long id;
+
+    @Column(name = "TICKET", length = 100, nullable = false)
+    @Comment("Identificador da solicitação de um acionamento")
+    String ticket;
 
     @ToString.Exclude
     @JsonBackReference

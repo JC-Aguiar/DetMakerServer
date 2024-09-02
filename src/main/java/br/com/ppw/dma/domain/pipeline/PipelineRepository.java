@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface PipelineRepository extends JpaRepository<Pipeline, PipelineProps> {
+public interface PipelineRepository extends JpaRepository<Pipeline, Long> {
 
     @Query(value = "SELECT * FROM PPW_PIPELINE p WHERE p.NOME = :nome AND p.CLIENTE_ID = :clienteId",
         nativeQuery = true)

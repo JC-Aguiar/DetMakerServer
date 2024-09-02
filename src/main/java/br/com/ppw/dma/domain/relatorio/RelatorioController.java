@@ -1,11 +1,11 @@
 package br.com.ppw.dma.domain.relatorio;
 
 import br.com.ppw.dma.domain.ambiente.AmbienteService;
-import br.com.ppw.dma.domain.job.JobExecuteDTO;
-import br.com.ppw.dma.domain.job.JobPreparation;
+import br.com.ppw.dma.domain.pipeline.execution.PipelineJobInputDTO;
+import br.com.ppw.dma.domain.queue.QueuePayloadJob;
 import br.com.ppw.dma.domain.pipeline.Pipeline;
 import br.com.ppw.dma.domain.pipeline.PipelineController;
-import br.com.ppw.dma.domain.pipeline.PipelinePreparation;
+import br.com.ppw.dma.domain.queue.QueuePayload;
 import br.com.ppw.dma.domain.evidencia.Evidencia;
 import br.com.ppw.dma.domain.master.MasterController;
 import br.com.ppw.dma.domain.storage.FileSystemService;
@@ -186,8 +186,8 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
         val ambiente = relatorio.getAmbiente();
         val jobs = relatorio.getEvidencias()
             .parallelStream()
-            .map(ev -> new JobPreparation(ev.getJob(), new JobExecuteDTO(ev)))
-//                val process = JobPreparation(ev);
+            .map(ev -> new QueuePayloadJob(ev.getJob(), new PipelineJobInputDTO(ev)))
+//                val process = QueuePayloadJob(ev);
 //                log.info("Convertendo registro ExecFile em arquivos temporários para envio SFTP.");
 //                val cargas = ev.getCargas()
 //                    .stream()
@@ -197,7 +197,7 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
 //                log.info(process.toString());
 //                return process;
             .toList();
-        return pipelineController.run(new PipelinePreparation(
+        return pipelineController.run(new QueuePayload(
             pipeline,
             ambiente,
             jobs,

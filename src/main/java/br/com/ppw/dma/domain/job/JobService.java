@@ -6,6 +6,7 @@ import br.com.ppw.dma.domain.jobQuery.ResultadoSql;
 import br.com.ppw.dma.domain.master.MasterOracleDAO;
 import br.com.ppw.dma.domain.master.MasterService;
 import br.com.ppw.dma.domain.master.SqlSintaxe;
+import br.com.ppw.dma.domain.queue.QueuePayloadJob;
 import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
@@ -202,11 +203,11 @@ public class JobService extends MasterService<Long, Job, JobService> {
     //TODO: criar exception própria?
     //TODO: mover para pipline?
     //TODO: javadoc
-//    public List<Evidencia> executarJob(@NonNull PipelinePreparation preparation) {
+//    public List<Evidencia> executarJob(@NonNull QueuePayload preparation) {
     public List<JobProcess> executar(
         @NonNull AmbienteAcessoDTO conexaoBanco,
         @NonNull AmbienteAcessoDTO conexaoSftp,
-        @NonNull List<JobPreparation> jobs) {
+        @NonNull List<QueuePayloadJob> jobs) {
 
         log.debug("Configurando conexão do Banco e do SFTP.");
         banco = conexaoBanco;

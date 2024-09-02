@@ -1,7 +1,7 @@
 package br.com.ppw.dma.domain.execQuery;
 
-import br.com.ppw.dma.domain.jobQuery.ResultadoSql;
 import br.com.ppw.dma.domain.evidencia.Evidencia;
+import br.com.ppw.dma.domain.jobQuery.ResultadoSql;
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
@@ -32,6 +32,10 @@ public class ExecQuery {
         allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_EXEC_QUERY_ID")
     Long id;
+
+    @Column(name = "TICKET", length = 100, nullable = false)
+    @Comment("Identificador da solicitação de um acionamento")
+    String ticket;
 
     @ToString.Exclude
     @JsonBackReference

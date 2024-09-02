@@ -1,14 +1,15 @@
 package br.com.ppw.dma.domain.relatorio;
 
 import br.com.ppw.dma.domain.ambiente.Ambiente;
-import br.com.ppw.dma.domain.pipeline.Pipeline;
 import br.com.ppw.dma.domain.evidencia.Evidencia;
 import br.com.ppw.dma.domain.master.MasterEntity;
+import br.com.ppw.dma.domain.pipeline.Pipeline;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.Comment;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.type.NumericBooleanConverter;
 
@@ -35,6 +36,10 @@ public class Relatorio implements MasterEntity<Long> {
     @Id @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_RELATORIO_ID")
     Long id;
+
+    @Column(name = "TICKET", length = 100, nullable = false, unique = true)
+    @Comment("Identificador da solicitação de um acionamento")
+    String ticket;
 
     @Column(name = "ID_PROJETO", length = 7, nullable = false, updatable = false)
     String idProjeto = "N/A";

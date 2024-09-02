@@ -135,7 +135,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
                 .toList();
 
             log.info("Atualizando Evidência ID {} com os anexos (ExecFile e ExecQuery).", evidencia.getId());
-            evidencia.setBanco(banco);
+            evidencia.setQueries(banco);
             evidencia.setCargas(cargas);
             evidencia.setLogs(logs);
             evidencia.setSaidas(saidas);

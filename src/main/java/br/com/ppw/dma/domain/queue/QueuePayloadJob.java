@@ -1,8 +1,11 @@
-package br.com.ppw.dma.domain.job;
+package br.com.ppw.dma.domain.queue;
 
+import br.com.ppw.dma.domain.job.Job;
+import br.com.ppw.dma.domain.job.JobInfoDTO;
+import br.com.ppw.dma.domain.pipeline.execution.PipelineJobInputDTO;
 import br.com.ppw.dma.util.FormatString;
 import jakarta.validation.constraints.NotNull;
-import lombok.NonNull;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Collection;
@@ -12,59 +15,63 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
-public record JobPreparation(
-    @NotNull Job job,
-    @NotNull JobExecuteDTO jobInputs) {
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class QueuePayloadJob {
+	
+    @NotNull JobInfoDTO jobInfo;
+    @NotNull PipelineJobInputDTO jobInputs;
 
 
 	/**
 	 * Identifica, através do name, e unifica {@link Job}s com seus respectivos inputs
-	 * ({@link JobExecuteDTO}).
-	 * @param jobs {@link Collection} {@link Job}
-	 * @param dtos {@link Collection} {@link JobExecuteDTO}
-	 * @return {@link Collection} {@link JobPreparation} contendo a unificação
+	 * ({@link PipelineJobInputDTO}).
+	 * @param infoDtos {@link Collection} {@link JobInfoDTO}
+	 * @param inputDtos {@link Collection} {@link PipelineJobInputDTO}
+	 * @return {@link Collection} {@link QueuePayloadJob} contendo a unificação
 	 */
-	public static List<JobPreparation> match(
-		@NonNull Collection<Job> jobs,
-		@NonNull Collection<JobExecuteDTO> dtos) {
+	public static List<QueuePayloadJob> match(
+		@NonNull Collection<JobInfoDTO> infoDtos,
+		@NonNull Collection<PipelineJobInputDTO> inputDtos) {
 
 		log.info("Agrupando Jobs x Inputs.");
-		return jobs.parallelStream()
-			.map(job -> JobPreparation.match(job, dtos))
+		return infoDtos.stream()
+			.map(job -> QueuePayloadJob.match(job, inputDtos))
 			.filter(Optional::isPresent)
 			.map(Optional::get)
 			.toList();
 	}
 
 	/**
-	 * Método de unificação usado no {@link JobPreparation#match(Collection, Collection)}.
-	 * @param job {@link Job}
-	 * @param execDto {@link JobExecuteDTO}
-	 * @return {@link Optional} {@link JobPreparation} contendo ou não a unificação
-	 * @see JobPreparation#match(Collection, Collection)
+	 * Método de unificação usado no {@link QueuePayloadJob#match(Collection, Collection)}.
+	 * @param infoDto {@link JobInfoDTO}
+	 * @param execDtos {@link PipelineJobInputDTO}
+	 * @return {@link Optional} {@link QueuePayloadJob} contendo ou não a unificação
+	 * @see QueuePayloadJob#match(Collection, Collection)
 	 */
-	public static Optional<JobPreparation> match(
-		@NonNull Job job,
-		@NonNull Collection<JobExecuteDTO> execDto) {
+	public static Optional<QueuePayloadJob> match(
+		@NonNull JobInfoDTO infoDto,
+		@NonNull Collection<PipelineJobInputDTO> execDtos) {
 
-		return execDto.parallelStream()
-			.filter(dto -> job.getId().equals(dto.getId()))
+		return execDtos.stream()
+			.filter(dto -> infoDto.getId().equals(dto.getId()))
 			.findFirst()
-			.map(dto -> new JobPreparation(job, dto));
+			.map(dto -> new QueuePayloadJob(infoDto, dto));
 	}
 
 	public void aplicarConfiguracoes(@NonNull Map<String, String> configuracoes) {
-		configuracoes.entrySet()
-			.parallelStream()
-			.forEach(conf -> jobInputs.getVariaveis().put(
+		configuracoes.entrySet().forEach(
+			conf -> jobInputs.getVariaveis().put(
 				conf.getKey(),
 				conf.getValue()
-			));
+		));
 		aplicarConfiguracoes();
 	}
 
 	public void aplicarConfiguracoes() {
-		var parametros = FormatString.dividirValores(job.getParametros());
+		var parametros = jobInfo.getParametros();
 		var paramInputs = jobInputs.getArgumentos().split(" ");
 		var variaveis = jobInputs.getVariaveis();
 
@@ -72,13 +79,14 @@ public record JobPreparation(
 		var parametrosPreenchidos = parametros.stream().collect(
 			Collectors.toMap(
 				parametros::indexOf,
-				param -> variaveis.getOrDefault(param, ""))
-		);
+				param -> variaveis.getOrDefault(param, "")
+		));
 		//Atualiza mapa dos parâmetros para cada parâmetro declarado diretamente no JobInput
 		for(var i = 0; i < paramInputs.length; i++) {
 			if(i < parametrosPreenchidos.size() && !paramInputs[i].isBlank())
 				parametrosPreenchidos.put(i, paramInputs[i]);
 		}
+		//TODO: usar?
 		//Identifica parâmetros pendentes
 //		var parametrosPendentes = parametrosPreenchidos.keySet()
 //			.stream()
@@ -88,7 +96,6 @@ public record JobPreparation(
 //			.filter(paramDesc -> !paramDesc.toLowerCase().contains("facultativo"))
 //			.toList();
 //
-//		//TODO: criar exception
 //		if(parametrosPendentes.size() > 0) {
 //			throw new RuntimeException("Parâmetros obrigatórios incompletos para Job '"
 //				+ infoDto.getNome() + "': "
@@ -98,12 +105,10 @@ public record JobPreparation(
 			String.join(" ", parametrosPreenchidos.values())
 		);
 		//Aplicando as variáveis nas queries
-		var novasQueries = jobInputs.getQueries()
-			.parallelStream()
-			.map(query -> FormatString.substituirVariaveis(query, jobInputs.getVariaveis()))
-			.collect(Collectors.toSet());
-		jobInputs.setQueries(novasQueries);
-		//aqui
+		jobInputs.getQueries().forEach(queryInput -> {
+			var novaSql = FormatString.substituirVariaveis(queryInput.getSql(), variaveis);
+			queryInput.setSql(novaSql);
+		});
 	}
 
 }

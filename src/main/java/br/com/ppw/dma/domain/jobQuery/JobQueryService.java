@@ -60,7 +60,7 @@ public class JobQueryService extends MasterService<Long, JobQuery, JobQueryServi
                     ));
                 query = FormatString.substituirVariaveis(query, mapVariables);
             }
-            masterDao.validadeQuery(query);
+            masterDao.runDQL(query);
         }
     }
 

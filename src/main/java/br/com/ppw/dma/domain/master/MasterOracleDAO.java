@@ -148,7 +148,7 @@ public class MasterOracleDAO implements AutoCloseable {
     //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
     public List<Map<String, Object>> collectData(@NonNull String sql)
     throws SQLException {
-        checkSqlGrammar(sql);
+        validadeDQL(sql);
         val extracao = new ArrayList<Map<String, Object>>();
         try(val statement = conn.createStatement()) {
             log.info("Executando query.");
@@ -174,13 +174,26 @@ public class MasterOracleDAO implements AutoCloseable {
     }
 
     //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
-    public void validadeQuery(@NonNull String sql) throws SQLGrammarException, SQLException {
-        checkSqlGrammar(sql);
+    public void runDQL(@NonNull String sql) throws SQLGrammarException, SQLException {
+        validadeDQL(sql);
         log.info("SQL: {}", sql);
         log.info("Testando executar query (ROWNUM = 1).");
         try(val statement = conn.createStatement()) {
             statement.setMaxRows(1);
             statement.executeQuery(sql);
+            log.info("Query aprovada.");
+        }
+    }
+
+    //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
+    public void runDML(@NonNull String sql) throws SQLGrammarException, SQLException {
+        validadeDML(sql);
+        log.info("SQL: {}", sql);
+        log.info("Testando executar query (ROWNUM = 1).");
+        try(val statement = conn.createStatement()) {
+            conn.setAutoCommit(false);
+            statement.setMaxRows(1);
+            statement.executeUpdate(sql);
             log.info("Query aprovada.");
         }
     }
@@ -222,10 +235,19 @@ public class MasterOracleDAO implements AutoCloseable {
 
     //TODO: criar exception própria?
     //TODO: javadoc
-    private void checkSqlGrammar(@NonNull String sql) {
-        log.info("Validando comandos inválidos na query.");
+    private void validadeDQL(@NonNull String sql) {
+        log.info("Validando se a query é um DQL.");
         if(!SqlSintaxe.isSafeSelect(sql))
-            throw new RuntimeException("A queries informada contêm comandos DDL/DML não permitidos.");
+            throw new RuntimeException("A queries informada não é um comando DQL.");
+        log.info("Query válida para uso.");
+    }
+
+    //TODO: criar exception própria?
+    //TODO: javadoc
+    private void validadeDML(@NonNull String sql) {
+        log.info("Validando se a query é um DML.");
+        if(!SqlSintaxe.isSafeInsert(sql) && !SqlSintaxe.isSafeDelete(sql))
+            throw new RuntimeException("A queries informada não é um comando DML.");
         log.info("Query válida para uso.");
     }
 
