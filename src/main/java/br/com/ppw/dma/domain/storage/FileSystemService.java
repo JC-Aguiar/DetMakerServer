@@ -1,10 +1,11 @@
 package br.com.ppw.dma.domain.storage;
 
+import br.com.ppw.dma.config.StorageProperties;
 import br.com.ppw.dma.domain.execFile.ExecFile;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineJobCargaDTO;
+import br.com.ppw.dma.domain.queue.QueuePayloadJobCarga;
 import br.com.ppw.dma.exception.StorageException;
 import br.com.ppw.dma.exception.StorageFileNotFoundException;
-import br.com.ppw.dma.config.StorageProperties;
 import lombok.NonNull;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -84,6 +85,22 @@ public class FileSystemService implements StorageService {
             Path destinationFile = doFilePath(file.getArquivoNome());
             validade(destinationFile);
             val conteudoBytes = file.getArquivo().getBytes();
+            try(InputStream inputStream = new ByteArrayInputStream(conteudoBytes)) {
+                return save(inputStream, destinationFile);
+            }
+        }
+        catch(IOException e) {
+            throw new StorageException("Erro ao tentar salvar arquivo!", e);
+        }
+    }
+
+    public File store(QueuePayloadJobCarga file) {
+        try {
+            if(file.getConteudo().isEmpty()) throw new StorageException("O arquivo enviado está vazio!");
+
+            Path destinationFile = doFilePath(file.getNome());
+            validade(destinationFile);
+            val conteudoBytes = file.getConteudo().getBytes();
             try(InputStream inputStream = new ByteArrayInputStream(conteudoBytes)) {
                 return save(inputStream, destinationFile);
             }

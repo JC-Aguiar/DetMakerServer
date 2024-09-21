@@ -24,7 +24,7 @@ import static jakarta.persistence.FetchType.LAZY;
 @Entity(name = "PPW_MASSA_TABELA")
 @Table(name = "PPW_MASSA_TABELA", uniqueConstraints = {@UniqueConstraint(columnNames = {"TABELA_NOME", "CLIENTE_ID"})})
 @SequenceGenerator(name = "SEQ_MASSA_TABELA_ID", sequenceName = "RCVRY.SEQ_MASSA_TABELA_ID", allocationSize = 1)
-public class MassaTabela implements MasterEntity {
+public class MassaTabela implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_MASSA_TABELA_ID")

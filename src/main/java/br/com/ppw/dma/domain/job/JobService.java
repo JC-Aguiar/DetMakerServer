@@ -7,17 +7,19 @@ import br.com.ppw.dma.domain.master.MasterOracleDAO;
 import br.com.ppw.dma.domain.master.MasterService;
 import br.com.ppw.dma.domain.master.SqlSintaxe;
 import br.com.ppw.dma.domain.queue.QueuePayloadJob;
+import br.com.ppw.dma.domain.queue.QueuePayloadQuery;
+import br.com.ppw.dma.domain.queue.result.JobResult;
+import br.com.ppw.dma.domain.storage.ExcelXlsx;
+import br.com.ppw.dma.domain.storage.FileSystemService;
 import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
-import br.com.ppw.dma.domain.storage.ExcelXlsx;
-import br.com.ppw.dma.domain.storage.FileSystemService;
-import com.google.gson.Gson;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.modelmapper.ModelMapper;
@@ -35,35 +37,27 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatString.*;
+import static lombok.AccessLevel.PRIVATE;
 
-@Service
 @Slf4j
+@Service
+@FieldDefaults(level = PRIVATE)
 public class JobService extends MasterService<Long, Job, JobService> {
 
-    @Autowired
-    private Gson gson;
-
-    @Autowired
-    private final JobRepository dao;
-
-    @Autowired
-    private final FileSystemService fileSystemService;
-
-    @Getter
-    private ConectorSftp sftp;
-
-    @Getter
-    private AmbienteAcessoDTO banco;
+    final JobRepository dao;
+    final FileSystemService fileSystemService;
+    @Getter ConectorSftp sftp;
+    @Getter AmbienteAcessoDTO banco;
 
     public static final DateTimeFormatter CONVERSOR_DATA_SCHEDULE = DateTimeFormatter
         .ofPattern("dd/MM/yyyy");
 
 
+    @Autowired
     public JobService(JobRepository dao, FileSystemService fileSystemService) {
         super(dao);
         this.dao = dao; //TODO: precisa mesmo?
@@ -201,10 +195,11 @@ public class JobService extends MasterService<Long, Job, JobService> {
 
 
     //TODO: criar exception própria?
-    //TODO: mover para pipline?
+    //TODO: mover para Queue?
     //TODO: javadoc
 //    public List<Evidencia> executarJob(@NonNull QueuePayload preparation) {
-    public List<JobProcess> executar(
+    @Transactional(noRollbackFor = Throwable.class)
+    public List<JobResult> executar(
         @NonNull AmbienteAcessoDTO conexaoBanco,
         @NonNull AmbienteAcessoDTO conexaoSftp,
         @NonNull List<QueuePayloadJob> jobs) {
@@ -213,7 +208,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
         banco = conexaoBanco;
         sftp = ConectorSftp.conectar(conexaoSftp);
 
-        //TODO: paliativo. Remover e aprimorar o código
+        //TODO: paliativo. Remover quando obtida uma solução em produção
         switch(sftp.getServer()) {
             case "10.129.226.157" -> ConectorSftp.setVivo1Properties(sftp);
             case "10.129.164.206" -> ConectorSftp.setVivo3Properties(sftp);
@@ -221,7 +216,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
         log.info("Iniciando rotina da execução de Jobs");
         val sucessos = new AtomicInteger();
         val jobProcesses = jobs.stream()
-            .map(JobProcess::new)
+            .map(JobResult::new)
             .peek(this::executar)
             .peek(process -> sucessos.addAndGet(process.isSucesso() ? 1 : 0))
             .toList();
@@ -235,64 +230,64 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: javadoc
-    private void executar(@NonNull JobProcess process) {
-        val jobInfo = process.getJobInfo();
-        val jobInput = process.getJobInputs();
-        var jobInputQueries = jobInput.getQueries();
+    private void executar(@NonNull JobResult process) {
+//        val jobInfo = process.getJobInfo();
+//        val jobInput = process.getJobInputs();
+//        var jobInputQueries = jobInput.getQueries();
         val logsPreJob = new ArrayList<SftpFileManager<RemoteFile>>();
         val logsPosJob = new ArrayList<SftpFileManager<RemoteFile>>();
         try {
             //Coletas pré-execução
-            if(!jobInput.getCargas().isEmpty()) {
+            if(!process.getCargasEnvio().isEmpty() && process.getDirCargaEnvio() != null) {
                 log.info("Enviando os arquivos de carga a serem usadas na execução.");
-                jobInput.getCargas().stream()
-                    .filter((carga -> carga.getNome() != null && !carga.getNome().isBlank()))
+                process.getCargasEnvio().stream()
+                    .filter(carga -> carga.getNome() != null && !carga.getNome().isBlank())
                     .map(fileSystemService::store)
-                    .map(carga -> sftp.upload(jobInfo.getDiretorioEntrada(), carga))
+                    .map(carga -> sftp.upload(process.getDirCargaEnvio(), carga))
                     .forEach(process::addCargas);
             }
-            if(!jobInfo.getMascaraLog().isEmpty()) {
+            if(!process.getLogsMascara().isEmpty()) {
                 log.info("Obtendo log mais recente pré-execução.");
-                jobInfo.pathLog().forEach(
+                process.getLogsMascara().forEach(
                     path -> logsPreJob.add(sftp.downloadMaisRecente(path)));
             }
-            if(!jobInputQueries.isEmpty()) {
+            if(!process.getQueriesExec().isEmpty()) {
                 log.info("Consultando tabelas pré-execução.");
-                process.addTabelasPreJob(extractTable(jobInputQueries));
+                process.addTabelasPreJob(extractTable(process.getQueriesExec()));
             }
             //Execução
             log.info("Obtendo o sha256 do Job.");
-            val sha256 = sftp.comando("sha256sum " + jobInfo.pathShell() + " | cut -d ' ' -f1")
+            val sha256 = sftp.comando(process.getComandoVersao())
                 .getConsoleLog()
                 .stream()
                 .findFirst()
                 .orElse("");
             log.info(" - sha256 obtido: '{}'.", sha256);
-            process.setSha256(sha256);
+            process.setVersao(sha256);
 
             log.info("Acionando Job remoto.");
-            val terminalManager = sftp.comando(process.comandoShell());
-            process.setTerminal(terminalManager.getConsoleLog());
+            val terminalManager = sftp.comando(process.getComandoExec());
+            process.setTerminal(terminalManager);
             process.setExitCode(terminalManager.getExitCode());
             process.setSucesso(true);
             log.info("Job acionado com sucesso.");
 
             //Coletas pós-execução
-            if(!jobInfo.getMascaraSaida().isEmpty()) {
+            if(!process.getRemessasMascara().isEmpty()) {
                 log.info("Coletando as saídas geradas pela execução.");
-                process.addProdutos(
-                    sftp.downloadMaisRecente(jobInfo.pathSaida()));
+                process.addRemessas(
+                    sftp.downloadMaisRecente(process.getRemessasMascara()));
             }
-            if(!jobInfo.getMascaraLog().isEmpty()) {
+            if(!process.getLogsMascara().isEmpty()) {
                 log.info("Obtendo log mais recente pós-execução.");
-                jobInfo.pathLog().forEach(
+                process.getLogsMascara().forEach(
                     path -> logsPosJob.add(sftp.downloadMaisRecente(path)));
             }
-            if(!jobInputQueries.isEmpty()) {
+            if(!process.getQueriesExec().isEmpty()) {
                 log.info("Consultando tabelas pós-execução.");
-                process.addTabelasPosJob(extractTable(jobInputQueries));
+                process.addTabelasPosJob(extractTable(process.getQueriesExec()));
             }
-            //Com base nos logs pré/pós: comparar cenários de duplicidade para então adicionar ao JobProcess
+            //Com base nos logs pré/pós: comparar cenários de duplicidade para então adicionar ao JobResult
             for(int i = 0; i < logsPreJob.size(); i++) {
                 val logPre = logsPreJob.get(i);
                 val logPos = logsPosJob.get(i);
@@ -301,8 +296,10 @@ public class JobService extends MasterService<Long, Job, JobService> {
         }
         //Caso exception no acionamento/monitoramento do DetMaker com o Job
         catch(Exception e) {
-            log.error("Erro inesperado na execução do {}º Job [ID {}] '{}': {}",
-                jobInput.getOrdem(), jobInfo.getId(), jobInfo.getNome(), e.getMessage());
+            log.error("Erro inesperado na execução do {}º Job ['{}']: {}",
+                process.getOrdem(),
+                process.getNome(),
+                e.getMessage());
             process.setErroFatal(e.getMessage());
         }
         finally {
@@ -311,15 +308,20 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: javadoc
-    public List<ResultadoSql> extractTable(@NonNull Set<String> queries) {
+    public List<ResultadoSql> extractTable(List<QueuePayloadQuery> jobQuery) {
         var sucessos = new AtomicInteger(0);
-        val extracoes = queries.parallelStream().map(query -> {
-            val resultado = new ResultadoSql(query);
+        val extracoes = jobQuery.stream().map(query -> {
+            val resultado = new ResultadoSql(
+                query.getNome(),
+                query.getQuery(),
+                query.getDescricao());
+
             try(val masterDao = new MasterOracleDAO(banco)) {
-                resultado.addResultado(masterDao.collectData(query));
+                resultado.addResultado(masterDao.collectData(query.getQuery()));
                 sucessos.getAndIncrement();
             }
             catch(SQLException | PersistenceException e) {
+                log.warn(e.getMessage());
                 val errorMessage = SqlSintaxe.getExceptionMainCause(e);
                 resultado.setMensagemErro(errorMessage);
             }
@@ -329,13 +331,9 @@ public class JobService extends MasterService<Long, Job, JobService> {
             }
             return resultado;
         })
-        .sequential()
-        .peek(resultado -> {
-            if(!resultado.isSuccesso()) log.warn(resultado.getMensagemErro());
-        })
         .toList();
 
-        log.info("Total de comandos SQL realizados com sucesso: {}/{}.", sucessos, extracoes.size());
+        log.info("Total de queries executadas com sucesso: {}/{}.", sucessos, extracoes.size());
         return extracoes;
     }
 

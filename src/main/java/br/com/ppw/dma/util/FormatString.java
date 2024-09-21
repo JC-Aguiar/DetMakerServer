@@ -110,9 +110,30 @@ public final class FormatString {
         return output.toString();
     }
 
-    public static String substituirVariaveis(String input, Map<String, String> variables) {
+    public static String substituirVariaveis(
+        @NonNull String input,
+        @NonNull Map<String, String> variables) {
+
         var pattern = Pattern.compile("\\$\\{(.*?)\\}"); // "\\$\\{([^}]+)}"
         var matcher = pattern.matcher(input);
+        var output = new StringBuffer();
+
+        while(matcher.find()) {
+            String variable = matcher.group(1);
+            String value = variables.get(variable);
+            String replacement = (value != null) ? Matcher.quoteReplacement(value) : "";
+            matcher.appendReplacement(output, replacement);
+        }
+        matcher.appendTail(output);
+        return output.toString();
+    }
+
+    public static String substituirVariaveis(
+            @NonNull String input,
+            @NonNull Map<String, String> variables,
+            @NonNull String regex) {
+
+        var matcher = Pattern.compile(regex).matcher(input);
         var output = new StringBuffer();
 
         while(matcher.find()) {

@@ -15,13 +15,13 @@ public record DetDTO(
     @NonNull List<UserInfoDTO> users) {
 
     public static DetDTO from(Relatorio relatorio, List<UserInfoDTO> users) {
-        if(relatorio.getPipeline() == null)
+        if(relatorio.getPipelineNome() == null)
             throw new RuntimeException("Relatório sem relacionamento com uma Evidência");
 
         return new DetDTO(
 //            relatorio.getPipeline().getProps().getNome(),
-            relatorio.getPipeline().getNome(),
-            relatorio.getPipeline().getDescricao(),
+            relatorio.getPipelineNome(),
+            relatorio.getPipelineDescricao(),
             new RelatorioHistoricoDTO(relatorio),
             users
         );

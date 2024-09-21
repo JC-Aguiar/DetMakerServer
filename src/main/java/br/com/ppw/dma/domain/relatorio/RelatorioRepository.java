@@ -1,6 +1,5 @@
 package br.com.ppw.dma.domain.relatorio;
 
-import br.com.ppw.dma.domain.pipeline.Pipeline;
 import lombok.NonNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,7 +12,7 @@ import java.util.List;
 @Repository
 public interface RelatorioRepository extends JpaRepository<Relatorio, Long> {
 
-    List<Relatorio> findAllByPipeline(@NonNull Pipeline pipeline);
+    List<Relatorio> findAllByPipelineNome(@NonNull String pipelineNome);
 
     @Query(value = "SELECT * FROM PPW_RELATORIO p WHERE p.AMBIENTE_ID = :ambienteId", nativeQuery = true)
     List<Relatorio> findAllByAmbienteId(@NonNull Long ambienteId);

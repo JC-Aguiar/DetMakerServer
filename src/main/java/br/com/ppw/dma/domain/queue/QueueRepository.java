@@ -14,6 +14,6 @@ public interface QueueRepository extends JpaRepository<Queue, Long> {
 	long countByStatusInAmbiente(Ambiente ambiente, String status);
 
 	@Query(nativeQuery = true, value =
-		"SELECT COUNT(1) FROM PPW_QUEUE WHERE AMBIENTE_ID = :ambiente")
-	long countInAmbiente(Ambiente ambiente);
+		"SELECT COUNT(1) FROM PPW_QUEUE WHERE AMBIENTE_ID = :ambienteId")
+	long countInAmbiente(Long ambienteId);
 }

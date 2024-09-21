@@ -1,15 +1,12 @@
-package br.com.ppw.dma.domain.job;
+package br.com.ppw.dma.domain.queue.result;
 
 import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.domain.jobQuery.ResultadoSql;
-import br.com.ppw.dma.domain.pipeline.execution.PipelineJobInputDTO;
 import br.com.ppw.dma.domain.queue.QueuePayloadJob;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import br.com.ppw.dma.net.SftpTerminalManager;
+import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.io.File;
@@ -20,27 +17,43 @@ import java.util.List;
 
 @Data
 @NoArgsConstructor
+@EqualsAndHashCode(callSuper = true)
+@ToString(callSuper = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class JobProcess {
+public class JobResult extends QueuePayloadJob {
 
-    Job job;
-    JobInfoDTO jobInfo;
-    PipelineJobInputDTO jobInputs;
+//    Job job;
+
+    String ticket;
+
     AmbienteAcessoDTO banco;
-    String sha256;
-    List<String> terminal = new ArrayList<>();
+
+    String versao;
+
+    @ToString.Exclude
+    SftpTerminalManager terminal;
+
     final List<ResultadoSql> tabelasPreJob = new ArrayList<>();
+
     final List<ResultadoSql> tabelasPosJob = new ArrayList<>();
-    final List<SftpFileManager<RemoteFile>> logs = new ArrayList<>();
-    final List<SftpFileManager<File>> cargas = new ArrayList<>();
-    final List<SftpFileManager<RemoteFile>> saidas = new ArrayList<>();
+
+    final List<SftpFileManager<File>> cargasColetadas = new ArrayList<>();
+
+    final List<SftpFileManager<RemoteFile>> logsColetados = new ArrayList<>();
+
+    final List<SftpFileManager<RemoteFile>> remessasColetadas = new ArrayList<>();
+
     boolean sucesso = false;
+
     OffsetDateTime dataInicio;
+
     OffsetDateTime dataFim;
+
     Integer exitCode;
+
     String erroFatal;
+
     //TODO: precisa da informação da pipeline?
-    //TODO: adicionar método toString() manual para evitar de exibir conteúdos massivos
 
 //    static final String TEMPO_AUSENTE = "Indisponível data de início/fim da execução";
 //    static final String TEMPO_TOTAL = " O Job rodou em %d segundos";
@@ -75,22 +88,33 @@ public class JobProcess {
 //         - Total de arquivos produzidos: %d
 //        """;
 
-    public JobProcess(@NonNull QueuePayloadJob dados) {
-        setJob(dados.job());
-        setJobInfo(JobInfoDTO.converterJob(dados.job()));
-        setJobInputs(dados.jobInputs());
-        setDataInicio(OffsetDateTime.now());
+    public JobResult(@NonNull QueuePayloadJob dados) {
+//        setJob(dados.job());
+//        setJobInfo(dados.getJobInfo());
+//        setJobInputs(dados.getJobInputs());
+        setNome(dados.getNome());
+        setDescricao(dados.getDescricao());
+        setOrdem(dados.getOrdem());
+        setComandoExec(dados.getComandoExec());
+        setComandoVersao(dados.getComandoVersao());
+        setQueriesExec(dados.getQueriesExec());
+        setCargasEnvio(dados.getCargasEnvio());
+        setLogsMascara(dados.getLogsMascara());
+        setRemessasMascara(dados.getRemessasMascara());
+        this.dataInicio = OffsetDateTime.now();
     }
 
-    public String comandoShell() {
-        return "ksh "
-            + jobInfo.pathShell()
-            + " "
-            + jobInputs.getArgumentos();
-    }
+//    public String execCall() {
+//        return "ksh "
+//            + jobInfo.pathToJob()
+//            + " "
+//            + jobInputs.getArgumentos();
+//    }
 
     public String getTerminalFormatado() {
-        return String.join("\n", terminal).trim();
+        return String
+            .join("\n", terminal.getConsoleLog())
+            .trim();
     }
 
     public boolean possuiTabelas() {
@@ -118,33 +142,33 @@ public class JobProcess {
     }
 
     public void addLogs(@NonNull SftpFileManager<RemoteFile> arquivo) {
-        logs.add(arquivo);
+        logsColetados.add(arquivo);
     }
 
-    //    public JobProcess addLogsPreJob(@NonNull String referencia, @NonNull SftpFileManager<RemoteFile> arquivo) {
+    //    public JobResult addLogsPreJob(@NonNull String referencia, @NonNull SftpFileManager<RemoteFile> arquivo) {
 //        logsPreJob.put(referencia, arquivo);
 //        return this;
 //    }
 //
-//    public JobProcess addLogsPosJob(@NonNull String referencia, @NonNull SftpFileManager<RemoteFile> arquivo) {
+//    public JobResult addLogsPosJob(@NonNull String referencia, @NonNull SftpFileManager<RemoteFile> arquivo) {
 //        logsPosJob.put(referencia, arquivo);
 //        return this;
 //    }
 
     public void addCargas(@NonNull SftpFileManager<File> arquivo) {
-        cargas.add(arquivo);
+        cargasColetadas.add(arquivo);
     }
 
     public void addCargas(@NonNull List<SftpFileManager<File>> arquivo) {
-        cargas.addAll(arquivo);
+        cargasColetadas.addAll(arquivo);
     }
 
-    public void addProdutos(@NonNull SftpFileManager<RemoteFile> arquivo) {
-        saidas.add(arquivo);
+    public void addRemessas(@NonNull SftpFileManager<RemoteFile> arquivo) {
+        remessasColetadas.add(arquivo);
     }
 
-    public void addProdutos(@NonNull List<SftpFileManager<RemoteFile>> arquivo) {
-        saidas.addAll(arquivo);
+    public void addRemessas(@NonNull List<SftpFileManager<RemoteFile>> arquivo) {
+        remessasColetadas.addAll(arquivo);
     }
 
     public boolean possuiInicioFim() {
@@ -154,6 +178,21 @@ public class JobProcess {
     public long getDuracao() {
         if(!possuiInicioFim()) return -1;
         return Duration.between(dataInicio.toInstant(), dataFim.toInstant()).getSeconds();
+    }
+
+    //TODO: mover esse método para uma classe Utils
+    @ToString.Include(name = "terminal")
+    private String getTerminalResumo() {
+        if(terminal == null) return "null";
+        var terminalLog = terminal.getConsoleLog();
+        val peso = String.join("\n", terminalLog)
+            .getBytes()
+            .length;
+        return String.format("[registros=%d, peso=%dKbs]", terminalLog.size(), peso);
+    }
+
+    public String getContexto() {
+        return String.format("%dº Job ['%s']", getOrdem()+1, getNome());
     }
 
 //    public void analisarExecucao() {

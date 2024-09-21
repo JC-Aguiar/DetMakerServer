@@ -11,21 +11,17 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 @RestController
-public abstract class MasterController<ID, ENTITY extends MasterEntity, THIS extends MasterController> {
+public abstract class MasterController<ID, ENTITY extends MasterEntity<ID>, THIS extends MasterController> {
 
     @Getter
     private final MasterService service;
 
     private final Type entityClass;
-    public final Map<String, Method> endpointsGet = new HashMap<>();
     public final static ExampleMatcher MATCHER_ALL =
         ExampleMatcher.matchingAll().withIgnoreNullValues().withIgnoreCase();
     public final static ExampleMatcher MATCHER_ANY =
@@ -45,18 +41,6 @@ public abstract class MasterController<ID, ENTITY extends MasterEntity, THIS ext
      */
     public final THIS proxy() {
         return (THIS) AopContext.currentProxy();
-    }
-
-    //TODO: TESTE
-    public ResponseEntity<?> craftPage(
-        @NotNull List<ENTITY> entityList,
-        @NotNull Pageable pageConfig) {
-        //-------------------------------------------------
-        final PageImpl<ENTITY> responsePage = new PageImpl(
-            entityList,
-            pageConfig,
-            entityList.size());
-        return new ResponseEntity<>(responsePage, HttpStatus.OK);
     }
 
     @GetMapping("id/{id}")

@@ -8,8 +8,9 @@ import java.time.OffsetDateTime;
 
 public record RelatorioResumoDTO(
     long id,
-    long idPipeline,
+//    long idPipeline,
     String nomePipeline,
+    String descricaoPipeline,
     String idProjeto,
     String nomeProjeto,
     String nomeAtividade,
@@ -20,7 +21,6 @@ public record RelatorioResumoDTO(
 ) {
 
     public static RelatorioResumoDTO converterEntidade(@NonNull Relatorio relatorio) {
-        val pipeline = relatorio.getPipeline();
         val sucesso = relatorio.getSucesso() != null ? relatorio.getSucesso() : false;
         val evidencias = relatorio.getEvidencias();
         val revisados = evidencias.stream()
@@ -30,9 +30,11 @@ public record RelatorioResumoDTO(
 
         return new RelatorioResumoDTO(
             relatorio.getId(),
-            pipeline.getId(),
+//            pipeline.getId(),
 //            pipeline.getProps().getNome(),
-            pipeline.getNome(),
+//            pipeline.getNome(),
+            relatorio.getPipelineNome(),
+            relatorio.getPipelineDescricao(),
             relatorio.getIdProjeto(),
             relatorio.getNomeProjeto(),
             relatorio.getNomeAtividade(),

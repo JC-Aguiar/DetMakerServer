@@ -18,29 +18,31 @@ public class RelatorioHistoricoDTO {
 
     Long id;
     String pipeline;
+    String dados;
+//    String descricao;
     String idProjeto;
     String nomeProjeto;
     String nomeAtividade;
     String consideracoes;
     String parametros;
-    String dados;
     String testeTipo;
     String cliente;
     String ambiente;
     final List<EvidenciaInfoDTO> evidencias = new ArrayList<>();
     OffsetDateTime data;
 
+    //TODO: finalizar novo DTO
     public RelatorioHistoricoDTO(@NonNull Relatorio relatorio) {
         log.info("Convertendo Relatorio em RelatorioHistoricoDTO.");
         this.id = relatorio.getId();
 //        this.pipeline = relatorio.getPipeline().getProps().getNome();
-        this.pipeline = relatorio.getPipeline().getNome();
+        this.pipeline = relatorio.getPipelineNome();
+        this.dados = relatorio.getPipelineDescricao();
         this.idProjeto = relatorio.getIdProjeto();
         this.nomeProjeto = relatorio.getNomeProjeto();
         this.nomeAtividade = relatorio.getNomeAtividade();
         this.consideracoes = relatorio.getConsideracoes();
         this.parametros = relatorio.getParametros();
-        this.dados = relatorio.getPipeline().getDescricao();
         this.cliente = relatorio.getCliente();
         this.ambiente = relatorio.getAmbiente().getNome();
         this.data = relatorio.getDataCompleta();

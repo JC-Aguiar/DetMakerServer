@@ -1,6 +1,6 @@
 package br.com.ppw.dma.exception;
 
-import br.com.ppw.dma.domain.evidencia.TipoEvidenciaResultado;
+import br.com.ppw.dma.domain.evidencia.TipoEvidenciaStatus;
 import lombok.NonNull;
 import lombok.val;
 
@@ -14,8 +14,8 @@ public class TipoEvidenciaResultadoException extends RuntimeException {
     }
 
     private static String mensagemErro(@NonNull String resultado) {
-        val tiposPermitidos = Arrays.stream(TipoEvidenciaResultado.values())
-            .map(TipoEvidenciaResultado::getStatus)
+        val tiposPermitidos = Arrays.stream(TipoEvidenciaStatus.values())
+            .map(TipoEvidenciaStatus::getStatus)
             .collect(Collectors.joining(", "));
         return String.format(
             "Tipo de resultado '%s' inválido. Os únicos valores permitidos são: %s",

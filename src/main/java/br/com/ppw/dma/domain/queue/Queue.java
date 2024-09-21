@@ -3,6 +3,7 @@ package br.com.ppw.dma.domain.queue;
 import br.com.ppw.dma.domain.ambiente.Ambiente;
 import br.com.ppw.dma.domain.master.MasterEntity;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -70,4 +71,7 @@ public class Queue implements MasterEntity<Long> {
     @Comment("Status dessa solicitação")
     QueueStatus status = AGUARDANDO;
 
+    @Nullable
+    @Transient
+    QueuePayload payloadObj;
 }

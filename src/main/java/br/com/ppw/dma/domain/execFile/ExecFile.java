@@ -1,9 +1,11 @@
 package br.com.ppw.dma.domain.execFile;
 
 import br.com.ppw.dma.domain.evidencia.Evidencia;
+import br.com.ppw.dma.domain.master.MasterEntity;
 import br.com.ppw.dma.domain.storage.FileSystemService;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
+import br.com.ppw.dma.net.SftpTerminalManager;
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
@@ -17,21 +19,24 @@ import java.util.Objects;
 
 import static br.com.ppw.dma.domain.execFile.TipoExecFile.*;
 import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.GenerationType.SEQUENCE;
+import static lombok.AccessLevel.PRIVATE;
 
 
 @Getter
 @Setter
 @Builder
+@ToString
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldDefaults(level = PRIVATE)
 @Entity(name = "PPW_EXEC_FILE")
 @Table(name = "PPW_EXEC_FILE")
-@SequenceGenerator(name = "SEQ_EXEC_FILE_ID", sequenceName = "RCVRY.SEQ_EXEC_FILE_ID", allocationSize = 1)
-public class ExecFile {
+public class ExecFile implements MasterEntity<Long> {
 
-    @Id @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_EXEC_FILE_ID")
-    // Identificador numérico do arquivo pós-execução da evidência
+    @Id
+    @SequenceGenerator(name = "SEQ_EXEC_FILE_ID", allocationSize = 1)
+    @GeneratedValue(strategy = SEQUENCE, generator = "SEQ_EXEC_FILE_ID")
     Long id;
 
     @Column(name = "TICKET", length = 100, nullable = false)
@@ -42,36 +47,51 @@ public class ExecFile {
     @JsonBackReference
     @ManyToOne(fetch = LAZY)
     @JoinColumn(name = "EVIDENCIA_ID")
-    // ID da evidência relacionada com esse arquivo pós-execução
+    @Comment("ID da evidência relacionada com esse arquivo pós-execução")
     Evidencia evidencia;
 
     @Column(name = "JOB_NOME", length = 100, nullable = false)
-    // Nome do job que gerou esse arquivo
+    @Comment("Nome do Job que gerou esse arquivo")
     String jobNome;
 
+    @Column(name = "COMANDO", length = 200, nullable = false)
+    @Comment("Comando executado pelo Job para obter o arquivo")
+    String comando;
+
+    @Column(name = "MASCARA", length = 200)
+    @Comment("Comando executado pelo Job para obter o arquivo")
+    String mascara;
+
     @Column(name = "TIPO", length = 10, nullable = false)
-    // Informação para descrever se o arquivo é do type 'carga', 'saída' ou 'log'
+    @Comment("Indica se o arquivo é do tipo 'carga', 'remessa' ou 'log'")
     TipoExecFile tipo;
 
     @Column(name = "ARQUIVO_NOME", length = 200, nullable = true)
-    // Nome desse arquivo pós-execução
+    @Comment("Nome do arquivo")
     String arquivoNome;
 
+    @ToString.Exclude
     @Column(name = "ARQUIVO", columnDefinition = "CLOB", nullable = true)
-    // Conteúdo do arquivo pós-execução
+    @Comment("Conteúdo do arquivo")
     String arquivo;
 
     @Column(name = "INCONFORMIDADE", length = 200)
+    @Comment("Mensagens de erro durante coleta do arquivo")
     String inconformidade;
 
 
-    public static ExecFile montarEvidenciaTerminal(@NonNull Evidencia evidencia, String conteudo) {
+    public static ExecFile montarEvidenciaTerminal(
+        @NonNull Evidencia evidencia,
+        @NonNull SftpTerminalManager terminal) {
+
         return ExecFile.builder()
             .evidencia(evidencia)
-            .jobNome(evidencia.getJob().getNome())
+            .ticket(evidencia.getTicket())
+            .jobNome(evidencia.getJobNome())//.getNome())
             .tipo(LOG)
             .arquivoNome("Log exibido no terminal")
-            .arquivo(conteudo)
+            .arquivo(String.join("\n", terminal.getConsoleLog()))
+            .comando(terminal.getComando())
             .build();
     }
 
@@ -87,11 +107,13 @@ public class ExecFile {
         }
         return ExecFile.builder()
             .evidencia(evidencia)
-            .jobNome(evidencia.getJob().getNome())
+            .ticket(evidencia.getTicket())
+            .jobNome(evidencia.getJobNome()) //.getNome())
             .tipo(CARGA)
             .arquivoNome(nome)
             .arquivo(conteudo)
-            .inconformidade(carga.getComando() +": "+ carga.getErro())
+            .inconformidade(carga.getErro())
+            .comando(carga.getComando())
             .build();
     }
 
@@ -102,11 +124,11 @@ public class ExecFile {
         return ExecFile.montarEvidencia(evidencia,log, LOG);
     }
 
-    public static ExecFile montarEvidenciaSaida(
+    public static ExecFile montarEvidenciaRemessa(
         @NonNull Evidencia evidencia,
         @NonNull SftpFileManager<RemoteFile> carga) {
         //-----------------------------------------
-        return ExecFile.montarEvidencia(evidencia, carga, SAIDA);
+        return ExecFile.montarEvidencia(evidencia, carga, REMESSA);
     }
 
     private static ExecFile montarEvidencia(
@@ -122,27 +144,19 @@ public class ExecFile {
         }
         return ExecFile.builder()
             .evidencia(evidencia)
-            .jobNome(evidencia.getJob().getNome())
+            .ticket(evidencia.getTicket())
+            .jobNome(evidencia.getJobNome()) //.getNome())
             .tipo(tipo)
             .arquivoNome(nome)
             .arquivo(conteudo)
-            .inconformidade(fileManager.getComando() +": "+ fileManager.getErro())
+            .comando(fileManager.getComando())
+            .mascara(fileManager.getFileMask())
+            .inconformidade(fileManager.getErro())
             .build();
     }
 
-    @Override
-    public String toString() {
-        return "ExecFile{" +
-            "id=" + id +
-            ", evidencia=" + evidencia +
-            ", jobNome='" + jobNome + '\'' +
-            ", type='" + tipo + '\'' +
-            ", arquivoNome='" + arquivoNome + '\'' +
-            ", arquivo=" + getResumoArquivo() +
-            '}';
-    }
-
     //TODO: mover esse método para uma classe Utils
+    @ToString.Include(name = "arquivo")
     private String getResumoArquivo() {
         val tamanho = FormatString.contarSubstring(arquivo, "\n");
         val peso = arquivo.getBytes().length;

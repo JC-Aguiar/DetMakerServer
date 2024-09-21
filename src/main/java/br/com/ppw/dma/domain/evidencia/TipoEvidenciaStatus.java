@@ -5,7 +5,7 @@ import lombok.Getter;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public enum TipoEvidenciaResultado {
+public enum TipoEvidenciaStatus {
 
     APROVADO("Aprovado"),
     PARCIAL("Parcial"),
@@ -13,13 +13,13 @@ public enum TipoEvidenciaResultado {
 
     @Getter public final String status;
 
-    TipoEvidenciaResultado(String status) {
+    TipoEvidenciaStatus(String status) {
         this.status = status;
     }
 
-    public static Optional<TipoEvidenciaResultado> identificar(String texto) {
+    public static Optional<TipoEvidenciaStatus> identificar(String texto) {
         if(texto == null) return Optional.empty();
-        return Stream.of(TipoEvidenciaResultado.values())
+        return Stream.of(TipoEvidenciaStatus.values())
             .filter(tipo -> tipo.status.equalsIgnoreCase(texto.trim()))
             .findFirst();
     }

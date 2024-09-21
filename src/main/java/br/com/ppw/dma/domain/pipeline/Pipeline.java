@@ -23,7 +23,7 @@ import static jakarta.persistence.FetchType.LAZY;
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_PIPELINE")
-@Table(name = "PPW_PIPELINE", uniqueConstraints = {@UniqueConstraint(columnNames = {"NOME", "CLIENTE_ID"})})
+@Table(name = "PPW_PIPELINE", uniqueConstraints = @UniqueConstraint(columnNames = {"NOME", "CLIENTE_ID"} ))
 @SequenceGenerator(name = "SEQ_PIPELINE_ID", sequenceName = "RCVRY.SEQ_PIPELINE_ID", allocationSize = 1)
 public class Pipeline implements MasterEntity<Long> {
 

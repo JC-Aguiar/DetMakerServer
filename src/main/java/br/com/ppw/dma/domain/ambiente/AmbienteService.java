@@ -202,6 +202,26 @@ public class AmbienteService {
         return getMetadatasFromTables(tables, columns, ambiente);
     }
 
+    //Valida e executa (com ROWNUM = 1 e sem commit) qualquer tipo de query
+    public void validadeQuerySQL(
+            @NonNull Set<String> queries,
+            @NonNull Ambiente ambiente) {
+
+        try(val masterDao = new MasterOracleDAO(ambiente)) {
+            queries.parallelStream().forEach(query -> {
+                try {
+                    masterDao.runSQL(query);
+                }
+                catch(SQLException | PersistenceException e) {
+                    throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
+                }
+            });
+        }
+        catch(SQLException | PersistenceException e) {
+            throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
+        }
+    }
+
     //Valida e executa (com ROWNUM = 1) queries DQL (de consulta)
     public void validadeQueryDQL(
         @NonNull Set<String> queries,
@@ -230,7 +250,7 @@ public class AmbienteService {
         }
     }
 
-    //Valida e executa (com ROWNUM = 1) queries DML (de registro)
+    //Valida e executa (com ROWNUM = 1 e sem commit) queries DML (de registro)
     public void validadeQueryDML(
         @NonNull Set<String> queries,
         @NonNull Ambiente ambiente) {
@@ -238,7 +258,7 @@ public class AmbienteService {
         validadeQueryDML(queries, ambiente.acessoBanco());
     }
 
-    //Valida e executa (com ROWNUM = 1) queries DQL (de registro)
+    //Valida e executa (com ROWNUM = 1 e sem commit) queries DQL (de registro)
     public void validadeQueryDML(
         @NonNull Set<String> queries,
         @NonNull AmbienteAcessoDTO ambiente) {
@@ -255,6 +275,27 @@ public class AmbienteService {
         }
         catch(SQLException | PersistenceException e) {
             throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
+        }
+    }
+
+    //Executa query
+    public void runQuery(
+        @NonNull Set<String> queries,
+        @NonNull AmbienteAcessoDTO ambiente) {
+
+        try(val masterDao = new MasterOracleDAO(ambiente)) {
+            queries.parallelStream().forEach(query -> {
+                try {
+                    masterDao.runSQL(query);
+                }
+                catch(SQLException | PersistenceException e) {
+//                    throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
+                    log.error(SqlSintaxe.getExceptionMainCause(e));
+                }
+            });
+        }
+        catch(SQLException | PersistenceException e) {
+            log.error(SqlSintaxe.getExceptionMainCause(e));
         }
     }
 

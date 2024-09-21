@@ -3,6 +3,7 @@ package br.com.ppw.dma.domain.master;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
 import jakarta.validation.ConstraintViolationException;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
@@ -11,20 +12,26 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Service;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+@Slf4j
 @Service
-public abstract class MasterService<ID, ENTITY, THIS extends  MasterService> {
+public abstract class MasterService<ID, ENTITY extends MasterEntity<ID>, THIS extends MasterService> {
 
     private JpaRepository<ENTITY, ID> dao;
-
+    private final Type entityClass;
 
     // A constructor that injects the `dao` object.
-    public MasterService(@Autowired JpaRepository dao) {
+    @Autowired
+    public MasterService(JpaRepository dao) {
         this.dao = dao;
+        final Type[] types = ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments();
+        this.entityClass = types[1];
     }
 
     /**
@@ -74,11 +81,13 @@ public abstract class MasterService<ID, ENTITY, THIS extends  MasterService> {
 
     @Profile("dev")
     public void deleteAll() {
+        log.info("Deletando todas as entidades {}.", entityClass.getTypeName());
         dao.deleteAll();
     }
 
     @Profile("dev")
     public void delete(@NonNull ENTITY entity) {
+        log.info("Deletando entidade {} ID {}.", entityClass.getTypeName(), entity.getId());
         dao.delete(entity);
     }
 }

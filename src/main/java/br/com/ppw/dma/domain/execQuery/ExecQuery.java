@@ -2,6 +2,7 @@ package br.com.ppw.dma.domain.execQuery;
 
 import br.com.ppw.dma.domain.evidencia.Evidencia;
 import br.com.ppw.dma.domain.jobQuery.ResultadoSql;
+import br.com.ppw.dma.domain.master.MasterEntity;
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
@@ -13,17 +14,19 @@ import org.hibernate.proxy.HibernateProxy;
 import java.util.Objects;
 
 import static jakarta.persistence.FetchType.LAZY;
+import static lombok.AccessLevel.PRIVATE;
 
 
 @Getter
 @Setter
 @Builder
+@ToString
 @AllArgsConstructor
 @NoArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldDefaults(level = PRIVATE)
 @Entity(name = "PPW_EXEC_QUERY")
 @Table(name = "PPW_EXEC_QUERY")
-public class ExecQuery {
+public class ExecQuery implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
     @SequenceGenerator(
@@ -52,6 +55,10 @@ public class ExecQuery {
     @Comment("Nome da query usada na queries")
     String queryNome;
 
+    @Column(name = "DESCRICAO", length = 300, nullable = false)
+    @Comment("Descrição do que a query se propõem a fazer")
+    String queryDescricao;
+
     @Column(name = "QUERY", length = 500, nullable = false)
     @Comment("SQL usada na evidência desse queries pós-execução")
     String query;
@@ -79,8 +86,10 @@ public class ExecQuery {
 
         return ExecQuery.builder()
             .evidencia(evidencia)
-            .jobNome(evidencia.getJob().getNome())
+            .ticket(evidencia.getTicket())
+            .jobNome(evidencia.getJobNome())//.getNome())
             .queryNome(tabelaPos.getNome())
+            .queryDescricao(tabelaPos.getDescricao())
             .query(tabelaPos.getQuery())
             .resultadoPreJob(tabelaPre.resumo())
             .resultadoPosJob(tabelaPos.resumo())
@@ -90,12 +99,12 @@ public class ExecQuery {
             .build();
     }
 
-    @ToString.Include
+    @ToString.Include(name = "resultadoPreJob")
     public String resumoResultadoPreJob() {
         return getResumoResultado(resultadoPreJob);
     }
 
-    @ToString.Include
+    @ToString.Include(name = "resultadoPosJob")
     public String resumoResultadoPosJob() {
         return getResumoResultado(resultadoPosJob);
     }

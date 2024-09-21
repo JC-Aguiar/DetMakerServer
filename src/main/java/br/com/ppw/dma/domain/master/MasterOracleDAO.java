@@ -148,6 +148,7 @@ public class MasterOracleDAO implements AutoCloseable {
     //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
     public List<Map<String, Object>> collectData(@NonNull String sql)
     throws SQLException {
+        log.info("SQL: {}", sql);
         validadeDQL(sql);
         val extracao = new ArrayList<Map<String, Object>>();
         try(val statement = conn.createStatement()) {
@@ -174,10 +175,22 @@ public class MasterOracleDAO implements AutoCloseable {
     }
 
     //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
-    public void runDQL(@NonNull String sql) throws SQLGrammarException, SQLException {
-        validadeDQL(sql);
+    public void runSQL(@NonNull String sql) throws SQLGrammarException, SQLException {
         log.info("SQL: {}", sql);
-        log.info("Testando executar query (ROWNUM = 1).");
+        log.info("Testando query.");
+        try(val statement = conn.createStatement()) {
+            conn.setAutoCommit(false);
+            statement.setMaxRows(1);
+            statement.executeQuery(sql);
+            log.info("Query aprovada.");
+        }
+    }
+
+    //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
+    public void runDQL(@NonNull String sql) throws SQLGrammarException, SQLException {
+        log.info("SQL: {}", sql);
+        validadeDQL(sql);
+        log.info("Testando query.");
         try(val statement = conn.createStatement()) {
             statement.setMaxRows(1);
             statement.executeQuery(sql);
@@ -187,9 +200,9 @@ public class MasterOracleDAO implements AutoCloseable {
 
     //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
     public void runDML(@NonNull String sql) throws SQLGrammarException, SQLException {
-        validadeDML(sql);
         log.info("SQL: {}", sql);
-        log.info("Testando executar query (ROWNUM = 1).");
+        validadeDML(sql);
+        log.info("Testando query.");
         try(val statement = conn.createStatement()) {
             conn.setAutoCommit(false);
             statement.setMaxRows(1);

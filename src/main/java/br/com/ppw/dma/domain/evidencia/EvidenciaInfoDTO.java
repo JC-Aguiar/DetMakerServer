@@ -61,22 +61,22 @@ public class EvidenciaInfoDTO {
         }
         this.id = evidencia.getId();
         this.ordem = ordem;
-        this.job = evidencia.getJob().getNome();
-        this.jobDescricao = evidencia.getJob().getDescricao();
-        this.argumentos = evidencia.getArgumentos();
+        this.job = evidencia.getJobNome();
+        this.jobDescricao = evidencia.getJobDescricao();
+        this.argumentos = evidencia.getParametros();
         this.queries = queries;
         this.queriesNome = queriesNome;
         this.tabelasPreJob = bancoPreJob;
         this.tabelasPosJob = bancoPosJob;
         this.cargas = AnexoInfoDTO.converterExecFile(evidencia.getCargas());
         this.logs = AnexoInfoDTO.converterExecFile(evidencia.getLogs());
-        this.saidas = AnexoInfoDTO.converterExecFile(evidencia.getSaidas());
+        this.saidas = AnexoInfoDTO.converterExecFile(evidencia.getRemessas());
 //        this.cargas.forEach(c -> inconformidades.add(c.inconformidade()));
 //        this.logs.forEach(l -> inconformidades.add(l.inconformidade()));
 //        this.saidas.forEach(s -> inconformidades.add(s.inconformidade()));
         this.exitCode = evidencia.getExitCode();
-        this.sha256 = evidencia.getSha256();
-        this.erroFatal = evidencia.getErroFatal();
+        this.sha256 = evidencia.getVersao();
+        this.erroFatal = evidencia.getMensagemErro();
         this.dataInicio = evidencia.getDataInicio();
         this.dataFim = evidencia.getDataFim();
         if(this.dataInicio != null && this.dataFim != null) {
@@ -88,8 +88,8 @@ public class EvidenciaInfoDTO {
         this.dataRevisao = evidencia.getDataRevisao();
         this.requisitos = evidencia.getRequisitos();
         this.comentario = evidencia.getComentario();
-        if(evidencia.getResultado() != null)
-            this.resultado = evidencia.getResultado().status;
+        if(evidencia.getStatus() != null)
+            this.resultado = evidencia.getStatus().status;
         log.info(this.toString());
     }
 

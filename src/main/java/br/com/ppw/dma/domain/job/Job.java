@@ -1,10 +1,10 @@
 package br.com.ppw.dma.domain.job;
 
 import br.com.ppw.dma.domain.cliente.Cliente;
-import br.com.ppw.dma.domain.jobQuery.JobQuery;
-import br.com.ppw.dma.domain.pipeline.Pipeline;
 import br.com.ppw.dma.domain.evidencia.Evidencia;
+import br.com.ppw.dma.domain.jobQuery.JobQuery;
 import br.com.ppw.dma.domain.master.MasterEntity;
+import br.com.ppw.dma.domain.pipeline.Pipeline;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -156,12 +156,12 @@ public class Job implements MasterEntity<Long> {
     // IDs das configurações de queries relacionadas a este job
     List<JobQuery> queries = new ArrayList<>();
 
-    @ToString.Exclude
-    @JsonManagedReference
-    @Column(name = "EVIDENCIAS")
-    @OneToMany(fetch = LAZY, mappedBy = "job")
-    // IDs das evidências relacionadas a este job
-    List<Evidencia> evidencias = new ArrayList<>();
+//    @ToString.Exclude
+//    @JsonManagedReference
+//    @Column(name = "EVIDENCIAS")
+//    @OneToMany(fetch = LAZY, mappedBy = "job")
+//    // IDs das evidências relacionadas a este job
+//    List<Evidencia> evidencias = new ArrayList<>();
 
     @ToString.Exclude
     @JsonManagedReference
@@ -189,18 +189,22 @@ public class Job implements MasterEntity<Long> {
         return this;
     }
 
-    public Evidencia getEvidenciaMaisRecente() {
-        return evidencias.stream()
-            .min(Comparator.comparing(Evidencia::getDataInicio))
-            .orElseThrow();
-    }
+//    public Evidencia getEvidenciaMaisRecente() {
+//        return evidencias.stream()
+//            .min(Comparator.comparing(Evidencia::getDataInicio))
+//            .orElseThrow();
+//    }
 
     @Override
     public final boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() : this.getClass();
+        Class<?> oEffectiveClass = o instanceof HibernateProxy
+            ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass()
+            : o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy
+            ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass()
+            : this.getClass();
         if (thisEffectiveClass != oEffectiveClass) return false;
         Job job = (Job) o;
         return getId() != null && Objects.equals(getId(), job.getId());
