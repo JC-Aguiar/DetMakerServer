@@ -4,9 +4,9 @@ import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 
@@ -14,29 +14,33 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static lombok.AccessLevel.PRIVATE;
+
 @Getter
 @ToString
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@RequiredArgsConstructor
+@FieldDefaults(level = PRIVATE)
 public class ResultadoSql {
 
+     @NonNull
      final String nome;
+
+     @NonNull
+     final String descricao;
+
+     @NonNull
      final String query;
+
      final List<String> campos = new ArrayList<>();
+
      boolean successo = false;
+
      String mensagemErro = "";
 
      @ToString.Exclude
      final List<List<Object>> resultado = new ArrayList<>();
 
 
-     public ResultadoSql(@NonNull String query) {
-          this("Anônima", query);
-     }
-
-     public ResultadoSql(@NonNull String nome, @NonNull String query) {
-          this.nome = nome;
-          this.query = query;
-     }
 
      @JsonIgnore
      public ResultadoSql addCampo(@NotBlank String campo) {

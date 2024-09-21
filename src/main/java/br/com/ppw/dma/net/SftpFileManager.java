@@ -17,6 +17,7 @@ public final class SftpFileManager<T> {
     private final Optional<T> file;
     private boolean success = false;
     private String erro = "";
+    @Setter private String fileMask = "";
 
     public static final String NOT_FOUND = "Arquivo não encontrado.";
     public static final String SUCCESS = "Arquivos coletado com sucesso.";

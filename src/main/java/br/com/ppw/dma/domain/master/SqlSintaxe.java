@@ -11,15 +11,16 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static br.com.ppw.dma.domain.master.SqlSintaxe.DqlKeywords.*;
 
 @Slf4j
 public abstract class SqlSintaxe {
 
-    private static final Set<String> DDL_KEYWORDS = Set.of(
-        "INSERT", "UPDATE", "DELETE", "CREATE", "ALTER", "TRUNCATE", "RENAME", "DROP", "DECLARE"
-    );
+    public enum DdlKeywords {
+        INSERT, UPDATE, DELETE, CREATE, ALTER, TRUNCATE, RENAME, DROP, DECLARE
+    };
 
     private static final List<String> JOIN_KEYWORDS = List.of(
         "CROSS JOIN",
@@ -50,8 +51,7 @@ public abstract class SqlSintaxe {
     );
 
     private static final Set<String> COMBINE_OPERATOR_KEYWORDS = Set.of(
-        "AND",
-        "OR"
+        "AND", "OR"
     );
 
     public enum DqlKeywords {
@@ -83,26 +83,25 @@ public abstract class SqlSintaxe {
             this.keywords = keywords;
         }
     }
-//
-//    public static final Set<String> DQL_KEYWORDS = Set.of(
-//        "SELECT",
-//        "FROM",
-//        "WHERE",
-//        "ORDER",
-//        "GROUP",
-//        "HAVING",
-//        "LIMIT",
-//        "OFFSET",
-//        "FETCH",
-//        "UNION",
-//        "INTERSECT",
-//        "MINUS",
-//        "WITH",
-//        "SEARCH",
-//        "CYCLE",
-//        "ONLY",
-//        "ON"
-//    );
+
+    public enum QueryMethod {
+        DDL("Data Definition Language"),
+        //	DDL é usado para definir a estrutura dos objetos no banco de dados, como tabelas, índices, visões e esquemas. Exemplos de comandos DDL incluem CREATE, ALTER e DROP.
+        DML("Data Manipulation Language"),
+        //	DML é usado para manipular os dados dentro do banco de dados. Isso inclui operações como inserir, atualizar, excluir e recuperar dados.
+        DQL("Data Query Language"),
+        // DQL é usado para realizar consultas ao banco de dados.
+        DCL("Data Control Language"),
+        //	DCL é usado para gerenciar as permissões e privilégios no banco de dados. Comandos DCL incluem GRANT para conceder permissões e REVOKE para revogar permissões.
+        TCL("Transaction Control Language");
+        //	TCL é usado para gerenciar as transações no banco de dados. Comandos TCL incluem COMMIT para confirmar as alterações feitas durante uma transação e ROLLBACK para desfazer as alterações e restaurar o estado anterior.
+
+        @Getter public final String fullName;
+
+        QueryMethod(String fullName) {
+            this.fullName = fullName;
+        }
+    }
 
 //    public static Object parseToDate(@NonNull String s) {
 //        return String.format(
@@ -131,37 +130,33 @@ public abstract class SqlSintaxe {
     //TODO: javadoc
     public static boolean isSafeInsert(String query) {
         if(query == null || query.trim().isEmpty()) return true;
-        val keywords = DDL_KEYWORDS.stream()
-            .filter(k -> !k.equals("INSERT"))
-            .toList();
-        String palavras = String.join("|", keywords);
-        String ddlPattern = "(?i)(" +palavras+ ")";
+        val keywords = Stream.of(DdlKeywords.values())
+            .filter(k -> k != DdlKeywords.INSERT)
+            .map(Enum::name)
+            .collect(Collectors.joining("|"));
+        var ddlPattern = "(?i)(" +keywords+ ")";
         return !query.matches(".*" + ddlPattern + ".*");
     }
 
     //TODO: javadoc
     public static boolean isSafeDelete(String query) {
         if(query == null || query.trim().isEmpty()) return true;
-        val keywords = DDL_KEYWORDS.stream()
-            .filter(k -> !k.equals("DELETE"))
-            .toList();
-        String palavras = String.join("|", keywords);
-        String ddlPattern = "(?i)(" +palavras+ ")";
+        val keywords = Stream.of(DdlKeywords.values())
+            .filter(k -> k != DdlKeywords.DELETE)
+            .map(Enum::name)
+            .collect(Collectors.joining("|"));
+        var ddlPattern = "(?i)(" +keywords+ ")";
         return !query.matches(".*" + ddlPattern + ".*");
     }
 
     //TODO: javadoc
     public static boolean isSafeSelect(String query) {
         if(query == null || query.trim().isEmpty()) return true;
-        String palavras = String.join("|", DDL_KEYWORDS);
-        String ddlPattern = "(?i)(" +palavras+ ")";
+        var palavras = Stream.of(DdlKeywords.values())
+            .map(Enum::name)
+            .collect(Collectors.joining("|"));
+        var ddlPattern = "(?i)(" +palavras+ ")";
         return !query.matches(".*" + ddlPattern + ".*");
-    }
-
-    //TODO: javadoc
-    public static boolean isSafeSelect(List<String> campos) {
-        if(campos == null || campos.isEmpty()) return true;
-        return campos.stream().allMatch(SqlSintaxe::isSafeSelect);
     }
 
     public static String getExceptionMainCause(@NonNull Exception e) {
@@ -405,5 +400,6 @@ public abstract class SqlSintaxe {
         var filters = SqlSintaxe.getColumnsFiltersFromQuery(query);
         return new QueryExtraction(tables, columns, filters);
     }
+
 
 }

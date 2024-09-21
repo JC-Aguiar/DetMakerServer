@@ -12,6 +12,7 @@ import java.util.List;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class SftpTerminalManager {
 
+    final String comando;
     final List<String> consoleLog = new ArrayList<>();
     int exitCode;
 

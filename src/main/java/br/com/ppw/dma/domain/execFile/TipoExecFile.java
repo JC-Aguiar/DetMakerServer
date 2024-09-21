@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 public enum TipoExecFile {
 
     CARGA("carga"),
-    SAIDA("saída"),
+    REMESSA("remessa"),
     LOG("log");
 
     @Getter public final String tipo;

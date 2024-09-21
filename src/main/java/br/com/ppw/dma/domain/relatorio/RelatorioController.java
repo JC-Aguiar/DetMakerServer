@@ -1,16 +1,18 @@
 package br.com.ppw.dma.domain.relatorio;
 
 import br.com.ppw.dma.domain.ambiente.AmbienteService;
-import br.com.ppw.dma.domain.pipeline.execution.PipelineJobInputDTO;
-import br.com.ppw.dma.domain.queue.QueuePayloadJob;
-import br.com.ppw.dma.domain.pipeline.Pipeline;
-import br.com.ppw.dma.domain.pipeline.PipelineController;
-import br.com.ppw.dma.domain.queue.QueuePayload;
 import br.com.ppw.dma.domain.evidencia.Evidencia;
+import br.com.ppw.dma.domain.job.JobService;
 import br.com.ppw.dma.domain.master.MasterController;
+import br.com.ppw.dma.domain.queue.QueuePayload;
+import br.com.ppw.dma.domain.queue.QueuePayloadJob;
+import br.com.ppw.dma.domain.queue.QueuePushResponseDTO;
+import br.com.ppw.dma.domain.queue.QueueService;
 import br.com.ppw.dma.domain.storage.FileSystemService;
 import br.com.ppw.dma.domain.user.UserInfoDTO;
+import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.util.DetHtml;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -38,26 +40,25 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
 
     @Autowired
     private ResourceLoader resourceLoader;
-
     private RelatorioService relatorioService;
-
     private AmbienteService ambienteService;
-
-    private PipelineController pipelineController;
-
+    private QueueService queueService;
+    private JobService jobService;
     private FileSystemService fileSystemService;
 
-
+    @Autowired
     public RelatorioController(
-        @Autowired RelatorioService relatorioService,
-        @Autowired AmbienteService ambienteService,
-        @Autowired PipelineController pipelineController,
-        @Autowired FileSystemService fileSystemService){
+        RelatorioService relatorioService,
+        AmbienteService ambienteService,
+        QueueService queueService,
+        JobService jobService,
+        FileSystemService fileSystemService){
         //--------------------------------------------------
         super(relatorioService);
         this.relatorioService = relatorioService;
         this.ambienteService = ambienteService;
-        this.pipelineController = pipelineController;
+        this.queueService = queueService;
+        this.jobService = jobService;
         this.fileSystemService = fileSystemService;
     }
 
@@ -111,15 +112,16 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
             dataExec = LocalDate.parse(dataExecString.get());
 
         var ambiente = ambienteService.findById(ambienteId);
-        var pipeline = new Pipeline();
-        pipeline.setNome(nomePipeline.orElse(null));
+//        var pipeline = new Pipeline();
+//        pipeline.setNome(nomePipeline.orElse(null));
         var relatorioBusca = Relatorio.builder()
             .idProjeto(idProjeto.orElse(null))
             .nomeProjeto(nomeProjeto.orElse(null))
             .nomeAtividade(nomeAtividade.orElse(null))
             .ambiente(ambiente)
             .data(dataExec)
-            .pipeline(pipeline)
+//            .pipeline(pipeline)
+            .pipelineNome(nomePipeline.orElse(null))
             .build();
         Example<Relatorio> exemplo = Example.of(relatorioBusca, MATCHER_ALL);
 
@@ -180,29 +182,26 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
     //  Se funcionar, o timeout do front precisa ser atualizado com base na quantidade de espera na fila
     @Transactional
     @GetMapping(value = "rerun/{id}")
-    public ResponseEntity<RelatorioHistoricoDTO> runAgain(@PathVariable long id) {
+    public ResponseEntity<QueuePushResponseDTO> runAgain(@PathVariable long id)
+    throws JsonProcessingException, DuplicatedRecordException {
         val relatorio = relatorioService.findById(id);
-        val pipeline = relatorio.getPipeline();
         val ambiente = relatorio.getAmbiente();
+        val usuario = relatorio.getUsuario();
         val jobs = relatorio.getEvidencias()
-            .parallelStream()
-            .map(ev -> new QueuePayloadJob(ev.getJob(), new PipelineJobInputDTO(ev)))
-//                val process = QueuePayloadJob(ev);
-//                log.info("Convertendo registro ExecFile em arquivos temporários para envio SFTP.");
-//                val cargas = ev.getCargas()
-//                    .stream()
-//                    .map(fileSystemService::storage)
-//                    .toList();
-//                process.setCargas(cargas);
-//                log.info(process.toString());
-//                return process;
+            .stream()
+            .map(QueuePayloadJob::new)
             .toList();
-        return pipelineController.run(new QueuePayload(
-            pipeline,
-            ambiente,
-            jobs,
-            List.of()
-        ));
+        var solicitacao = QueuePayload.builder()
+            .pipelineNome(relatorio.getPipelineNome())
+            .pipelineDescricao(relatorio.getPipelineDescricao())
+            .jobs(jobs)
+            .build();
+
+        //TODO: o usuário deve ser o que fez a nova solicitação!
+        var queueResponse = queueService.pushQueueItem(ambiente, usuario, solicitacao);
+        if(queueResponse.getQueueSize() > 0)
+            return ResponseEntity.unprocessableEntity().body(queueResponse);
+        return ResponseEntity.ok(queueResponse);
     }
 
     private ResponseEntity<Resource> retornarNovoDet(@NonNull DetDTO pipelineRelatorio)

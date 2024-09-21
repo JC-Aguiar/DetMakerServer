@@ -1,10 +1,9 @@
 package br.com.ppw.dma.domain.relatorio;
 
-import br.com.ppw.dma.domain.evidencia.Evidencia;
-import br.com.ppw.dma.domain.evidencia.EvidenciaProcess;
+import br.com.ppw.dma.domain.ambiente.Ambiente;
 import br.com.ppw.dma.domain.master.MasterService;
 import br.com.ppw.dma.domain.pipeline.Pipeline;
-import br.com.ppw.dma.domain.queue.QueuePayload;
+import br.com.ppw.dma.domain.queue.result.PipelineResult;
 import jakarta.validation.constraints.NotNull;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -16,14 +15,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
-
-import static br.com.ppw.dma.util.FormatDate.RELOGIO;
 
 @Service
 @Slf4j
@@ -53,7 +47,7 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
     public List<Relatorio> findAllFromPipeline(@NonNull Pipeline pipeline) {
 //        log.info("Obtendo Relatórios no banco relacionados a Ambiente '{}'. ", pipeline.getProps().getNome());
         log.info("Obtendo Relatórios no banco relacionados a Ambiente '{}'. ", pipeline.getNome());
-        val relatorios = dao.findAllByPipeline(pipeline);
+        val relatorios = dao.findAllByPipelineNome(pipeline.getNome());
         log.info("Total de Relatórios identificados: {}.", relatorios.size());
         relatorios.forEach(r -> log.info(r.toString()));
         return relatorios;
@@ -79,38 +73,13 @@ public class RelatorioService extends MasterService<Long, Relatorio, RelatorioSe
         return relatorioMaisRecente;
     }
 
-    @Transactional
+//    @Transactional(noRollbackFor = Throwable.class)
     public Relatorio buildAndPersist(
-        @NonNull QueuePayload preparation,
-        @NotNull List<EvidenciaProcess> evidencias) {
+        @NonNull Ambiente ambiente,
+        @NotNull PipelineResult pipelineResult) {
 
-        log.debug("Separando Evidências persistidas com sucesso daquelas com erro.");
-        var consideracoes = new StringBuilder();
-        var evidenciasOk = new ArrayList<Evidencia>();
-        for(var ev : evidencias) {
-            if(ev.exception()) consideracoes.append(ev.detalhes() + "\n");
-            else ev.evidencia().ifPresent(evidenciasOk::add);
-        }
         log.info("Convertendo Relatório DTO em Entidade.");
-        var relatorio = Relatorio.builder()
-//            .nomeAtividade(preparation.relatorio().getNomeAtividade())
-            .consideracoes(consideracoes.toString())
-            .cliente(preparation.ambiente().getCliente().getNome())
-            .ambiente(preparation.ambiente())
-            .pipeline(preparation.pipeline())
-            .evidencias(evidenciasOk)
-//            .parametros(parametrosDosJobs)
-            .data(LocalDate.now(RELOGIO))
-            .dataCompleta(OffsetDateTime.now(RELOGIO))
-            .build();
-//        relatorio.setIdProjeto(preparation.relatorio().getIdProjeto());
-//        relatorio.setNomeProjeto(preparation.relatorio().getNomeProjeto());
-//        relatorio.setTesteTipo(TiposDeTeste
-//            .identificar(preparation.relatorio().getTesteTipo())
-//            .orElse(null)
-//        );
-        relatorio = persist(relatorio);
-        return relatorio;
+        return persist(new Relatorio(ambiente, pipelineResult));
     }
 
     @Transactional

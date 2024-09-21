@@ -96,6 +96,7 @@ public class ConectorSftp {
     //TODO: Javadoc
     public SftpFileManager<File> upload(@NonNull String dirRemoto, @NonNull File arquivo) {
         val comando = "sftp put " + dirRemoto;
+//        val comando = dirRemoto;
         Session session = null;
         Channel channel = null;
         ChannelSftp sftpChannel = null;
@@ -133,6 +134,7 @@ public class ConectorSftp {
         InputStream entrada = null;
         SftpFileManager<RemoteFile> newDownload = null;
         val comando = "sftp get " + arquivoRemoto;
+//        val comando = arquivoRemoto;
 
         log.info("Realizando download do arquivo: '{}'.", arquivoRemoto);
         try {
@@ -170,6 +172,7 @@ public class ConectorSftp {
             newDownload.setErro(e.getMessage());
         }
         finally {
+            newDownload.setFileMask(arquivoRemoto);
             if(sftpChannel != null) sftpChannel.exit();
             if(channel != null) channel.disconnect();
             if(session != null) session.disconnect();
@@ -193,7 +196,7 @@ public class ConectorSftp {
         InputStream in = null;
         InputStream err = null;
         val outputBuffer = new ByteArrayOutputStream();
-        val terminal = new SftpTerminalManager();
+        val terminal = new SftpTerminalManager(comando);
         try {
             val comandoFull = properties.keySet()
                 .stream()
@@ -237,7 +240,7 @@ public class ConectorSftp {
             }
             for(val linha : outputBuffer.toString(StandardCharsets.UTF_8).split("\n")) {
                 log.info("(TERMINAL) {}", linha); //TODO: mover para debug?
-                terminal.addPrintedLine(linha);
+                terminal.addPrintedLine(linha.replace("\r", ""));
             }
             return terminal;
         }
@@ -355,18 +358,21 @@ public class ConectorSftp {
             if(arquivoNome == null || arquivoNome.isEmpty())
                 throw new OperacaoSftpException(comandoInput, "Diretório/arquivo inválido.");
 
-            val listaArquivos = comando(comandoInput).getConsoleLog();
-            if(listaArquivos.isEmpty())
-                throw new OperacaoSftpException(comandoInput, "Nenhum arquivo encontrado.");
-
             //Por algum motivo estranho o name dos arquivos retornam concatenados com '\r' e pode causar problemas.
-            val arquivoMaisRecente = listaArquivos.get(0).replace("\r", "");
+            val arquivoMaisRecente = comando(comandoInput).getConsoleLog()
+                .stream()
+                .findFirst()
+                .map(maisRecente -> maisRecente.replace("\r", ""))
+                .orElseThrow(() -> new OperacaoSftpException(comandoInput, "Nenhum arquivo encontrado."));
             log.info("Arquivo mais recente: '{}'", arquivoMaisRecente);
-            return download(arquivoMaisRecente);
+            var retorno = download(arquivoMaisRecente);
+            retorno.setFileMask(arquivoNome);
+            return retorno;
         }
         catch (OperacaoSftpException e) {
             val retorno = new SftpFileManager<RemoteFile>(e.comando, null);
             retorno.setErro(e.getMessage());
+            retorno.setFileMask(arquivoNome);
             return retorno;
         }
     }

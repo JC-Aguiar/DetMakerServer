@@ -1,5 +1,6 @@
 package br.com.ppw.dma.domain.pipeline;
 
+import br.com.ppw.dma.domain.ambiente.Ambiente;
 import br.com.ppw.dma.domain.ambiente.AmbienteService;
 import br.com.ppw.dma.domain.cliente.ClienteService;
 import br.com.ppw.dma.domain.job.Job;
@@ -10,11 +11,11 @@ import br.com.ppw.dma.domain.massa.MassaTabela;
 import br.com.ppw.dma.domain.massa.MassaTabelaService;
 import br.com.ppw.dma.domain.master.MasterController;
 import br.com.ppw.dma.domain.master.QueryFilter;
-import br.com.ppw.dma.domain.master.QueryMethod;
 import br.com.ppw.dma.domain.master.SqlSintaxe;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineExecDTO;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineJobInputDTO;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineQueryInputDTO;
+import br.com.ppw.dma.domain.queue.Queue;
 import br.com.ppw.dma.domain.queue.*;
 import br.com.ppw.dma.domain.relatorio.RelatorioHistoricoDTO;
 import br.com.ppw.dma.domain.storage.FileSystemService;
@@ -23,7 +24,6 @@ import br.com.ppw.dma.util.FormatDate;
 import br.com.ppw.dma.util.FormatString;
 import br.com.ppware.api.GeradorDeMassa;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ValidationException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +43,6 @@ import java.util.stream.Collectors;
 @RequestMapping("pipeline")
 public class PipelineController extends MasterController<Long, Pipeline, PipelineController> {
 
-    private ObjectMapper objectMapper;
     private PipelineService pipelineService;
     private ClienteService clienteService;
     private AmbienteService ambienteService;
@@ -55,7 +54,6 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 
     @Autowired
     public PipelineController(
-        ObjectMapper objectMapper,
         PipelineService pipelineService,
         ClienteService clienteService,
         AmbienteService ambienteService,
@@ -65,7 +63,6 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         FileSystemService fileSystemService) {
         //--------------------------------------------
         super(pipelineService);
-        this.objectMapper = objectMapper;
         this.pipelineService = pipelineService;
         this.clienteService = clienteService;
         this.ambienteService = ambienteService;
@@ -102,21 +99,32 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
     }
 
     /**
-     * Principal funcionalidade de toda a aplicação. Em ordem:<ol>
- *     <li>Identificação do Ambiente</li>
-     * <li>Obtenção dos acessos ao Banco e FTP do Ambiente</li>
-     * <li>Execução da pilha de Jobs</li>
-     * <li>Coleta das Evidências de cada Job</li>
-     * <li>Detalhamento do processo no Relatório</li>
+     * Prepara e valida uma {@link Pipeline} solciitada para ser corretamente executada no
+     * {@link Ambiente} remoto.
+     * <ol>
+     * <li>Identifica o {@link Ambiente} para obter os acessos remotos</li>
+     * <li>Valida se os Jobs declarados ({@link PipelineJobInputDTO}) estão 100% alinhados com
+     * os {@link Job}s da {@link Pipeline}</li>
+     * <li>Valida se o nome das Massas declaradas existe no banco</li>
+     * <li>Agrupa cada Job declarado com seu respectivo {@link Pipeline} {@link Job} para gerar a
+     * lista de {@link QueuePayloadJob}
+     * </li>
+     * <li>Coleta e vincula metadados no banco remoto para todas as {@link MassaTabela} solicitadas</li>
+     * <li>Gera valores aleatórios para todas as {@link MassaTabela} solicitadas</li>
+     * <li>Identifica as Variáveis da Pipeline que solicitam {@link MassaTabela} para substituir
+     * pelos valores gerados</li>
+     * <li>Identifica se Variáveis da Pipeline para {@link MassaTabela} ficou pendente</li>
+     * <li>Coleta o estado final de todas as queries (Jobs e Massas) para testá-las no banco remoto</li>
+     * <li>Valida se é possível executar com base no status da fila ({@link Queue})</li>
      * </ol>
      * @param execDto {@link PipelineExecDTO} contendo as informações necessárias para execução.
-     * @return {@link ResponseEntity} com o {@link RelatorioHistoricoDTO} do Relatório final.
+     * @return {@link ResponseEntity} com o {@link QueuePushResponseDTO} contendo status da solicitação.
      */
     @Transactional
     @PostMapping(value = "run") //"run/pipelineId/{pipelineId}/ambienteId/{ambienteId}")
     public ResponseEntity<QueuePushResponseDTO> validadeToEnqueue(
         @RequestBody PipelineExecDTO execDto)
-    throws JsonProcessingException {
+    throws JsonProcessingException, DuplicatedRecordException {
         log.info("Obtendo e validando Ambiente e Pipeline.");
         var ambiente = ambienteService.findById(execDto.getAmbienteId());
         var pipeline = pipelineService.findById(execDto.getPipelineId());
@@ -173,9 +181,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
             .toList();
 
         massasNome.stream()
-            .filter(nome ->  massasBanco
-                .stream()
-                .noneMatch(massa -> massa.getNome().equals(nome)))
+            .filter(nome ->  massasBanco.stream().noneMatch(massa -> massa.getNome().equals(nome)))
             .forEach(massasPendentes::add);
 
         if(!massasPendentes.isEmpty()) {
@@ -196,8 +202,8 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         if(!inconformidades.isEmpty())
             throw new ValidationException(String.join("\n", inconformidades));
 
-        // ------------- PREPARANDO DADOS -------------
-        var jobsQueue = QueuePayloadJob.match(jobsInfo, inputJobs);
+        // ------------- PREPARANDO MASSA -------------
+        //TODO: não parece precisar consultar os metadados das queries dos Jobs... (?!)
         var tables = new HashSet<String>();
         var columns = new HashSet<String>();
         inputQueries.stream()
@@ -222,7 +228,6 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         log.info("Metadados obtidos no banco:");
         metadadosBanco.stream()
             .peek(tabelaDb -> log.info(tabelaDb.toString()))
-            .parallel()
             .forEach(
                 tableDb -> massasBanco.stream().forEach(
                     massa -> massa.atualizar(tableDb)
@@ -269,52 +274,56 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         if(!variaveisPendentes.isBlank())
             throw new ValidationException("Variáveis pendentes: " + variaveisPendentes);
 
+        // ------------- PREPARANDO JOBS -------------
         log.info("Aplicando as Variáveis da Pipeline nos Jobs solicitados.");
-        jobsQueue.stream().forEach(
-            job -> job.aplicarConfiguracoes(execDto.getConfiguracoes())
-        );
+        inputJobs.forEach(job -> job.setVariaveis(execDto.getConfiguracoes()));
+        var jobsQueue = QueuePayloadJob.matchAndMerge(jobsInfo, inputJobs);
+
         // ------------- TRATAMENTO FINAL DE QUERIES -------------
         log.info("Estado final das queries dos Jobs:");
         var queriesToTest = jobsQueue.stream()
-            .map(QueuePayloadJob::getJobInputs)
-            .map(PipelineJobInputDTO::getQueries)
-            .flatMap(Set::stream)
-            .map(PipelineQueryInputDTO::getSql)
+            .map(QueuePayloadJob::getQueriesExec)
+            .flatMap(List::stream)
+            .map(QueuePayloadQuery::getQuery)
             .peek(log::info)
             .collect(Collectors.toSet());
 
         log.info("Estado final das queries das Massas.");
-        var massaQueue = new ArrayList<QueuePayloadQuery>();
+        var massaInsert = new ArrayList<QueuePayloadQuery>();
+        var massaDelete = new ArrayList<QueuePayloadQuery>();
         massasPreparadas.forEach(massa -> {
-            var sql = massa.gerarQueryInsert();
             var nome = "Insert " + massa.getTabela();
-            sql = FormatString.substituirVariaveis(sql, massa.getColunasSqlSintaxe());
+            var descricao = "Gerando massa " + massa.getTabela();
+            var sql = FormatString.substituirVariaveis(
+                massa.gerarQueryInsert(),
+                massa.getColunasSqlSintaxe(),
+                ":(\\w+)");
             queriesToTest.add(sql);
             log.info(sql);
-            massaQueue.add(new QueuePayloadQuery(nome, sql, QueryMethod.DML));
+            massaInsert.add(QueuePayloadQuery.DML(nome, descricao, sql));
 
-            sql = massa.gerarQueryDelete();
             nome = "Delete " + massa.getTabela();
-            sql = FormatString.substituirVariaveis(sql, massa.getColunasSqlSintaxe());
+            descricao = "Gerando massa " + massa.getTabela();
+            sql = FormatString.substituirVariaveis(
+                massa.gerarQueryDelete(),
+                massa.getColunasSqlSintaxe(),
+                ":(\\w+)");
             queriesToTest.add(sql);
             log.info(sql);
-            massaQueue.add(new QueuePayloadQuery(nome, sql, QueryMethod.DML));
+            massaDelete.add(QueuePayloadQuery.DML(nome, descricao, sql));
         });
         log.info("Validando estado final das queries nos Jobs e Massas.");
-        ambienteService.validadeQueryDQL(queriesToTest, ambiente);
+        ambienteService.validadeQuerySQL(queriesToTest, ambiente);
 
         // ------------- GERANDO SOLICITAÇÃO NA FILA DE EXECUÇÃO -------------
         var solicitacao = QueuePayload.builder()
             .pipelineNome(pipeline.getNome())
             .pipelineDescricao(pipeline.getDescricao())
-            .massas(massaQueue)
+            .queriesPrePipeline(massaInsert)
+            .queriesPosPipeline(massaDelete)
             .jobs(jobsQueue)
             .build();
-        var queueResponse = queueService.pushQueueItem(
-            ambiente,
-            pipeline,
-            usuario,
-            solicitacao);
+        var queueResponse = queueService.pushQueueItem(ambiente, usuario, solicitacao);
         if(queueResponse.getQueueSize() > 0)
             return ResponseEntity.unprocessableEntity().body(queueResponse);
         return ResponseEntity.ok(queueResponse);

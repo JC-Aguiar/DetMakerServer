@@ -4,16 +4,16 @@ import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
 @Converter(autoApply = true)
-public class EvidenciaResultadoConverter implements AttributeConverter<TipoEvidenciaResultado, String> {
+public class EvidenciaResultadoConverter implements AttributeConverter<TipoEvidenciaStatus, String> {
 
     @Override
-    public String convertToDatabaseColumn(TipoEvidenciaResultado tipo) {
+    public String convertToDatabaseColumn(TipoEvidenciaStatus tipo) {
         if(tipo == null) return null;
         return tipo.status;
     }
 
     @Override
-    public TipoEvidenciaResultado convertToEntityAttribute(String texto) {
-        return TipoEvidenciaResultado.identificar(texto).orElse(null);
+    public TipoEvidenciaStatus convertToEntityAttribute(String texto) {
+        return TipoEvidenciaStatus.identificar(texto).orElse(null);
     }
 }

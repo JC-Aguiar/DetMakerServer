@@ -2,9 +2,9 @@ package br.com.ppw.dma.domain.storage;
 
 import java.util.List;
 
-public interface ShellPointer {
+public interface JobPointer {
 
-    String pathShell();
+    String pathToJob();
     List<String> pathLog();
     List<String> pathSaida();
     List<String> pathEntrada();

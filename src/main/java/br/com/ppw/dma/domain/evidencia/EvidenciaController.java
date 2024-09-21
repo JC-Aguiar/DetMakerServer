@@ -63,14 +63,14 @@ public class EvidenciaController extends MasterController<Long, Evidencia, Evide
                 evidencia.setRevisor(evRevisada.getResivor());
                 evidencia.setDataRevisao(evRevisada.getDataRevisao());
                 evidencia.setComentario(evRevisada.getComentario());
-                evidencia.setResultado(
-                    TipoEvidenciaResultado.identificar(evRevisada.getResultado())
+                evidencia.setStatus(
+                    TipoEvidenciaStatus.identificar(evRevisada.getResultado())
                     .orElseThrow(() -> new TipoEvidenciaResultadoException(evRevisada.getResultado()))
                 );
-                evidenciaService.persist(evidencia);
+                evidenciaService.save(evidencia);
                 resumo.save(evRevisada.evidenciaId);
             }
-            catch(TipoEvidenciaResultadoException e) {
+            catch(Exception e) {
                 log.warn(e.getMessage());
                 resumo.fail(evRevisada.evidenciaId, e.getMessage());
             }

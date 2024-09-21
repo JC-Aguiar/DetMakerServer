@@ -1,6 +1,6 @@
 package br.com.ppw.dma.domain.job;
 
-import br.com.ppw.dma.domain.storage.ShellPointer;
+import br.com.ppw.dma.domain.storage.JobPointer;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -19,7 +19,7 @@ import static br.com.ppw.dma.util.FormatString.*;
 @Slf4j
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class JobInfoDTO implements ShellPointer {
+public class JobInfoDTO implements JobPointer {
 
     OffsetDateTime dataRegistro;
     Long id;
@@ -66,7 +66,7 @@ public class JobInfoDTO implements ShellPointer {
     }
 
     @JsonIgnore
-    public String pathShell() {
+    public String pathToJob() {
         if(!caminhoExec.endsWith("/")) caminhoExec = caminhoExec + "/";
         return caminhoExec + nome;
     }
