@@ -13,7 +13,7 @@ import java.time.OffsetDateTime;
 
 import static br.com.ppw.dma.domain.queue.QueueStatus.AGUARDANDO;
 import static jakarta.persistence.EnumType.STRING;
-import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.FetchType.EAGER;
 import static jakarta.persistence.GenerationType.SEQUENCE;
 import static lombok.AccessLevel.PRIVATE;
 
@@ -24,7 +24,7 @@ import static lombok.AccessLevel.PRIVATE;
 @FieldDefaults(level = PRIVATE)
 @Entity(name = "PPW_QUEUE")
 @Table(name = "PPW_QUEUE")
-public class Queue implements MasterEntity<Long> {
+public class TaskQueue implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
     @SequenceGenerator(
@@ -40,7 +40,7 @@ public class Queue implements MasterEntity<Long> {
 
     @ToString.Exclude
     @JsonBackReference
-    @ManyToOne(fetch = LAZY)
+    @ManyToOne(fetch = EAGER)
     @JoinColumn(name = "AMBIENTE_ID", referencedColumnName = "ID")
     @Comment("Ambiente em que serão executadas os comando no Payload")
     Ambiente ambiente;

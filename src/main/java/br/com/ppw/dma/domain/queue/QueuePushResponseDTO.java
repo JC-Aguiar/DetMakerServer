@@ -4,35 +4,28 @@ import lombok.Getter;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
 
+import java.util.UUID;
+
 import static lombok.AccessLevel.PRIVATE;
 
 @Getter
 @ToString
-@FieldDefaults(level = PRIVATE)
+@FieldDefaults(level = PRIVATE, makeFinal = true)
 public class QueuePushResponseDTO {
 
-	final String ticket;
-	final long queueSize;
-	final String message;
+	long ambienteId;
+	long queueSize;
+	String ticket;
 
 
-	public QueuePushResponseDTO(String ticket, long queueSize) {
-		this.ticket = ticket;
+	public QueuePushResponseDTO(long ambienteId, long queueSize) {
+		this.ambienteId = ambienteId;
 		this.queueSize = queueSize;
-		if(queueSize == 0)
-			message = "Sua solicitação está sendo executada agora";
-		else
-			message = "Existem " + queueSize + " solicitações que deve esperar serem finalizadas.";
+		this.ticket = UUID.randomUUID().toString();
 	}
 
-	private QueuePushResponseDTO(long queueSize) {
-		this.ticket = null;
-		this.queueSize = queueSize;
-		this.message = "Existem " + queueSize + " solicitações que deve esperar serem finalizadas.";
-
-	}
-
-	public static QueuePushResponseDTO blocked(long queueSize) {
-		return new QueuePushResponseDTO(queueSize);
+	public String getMessage() {
+		if(queueSize == 0) return "Sua solicitação está sendo executada agora";
+		return "Existem " + queueSize + " solicitações que deve esperar serem finalizadas.";
 	}
 }

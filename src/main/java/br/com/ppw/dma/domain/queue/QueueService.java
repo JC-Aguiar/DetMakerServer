@@ -1,53 +1,74 @@
 package br.com.ppw.dma.domain.queue;
 
 import br.com.ppw.dma.domain.ambiente.Ambiente;
+import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.domain.ambiente.AmbienteService;
+import br.com.ppw.dma.domain.cliente.Cliente;
+import br.com.ppw.dma.domain.cliente.ClienteService;
 import br.com.ppw.dma.domain.evidencia.EvidenciaService;
 import br.com.ppw.dma.domain.job.JobService;
 import br.com.ppw.dma.domain.master.MasterService;
-import br.com.ppw.dma.domain.pipeline.PipelineService;
+import br.com.ppw.dma.domain.queue.result.PipelineResult;
 import br.com.ppw.dma.domain.relatorio.RelatorioService;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import jakarta.validation.constraints.NotNull;
+import lombok.AccessLevel;
 import lombok.NonNull;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.OffsetDateTime;
-import java.util.UUID;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatDate.RELOGIO;
 
 @Slf4j
 @Service
 @EnableAsync
-public class QueueService extends MasterService<Long, Queue, QueueService> {
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
 
-    private final ApplicationEventPublisher publisher;
-    private final ObjectMapper objectMapper;
-    private final QueueRepository queueDao;
-    private final JobService jobService;
-    private final EvidenciaService evidenciaService;
-    private final RelatorioService relatorioService;
-    private final PipelineService pipelineService;
-    private final AmbienteService ambienteService;
+    ApplicationEventPublisher publisher;
+    ObjectMapper objectMapper;
+    QueueRepository queueDao;
+    JobService jobService;
+    EvidenciaService evidenciaService;
+    RelatorioService relatorioService;
+    AmbienteService ambienteService;
+    ClienteService clienteService;
+    EntityManager entityManager;
+    PlatformTransactionManager transactionManager;
+//    Queue<QueuePushResponseDTO> fila = new ConcurrentLinkedQueue<>();
+//    Map<Long, Queue<QueuePushResponseDTO>> queueMap = new ConcurrentHashMap<>();
+//    ExecutorService motor = Executors.newSingleThreadExecutor();
+    Map<Long, ThreadPoolTaskExecutor> mapaFilas = new ConcurrentHashMap<>();
 
-    @PersistenceContext
-    private EntityManager entityManager;
-//    private final JobService jobService;
-//    private final EvidenciaService evidenciaService;
-//    private final RelatorioService relatorioService;
-//    private final PipelineService pipelineService;
 
-
+//    private record ExecutorQueue(ExecutorService executor, Queue<QueuePushResponseDTO> fila) {
+//        private static ExecutorQueue start(QueuePushResponseDTO itemFila) {
+//            var novoExec = new ExecutorQueue(
+//                Executors.newSingleThreadExecutor(),
+//                new ConcurrentLinkedQueue<>());
+//            novoExec.fila.offer(itemFila);
+//            return novoExec;
+//        }
+//    }
 
     @Autowired
     public QueueService(
@@ -57,8 +78,10 @@ public class QueueService extends MasterService<Long, Queue, QueueService> {
         JobService jobService,
         EvidenciaService evidenciaService,
         RelatorioService relatorioService,
-        PipelineService pipelineService,
-        AmbienteService ambienteService) {
+        AmbienteService ambienteService,
+        ClienteService clienteService,
+        EntityManager entityManager,
+        PlatformTransactionManager transactionManager) {
 
         super(queueDao);
         this.publisher = publisher;
@@ -67,19 +90,14 @@ public class QueueService extends MasterService<Long, Queue, QueueService> {
         this.jobService = jobService;
         this.evidenciaService = evidenciaService;
         this.relatorioService = relatorioService;
-        this.pipelineService = pipelineService;
         this.ambienteService = ambienteService;
+        this.clienteService = clienteService;
+        this.entityManager = entityManager;
+        this.transactionManager = transactionManager;
+//        this.motor.execute(this::gerenciarExecucoes);
+//        this.filaProcessador.execute(this::tratamentoDaFila);
     }
 
-    @Transactional
-    public Queue persist(@NotNull Queue queue) {
-        log.info("Persistindo Queue no banco:");
-        log.info(queue.toString());
-        queue = queueDao.save(queue);
-
-        log.info("Evidência ID {} gravado com sucesso.", queue.getId());
-        return queue;
-    }
 
     public Long countByStatusInAmbiente(
         @NonNull Ambiente ambiente,
@@ -92,24 +110,30 @@ public class QueueService extends MasterService<Long, Queue, QueueService> {
         return queueDao.countInAmbiente(ambiente.getId());
     }
 
+
     @Transactional(noRollbackFor = Throwable.class)
-    public QueuePushResponseDTO pushQueueItem(
+    public QueuePushResponseDTO pushQueue(
         @NonNull Ambiente ambiente,
         @NonNull String usuario,
         @NonNull QueuePayload payload)
     throws JsonProcessingException, DuplicatedRecordException {
-//        var itensExecutando = countByStatusInAmbiente(ambiente, EXECUTANDO);
-//        var queueSize = countByStatusInAmbiente(ambiente, AGUARDANDO);
-        var queueSize = countInAmbiente(ambiente);
-        if(queueSize > 0) {
-            return QueuePushResponseDTO.blocked(queueSize);
-        }
-        var ticket = UUID.randomUUID().toString();
-        log.info("Ticket desta solicitação: {}.", ticket);
-
+        var ambienteId = ambiente.getId();
+        var executorService = Optional.ofNullable(mapaFilas.get(ambienteId))
+            .map(task -> {
+                log.info("Executor já disponível no mapa de threads para Ambiente ID {}.", ambienteId);
+                return task;
+            })
+            .orElseGet(() -> {
+                log.info("Criando novo executor no mapa de threads para Ambiente ID {}.", ambienteId);
+                var novoExec = novoTaskExecutor(ambienteId);
+                mapaFilas.put(ambienteId, novoExec);
+                return novoExec;
+            });
+        var tamanhoFila = executorService.getQueueSize();
+        var resposta = new QueuePushResponseDTO(ambienteId, tamanhoFila);
         var json = objectMapper.writeValueAsString(payload);
-        var itemFila = Queue.builder()
-            .ticket(ticket)
+        var task = TaskQueue.builder()
+            .ticket(resposta.getTicket())
             .ambiente(ambiente)
             .pipeline(payload.getPipelineNome())
             .usuario(usuario)
@@ -117,149 +141,161 @@ public class QueueService extends MasterService<Long, Queue, QueueService> {
             .dataSolicitacao(OffsetDateTime.now(RELOGIO))
             .status(QueueStatus.AGUARDANDO)
             .build();
-        itemFila = save(itemFila);
-        publisher.publishEvent(itemFila);
-
-        return new QueuePushResponseDTO(ticket, queueSize);
+        save(task);
+        executorService.execute(() -> tratamentoDaFila(resposta));
+        return resposta;
     }
 
 
-//    @Async
-//    @EventListener
-//    public void pushQueueEvent(@NonNull Queue itemFila)
-//    throws JsonProcessingException, DuplicatedRecordException {
-//        itemFila.setStatus(QueueStatus.EXECUTANDO);
-//        itemFila.setDataExecucao(OffsetDateTime.now(RELOGIO));
-//        save(itemFila);
-//
-//        try {
-//            log.info("Desserializando Json em classe Java.");
-//            var payload = objectMapper.readValue(itemFila.getPayload(), QueuePayload.class);
-//            log.info(payload.toString());
-//
-//            var ambiente = itemFila.getAmbiente();
-//            var cliente = itemFila.getAmbiente().getCliente();
-//
-//            val jobsProcessados = jobService.executar(
-//                ambiente.acessoBanco(),
-//                ambiente.acessoFtp(),
-//                payload.getJobs()
-//            );
-//
-//            val evidencias = evidenciaService.gerarEvidencia(jobsProcessados);
-//            var pipeline = pipelineService
-//                .getUniqueOne(payload.getPipelineNome(), cliente.getId())
-//                .orElseThrow();
-//            val relatorio = relatorioService.buildAndPersist(
-//                cliente,
-//                ambiente,
-//                pipeline,
-//                itemFila.getUsuario(),
-//                evidencias);
-//        }
-//        catch(JsonProcessingException e) {
-//            throw new RuntimeException(e);
-//        }
-//        finally {
-//            delete(itemFila);
-//        }
-//        //val relatorioHistorico = new RelatorioHistoricoDTO(relatorio);
-//    }
-
-
-    public Queue saveAndFlush(@NonNull Queue entity) throws DuplicatedRecordException {
-//        var resultado = save(entity);
-//        entityManager.getTransaction().commit();
+    public TaskQueue saveAndFlush(@NonNull TaskQueue entity) throws DuplicatedRecordException {
         return queueDao.saveAndFlush(entity);
-//        return resultado;
     }
 
-    public void deleteAndFlush(@NonNull Queue entity) {
+    public void deleteAndFlush(@NonNull TaskQueue entity) {
         delete(entity);
         queueDao.flush();
     }
-//
-//    @Async
-//    @EventListener
-//    @Transactional(noRollbackFor = Throwable.class)
-//    public void processQueue(@NonNull Queue itemFila)
-//            throws DuplicatedRecordException, JsonProcessingException {
-//        log.info("Desserializando Json em classe Java.");
-//        var payload = objectMapper.readValue(itemFila.getPayload(), QueuePayload.class);
-//        log.info(payload.toString());
-//
-//        itemFila.setPayloadObj(payload);
-//        itemFila.setStatus(QueueStatus.EXECUTANDO);
-//        itemFila.setDataExecucao(OffsetDateTime.now(RELOGIO));
-//
-//        save(itemFila); //TODO: fluxsh ainda necessário?
-//        entityManager.getTransaction().commit();
-//
-//        var pipelineResult = runQueue(itemFila);
-//
-//        delete(itemFila); //TODO: flush ainda necessário?
-//        entityManager.getTransaction().commit();
-//
-//        report(itemFila.getAmbiente(), pipelineResult);
-//    }
-//
-//    @Transactional(noRollbackFor = Throwable.class)
-//    private PipelineResult runQueue(@NonNull Queue itemFila) {
-//        var ticket = itemFila.getTicket();
-//        var ambiente = itemFila.getAmbiente();
-//        var payload = itemFila.getPayloadObj();
-//        var usuario = itemFila.getUsuario();
-//
-//        var pipelineResult = PipelineResult.builder()
-//            .pipelineNome(payload.getPipelineNome())
-//            .pipelineDescricao(payload.getPipelineDescricao())
-//            .ticket(ticket)
-//            .usuario(usuario)
-//            .build();
-//
-//        try {
-//            var queriesAntes = payload.getQueriesPrePipeline()
-//                .stream()
-//                .map(QueuePayloadQuery::getQuery)
-//                .collect(Collectors.toSet());
-//            ambienteService.runQuery(queriesAntes, ambiente.acessoBanco());
-//
-//            pipelineResult.addJobResult(
-//                jobService.executar(
-//                    ambiente.acessoBanco(),
-//                    ambiente.acessoFtp(),
-//                    payload.getJobs()
-//                ));
-//            var queriesDepois = payload.getQueriesPosPipeline()
-//                .stream()
-//                .map(QueuePayloadQuery::getQuery)
-//                .collect(Collectors.toSet());
-//            ambienteService.runQuery(queriesDepois, ambiente.acessoBanco());
-//        }
-//        catch(Exception e) {
-//            log.error(e.getMessage());
-//            pipelineResult.setErro(true);
-//            pipelineResult.setMensagemErro(e.getMessage());
-//        }
-//        return pipelineResult;
-//    }
-//
-//    @Transactional(noRollbackFor = Throwable.class)
-//    private void report(@NonNull Ambiente ambiente, @NonNull PipelineResult pipelineResult) {
-//        var pipelineNome = pipelineResult.getPipelineNome();
-//        var jobsProcessados = pipelineResult.getResultadoJobs();
-//        var usuario = pipelineResult.getUsuario();
-//        var cliente = ambiente.getCliente();
-//        var pipeline = pipelineService.getUniqueOne(pipelineNome, cliente.getId())
-//            .orElseThrow(() -> new IllegalStateException("Sem pipeline informada para gerar Evidência."));
-//
-//        val evidencias = evidenciaService.gerarEvidencia(jobsProcessados);
-//        relatorioService.buildAndPersist(
-//            cliente,
-//            ambiente,
-//            pipeline,
-//            usuario,
-//            evidencias
-//        );
-//    }
+
+    private void tratamentoDaFila(@NonNull QueuePushResponseDTO queueDto) {
+        //TODO: TRABALHAR COM SESSÃO MANUAL AQUI! REESCREVER TODO O CÓDIGO DA GERAÇÃO DE EVIDÊNCIAS...
+
+        var ticket = queueDto.getTicket();
+        log.info("Iniciando tarefa do ticket: '{}'.", ticket);
+        var transactionTemplate = new TransactionTemplate(transactionManager);
+        transactionTemplate.execute((status) -> {
+            TaskQueue taskQueue = null;
+            Ambiente ambiente = null;
+            Cliente cliente = null;
+//            var session = entityManager.unwrap(Session.class);
+//            var transaction = session.beginTransaction();
+//            transaction.begin();;
+            try {
+            var sql =   "SELECT q, a, c " +
+                        "FROM PPW_QUEUE q " +
+                        "JOIN q.ambiente a " +
+                        "JOIN a.cliente c " +
+                        "WHERE q.ticket = :ticket";
+            log.info("SQL: {}", sql);
+
+            var dados = (Object[]) entityManager.createQuery(sql)
+                .setParameter("ticket", ticket)
+                .getResultList()
+                .stream()
+                .findFirst()
+                .orElseThrow(); //TODO: mudar para exception própria
+            taskQueue = (TaskQueue) dados[0];
+            ambiente = (Ambiente) dados[1];
+            cliente = (Cliente) dados[2];
+            log.info(taskQueue.toString());
+            log.info(ambiente.toString());
+            log.info(cliente.toString());
+//            var projection = queueDao.findByTicket(ticket).orElseGet(() -> null);
+
+////        if(taskQueue == null) {
+//            if(projection == null) {
+//                log.warn("Nenhum registro encontrado no banco para ticket: '{}'.", ticket);
+//                return;
+//            }
+
+                log.info("Desserializando JSON para {}.", QueuePayload.class.getSimpleName());
+                var payload = objectMapper.readValue(taskQueue.getPayload(), QueuePayload.class);
+                log.info(payload.toString());
+
+                taskQueue.setPayloadObj(payload);
+                taskQueue.setStatus(QueueStatus.EXECUTANDO);
+                taskQueue.setDataExecucao(OffsetDateTime.now(RELOGIO));
+                saveAndFlush(taskQueue); //TODO: fluxsh ainda necessário?
+
+                var pipelineResult = runQueue(taskQueue, ambiente, cliente);
+                val evidenciasResult = evidenciaService.gerarEvidencia(pipelineResult);
+                pipelineResult.addEvidenciaResult(evidenciasResult);
+                relatorioService.buildAndPersist(taskQueue.getAmbiente(), pipelineResult);
+            }
+            catch(NoSuchElementException e) {
+                log.warn("Nenhum registro encontrado no banco para ticket: '{}'.", ticket);
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+                log.error("Erro inesperado nas filas de Task: {}", e.getMessage());
+            }
+            finally {
+                entityManager.remove(taskQueue);
+                entityManager.flush();
+//            deleteAndFlush(taskQueue); //TODO: flush ainda necessário?
+//                transaction.commit();
+//                session.close();
+            }
+            return null;
+        });
+    }
+
+    @Transactional
+    private PipelineResult runQueue(
+        @NonNull TaskQueue itemFila,
+        @NonNull Ambiente ambiente,
+        @NonNull Cliente cliente) {
+
+        var ticket = itemFila.getTicket();
+        var payload = itemFila.getPayloadObj();
+        var usuario = itemFila.getUsuario();
+        //Por problemas de sessão, os objetos abaixo precisaram ser coletados/montados manualmente
+//        var ambiente = ambienteService.findById(
+//            itemFila.getAmbiente().getId());
+//        var cliente  = clienteService.findByAmbienteId(
+//            itemFila.getAmbiente().getId());
+        var banco = new AmbienteAcessoDTO(
+            ambiente.getConexaoBanco(),
+            ambiente.getUsuarioBanco(),
+            ambiente.getSenhaBanco());
+        var sftp = new AmbienteAcessoDTO(
+            ambiente.getConexaoSftp(),
+            ambiente.getUsuarioSftp(),
+            ambiente.getSenhaSftp());
+
+        var pipelineResult = PipelineResult.builder()
+            .pipelineNome(payload.getPipelineNome())
+            .pipelineDescricao(payload.getPipelineDescricao())
+            .ticket(ticket)
+            .usuario(usuario)
+            .clienteNome(cliente.getNome())
+            .build();
+
+        try {
+            var queriesAntes = payload.getQueriesPrePipeline()
+                .stream()
+                .map(QueuePayloadQuery::getQuery)
+                .collect(Collectors.toSet());
+            ambienteService.runQuery(queriesAntes, banco);
+
+            var jobsResult = jobService.executar(banco, sftp, payload.getJobs());
+            pipelineResult.addJobResult(jobsResult);
+
+            var queriesDepois = payload.getQueriesPosPipeline()
+                .stream()
+                .map(QueuePayloadQuery::getQuery)
+                .collect(Collectors.toSet());
+            ambienteService.runQuery(queriesDepois, ambiente.acessoBanco());
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+            log.error(e.getMessage());
+            pipelineResult.setErro(true);
+            pipelineResult.setMensagemErro(e.getMessage());
+        }
+        return pipelineResult;
+    }
+
+    private ThreadPoolTaskExecutor novoTaskExecutor(long ambienteId) {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(0);  // Mínimo número de threads na pool
+        executor.setMaxPoolSize(1);  // Máximo número de threads na pool
+//        executor.setQueueCapacity(20);  // Capacidade da fila de tarefas por thread
+        executor.setKeepAliveSeconds(60);  // Mantenha tópicos ociosos por 60 segundos
+        executor.setThreadNamePrefix("Task-Ambiente-Id-00" + ambienteId); // Nome da thread
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());  // ?
+        executor.setDaemon(true); // Se as threads devem ser interrompidas se o App fechar
+        executor.initialize(); // Iniciazar
+        return executor;
+    }
+
 }

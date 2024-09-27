@@ -15,7 +15,7 @@ import br.com.ppw.dma.domain.master.SqlSintaxe;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineExecDTO;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineJobInputDTO;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineQueryInputDTO;
-import br.com.ppw.dma.domain.queue.Queue;
+import br.com.ppw.dma.domain.queue.TaskQueue;
 import br.com.ppw.dma.domain.queue.*;
 import br.com.ppw.dma.domain.relatorio.RelatorioHistoricoDTO;
 import br.com.ppw.dma.domain.storage.FileSystemService;
@@ -115,7 +115,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
      * pelos valores gerados</li>
      * <li>Identifica se Variáveis da Pipeline para {@link MassaTabela} ficou pendente</li>
      * <li>Coleta o estado final de todas as queries (Jobs e Massas) para testá-las no banco remoto</li>
-     * <li>Valida se é possível executar com base no status da fila ({@link Queue})</li>
+     * <li>Valida se é possível executar com base no status da fila ({@link TaskQueue})</li>
      * </ol>
      * @param execDto {@link PipelineExecDTO} contendo as informações necessárias para execução.
      * @return {@link ResponseEntity} com o {@link QueuePushResponseDTO} contendo status da solicitação.
@@ -323,9 +323,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
             .queriesPosPipeline(massaDelete)
             .jobs(jobsQueue)
             .build();
-        var queueResponse = queueService.pushQueueItem(ambiente, usuario, solicitacao);
-        if(queueResponse.getQueueSize() > 0)
-            return ResponseEntity.unprocessableEntity().body(queueResponse);
+        var queueResponse = queueService.pushQueue(ambiente, usuario, solicitacao);
         return ResponseEntity.ok(queueResponse);
     }
 
