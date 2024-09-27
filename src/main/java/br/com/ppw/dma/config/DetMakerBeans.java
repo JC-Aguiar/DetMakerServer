@@ -44,31 +44,45 @@ public class DetMakerBeans {
     CommandLineRunner init(StorageService storageService, JobRepository jobDao) {
         log.info("Iniciando rotina de sanitização dos Jobs.");
         return (args) -> {
-            var jobs = jobDao.findAll();
-            jobs.forEach(job -> {
-                job.setMascaraEntrada(
-                    FormatString.dividirValores(job.getMascaraEntrada())
-                        .stream()
-                        .map(FormatString::extrairMascara)
-                        .collect(Collectors.joining(", "))
-                );
-                job.setMascaraLog(
-                    FormatString.dividirValores(job.getMascaraLog())
-                        .stream()
-                        .map(FormatString::extrairMascara)
-                        .collect(Collectors.joining(", "))
-                );
-                job.setMascaraSaida(
-                    FormatString.dividirValores(job.getMascaraSaida())
-                        .stream()
-                        .map(FormatString::extrairMascara)
-                        .collect(Collectors.joining(", "))
-                );
-            });
-            jobDao.saveAll(jobs);
+//            var jobs = jobDao.findAll();
+//            jobs.forEach(job -> {
+//                job.setMascaraEntrada(
+//                    FormatString.dividirValores(job.getMascaraEntrada())
+//                        .stream()
+//                        .map(FormatString::extrairMascara)
+//                        .collect(Collectors.joining(", "))
+//                );
+//                job.setMascaraLog(
+//                    FormatString.dividirValores(job.getMascaraLog())
+//                        .stream()
+//                        .map(FormatString::extrairMascara)
+//                        .collect(Collectors.joining(", "))
+//                );
+//                job.setMascaraSaida(
+//                    FormatString.dividirValores(job.getMascaraSaida())
+//                        .stream()
+//                        .map(FormatString::extrairMascara)
+//                        .collect(Collectors.joining(", "))
+//                );
+//            });
+//            jobDao.saveAll(jobs);
         };
 //            storageService.deleteAll();
 //            storageService.init();
     }
+
+//    @Bean(name = "dynamicThreadPool")
+//    public ThreadPoolTaskExecutor threadPoolTaskExecutor() {
+//        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+//        executor.setCorePoolSize(1);  // Minimum number of threads in the pool
+//        executor.setMaxPoolSize(12);  // Maximum number of threads in the pool
+////        executor.setQueueCapacity(20);  // Queue capacity for pending tasks
+//        executor.setKeepAliveSeconds(60);  // Keep idle threads alive for 60 seconds
+//        executor.setThreadNamePrefix("QueueExecutor-");  // Thread name prefix
+//        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());  // Handle rejection
+//        executor.setDaemon(true);
+//        executor.initialize();
+//        return executor;
+//    }
 
 }

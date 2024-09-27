@@ -3,9 +3,9 @@ package br.com.ppw.dma;
 import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.domain.job.JobService;
 import br.com.ppw.dma.domain.master.*;
-import br.com.ppw.dma.master.*;
-import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineExecDTO;
+import br.com.ppw.dma.domain.queue.QueuePushResponseDTO;
+import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,6 +20,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.channel.Channel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.ResourceUtils;
 
 import java.io.*;
@@ -30,17 +31,70 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static br.com.ppw.dma.domain.master.SqlSintaxe.getExceptionMainCause;
+import static br.com.ppw.dma.domain.master.SqlSintaxe.isSafeSelect;
 import static br.com.ppw.dma.util.FormatString.dividirValores;
-import static br.com.ppw.dma.domain.master.SqlSintaxe.*;
 
 @Slf4j
 public class BasicTest {
+
+
+//    @Test
+//    public void testandoQueues2() throws Exception {
+//        var threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
+//        threadPoolTaskScheduler.setPoolSize(5);
+//        threadPoolTaskScheduler.setThreadNamePrefix("ThreadPoolTaskScheduler");
+//        threadPoolTaskScheduler.execute();
+//    }
+
+    @Test
+    public void testandoQueues() throws Exception {
+        // Fila de eventos
+        var fila = new ConcurrentLinkedQueue<QueuePushResponseDTO>();
+        var filaProcessador = Executors.newSingleThreadExecutor();
+        var registros = 20;
+
+        log.info("Iniciando fila de tratamento.");
+        filaProcessador.execute(() -> {
+            while(true) {
+                synchronized(fila) {
+                    if(fila.isEmpty()) continue;
+                    try {
+                        log.info("Item na fila identificado.");
+                        var queueDto = fila.poll();
+                        log.info(queueDto.toString());
+                        Thread.sleep(Duration.ofSeconds(2).toMillis());
+                    }
+                    catch(Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+                log.info("rodando.");
+            }
+        });
+
+        log.info("Inserindo {} registro(s) de uma vez só.", registros);
+        var index = new AtomicInteger(0);
+        Stream.generate(index::incrementAndGet).limit(registros).forEach(nada -> {
+            var itemFila = new QueuePushResponseDTO(1, index.get());
+            fila.offer(itemFila);
+        });
+        log.info("Inserções finalizadas.");
+
+        filaProcessador.awaitTermination(1, TimeUnit.MINUTES);
+//        processingThread.start();
+//        processingThread.join();
+    }
 
     @Test
     public void converterData() throws Exception {

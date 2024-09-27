@@ -42,6 +42,16 @@ public class ClienteService {
         return record;
     }
 
+    // A method that returns an Cliente by id.
+    public Cliente findByAmbienteId(Long id) {
+        var record = Optional
+            .ofNullable(dao.findByAmbienteId(id))
+            .orElseThrow();
+        log.info("Cliente encontrado para Ambiente ID {}:", id);
+        log.info(record.toString());
+        return record;
+    }
+
     // A proxy method that calls `pageCheck` method.
     public List<Cliente> findAll() {
         return dao.findAll();

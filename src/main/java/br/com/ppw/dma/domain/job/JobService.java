@@ -195,7 +195,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
 
 
     //TODO: criar exception própria?
-    //TODO: mover para Queue?
+    //TODO: mover para TaskQueue?
     //TODO: javadoc
 //    public List<Evidencia> executarJob(@NonNull QueuePayload preparation) {
     @Transactional(noRollbackFor = Throwable.class)

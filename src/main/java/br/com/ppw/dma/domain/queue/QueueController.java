@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 @RestController
 @RequestMapping("queue")
-public class QueueController extends MasterController<Long, Queue, QueueController> {
+public class QueueController extends MasterController<Long, TaskQueue, QueueController> {
 
     private final QueueService queueService;
 
@@ -23,12 +23,12 @@ public class QueueController extends MasterController<Long, Queue, QueueControll
     }
 
     @Override
-    public ResponseEntity<?> parseOne(Queue entity) {
+    public ResponseEntity<?> parseOne(TaskQueue entity) {
         return ResponseEntity.ok(entity);
     }
 
     @Override
-    public ResponseEntity<?> parseAll(Page<Queue> entities) {
+    public ResponseEntity<?> parseAll(Page<TaskQueue> entities) {
         return ResponseEntity.ok(entities);
     }
 

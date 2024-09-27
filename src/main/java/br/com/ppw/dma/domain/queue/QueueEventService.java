@@ -1,5 +1,6 @@
 package br.com.ppw.dma.domain.queue;
 
+import br.com.ppw.dma.domain.ambiente.Ambiente;
 import br.com.ppw.dma.domain.ambiente.AmbienteService;
 import br.com.ppw.dma.domain.evidencia.EvidenciaService;
 import br.com.ppw.dma.domain.job.JobService;
@@ -18,8 +19,13 @@ import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatDate.RELOGIO;
@@ -39,6 +45,9 @@ public class QueueEventService {
     PipelineService pipelineService;
     AmbienteService ambienteService;
 
+    Queue<QueuePushResponseDTO> fila = new ConcurrentLinkedQueue<>();
+    ExecutorService filaProcessador = Executors.newSingleThreadExecutor();
+
 
     @Autowired
     public QueueEventService(
@@ -57,12 +66,13 @@ public class QueueEventService {
         this.relatorioService = relatorioService;
         this.pipelineService = pipelineService;
         this.ambienteService = ambienteService;
+        this.filaProcessador.execute(this::tratamentoDaFila);
     }
 
 
     @Async @EventListener
 //    @Transactional(noRollbackFor = Throwable.class)
-    public void processQueue(@NonNull Queue itemFila)
+    public void processQueue(@NonNull TaskQueue itemFila)
     throws DuplicatedRecordException, JsonProcessingException {
 
         log.info("Desserializando Json em classe Java.");
@@ -79,17 +89,11 @@ public class QueueEventService {
 
         val evidenciasResult = evidenciaService.gerarEvidencia(pipelineResult);
         pipelineResult.addEvidenciaResult(evidenciasResult);
-
-//        report(itemFila.getAmbiente(), pipelineResult);
-
-//        var pipeline = pipelineService.getUniqueOne(pipelineNome, cliente.getId())
-//            .orElseThrow(() -> new IllegalStateException("Sem pipeline informada para gerar Evidência."));
-
         relatorioService.buildAndPersist(itemFila.getAmbiente(), pipelineResult);
     }
 
-//    @Transactional(noRollbackFor = Throwable.class)
-    private PipelineResult runQueue(@NonNull Queue itemFila) {
+    //    @Transactional(noRollbackFor = Throwable.class)
+    private PipelineResult runQueue(@NonNull TaskQueue itemFila) {
 
         var ticket = itemFila.getTicket();
         var ambiente = itemFila.getAmbiente();
@@ -132,23 +136,20 @@ public class QueueEventService {
         return pipelineResult;
     }
 
-//    @Transactional(noRollbackFor = Throwable.class)
-//    private void report(@NonNull Ambiente ambiente, @NonNull PipelineResult pipelineResult) {
-//        var pipelineNome = pipelineResult.getPipelineNome();
-//        var jobsProcessados = pipelineResult.getResultadoJobs();
-//        var usuario = pipelineResult.getUsuario();
-//        var cliente = ambiente.getCliente();
-//        var pipeline = pipelineService.getUniqueOne(pipelineNome, cliente.getId())
-//            .orElseThrow(() -> new IllegalStateException("Sem pipeline informada para gerar Evidência."));
-//
-//        val evidencias = evidenciaService.gerarEvidencia(jobsProcessados);
-//        relatorioService.buildAndPersist(
-//            cliente,
-//            ambiente,
-//            pipeline,
-//            usuario,
-//            evidencias
-//        );
-//    }
+    private void tratamentoDaFila() {
+        while(true) {
+            synchronized(fila) {
+                if(fila.isEmpty()) continue;
+                try {
+                    log.info("Item na fila identificado.");
+                    var queueDto = fila.poll();
+                    log.info(queueDto.toString());
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 
 }

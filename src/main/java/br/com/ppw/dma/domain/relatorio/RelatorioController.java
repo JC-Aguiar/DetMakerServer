@@ -198,7 +198,7 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
             .build();
 
         //TODO: o usuário deve ser o que fez a nova solicitação!
-        var queueResponse = queueService.pushQueueItem(ambiente, usuario, solicitacao);
+        var queueResponse = queueService.pushQueue(ambiente, usuario, solicitacao);
         if(queueResponse.getQueueSize() > 0)
             return ResponseEntity.unprocessableEntity().body(queueResponse);
         return ResponseEntity.ok(queueResponse);
