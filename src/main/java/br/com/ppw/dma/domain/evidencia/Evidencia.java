@@ -103,27 +103,27 @@ public class Evidencia implements MasterEntity<Long> {
     @JsonManagedReference
     @Column(name = "CARGAS_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    @Where(clause = "type = 'carga'")
+    @Where(clause = "tipo = 'carga'")
     List<ExecFile> cargas = new ArrayList<>();
 
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "LOG_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    @Where(clause = "type = 'log'")
+    @Where(clause = "tipo = 'log'")
     List<ExecFile> logs = new ArrayList<>();
 
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "REMESSA_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    @Where(clause = "type = 'remessa'")
+    @Where(clause = "tipo = 'remessa'")
     List<ExecFile> remessas = new ArrayList<>();
 
     @Column(name = "EXIT_CODE", columnDefinition = "NUMBER(3)")
     Integer exitCode;
 
-    @Column(name = "MENSAGEM_ERRO", length = 200)
+    @Column(name = "MENSAGEM_ERRO", length = 500)
     String mensagemErro;
 
     @Builder.Default

@@ -258,8 +258,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
             //Execução
             log.info("Obtendo o sha256 do Job.");
             val sha256 = sftp.comando(process.getComandoVersao())
-                .getConsoleLog()
-                .stream()
+                .getConsoleLog().stream()
                 .findFirst()
                 .orElse("");
             log.info(" - sha256 obtido: '{}'.", sha256);
@@ -267,7 +266,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
 
             log.info("Acionando Job remoto.");
             val terminalManager = sftp.comando(process.getComandoExec());
-            process.setTerminal(terminalManager);
+//            process.setTerminal(terminalManager);
             process.setExitCode(terminalManager.getExitCode());
             process.setSucesso(true);
             log.info("Job acionado com sucesso.");
@@ -291,11 +290,12 @@ public class JobService extends MasterService<Long, Job, JobService> {
             for(int i = 0; i < logsPreJob.size(); i++) {
                 val logPre = logsPreJob.get(i);
                 val logPos = logsPosJob.get(i);
-                process.addLogs(SftpFileManager.compare(logPre, logPos));
+                process.addLogs(SftpFileManager.compareAntesDepois(logPre, logPos));
             }
         }
         //Caso exception no acionamento/monitoramento do DetMaker com o Job
         catch(Exception e) {
+            e.printStackTrace();
             log.error("Erro inesperado na execução do {}º Job ['{}']: {}",
                 process.getOrdem(),
                 process.getNome(),
@@ -315,9 +315,9 @@ public class JobService extends MasterService<Long, Job, JobService> {
                 query.getNome(),
                 query.getQuery(),
                 query.getDescricao());
-
             try(val masterDao = new MasterOracleDAO(banco)) {
-                resultado.addResultado(masterDao.collectData(query.getQuery()));
+                var extracao = masterDao.collectData(query.getQuery());
+                resultado.addResultado(extracao);
                 sucessos.getAndIncrement();
             }
             catch(SQLException | PersistenceException e) {

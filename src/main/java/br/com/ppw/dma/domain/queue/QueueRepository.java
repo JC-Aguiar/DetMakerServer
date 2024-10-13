@@ -2,6 +2,7 @@ package br.com.ppw.dma.domain.queue;
 
 import br.com.ppw.dma.domain.ambiente.Ambiente;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -27,5 +28,9 @@ public interface QueueRepository extends JpaRepository<TaskQueue, Long> {
 		"JOIN PPW_CLIENTE c ON a.CLIENTE_ID = c.ID " +
 		"WHERE q.TICKET = :ticket")
 	Optional<QueueRunnerView> findByTicket(String ticket);
+
+	@Modifying
+	@Query(name = "DELETE FROM PPW_QUEUE q WHERE q.TICKET = :ticket", nativeQuery = true)
+	boolean deleteByTicket(String ticket);
 
 }

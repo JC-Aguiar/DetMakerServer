@@ -20,11 +20,12 @@ public class RelatorioHistoricoDTO {
     String pipeline;
     String dados;
 //    String descricao;
+    String ticket;
     String idProjeto;
     String nomeProjeto;
     String nomeAtividade;
     String consideracoes;
-    String parametros;
+//    String parametros;
     String testeTipo;
     String cliente;
     String ambiente;
@@ -35,6 +36,7 @@ public class RelatorioHistoricoDTO {
     public RelatorioHistoricoDTO(@NonNull Relatorio relatorio) {
         log.info("Convertendo Relatorio em RelatorioHistoricoDTO.");
         this.id = relatorio.getId();
+        this.ticket = relatorio.getTicket();
 //        this.pipeline = relatorio.getPipeline().getProps().getNome();
         this.pipeline = relatorio.getPipelineNome();
         this.dados = relatorio.getPipelineDescricao();
@@ -42,7 +44,7 @@ public class RelatorioHistoricoDTO {
         this.nomeProjeto = relatorio.getNomeProjeto();
         this.nomeAtividade = relatorio.getNomeAtividade();
         this.consideracoes = relatorio.getConsideracoes();
-        this.parametros = relatorio.getParametros();
+//        this.parametros = relatorio.getParametros();
         this.cliente = relatorio.getCliente();
         this.ambiente = relatorio.getAmbiente().getNome();
         this.data = relatorio.getDataCompleta();

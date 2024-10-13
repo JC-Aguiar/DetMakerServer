@@ -23,12 +23,12 @@ public class EvidenciaInfoDTO {
     String argumentos;
     List<String> queries = new ArrayList<>();
     List<String> queriesNome = new ArrayList<>();
-    List<String> tabelasPreJob = new ArrayList<>();
-    List<String> tabelasPosJob = new ArrayList<>();
+    @ToString.Exclude List<String> tabelasPreJob = new ArrayList<>();
+    @ToString.Exclude List<String> tabelasPosJob = new ArrayList<>();
     List<String> queriesInconformidade = new ArrayList<>();
-    List<AnexoInfoDTO> cargas = new ArrayList<>();
-    List<AnexoInfoDTO> logs = new ArrayList<>();
-    List<AnexoInfoDTO> saidas = new ArrayList<>();
+    @ToString.Exclude List<AnexoInfoDTO> cargas = new ArrayList<>();
+    @ToString.Exclude List<AnexoInfoDTO> logs = new ArrayList<>();
+    @ToString.Exclude List<AnexoInfoDTO> saidas = new ArrayList<>();
     Integer exitCode;
     String sha256;
     String erroFatal;
@@ -46,8 +46,7 @@ public class EvidenciaInfoDTO {
     }
 
     public EvidenciaInfoDTO(@NonNull Evidencia evidencia, @NonNull Integer ordem) {
-        log.info("Convertendo Evidencia em {}.", EvidenciaInfoDTO.class.getSimpleName());
-        log.info("Ordem da evidência na Pipeline: {}.", ordem);
+        log.info("Convertendo Evidencia Nº{} em {}.", ordem, EvidenciaInfoDTO.class.getSimpleName());
         val queries = new ArrayList<String>();
         val queriesNome = new ArrayList<String>();
         val bancoPreJob = new ArrayList<String>();
@@ -108,62 +107,28 @@ public class EvidenciaInfoDTO {
         return listaFinal;
     }
 
-    @Override
-    public String toString() {
-        return "EvidenciaInfoDTO{" +
-            "id=" + id +
-            ", ordem=" + ordem +
-            ", job='" + job + '\'' +
-            ", jobDescricao='" + jobDescricao + '\'' +
-            ", argumentos='" + argumentos + '\'' +
-            ", queries=" + queries +
-            ", queriesNome=" + queriesNome +
-            ", tabelasPreJob=" + getResumoTabelasPreJob() +
-            ", tabelasPosJob=" + getResumoTabelasPosJob() +
-            ", cargas=" + getResumoCargas() +
-            ", logs=" + getResumoLogs() +
-            ", saidas=" + getResumoSaidas() +
-            ", exitCode=" + exitCode +
-            ", sha256='" + sha256 + '\'' +
-            ", erroFatal='" + erroFatal + '\'' +
-            ", dataInicio=" + dataInicio +
-            ", dataFim=" + dataFim +
-            ", duracao=" + duracao +
-            ", revisor='" + revisor + '\'' +
-            ", dataRevisao=" + dataRevisao +
-            ", requisitos='" + requisitos + '\'' +
-            ", comentario='" + comentario + '\'' +
-            ", resultado='" + resultado + '\'' +
-            '}';
+    @ToString.Include(name = "tabelasPreJob")
+    public String getResumoTabelasPreJob() {
+        return String.format("[registros=%d]", tabelasPreJob.size());
     }
 
-    private String getResumoTabelasPreJob() {
-        val tamanho = tabelasPreJob.size();
-        val peso = tabelasPreJob.stream()
-            .map(String::getBytes)
-            .mapToLong(bytes -> bytes.length)
-            .sum();
-        return String.format("[registros=%d, peso=%dKbs]", tamanho, peso);
+    @ToString.Include(name = "tabelasPosJob")
+    public String getResumoTabelasPosJob() {
+        return String.format("[registros=%d]", tabelasPosJob.size());
     }
 
-    private String getResumoTabelasPosJob() {
-        val tamanho = tabelasPosJob.size();
-        val peso = tabelasPosJob.stream()
-            .map(String::getBytes)
-            .mapToLong(bytes -> bytes.length)
-            .sum();
-        return String.format("[registros=%d, peso=%dKbs]", tamanho, peso);
-    }
-
-    private String getResumoLogs() {
+    @ToString.Include(name = "logs")
+    public String getResumoLogs() {
         return getResumo(logs);
     }
 
-    private String getResumoCargas() {
+    @ToString.Include(name = "cargas")
+    public String getResumoCargas() {
         return getResumo(cargas);
     }
 
-    private String getResumoSaidas() {
+    @ToString.Include(name = "saidas")
+    public String getResumoSaidas() {
         return getResumo(saidas);
     }
 

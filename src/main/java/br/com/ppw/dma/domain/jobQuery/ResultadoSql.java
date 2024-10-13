@@ -4,15 +4,16 @@ import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.FieldDefaults;
+import org.modelmapper.ModelMapper;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Stream;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -38,7 +39,7 @@ public class ResultadoSql {
      String mensagemErro = "";
 
      @ToString.Exclude
-     final List<List<Object>> resultado = new ArrayList<>();
+     final List<List<String>> resultado = new ArrayList<>();
 
 
 
@@ -60,27 +61,29 @@ public class ResultadoSql {
      }
 
      @JsonIgnore
-     @ToString.Include
-     public String resumo() {
-          final List<List<?>> tabela = new ArrayList<>();
-          tabela.add(this.getCampos());
-          tabela.addAll(this.resultado);
+     public String getResultadoAsString() {
+          var tabela = new ArrayList<List<String>>();
+          tabela.add(campos);
+          tabela.addAll(resultado);
           return FormatString.tabelaParaString(tabela);
      }
 
      @JsonIgnore
-     public List<List<Object>> getResultado() {
+     public List<List<String>> getResultado() {
           return List.copyOf(resultado);
      }
 
      public void addResultado(List<Map<String, Object>> extracao) {
-          if(getCampos().isEmpty() && !extracao.isEmpty()) {
-               getCampos().addAll(extracao.get(0).keySet());
+          if(campos.isEmpty() && !extracao.isEmpty()) {
+               campos.addAll(extracao.get(0).keySet());
           }
           resultado.clear();
-          extracao.parallelStream().forEach(
-              registro -> resultado.add(List.of(registro.values()))
-          );
+          extracao.stream()
+             .map(Map::values)
+             .map(registro -> registro.stream()
+                .map(String::valueOf)
+                .toList())
+           .forEach(resultado::add);
           successo = true;
      }
 
@@ -91,7 +94,7 @@ public class ResultadoSql {
      }
 
      @JsonIgnore
-     @ToString.Include
+     @ToString.Include(name = "resutlado")
      private String resumoRegistros() {
           return String.format("[registros=%d]", resultado.size());
      }

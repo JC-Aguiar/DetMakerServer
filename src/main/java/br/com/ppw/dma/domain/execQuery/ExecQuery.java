@@ -91,8 +91,8 @@ public class ExecQuery implements MasterEntity<Long> {
             .queryNome(tabelaPos.getNome())
             .queryDescricao(tabelaPos.getDescricao())
             .query(tabelaPos.getQuery())
-            .resultadoPreJob(tabelaPre.resumo())
-            .resultadoPosJob(tabelaPos.resumo())
+            .resultadoPreJob(tabelaPre.getResultadoAsString())
+            .resultadoPosJob(tabelaPos.getResultadoAsString())
             .inconformidade(
                 String.join("\n", tabelaPre.getMensagemErro(), tabelaPos.getMensagemErro()))
             //TODO: ?informações da pipeline?

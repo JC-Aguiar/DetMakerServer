@@ -53,10 +53,10 @@ public class Relatorio implements MasterEntity<Long> {
     @Column(name = "NOME_ATIVIDADE", length = 300) //, updatable = false)
     String nomeAtividade;
 
-    @Column(name = "PARAMETROS", length = 500, updatable = false)
-    String parametros;
+//    @Column(name = "PARAMETROS", length = 500, updatable = false)
+//    String parametros;
 
-    @Column(name = "CONSIDERACOES", length = 500, updatable = false)
+    @Column(name = "CONSIDERACOES", length = 800, updatable = false)
     String consideracoes;
 
     @Column(name = "TESTE_TIPO", length = 10, updatable = false)
@@ -69,6 +69,9 @@ public class Relatorio implements MasterEntity<Long> {
     @Column(name = "SUCESSO", nullable = false, updatable = false)
     Boolean sucesso;
 
+    @Column(name = "ERRO_PIPELINE", length = 400)
+    String erroPipeline;
+
     @Column(name = "USUARIO", length = 100, nullable = false, updatable = false)
     String usuario;
 
@@ -76,7 +79,6 @@ public class Relatorio implements MasterEntity<Long> {
     @Column(name = "EVIDENCIA", nullable = false, updatable = false)
     @OneToMany(fetch = LAZY)
     @ToString.Exclude
-    // IDs das evidências que compõem esse relatório
     List<Evidencia> evidencias = new ArrayList<>();
 
 //    @ToString.Exclude
@@ -111,23 +113,24 @@ public class Relatorio implements MasterEntity<Long> {
     public Relatorio(@NonNull Ambiente ambiente, @NonNull PipelineResult pipelineResult) {
         var consideracoes = new StringBuilder();
         var evidenciasOk = new ArrayList<Evidencia>();
-        for(var ev : pipelineResult.getResultadoEvidencias()) {
-            if(ev.exception()) consideracoes.append(ev.detalhes() + "\n");
-            else ev.evidencia().ifPresent(evidenciasOk::add);
+        for(var evResult : pipelineResult.getResultadoEvidencias()) {
+            if(evResult.exception()) consideracoes.append(evResult.detalhes() + "\n");
+            else evResult.evidencia().ifPresent(evidenciasOk::add);
         }
+        this.cliente = pipelineResult.getClienteNome();
+        this.ambiente = ambiente;
+        this.pipelineNome = pipelineResult.getPipelineNome();
+        this.pipelineDescricao = pipelineResult.getPipelineDescricao();
+        this.consideracoes = consideracoes.toString();
+        this.ticket= pipelineResult.getTicket();
+        this.usuario = pipelineResult.getUsuario();
+        this.data = LocalDate.now(RELOGIO);
+        this.dataCompleta = OffsetDateTime.now(RELOGIO);
+        this.testeTipo = TiposDeTeste.UNITARIO; //TODO: remover hardcoded
+        this.sucesso = !pipelineResult.isErro();
+        this.erroPipeline = pipelineResult.getMensagemErro();
+        setEvidencias(evidenciasOk);
 //            .nomeAtividade(preparation.relatorio().getNomeAtividade())
-            this.cliente = pipelineResult.getClienteNome();
-            this.ambiente = ambiente;
-            this.pipelineNome = pipelineResult.getPipelineNome();
-            this.pipelineDescricao = pipelineResult.getPipelineDescricao();
-            this.consideracoes = consideracoes.toString();
-            this.ticket= pipelineResult.getTicket();
-            this.usuario = pipelineResult.getUsuario();
-//            .parametros(parametrosDosJobs)
-            this.data = LocalDate.now(RELOGIO);
-            this.dataCompleta = OffsetDateTime.now(RELOGIO);
-            this.testeTipo = TiposDeTeste.UNITARIO; //TODO: remover hardcoded
-            setEvidencias(evidenciasOk);
 //        relatorio.setIdProjeto(preparation.relatorio().getIdProjeto());
 //        relatorio.setNomeProjeto(preparation.relatorio().getNomeProjeto());
 //        relatorio.setTesteTipo(TiposDeTeste

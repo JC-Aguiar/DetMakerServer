@@ -1,47 +1,52 @@
 package br.com.ppw.dma.domain.relatorio;
 
 import br.com.ppw.dma.domain.evidencia.Evidencia;
+import lombok.Builder;
 import lombok.NonNull;
 import lombok.val;
 
 import java.time.OffsetDateTime;
+import java.util.Optional;
+import java.util.function.Predicate;
 
+@Builder
 public record RelatorioResumoDTO(
+
     long id,
-//    long idPipeline,
+    String ticket,
     String nomePipeline,
-    String descricaoPipeline,
     String idProjeto,
     String nomeProjeto,
     String nomeAtividade,
+    String autor,
     OffsetDateTime data,
-    boolean sucesso,
+    boolean erro,
     int evidencias,
-    int revisados
-) {
+    int revisados) {
+
 
     public static RelatorioResumoDTO converterEntidade(@NonNull Relatorio relatorio) {
-        val sucesso = relatorio.getSucesso() != null ? relatorio.getSucesso() : false;
+        val erro = Optional.ofNullable(relatorio.getSucesso())
+            .map(sucesso -> !sucesso)
+            .orElse(false);
         val evidencias = relatorio.getEvidencias();
         val revisados = evidencias.stream()
             .filter(Evidencia::jaRevisada)
             .toList()
             .size();
-
-        return new RelatorioResumoDTO(
-            relatorio.getId(),
-//            pipeline.getId(),
-//            pipeline.getProps().getNome(),
-//            pipeline.getNome(),
-            relatorio.getPipelineNome(),
-            relatorio.getPipelineDescricao(),
-            relatorio.getIdProjeto(),
-            relatorio.getNomeProjeto(),
-            relatorio.getNomeAtividade(),
-            relatorio.getDataCompleta(),
-            sucesso,
-            evidencias.size(),
-            revisados);
+        return RelatorioResumoDTO.builder()
+            .id(relatorio.getId())
+            .ticket(relatorio.getTicket())
+            .nomePipeline(relatorio.getPipelineNome())
+            .idProjeto(relatorio.getIdProjeto())
+            .nomeProjeto(relatorio.getNomeProjeto())
+            .nomeAtividade(relatorio.getNomeAtividade())
+            .autor(relatorio.getUsuario())
+            .data(relatorio.getDataCompleta())
+            .erro(erro)
+            .evidencias(evidencias.size())
+            .revisados(revisados)
+            .build();
     }
 
 }

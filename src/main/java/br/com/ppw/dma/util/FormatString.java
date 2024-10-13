@@ -188,7 +188,7 @@ public final class FormatString {
         return contador;
     }
 
-    public static String tabelaParaString(@NotNull List<@NotNull List<?>> tabela) {
+    public static <T> String tabelaParaString(@NotNull List<@NotNull List<T>> tabela) {
         if(tabela.isEmpty() || tabela.get(0).isEmpty()) return "";
 
         //Encontra o tamanho máximo de cada coluna
@@ -197,7 +197,7 @@ public final class FormatString {
         for(var linha : tabela) {
             for(int col = 0; col < linha.size(); col++) {
                 int tamanhoValor = String.valueOf(linha.get(col)).length();
-                if (tamanhoValor > tamanhosMaximos[col]) {
+                if(tamanhoValor > tamanhosMaximos[col]) {
                     tamanhosMaximos[col] = tamanhoValor;
                 }
             }

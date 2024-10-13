@@ -20,6 +20,7 @@ public final class SftpFileManager<T> {
     @Setter private String fileMask = "";
 
     public static final String NOT_FOUND = "Arquivo não encontrado.";
+    public static final String INVALID = "Arquivo encontrado obsoleto.";
     public static final String SUCCESS = "Arquivos coletado com sucesso.";
 
 
@@ -50,19 +51,26 @@ public final class SftpFileManager<T> {
     }
 
     //TODO: javadoc!!!!
-    public static <T> SftpFileManager<T> compare(
+    public static <T> SftpFileManager<T> compareAntesDepois(
         @NonNull SftpFileManager<T> antes,
         @NonNull SftpFileManager<T> depois) {
         //--------------------------------------------
         val arquivoAntes = antes.file;
         val arquivoDepois = depois.file;
+        if(arquivoAntes.isEmpty() && arquivoDepois.isEmpty()) {
+            val cenarioErro = new SftpFileManager<T>(depois.comando, null);
+            cenarioErro.setErro(NOT_FOUND);
+            cenarioErro.setFileMask(depois.fileMask);
+            return cenarioErro;
+        }
         boolean duplicidade = arquivoAntes.isPresent()
             && arquivoDepois.isPresent()
             && arquivoAntes.equals(arquivoDepois);
 
-        if(duplicidade) {
+        if(duplicidade || arquivoDepois.isEmpty()) {
             val cenarioErro = new SftpFileManager<T>(depois.comando, null);
-            cenarioErro.setErro(NOT_FOUND);
+            cenarioErro.setErro(INVALID);
+            cenarioErro.setFileMask(depois.fileMask);
             return cenarioErro;
         }
         return depois;

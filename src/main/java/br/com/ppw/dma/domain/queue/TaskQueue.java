@@ -8,8 +8,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.Comment;
+import org.hibernate.proxy.HibernateProxy;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 import static br.com.ppw.dma.domain.queue.QueueStatus.AGUARDANDO;
 import static jakarta.persistence.EnumType.STRING;
@@ -17,7 +19,9 @@ import static jakarta.persistence.FetchType.EAGER;
 import static jakarta.persistence.GenerationType.SEQUENCE;
 import static lombok.AccessLevel.PRIVATE;
 
-@Data
+@Getter
+@Setter
+@ToString
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
@@ -69,9 +73,32 @@ public class TaskQueue implements MasterEntity<Long> {
     @Enumerated(STRING)
     @Column(name = "STATUS", length = 12, nullable = false)
     @Comment("Status dessa solicitação")
-    QueueStatus status = AGUARDANDO;
+    QueueStatus status;
 
     @Nullable
     @Transient
     QueuePayload payloadObj;
+
+
+    @Override
+    public final boolean equals(Object o) {
+        if(this == o) return true;
+        if(o == null) return false;
+        Class<?> oEffectiveClass = o instanceof HibernateProxy ?
+            ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass() :
+            o.getClass();
+        Class<?> thisEffectiveClass = this instanceof HibernateProxy ?
+            ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass() :
+            this.getClass();
+        if(thisEffectiveClass != oEffectiveClass) return false;
+        TaskQueue taskQueue = (TaskQueue) o;
+        return getId() != null && Objects.equals(getId(), taskQueue.getId());
+    }
+
+    @Override
+    public final int hashCode() {
+        return this instanceof HibernateProxy ?
+            ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass().hashCode() :
+            getClass().hashCode();
+    }
 }

@@ -4,7 +4,6 @@ import br.com.ppw.dma.domain.ambiente.Ambiente;
 import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.domain.ambiente.AmbienteService;
 import br.com.ppw.dma.domain.cliente.Cliente;
-import br.com.ppw.dma.domain.cliente.ClienteService;
 import br.com.ppw.dma.domain.evidencia.EvidenciaService;
 import br.com.ppw.dma.domain.job.JobService;
 import br.com.ppw.dma.domain.master.MasterService;
@@ -14,13 +13,17 @@ import br.com.ppw.dma.exception.DuplicatedRecordException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityManager;
+import jakarta.persistence.FlushModeType;
+import jakarta.persistence.PersistenceContext;
 import lombok.AccessLevel;
 import lombok.NonNull;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Service;
@@ -44,60 +47,45 @@ import static br.com.ppw.dma.util.FormatDate.RELOGIO;
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
 
-    ApplicationEventPublisher publisher;
+    @PersistenceContext
+    EntityManager entityManager;
+
     ObjectMapper objectMapper;
     QueueRepository queueDao;
     JobService jobService;
     EvidenciaService evidenciaService;
     RelatorioService relatorioService;
     AmbienteService ambienteService;
-    ClienteService clienteService;
-    EntityManager entityManager;
     PlatformTransactionManager transactionManager;
-//    Queue<QueuePushResponseDTO> fila = new ConcurrentLinkedQueue<>();
-//    Map<Long, Queue<QueuePushResponseDTO>> queueMap = new ConcurrentHashMap<>();
-//    ExecutorService motor = Executors.newSingleThreadExecutor();
     Map<Long, ThreadPoolTaskExecutor> mapaFilas = new ConcurrentHashMap<>();
+    Map<Long, String> ticketsExecucao = new ConcurrentHashMap<>();
 
-
-//    private record ExecutorQueue(ExecutorService executor, Queue<QueuePushResponseDTO> fila) {
-//        private static ExecutorQueue start(QueuePushResponseDTO itemFila) {
-//            var novoExec = new ExecutorQueue(
-//                Executors.newSingleThreadExecutor(),
-//                new ConcurrentLinkedQueue<>());
-//            novoExec.fila.offer(itemFila);
-//            return novoExec;
-//        }
-//    }
 
     @Autowired
     public QueueService(
-        ApplicationEventPublisher publisher,
         ObjectMapper objectMapper,
         QueueRepository queueDao,
         JobService jobService,
         EvidenciaService evidenciaService,
         RelatorioService relatorioService,
         AmbienteService ambienteService,
-        ClienteService clienteService,
         EntityManager entityManager,
         PlatformTransactionManager transactionManager) {
 
         super(queueDao);
-        this.publisher = publisher;
         this.objectMapper = objectMapper;
         this.queueDao = queueDao;
         this.jobService = jobService;
         this.evidenciaService = evidenciaService;
         this.relatorioService = relatorioService;
         this.ambienteService = ambienteService;
-        this.clienteService = clienteService;
         this.entityManager = entityManager;
         this.transactionManager = transactionManager;
+        this.entityManager.setFlushMode(FlushModeType.COMMIT);
+
 //        this.motor.execute(this::gerenciarExecucoes);
 //        this.filaProcessador.execute(this::tratamentoDaFila);
     }
-
 
     public Long countByStatusInAmbiente(
         @NonNull Ambiente ambiente,
@@ -110,6 +98,21 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
         return queueDao.countInAmbiente(ambiente.getId());
     }
 
+    @Override
+    public void deleteAll() {
+        throw new UnsupportedOperationException("Método não permitido para esse endpoint");
+    }
+
+    @Override
+    public void delete(@NonNull TaskQueue entity) {
+        throw new UnsupportedOperationException("Método não permitido para esse endpoint");
+    }
+
+    public boolean deleteInQueue(long ambienteId, @NonNull String ticket) {
+        if(ticketsExecucao.containsKey(ambienteId)) return false;
+        if(ticketsExecucao.containsValue(ticket)) return false;
+        return queueDao.deleteByTicket(ticket);
+    }
 
     @Transactional(noRollbackFor = Throwable.class)
     public QueuePushResponseDTO pushQueue(
@@ -146,7 +149,6 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
         return resposta;
     }
 
-
     public TaskQueue saveAndFlush(@NonNull TaskQueue entity) throws DuplicatedRecordException {
         return queueDao.saveAndFlush(entity);
     }
@@ -157,10 +159,11 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
     }
 
     private void tratamentoDaFila(@NonNull QueuePushResponseDTO queueDto) {
-        //TODO: TRABALHAR COM SESSÃO MANUAL AQUI! REESCREVER TODO O CÓDIGO DA GERAÇÃO DE EVIDÊNCIAS...
-
         var ticket = queueDto.getTicket();
-        log.info("Iniciando tarefa do ticket: '{}'.", ticket);
+        var ambienteId = queueDto.getAmbienteId();
+        ticketsExecucao.put(ambienteId, ticket);
+        log.info("Iniciando tarefa do ticket: '{}' (Ambiente ID {}).", ticket, ambienteId);
+
         var transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.execute((status) -> {
             TaskQueue taskQueue = null;
@@ -170,25 +173,25 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
 //            var transaction = session.beginTransaction();
 //            transaction.begin();;
             try {
-            var sql =   "SELECT q, a, c " +
-                        "FROM PPW_QUEUE q " +
-                        "JOIN q.ambiente a " +
-                        "JOIN a.cliente c " +
-                        "WHERE q.ticket = :ticket";
-            log.info("SQL: {}", sql);
+                var sql =   "SELECT q, a, c " +
+                            "FROM PPW_QUEUE q " +
+                            "JOIN q.ambiente a " +
+                            "JOIN a.cliente c " +
+                            "WHERE q.ticket = :ticket";
+                log.info("SQL: {}", sql);
 
-            var dados = (Object[]) entityManager.createQuery(sql)
-                .setParameter("ticket", ticket)
-                .getResultList()
-                .stream()
-                .findFirst()
-                .orElseThrow(); //TODO: mudar para exception própria
-            taskQueue = (TaskQueue) dados[0];
-            ambiente = (Ambiente) dados[1];
-            cliente = (Cliente) dados[2];
-            log.info(taskQueue.toString());
-            log.info(ambiente.toString());
-            log.info(cliente.toString());
+                var dados = (Object[]) entityManager.createQuery(sql)
+                    .setParameter("ticket", ticket)
+                    .getResultList()
+                    .stream()
+                    .findFirst()
+                    .orElseThrow(); //TODO: mudar para exception própria
+                taskQueue = (TaskQueue) dados[0];
+                ambiente = (Ambiente) dados[1];
+                cliente = (Cliente) dados[2];
+                log.info(taskQueue.toString());
+                log.info(ambiente.toString());
+                log.info(cliente.toString());
 //            var projection = queueDao.findByTicket(ticket).orElseGet(() -> null);
 
 ////        if(taskQueue == null) {
@@ -204,7 +207,13 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
                 taskQueue.setPayloadObj(payload);
                 taskQueue.setStatus(QueueStatus.EXECUTANDO);
                 taskQueue.setDataExecucao(OffsetDateTime.now(RELOGIO));
-                saveAndFlush(taskQueue); //TODO: fluxsh ainda necessário?
+                entityManager.persist(taskQueue);
+                entityManager.flush();
+                entityManager.clear();
+                transactionManager.commit(status);
+//                entityManager.getTransaction().commit(status);
+//                saveAndFlush(taskQueue); //TODO: fluxsh ainda necessário?
+                log.info(taskQueue.toString());
 
                 var pipelineResult = runQueue(taskQueue, ambiente, cliente);
                 val evidenciasResult = evidenciaService.gerarEvidencia(pipelineResult);
@@ -218,15 +227,9 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
                 e.printStackTrace();
                 log.error("Erro inesperado nas filas de Task: {}", e.getMessage());
             }
-            finally {
-                entityManager.remove(taskQueue);
-                entityManager.flush();
-//            deleteAndFlush(taskQueue); //TODO: flush ainda necessário?
-//                transaction.commit();
-//                session.close();
-            }
             return null;
         });
+        ticketsExecucao.remove(ambienteId, ticket);
     }
 
     @Transactional
@@ -282,6 +285,12 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
             pipelineResult.setErro(true);
             pipelineResult.setMensagemErro(e.getMessage());
         }
+        finally {
+            log.info("Deletando tarefa ticket '{}'.", itemFila.getTicket());
+            queueDao.delete(itemFila);
+            queueDao.flush();
+            log.info("Tarefa removida.");
+        }
         return pipelineResult;
     }
 
@@ -291,11 +300,17 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
         executor.setMaxPoolSize(1);  // Máximo número de threads na pool
 //        executor.setQueueCapacity(20);  // Capacidade da fila de tarefas por thread
         executor.setKeepAliveSeconds(60);  // Mantenha tópicos ociosos por 60 segundos
-        executor.setThreadNamePrefix("Task-Ambiente-Id-00" + ambienteId); // Nome da thread
+        executor.setThreadNamePrefix("Task-Ambiente-Id" + ambienteId + "-"); // Nome da thread
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());  // ?
         executor.setDaemon(true); // Se as threads devem ser interrompidas se o App fechar
         executor.initialize(); // Iniciazar
         return executor;
     }
 
+    public Page<TaskQueue> findAllByExample(
+        @NonNull Example<TaskQueue> exemplo,
+        @NonNull Pageable pageConfig) {
+
+        return queueDao.findAll(exemplo, pageConfig);
+    }
 }

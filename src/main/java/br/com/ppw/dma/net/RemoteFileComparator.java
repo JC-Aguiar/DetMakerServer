@@ -19,7 +19,7 @@ public class RemoteFileComparator {
     //static final String DUPLICATED = "Os arquivos coletados são os mesmos",
     //static final String PRE_FILE_NOT_FOUND = "O arquivo não foi encontrado pré-execução.",
     //static final String POST_FILE_NOT_FOUND = "O arquivo não foi encontrado pós-execução.",
-    //static final String SUCCESS = "Arquivos coletados com sucesso.",
+    //static final String SUCCESS = "Arquivos coletados com erro.",
     //static final String INVALID = "A referência do diretório/arquivo está inválida.";
 
 
