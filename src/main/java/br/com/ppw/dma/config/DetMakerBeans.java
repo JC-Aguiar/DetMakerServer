@@ -71,18 +71,4 @@ public class DetMakerBeans {
 //            storageService.init();
     }
 
-//    @Bean(name = "dynamicThreadPool")
-//    public ThreadPoolTaskExecutor threadPoolTaskExecutor() {
-//        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-//        executor.setCorePoolSize(1);  // Minimum number of threads in the pool
-//        executor.setMaxPoolSize(12);  // Maximum number of threads in the pool
-////        executor.setQueueCapacity(20);  // Queue capacity for pending tasks
-//        executor.setKeepAliveSeconds(60);  // Keep idle threads alive for 60 seconds
-//        executor.setThreadNamePrefix("QueueExecutor-");  // Thread name prefix
-//        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());  // Handle rejection
-//        executor.setDaemon(true);
-//        executor.initialize();
-//        return executor;
-//    }
-
 }

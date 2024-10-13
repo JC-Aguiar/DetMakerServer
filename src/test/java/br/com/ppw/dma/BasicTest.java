@@ -2,6 +2,7 @@ package br.com.ppw.dma;
 
 import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.domain.job.JobService;
+import br.com.ppw.dma.domain.jobQuery.ResultadoSql;
 import br.com.ppw.dma.domain.master.*;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineExecDTO;
 import br.com.ppw.dma.domain.queue.QueuePushResponseDTO;
@@ -20,6 +21,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.channel.Channel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.modelmapper.ModelMapper;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.ResourceUtils;
 
@@ -56,6 +58,55 @@ public class BasicTest {
 //        threadPoolTaskScheduler.setThreadNamePrefix("ThreadPoolTaskScheduler");
 //        threadPoolTaskScheduler.execute();
 //    }
+
+    @Test
+    public void testarMontarTabelaString() {
+        var tabela = new ArrayList<List<Object>>();
+        var campos = List.<Object>of(
+            "EVDTPROC",
+            "EVACCTG",
+            "EVOBJ",
+            "EVDTSOLIC",
+            "EVDTREG",
+            "EVTYPE",
+            "EVSTATUS",
+            "EVEXPDESC",
+            "EVID",
+            "EVACCT",
+            "EVTOPIC");
+        tabela.add(campos);
+        var valores = List.of(
+            "2024-06-11 16:02:31.136",
+            "1",
+            new ModelMapper(),
+            "2024-06-09 10:11:58.0",
+            "2024-06-09 10:11:58.0",
+            "EV_PAYMENTMODEL",
+            "9",
+            Optional.empty(),
+            11751,
+            "220853717-BRM",
+            Optional.empty());
+        tabela.add(valores);
+        var tabelaString = FormatString.tabelaParaString(tabela);
+        System.out.println(tabelaString);
+
+        var resultadoSql = new ResultadoSql("Teste", "Nada", "Alguma query DML");
+        var resultadoMock = Map.of(
+            "EVDTPROC", "2024-06-11 16:02:31.136",
+            "EVACCTG", "1",
+            "EVOBJ", new ModelMapper(),
+            "EVDTSOLIC", "2024-06-09 10:11:58.0",
+            "EVDTREG", "2024-06-09 10:11:58.0",
+            "EVTYPE", "EV_PAYMENTMODEL",
+            "EVSTATUS", "9",
+            "EVEXPDESC", Optional.empty(),
+            "EVID", 11751,
+            "EVACCT", "220853717-BRM");
+        resultadoSql.addResultado(List.of(resultadoMock));
+        tabelaString = resultadoSql.getResultadoAsString();
+        System.out.println(tabelaString);
+    }
 
     @Test
     public void testandoQueues() throws Exception {
@@ -417,7 +468,7 @@ public class BasicTest {
 
         log.info("Testando conexão.");
         val conn = DriverManager.getConnection(url, username, password);
-        log.info("Conexão realizada com sucesso.");
+        log.info("Conexão realizada com erro.");
     }
 
     private Properties lerProperties() throws IOException {

@@ -1,6 +1,7 @@
 package br.com.ppw.dma.domain.queue;
 
 import br.com.ppw.dma.domain.execQuery.ExecQuery;
+import br.com.ppw.dma.domain.jobQuery.JobQuery;
 import br.com.ppw.dma.domain.master.SqlSintaxe;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineQueryInputDTO;
 import jakarta.annotation.Nullable;
@@ -29,6 +30,13 @@ public class QueuePayloadQuery {
 		nome = execQuery.getQueryNome();
 		descricao = execQuery.getQueryDescricao();
 		query = execQuery.getQuery();
+		method = null;
+	}
+
+	public QueuePayloadQuery(@NonNull JobQuery jobQuery) {
+		nome = jobQuery.getNome();
+		descricao = jobQuery.getDescricao();
+		query = jobQuery.getSql();
 		method = null;
 	}
 

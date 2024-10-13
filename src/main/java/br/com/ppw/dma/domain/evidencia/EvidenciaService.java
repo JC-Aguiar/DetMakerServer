@@ -66,66 +66,24 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
 //    @Transactional(noRollbackFor = Throwable.class)
     public EvidenciaResult gerarEvidencia(@NonNull JobResult process) {
         log.info("Gerando Evidência para {}.", process.getContexto());
-        val logs = new ArrayList<ExecFile>();
         Function<String, String> criarMensagemErro = (erro) -> String.format(
             "Erro na criação da Evidência para o %s: %s",
             process.getContexto(),
             erro);
 
         try {
-//            log.info("Coletando entidade do Job no banco.");
-//            var job = jobService.findById(process.getJobInfo().getId());
             var evidencia = save(new Evidencia(process));
             evidenciaDao.flush();
             log.info(evidencia.toString());
 
-            val banco = new ArrayList<ExecQuery>();
-            if (process.possuiTabelas())
-                log.info("Criando novos registros ExecQuery para cada resultado no banco (pré e pós Job).");
-            //TODO: Melhorar! Aplicar paralelismo!
-            for (int i = 0; i < process.getTabelasPosJob().size(); i++) {
-                val tabelaPre = process.getTabelasPreJob().get(i);
-                val tabelaPos = process.getTabelasPosJob().get(i);
-                if (!tabelaPre.getQuery().equals(tabelaPos.getQuery())) continue;
-                val query = ExecQuery.montarEvidencia(evidencia, tabelaPre, tabelaPos);
-                banco.add(execQueryService.save(query));
-            }
-
-            if (!process.getCargasColetadas().isEmpty())
-                log.info("Criando novos registros ExecFile para cada uma das cargas usadas.");
-            val cargas = process.getCargasColetadas()
-                .stream()
-                .map(carga -> ExecFile.montarEvidenciaCarga(evidencia, carga))
-                .map(execFileService::save)
-                .toList();
-
-            if (!process.getLogsColetados().isEmpty() || !process.getTerminalFormatado().isEmpty())
-                log.info("Criando novos registros ExecFile para cada um dos logs obtidos.");
-            if (!process.getTerminalFormatado().isEmpty()) {
-                val execFileTerminal = ExecFile.montarEvidenciaTerminal(evidencia, process.getTerminal());
-                logs.add(execFileTerminal);
-            }
-            process.getLogsColetados()
-                .stream()
-                .map(log -> ExecFile.montarEvidenciaLog(evidencia, log))
-                .map(execFileService::save)
-                .forEach(logs::add);
-
-            if (!process.getRemessasColetadas().isEmpty())
-                log.info("Criando novos registros ExecFile para cada uma das saídas produzidas.");
-            val saidas = process.getRemessasColetadas()
-                .stream()
-                .map(saida -> ExecFile.montarEvidenciaRemessa(evidencia, saida))
-                .map(execFileService::save)
-                .toList();
-
-            log.info("Atualizando Evidência ID {} com os anexos (ExecFile e ExecQuery).", evidencia.getId());
-            addEvidenciaBanco(evidencia, banco);
-            addEvidenciaCarga(evidencia, cargas);
-            addEvidenciaLog(evidencia, logs);
-            addEvidenciaRemessa(evidencia, saidas);
-
-            if (evidencia.getMensagemErro() == null || evidencia.getMensagemErro().isEmpty())
+            //TODO: Precisa melhorar esse processo. Criar uma tabela relacionada só de erros
+            //      e tratar cada erro de cada tentativa de isnert individualmente,
+            //      também para não sobrecarregar uam coluna do banco com N possíveis erros.
+            saveExecQueries(process, evidencia);
+            saveExecCargas(process, evidencia);
+            saveExecLogs(process, evidencia);
+            builExecRemessas(process, evidencia);
+            if(evidencia.getMensagemErro() == null || evidencia.getMensagemErro().isEmpty())
                 return EvidenciaResult.ok(evidencia);  //TODO: melhorar
 
             evidencia.setRevisor("Det-Maker");
@@ -150,52 +108,89 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         }
     }
 
-    private static void addEvidenciaRemessa(
-        @NonNull Evidencia evidencia,
-        @NonNull List<ExecFile> saidas) {
-
+    private Evidencia builExecRemessas(JobResult process, Evidencia evidencia) {
         try {
+            if(!process.getRemessasColetadas().isEmpty())
+                log.info("Criando novos registros ExecFile para cada uma das saídas produzidas.");
+            val saidas = process.getRemessasColetadas()
+                .stream()
+                .map(saida -> ExecFile.montarEvidenciaRemessa(evidencia, saida))
+                .map(execFileService::save)
+                .toList();
             evidencia.setRemessas(saidas);
         }
         catch(Exception e) {
-            log.error(e.getMessage());
+            log.error("Erro ao tentar anexar as remessas na Evidência ID {}: {}",
+                evidencia.getId(),
+                e.getMessage());
+            evidencia.setMensagemErro(e.getMessage() + ". " + evidencia.getMensagemErro());
         }
+        return evidencia;
     }
 
-    private static void addEvidenciaLog(
-        @NonNull Evidencia evidencia,
-        @NonNull ArrayList<ExecFile> logs) {
-
+    private Evidencia saveExecLogs(JobResult process, Evidencia evidencia) {
         try {
+            if(!process.getLogsColetados().isEmpty())
+                log.info("Criando novos registros ExecFile para cada um dos logs obtidos.");
+            var logs = process.getLogsColetados()
+                .stream()
+                .map(log -> ExecFile.montarEvidenciaLog(evidencia, log))
+                .map(execFileService::save)
+                .toList();
             evidencia.setLogs(logs);
         }
         catch(Exception e) {
-            log.error(e.getMessage());
+            log.error("Erro ao tentar anexar os logs na Evidência ID {}: {}",
+                evidencia.getId(),
+                e.getMessage());
+            evidencia.setMensagemErro(e.getMessage() + ". " + evidencia.getMensagemErro());
         }
+        return evidencia;
     }
 
-    private static void addEvidenciaCarga(
-        @NonNull Evidencia evidencia,
-        @NonNull List<ExecFile> cargas) {
-
+    private Evidencia saveExecQueries(JobResult process, Evidencia evidencia) {
         try {
+            val execQueries = new ArrayList<ExecQuery>();
+            if(process.possuiTabelas())
+                log.info("Criando novos registros ExecQuery para cada resultado no banco (pré e pós Job).");
+            //TODO: Melhorar! Aplicar paralelismo!
+            for(int i = 0; i < process.getTabelasPosJob().size(); i++) {
+                val tabelaPre = process.getTabelasPreJob().get(i);
+                val tabelaPos = process.getTabelasPosJob().get(i);
+                if(!tabelaPre.getQuery().equals(tabelaPos.getQuery())) continue;
+                val query = ExecQuery.montarEvidencia(evidencia, tabelaPre, tabelaPos);
+                execQueries.add(execQueryService.save(query));
+            }
+            evidencia.setQueries(execQueries);
+        }
+        catch(Exception e) {
+            log.error("Erro ao tentar anexar as queries na Evidência ID {}: {}",
+                evidencia.getId(),
+                e.getMessage());
+            evidencia.setMensagemErro(e.getMessage() + ". " + evidencia.getMensagemErro());
+        }
+        return evidencia;
+    }
+
+    private Evidencia saveExecCargas(JobResult process, Evidencia evidencia) {
+        List<ExecFile> cargas = null;
+        try {
+            if(!process.getCargasColetadas().isEmpty())
+                log.info("Criando novos registros ExecFile para cada uma das cargas usadas.");
+            cargas = process.getCargasColetadas()
+                .stream()
+                .map(carga -> ExecFile.montarEvidenciaCarga(evidencia, carga))
+                .map(execFileService::save)
+                .toList();
             evidencia.setCargas(cargas);
         }
         catch(Exception e) {
-            log.error(e.getMessage());
+            log.error("Erro ao tentar anexar as cargas na Evidência ID {}: {}",
+                evidencia.getId(),
+                e.getMessage());
+            evidencia.setMensagemErro(e.getMessage() + ". " + evidencia.getMensagemErro());
         }
-    }
-
-    private static void addEvidenciaBanco(
-        @NonNull Evidencia evidencia,
-        @NonNull ArrayList<ExecQuery> banco) {
-
-        try {
-            evidencia.setQueries(banco);
-        }
-        catch(Exception e) {
-            log.error(e.getMessage());
-        }
+        return evidencia;
     }
 
 //    public File parseBlobToFile(@NonNull Blob blob, @NotBlank String filePath){

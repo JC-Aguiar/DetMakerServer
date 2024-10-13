@@ -17,10 +17,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static lombok.AccessLevel.PRIVATE;
@@ -82,11 +79,13 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 			.toList();
 		logsMascara = evidencia.getLogs()
 			.stream()
-			.map(ExecFile::getComando)
+			.map(ExecFile::getMascara)
+			.filter(Objects::nonNull)
 			.toList();
 		remessasMascara = evidencia.getLogs()
 			.stream()
-			.map(ExecFile::getComando)
+			.map(ExecFile::getMascara)
+			.filter(Objects::nonNull)
 			.toList();
 	}
 

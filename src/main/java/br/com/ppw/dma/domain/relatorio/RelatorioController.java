@@ -94,15 +94,18 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
         return ResponseEntity.ok(dtos);
     }
 
+    //TODO: criar um DTO para receber essa requisição
     @GetMapping("summary/ambiente/{ambienteId}")
     public ResponseEntity<Page<RelatorioResumoDTO>> getAllSummarized(
         @PathVariable(name = "ambienteId") Long ambienteId,
         @RequestParam(name = "page", defaultValue = "0") int page,
         @RequestParam(name = "itens", defaultValue = "12") int itens,
+        @RequestParam(name = "ticket") Optional<String> ticket,
         @RequestParam(name = "idProjeto") Optional<String> idProjeto,
         @RequestParam(name = "nomeProjeto") Optional<String> nomeProjeto,
         @RequestParam(name = "nomeAtividade") Optional<String> nomeAtividade,
         @RequestParam(name = "nomePipeline") Optional<String> nomePipeline,
+        @RequestParam(name = "autor") Optional<String> autor,
         @RequestParam(name = "data") Optional<String> dataExecString) {
         //--------------------------------------------------------------
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("id").ascending());
@@ -115,9 +118,11 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
 //        var pipeline = new Pipeline();
 //        pipeline.setNome(nomePipeline.orElse(null));
         var relatorioBusca = Relatorio.builder()
+            .ticket(ticket.orElse(null))
             .idProjeto(idProjeto.orElse(null))
             .nomeProjeto(nomeProjeto.orElse(null))
             .nomeAtividade(nomeAtividade.orElse(null))
+            .usuario(autor.orElse(null))
             .ambiente(ambiente)
             .data(dataExec)
 //            .pipeline(pipeline)

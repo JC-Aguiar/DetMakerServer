@@ -152,7 +152,7 @@ public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTa
             e.printStackTrace();
             return summary;
         }
-        //Salva no contexto estático do GeradprDeMassa todas as massas inseridas com sucesso
+        //Salva no contexto estático do GeradprDeMassa todas as massas inseridas com erro
 //        finally {
 //            summary.getSaved().forEach(GeradorDeMassa::addNovaMassa);
 //        }
