@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -17,40 +18,42 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RelatorioHistoricoDTO {
 
     Long id;
-    String pipeline;
-    String dados;
-//    String descricao;
     String ticket;
+    String pipeline;
+    String descricao;
     String idProjeto;
     String nomeProjeto;
     String nomeAtividade;
     String consideracoes;
-//    String parametros;
+    String inconformidades;
     String testeTipo;
     String cliente;
     String ambiente;
+    boolean sucesso;
+    String erroFatal;
+    String usuario;
     final List<EvidenciaInfoDTO> evidencias = new ArrayList<>();
     OffsetDateTime data;
 
     //TODO: finalizar novo DTO
     public RelatorioHistoricoDTO(@NonNull Relatorio relatorio) {
-        log.info("Convertendo Relatorio em RelatorioHistoricoDTO.");
+        log.info("Convertendo Relatorio em {}.", RelatorioHistoricoDTO.class.getSimpleName());
         this.id = relatorio.getId();
         this.ticket = relatorio.getTicket();
-//        this.pipeline = relatorio.getPipeline().getProps().getNome();
         this.pipeline = relatorio.getPipelineNome();
-        this.dados = relatorio.getPipelineDescricao();
+        this.descricao = relatorio.getPipelineDescricao();
         this.idProjeto = relatorio.getIdProjeto();
         this.nomeProjeto = relatorio.getNomeProjeto();
         this.nomeAtividade = relatorio.getNomeAtividade();
-        this.consideracoes = relatorio.getConsideracoes();
-//        this.parametros = relatorio.getParametros();
+        this.inconformidades = relatorio.getInconformidades();
         this.cliente = relatorio.getCliente();
         this.ambiente = relatorio.getAmbiente().getNome();
         this.data = relatorio.getDataCompleta();
+        this.sucesso = relatorio.getSucesso();
+        this.erroFatal = relatorio.getErroFatal();
+        this.usuario = relatorio.getUsuario();
         if(relatorio.getTesteTipo() != null)
             this.testeTipo = relatorio.getTesteTipo().nome;
-
         val cont = new AtomicInteger(0);
         relatorio.getEvidencias()
             .stream()

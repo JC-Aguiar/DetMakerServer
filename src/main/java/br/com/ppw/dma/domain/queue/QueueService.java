@@ -4,11 +4,14 @@ import br.com.ppw.dma.domain.ambiente.Ambiente;
 import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.domain.ambiente.AmbienteService;
 import br.com.ppw.dma.domain.cliente.Cliente;
+import br.com.ppw.dma.domain.evidencia.Evidencia;
 import br.com.ppw.dma.domain.evidencia.EvidenciaService;
 import br.com.ppw.dma.domain.job.JobService;
 import br.com.ppw.dma.domain.master.MasterService;
 import br.com.ppw.dma.domain.queue.result.PipelineResult;
+import br.com.ppw.dma.domain.relatorio.Relatorio;
 import br.com.ppw.dma.domain.relatorio.RelatorioService;
+import br.com.ppw.dma.domain.relatorio.TiposDeTeste;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -166,12 +170,6 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
 
         var transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.execute((status) -> {
-            TaskQueue taskQueue = null;
-            Ambiente ambiente = null;
-            Cliente cliente = null;
-//            var session = entityManager.unwrap(Session.class);
-//            var transaction = session.beginTransaction();
-//            transaction.begin();;
             try {
                 var sql =   "SELECT q, a, c " +
                             "FROM PPW_QUEUE q " +
@@ -186,19 +184,12 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
                     .stream()
                     .findFirst()
                     .orElseThrow(); //TODO: mudar para exception própria
-                taskQueue = (TaskQueue) dados[0];
-                ambiente = (Ambiente) dados[1];
-                cliente = (Cliente) dados[2];
+                var taskQueue = (TaskQueue) dados[0];
+                var ambiente = (Ambiente) dados[1];
+                var cliente = (Cliente) dados[2];
                 log.info(taskQueue.toString());
                 log.info(ambiente.toString());
                 log.info(cliente.toString());
-//            var projection = queueDao.findByTicket(ticket).orElseGet(() -> null);
-
-////        if(taskQueue == null) {
-//            if(projection == null) {
-//                log.warn("Nenhum registro encontrado no banco para ticket: '{}'.", ticket);
-//                return;
-//            }
 
                 log.info("Desserializando JSON para {}.", QueuePayload.class.getSimpleName());
                 var payload = objectMapper.readValue(taskQueue.getPayload(), QueuePayload.class);
@@ -211,14 +202,9 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
                 entityManager.flush();
                 entityManager.clear();
                 transactionManager.commit(status);
-//                entityManager.getTransaction().commit(status);
-//                saveAndFlush(taskQueue); //TODO: fluxsh ainda necessário?
                 log.info(taskQueue.toString());
 
-                var pipelineResult = runQueue(taskQueue, ambiente, cliente);
-                val evidenciasResult = evidenciaService.gerarEvidencia(pipelineResult);
-                pipelineResult.addEvidenciaResult(evidenciasResult);
-                relatorioService.buildAndPersist(taskQueue.getAmbiente(), pipelineResult);
+                runQueue(taskQueue, ambiente, cliente);
             }
             catch(NoSuchElementException e) {
                 log.warn("Nenhum registro encontrado no banco para ticket: '{}'.", ticket);
@@ -256,6 +242,7 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
             ambiente.getSenhaSftp());
 
         var pipelineResult = PipelineResult.builder()
+            .ambiente(ambiente)
             .pipelineNome(payload.getPipelineNome())
             .pipelineDescricao(payload.getPipelineDescricao())
             .ticket(ticket)
@@ -278,6 +265,10 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
                 .map(QueuePayloadQuery::getQuery)
                 .collect(Collectors.toSet());
             ambienteService.runQuery(queriesDepois, ambiente.acessoBanco());
+
+            pipelineResult = evidenciaService.gerarEvidencia(pipelineResult);
+//            relatorioService.buildAndPersist(pipelineResult);
+//            relatorioService.save(relatorio);
         }
         catch(Exception e) {
             e.printStackTrace();

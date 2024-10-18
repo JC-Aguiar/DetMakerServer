@@ -313,8 +313,8 @@ public class JobService extends MasterService<Long, Job, JobService> {
         val extracoes = jobQuery.stream().map(query -> {
             val resultado = new ResultadoSql(
                 query.getNome(),
-                query.getQuery(),
-                query.getDescricao());
+                query.getDescricao(),
+                query.getQuery());
             try(val masterDao = new MasterOracleDAO(banco)) {
                 var extracao = masterDao.collectData(query.getQuery());
                 resultado.addResultado(extracao);

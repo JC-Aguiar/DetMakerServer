@@ -1,8 +1,8 @@
 package br.com.ppw.dma.util;
 
 import br.com.ppw.dma.DetMakerApplication;
-import br.com.ppw.dma.domain.execFile.AnexoInfoDTO;
 import br.com.ppw.dma.domain.evidencia.EvidenciaInfoDTO;
+import br.com.ppw.dma.domain.execFile.AnexoInfoDTO;
 import br.com.ppw.dma.domain.relatorio.DetDTO;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -103,7 +103,7 @@ public class DetHtml {
             .getEvidencias()
             .stream()
             .sorted(Comparator.comparing(EvidenciaInfoDTO::getOrdem))
-            .map(ev -> "ksh " +ev.getJob()+ " " +ev.getArgumentos()+ "\n")
+            .map(ev -> ev.getComandoExec() + "\n")
             .map(txt -> txt.replace(" null", ""))
             .collect(Collectors.joining("\n"));
 
@@ -128,7 +128,7 @@ public class DetHtml {
             CAMPO_DETALHES_PIPELINE   + javascriptString(dto.pipelineNome())                    + "; \n" +
             CAMPO_DETALHES_PARAMETROS + javascriptString(parametrosDaPipeline)                  + "; \n" +
             CAMPO_DETALHES_DADOS      + javascriptString(dto.pipelineDescricao())            + "; \n" +
-            CAMPO_DETALHES_CONFIG     + javascriptString(dto.relatorio().getConsideracoes())  + "; \n" +
+            CAMPO_DETALHES_CONFIG     + javascriptString(dto.relatorio().getInconformidades())  + "; \n" +
             CAMPO_DETALHES_AMBIENTE   + javascriptString(dto.relatorio().getAmbiente())         + "; \n";
         log.debug("Script-Detalhamento:");
         Arrays.stream(scriptDetalhamento.split("\n")).forEach(log::debug);
@@ -156,7 +156,7 @@ public class DetHtml {
                 executarApos,                                       //preCondicoes
                 expectativa,                                        //expectativa
                 resultado,                                          //resultado
-                evidenciaDto.getArgumentos(),                       //parametros
+                evidenciaDto.getComandoExec(),                      //parametros
                 evidenciaDto.getRevisor(),                          //revisor
                 evidenciaDto.getDataInicio().format(BRASIL_STYLE),  //data
                 evidenciaDto.getQueries(),                          //queries
@@ -243,11 +243,13 @@ public class DetHtml {
             "`)}\n";
     }
 
-    private void atualizarTabelaPreJob(@NonNull String conteudo) {
+    private void atualizarTabelaPreJob(String conteudo) {
+        if(conteudo == null) return;
         atualizarTabelaMap(tabelasPreJobMap, conteudo);
     }
 
-    private void atualizarTabelaPosJob(@NonNull String conteudo) {
+    private void atualizarTabelaPosJob(String conteudo) {
+        if(conteudo == null) return;
         atualizarTabelaMap(tabelasPosJobMap, conteudo);
     }
 

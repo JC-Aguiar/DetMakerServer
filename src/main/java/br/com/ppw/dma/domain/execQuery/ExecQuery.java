@@ -11,7 +11,10 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.Comment;
 import org.hibernate.proxy.HibernateProxy;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import static jakarta.persistence.FetchType.LAZY;
 import static lombok.AccessLevel.PRIVATE;
@@ -83,19 +86,22 @@ public class ExecQuery implements MasterEntity<Long> {
         @NonNull ResultadoSql tabelaPre,
         @NonNull ResultadoSql tabelaPos) {
         //-----------------------------------
-
+        var inconformidades = List.of(
+            tabelaPre.getMensagemErro(),
+            tabelaPos.getMensagemErro())
+            .stream()
+            .filter(Predicate.not(String::isEmpty))
+            .collect(Collectors.joining("\n"));
         return ExecQuery.builder()
             .evidencia(evidencia)
             .ticket(evidencia.getTicket())
-            .jobNome(evidencia.getJobNome())//.getNome())
+            .jobNome(evidencia.getJobNome())
             .queryNome(tabelaPos.getNome())
             .queryDescricao(tabelaPos.getDescricao())
             .query(tabelaPos.getQuery())
             .resultadoPreJob(tabelaPre.getResultadoAsString())
             .resultadoPosJob(tabelaPos.getResultadoAsString())
-            .inconformidade(
-                String.join("\n", tabelaPre.getMensagemErro(), tabelaPos.getMensagemErro()))
-            //TODO: ?informações da pipeline?
+            .inconformidade(inconformidades)
             .build();
     }
 

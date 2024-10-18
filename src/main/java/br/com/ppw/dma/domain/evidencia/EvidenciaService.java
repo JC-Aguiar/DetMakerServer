@@ -4,12 +4,14 @@ import br.com.ppw.dma.domain.execFile.ExecFile;
 import br.com.ppw.dma.domain.execFile.ExecFileService;
 import br.com.ppw.dma.domain.execQuery.ExecQuery;
 import br.com.ppw.dma.domain.execQuery.ExecQueryService;
-import br.com.ppw.dma.domain.job.JobService;
 import br.com.ppw.dma.domain.master.MasterService;
 import br.com.ppw.dma.domain.master.SqlSintaxe;
 import br.com.ppw.dma.domain.queue.result.EvidenciaResult;
 import br.com.ppw.dma.domain.queue.result.JobResult;
 import br.com.ppw.dma.domain.queue.result.PipelineResult;
+import br.com.ppw.dma.domain.relatorio.Relatorio;
+import br.com.ppw.dma.domain.relatorio.RelatorioService;
+import br.com.ppw.dma.domain.relatorio.TiposDeTeste;
 import com.google.gson.Gson;
 import jakarta.persistence.PersistenceException;
 import lombok.NonNull;
@@ -21,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 import static br.com.ppw.dma.util.FormatDate.RELOGIO;
@@ -32,7 +35,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
     private final EvidenciaRepository evidenciaDao;
     private final ExecFileService execFileService;
     private final ExecQueryService execQueryService;
-    private final JobService jobService;
+    private final RelatorioService relatorioService;
     private final Gson gson;
 
     @Autowired
@@ -40,31 +43,53 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         EvidenciaRepository evidenciaDao,
         ExecFileService execFileService,
         ExecQueryService execQueryService,
-        JobService jobService,
+        RelatorioService relatorioService,
         Gson gson) {
         //---------------------------------------
         super(evidenciaDao);
         this.evidenciaDao = evidenciaDao;
         this.execFileService = execFileService;
         this.execQueryService = execQueryService;
-        this.jobService = jobService;
+        this.relatorioService = relatorioService;
         this.gson = gson;
     }
 
 
     //TODO: javadoc
 //    @Transactional(noRollbackFor = Throwable.class)
-    public List<EvidenciaResult> gerarEvidencia(@NonNull PipelineResult pipelineResult) {
+    public PipelineResult gerarEvidencia(@NonNull PipelineResult pipelineResult) {
         var jobsResult = pipelineResult.getResultadoJobs();
+
+        log.info("Criando novo Relatório para novas Evidências a se executar.");
+        var dataHora = OffsetDateTime.now(RELOGIO);
+        var relatorio = Relatorio.builder()
+            .cliente(pipelineResult.getClienteNome())
+            .ambiente(pipelineResult.getAmbiente())
+            .pipelineNome(pipelineResult.getPipelineNome())
+            .pipelineDescricao(pipelineResult.getPipelineDescricao())
+//            .inconformidades(evidenciaErros.toString())
+            .ticket(pipelineResult.getTicket())
+            .usuario(pipelineResult.getUsuario())
+            .dataCompleta(dataHora)
+            .data(dataHora.toLocalDate())
+            .testeTipo(TiposDeTeste.UNITARIO)
+            .sucesso(!pipelineResult.isErro())
+            .erroFatal(pipelineResult.getMensagemErro())
+            .build();
+        relatorioService.save(relatorio);
+
         log.info("Iniciando geração de Evidências para {} registro(s).", jobsResult.size());
-        return jobsResult.stream()
-            .map(this::gerarEvidencia)
+        var evidencias = jobsResult.stream()
+            .map(job -> gerarEvidencia(relatorio, job))
             .toList();
+        pipelineResult.addEvidenciaResult(evidencias);
+//        relatorioService.buildAndPersist(pipelineResult);
+        return pipelineResult;
     }
 
     //TODO: javadoc
 //    @Transactional(noRollbackFor = Throwable.class)
-    public EvidenciaResult gerarEvidencia(@NonNull JobResult process) {
+    public EvidenciaResult gerarEvidencia(@NonNull Relatorio relatorio, @NonNull JobResult process) {
         log.info("Gerando Evidência para {}.", process.getContexto());
         Function<String, String> criarMensagemErro = (erro) -> String.format(
             "Erro na criação da Evidência para o %s: %s",
@@ -72,7 +97,9 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             erro);
 
         try {
-            var evidencia = save(new Evidencia(process));
+            var evidencia = new Evidencia(process);
+            evidencia.setRelatorio(relatorio);
+            save(evidencia);
             evidenciaDao.flush();
             log.info(evidencia.toString());
 
@@ -96,11 +123,24 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         catch(PersistenceException e) {
             var mensagem = criarMensagemErro.apply(SqlSintaxe.getExceptionMainCause(e));
             log.error(mensagem);
+            Optional.ofNullable(relatorio.getInconformidades())
+                .map(inconf -> inconf + ". " + mensagem)
+                .ifPresentOrElse(
+                    relatorio::setInconformidades,
+                    () -> relatorio.setInconformidades(mensagem)
+                );
             return EvidenciaResult.erro(mensagem); //TODO: melhorar
         }
         catch(Exception e) {
             var mensagem = criarMensagemErro.apply(e.getMessage());
             log.error(mensagem);
+            log.error(mensagem);
+            Optional.ofNullable(relatorio.getInconformidades())
+                .map(inconf -> inconf + ". " + mensagem)
+                .ifPresentOrElse(
+                        relatorio::setInconformidades,
+                        () -> relatorio.setInconformidades(mensagem)
+                );
             return EvidenciaResult.erro(mensagem); //TODO: melhorar
         }
         finally {

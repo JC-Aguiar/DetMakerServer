@@ -23,7 +23,7 @@ public class AtividadeInfoDTO {
         this.idProjeto = relatorio.getIdProjeto();
         this.nomeProjeto = relatorio.getNomeProjeto();
         this.nomeAtividade = relatorio.getNomeAtividade();
-        this.consideracoes = relatorio.getConsideracoes();
+        this.consideracoes = relatorio.getInconformidades();
         //this.sistema = relatorio.getSistema();
         //this.ambiente = relatorio.getAmbiente();
         if(relatorio.getTesteTipo() != null)
