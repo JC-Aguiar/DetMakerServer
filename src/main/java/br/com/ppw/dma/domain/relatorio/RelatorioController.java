@@ -1,7 +1,6 @@
 package br.com.ppw.dma.domain.relatorio;
 
 import br.com.ppw.dma.domain.ambiente.AmbienteService;
-import br.com.ppw.dma.domain.evidencia.Evidencia;
 import br.com.ppw.dma.domain.job.JobService;
 import br.com.ppw.dma.domain.master.MasterController;
 import br.com.ppw.dma.domain.queue.QueuePayload;
@@ -136,12 +135,15 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
         return ResponseEntity.ok(relatorios);
     }
 
-    //TODO:
+    //TODO: javadoc
     @Transactional
     @PostMapping(value = "review")
-    public ResponseEntity<Void> salvarRevisao(@NonNull @RequestBody RelatorioRevisadoDTO dto){
-        relatorioService.salvarRelatorioRevisado(dto);
-        return ResponseEntity.ok(null);
+    public ResponseEntity<RelatorioHistoricoDTO> salvarRevisao(
+        @RequestBody RelatorioComplementoDTO dto){
+
+        var id = dto.getId();
+        var relatorio = relatorioService.salvarRelatorioRevisado(dto);
+        return ResponseEntity.ok(new RelatorioHistoricoDTO(relatorio));
     }
 
     //TODO: javadoc
@@ -167,12 +169,10 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
         log.info(relatorio.toString());
 
         //Validando se o Relatório está pronto para gerar documento DET
-        val podeGerarDet = relatorio.getEvidencias()
-            .stream()
-            .allMatch(Evidencia::jaRevisada);
-        if(!podeGerarDet) return ResponseEntity.badRequest()
-            .body("O Relatório ID " +id+ " não está totalmente revisado para gerar DET");
-
+        if(!relatorio.podeGerarDet()) {
+            return ResponseEntity.badRequest()
+                .body("O Relatório ID " + id + " não está totalmente revisado para gerar DET");
+        }
         //TODO: o usuário tem que ser quem fez a solicitação de execução da pipleine/relatório
         val detUser = new UserInfoDTO();
         detUser.setNome(user);

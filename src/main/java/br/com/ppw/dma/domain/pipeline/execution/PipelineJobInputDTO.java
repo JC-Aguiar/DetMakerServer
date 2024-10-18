@@ -32,7 +32,7 @@ public class PipelineJobInputDTO {
    public PipelineJobInputDTO(@NonNull Evidencia evidencia) {
 //      id = evidencia.getJob().getId();
       ordem = evidencia.getOrdem();
-      argumentos = evidencia.getParametros();
+//      argumentos = evidencia.getParametros();
       queries = evidencia.getQueries()
           .stream()
           .map(PipelineQueryInputDTO::new)

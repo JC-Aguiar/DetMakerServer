@@ -20,4 +20,12 @@ public interface RelatorioRepository extends JpaRepository<Relatorio, Long> {
     @Query(value = "SELECT * FROM PPW_RELATORIO p WHERE p.AMBIENTE_ID = :ambienteId", nativeQuery = true)
     Page<Relatorio> findAllByAmbienteId(@NonNull Long ambienteId, @NonNull Pageable pageable);
 
+    @Query(nativeQuery = true, value = """
+        SELECT p.*
+        FROM PPW_RELATORIO p, PPW_EVIDENCIA e
+        WHERE e.ID IN (:evidenciasId)
+        AND e.RELATORIO_ID = p.ID
+    """)
+    List<Relatorio> findAllByEvidenciaId(@NonNull List<Long> evidenciasId);
+
 }

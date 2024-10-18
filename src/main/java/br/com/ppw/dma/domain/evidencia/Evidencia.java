@@ -71,9 +71,9 @@ public class Evidencia implements MasterEntity<Long> {
     @Comment("Descrição explicando o que faz o Job")
     String jobDescricao;
 
-    @Column(name = "PARAMETROS", length = 200)
-    @Comment("Parâmetros usados na execução do Job")
-    String parametros;
+//    @Column(name = "PARAMETROS", length = 200)
+//    @Comment("Parâmetros usados na execução do Job")
+//    String parametros;
 
     @Column(name = "COMANDO_EXEC", length = 300, nullable = false)
     @Comment("Comando de execução do Job")
@@ -85,9 +85,6 @@ public class Evidencia implements MasterEntity<Long> {
     @Column(name = "COMANDO_VERSAO", length = 200)
     @Comment("Comando para obter a versão do Job")
     String comandoVersao;
-
-//    @Column(name = "ANALISE", length = 3000)
-//    String analise;
 
     @ToString.Exclude
     @JsonManagedReference
@@ -168,7 +165,6 @@ public class Evidencia implements MasterEntity<Long> {
         this.comandoExec = jobResult.getComandoExec();
         this.versao = jobResult.getVersao();
         this.comandoVersao = jobResult.getComandoVersao();
-//        this.parametros = jobResult.getArgumentos();
         this.dirCarga = jobResult.getDirCargaEnvio();
         this.exitCode = jobResult.getExitCode();
         this.mensagemErro = jobResult.getErroFatal();
@@ -180,6 +176,11 @@ public class Evidencia implements MasterEntity<Long> {
 
     public final boolean jaRevisada() {
         return revisor != null && !revisor.isEmpty() && dataRevisao != null && status != null;
+    }
+
+    public void setRelatorio(@NonNull Relatorio relatorio) {
+        this.relatorio = relatorio;
+        this.relatorio.getEvidencias().add(this);
     }
 
     @Override

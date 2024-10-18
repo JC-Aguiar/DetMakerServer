@@ -20,7 +20,7 @@ public class EvidenciaInfoDTO {
     Integer ordem;
     String job;
     String jobDescricao;
-    String argumentos;
+    String comandoExec;
     List<String> queries = new ArrayList<>();
     List<String> queriesNome = new ArrayList<>();
     @ToString.Exclude List<String> tabelasPreJob = new ArrayList<>();
@@ -62,7 +62,7 @@ public class EvidenciaInfoDTO {
         this.ordem = ordem;
         this.job = evidencia.getJobNome();
         this.jobDescricao = evidencia.getJobDescricao();
-        this.argumentos = evidencia.getParametros();
+        this.comandoExec = evidencia.getComandoExec();
         this.queries = queries;
         this.queriesNome = queriesNome;
         this.tabelasPreJob = bancoPreJob;

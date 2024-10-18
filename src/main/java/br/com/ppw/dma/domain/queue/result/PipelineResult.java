@@ -1,5 +1,6 @@
 package br.com.ppw.dma.domain.queue.result;
 
+import br.com.ppw.dma.domain.ambiente.Ambiente;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -12,6 +13,9 @@ import java.util.List;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class PipelineResult {
+
+    @NonNull
+    final Ambiente ambiente;
 
     @NonNull
     final String ticket;
