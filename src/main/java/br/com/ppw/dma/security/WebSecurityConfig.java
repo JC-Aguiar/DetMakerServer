@@ -29,25 +29,23 @@ public class WebSecurityConfig {
 //    private JwtAuthenticationService jwtAuthService;
 
     //PROFILES PER URL
-    public static final Map<String, String> PROTECTED_DOMAINS = new HashMap<>();
+//    public static final Map<String, String> PROTECTED_DOMAINS = new HashMap<>();
 //    {{
 //        put("adm", "/adm/**");
 //        put("profile", "/profile/**");
 //    }};
 
     //URLS OPEN TO REQUEST
-    private static final List<String> SUPPORTED_ORIGINS = new ArrayList<>() {{
-        add("http://localhost:3000/**");
-    }};
+//    private static final List<String> SUPPORTED_ORIGINS = new ArrayList<>() {{
+//        add("http://localhost:3000/**");
+//    }};
 
 
     //SERVER SECURITY CONFIGURATION
     @Bean
     public SecurityFilterChain configure(HttpSecurity http) throws Exception {
         //val jwtAuthFilter = new JwtAuthenticationFilter(jwtAuthService);
-        http.authorizeHttpRequests(auth -> {
-                auth.anyRequest().permitAll();
-            })
+        http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
             .csrf().disable()
             .cors().disable()
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -83,7 +81,7 @@ public class WebSecurityConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
             registry.addMapping("/**")
-                .allowedOrigins("http://localhost:3000")
+                .allowedOriginPatterns("*") //http://localhost:3000
                 .allowedMethods("GET", "POST", "PUT", "DELETE")
                 .allowedHeaders("*")
                 .allowCredentials(true)

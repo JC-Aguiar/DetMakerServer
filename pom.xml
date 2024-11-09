@@ -32,6 +32,20 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
+<!--			<exclusions>-->
+<!--				<exclusion>-->
+<!--					<groupId>org.springframework.boot</groupId>-->
+<!--					<artifactId>spring-boot-starter-logging</artifactId>-->
+<!--				</exclusion>-->
+<!--				<exclusion>-->
+<!--					<artifactId>logback-classic</artifactId>-->
+<!--					<groupId>ch.qos.logback</groupId>-->
+<!--				</exclusion>-->
+<!--				<exclusion>-->
+<!--					<groupId>org.jboss.logging</groupId>-->
+<!--					<artifactId>jboss-logging</artifactId>-->
+<!--				</exclusion>-->
+<!--			</exclusions>-->
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -40,45 +54,85 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-validation</artifactId>
+<!--			<exclusions>-->
+<!--				<exclusion>-->
+<!--					<groupId>org.springframework.boot</groupId>-->
+<!--					<artifactId>spring-boot-starter-logging</artifactId>-->
+<!--				</exclusion>-->
+<!--				<exclusion>-->
+<!--					<artifactId>logback-classic</artifactId>-->
+<!--					<groupId>ch.qos.logback</groupId>-->
+<!--				</exclusion>-->
+<!--				<exclusion>-->
+<!--					<groupId>org.jboss.logging</groupId>-->
+<!--					<artifactId>jboss-logging</artifactId>-->
+<!--				</exclusion>-->
+<!--			</exclusions>-->
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-webflux</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-oauth2-client</artifactId>
-		</dependency>
-		<!-- Dependência necessária somente para deploy em servidor Tom Cat -->
-<!--				<dependency>-->
+<!--			<exclusions>-->
+<!--				<exclusion>-->
 <!--					<groupId>org.springframework.boot</groupId>-->
-<!--					<artifactId>spring-boot-starter-tomcat</artifactId>-->
-<!--					<scope>provided</scope>-->
-<!--				</dependency>-->
+<!--					<artifactId>spring-boot-starter-logging</artifactId>-->
+<!--				</exclusion>-->
+<!--				<exclusion>-->
+<!--					<artifactId>logback-classic</artifactId>-->
+<!--					<groupId>ch.qos.logback</groupId>-->
+<!--				</exclusion>-->
+<!--			</exclusions>-->
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-tomcat</artifactId>
+			<scope>provided</scope>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-devtools</artifactId>
 			<version>3.0.11</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-logging</artifactId>
+				</exclusion>
+				<exclusion>
+					<artifactId>logback-classic</artifactId>
+					<groupId>ch.qos.logback</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.security</groupId>
-			<artifactId>spring-security-test</artifactId>
-			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-logging</artifactId>
+				</exclusion>
+				<exclusion>
+					<artifactId>logback-classic</artifactId>
+					<groupId>ch.qos.logback</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<!-- Spring Boot Starter AOP -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-aop</artifactId>
 			<version>2.6.3</version>
+<!--			<exclusions>-->
+<!--				<exclusion>-->
+<!--					<groupId>org.springframework.boot</groupId>-->
+<!--					<artifactId>spring-boot-starter-logging</artifactId>-->
+<!--				</exclusion>-->
+<!--				<exclusion>-->
+<!--					<artifactId>logback-classic</artifactId>-->
+<!--					<groupId>ch.qos.logback</groupId>-->
+<!--				</exclusion>-->
+<!--			</exclusions>-->
 		</dependency>
 		<!-- Lombok -->
 		<dependency>
@@ -170,21 +224,6 @@
 			<artifactId>GeradorAleatorio</artifactId>
 			<version>v2.1</version>
 		</dependency>
-
-		<!-- TESTE: SSH APACHE MINA -->
-		<dependency>
-			<groupId>org.apache.sshd</groupId>
-			<artifactId>sshd-core</artifactId>
-			<version>2.5.1</version>
-			<scope>test</scope>
-		</dependency>
-		<!-- TESTE: SSHJ -->
-		<dependency>
-			<groupId>com.hierynomus</groupId>
-			<artifactId>sshj</artifactId>
-			<version>0.38.0</version>
-			<scope>test</scope>
-		</dependency>
 	</dependencies>
 
 	<build>
@@ -194,7 +233,7 @@
 			<plugin>
 				<groupId>org.wildfly.plugins</groupId>
 				<artifactId>wildfly-maven-plugin</artifactId>
-				<version>3.0.2.Final</version>
+				<version>4.2.2.Final</version>
 			</plugin>
 			<!-- Compilador Spring -->
 			<plugin>
@@ -220,17 +259,17 @@
 				</configuration>
 			</plugin>
 			<!-- Compilador Assembly -->
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-assembly-plugin</artifactId>
-				<configuration>
-					<archive>
-						<manifest>
-							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-						</manifest>
-					</archive>
-				</configuration>
-			</plugin>
+<!--			<plugin>-->
+<!--				<groupId>org.apache.maven.plugins</groupId>-->
+<!--				<artifactId>maven-assembly-plugin</artifactId>-->
+<!--				<configuration>-->
+<!--					<archive>-->
+<!--						<manifest>-->
+<!--							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>-->
+<!--						</manifest>-->
+<!--					</archive>-->
+<!--				</configuration>-->
+<!--			</plugin>-->
 		</plugins>
 	</build>
 
