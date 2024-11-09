@@ -49,7 +49,7 @@ public class JobInfoDTO implements JobPointer {
 
 
     public static JobInfoDTO converterJob(@NonNull Job job) {
-        log.info("Convertendo entidade Job em DTO.");
+        log.debug("Convertendo entidade Job em DTO.");
         val jobDto = new ModelMapper().map(job, JobInfoDTO.class);
         jobDto.setExecutarAposJob(dividirValores(job.getExecutarAposJob()));
         jobDto.setPrograma(dividirValores(job.getPrograma()));

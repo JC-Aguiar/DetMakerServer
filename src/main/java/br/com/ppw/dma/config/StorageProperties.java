@@ -1,11 +1,7 @@
 package br.com.ppw.dma.config;
 
-import ch.qos.logback.core.CoreConstants;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Optional;
 
 

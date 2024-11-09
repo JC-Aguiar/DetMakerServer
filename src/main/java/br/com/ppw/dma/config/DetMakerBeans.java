@@ -43,30 +43,7 @@ public class DetMakerBeans {
     @Bean
     CommandLineRunner init(StorageService storageService, JobRepository jobDao) {
         log.info("Iniciando rotina de sanitização dos Jobs.");
-        return (args) -> {
-//            var jobs = jobDao.findAll();
-//            jobs.forEach(job -> {
-//                job.setMascaraEntrada(
-//                    FormatString.dividirValores(job.getMascaraEntrada())
-//                        .stream()
-//                        .map(FormatString::extrairMascara)
-//                        .collect(Collectors.joining(", "))
-//                );
-//                job.setMascaraLog(
-//                    FormatString.dividirValores(job.getMascaraLog())
-//                        .stream()
-//                        .map(FormatString::extrairMascara)
-//                        .collect(Collectors.joining(", "))
-//                );
-//                job.setMascaraSaida(
-//                    FormatString.dividirValores(job.getMascaraSaida())
-//                        .stream()
-//                        .map(FormatString::extrairMascara)
-//                        .collect(Collectors.joining(", "))
-//                );
-//            });
-//            jobDao.saveAll(jobs);
-        };
+        return (args) -> { };
 //            storageService.deleteAll();
 //            storageService.init();
     }

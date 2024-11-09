@@ -49,6 +49,7 @@ public class JobResult extends QueuePayloadJob {
         setCargasEnvio(dados.getCargasEnvio());
         setLogsMascara(dados.getLogsMascara());
         setRemessasMascara(dados.getRemessasMascara());
+        setDirCargaEnvio(dados.getDirCargaEnvio());
         this.dataInicio = OffsetDateTime.now();
     }
 

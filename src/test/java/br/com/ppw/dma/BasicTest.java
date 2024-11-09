@@ -14,18 +14,15 @@ import com.github.lalyos.jfiglet.FigletFont;
 import jakarta.persistence.PersistenceException;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.channel.ClientChannel;
-import org.apache.sshd.client.channel.ClientChannelEvent;
-import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.channel.Channel;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.modelmapper.ModelMapper;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.util.ResourceUtils;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -248,70 +245,6 @@ public class BasicTest {
 
         var teste = "proc_fluxo_quebra_acordo_AAAAMMDD_F{NUMEROFASE}_S{NUMEROSUBSET}.log";
         log.info("TESTE: {}", FormatString.abstrairVariavel(teste, "\\{.*?\\}"));
-    }
-
-    @Test
-    public void testeApacheMinaSsh() throws IOException {
-        var mensagem = sshCommandTest(
-            "rcvry",
-            "rcvry",
-            "10.129.226.157:22",
-            15,
-            "pwd");
-        log.info(mensagem);
-
-//        var propsIguais = vivo1Props.keySet()
-//            .stream()
-//            .filter(vivo3Props::containsKey)
-//            .toList();
-//        log.info("PROPS IGUAIS VIVO1");
-//        vivo1Props.keySet()
-//            .stream()
-//            .filter(propsIguais::contains)
-//            .forEach(key -> log.info("{}: {}", key, vivo1Props.get(key)));
-//        log.info("PROPS IGUAIS VIVO3");
-//        vivo3Props.keySet()
-//            .stream()
-//            .filter(propsIguais::contains)
-//            .forEach(key -> log.info("{}: {}", key, vivo3Props.get(key)));
-    }
-
-    public static String sshCommandTest(
-        String username,
-        String password,
-        String hostFull,
-        long defaultTimeoutSeconds,
-        String command)
-        throws IOException {
-        SshClient client = SshClient.setUpDefaultClient();
-        client.start();
-
-        String host = hostFull.split(":")[0];
-        int port = Integer.parseInt(hostFull.split(":")[1]);
-
-        try (ClientSession session = client.connect(username, host, port)
-            .verify(defaultTimeoutSeconds, TimeUnit.SECONDS).getSession()) {
-            session.addPasswordIdentity(password);
-            session.auth().verify(defaultTimeoutSeconds, TimeUnit.SECONDS);
-
-            try (ByteArrayOutputStream responseStream = new ByteArrayOutputStream();
-                 ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
-                //---------------------------------------------------------------------
-                channel.setOut(responseStream);
-                channel.open().verify(defaultTimeoutSeconds, TimeUnit.SECONDS);
-                try (OutputStream pipedIn = channel.getInvertedIn()) {
-                    pipedIn.write(command.getBytes());
-                    pipedIn.flush();
-                }
-                channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED),
-                    TimeUnit.SECONDS.toMillis(defaultTimeoutSeconds));
-                String responseString = new String(responseStream.toByteArray());
-                return responseString;
-            }
-        }
-        finally {
-            client.stop();
-        }
     }
 
     @Test

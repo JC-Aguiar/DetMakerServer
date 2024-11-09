@@ -14,6 +14,7 @@ import br.com.ppw.dma.domain.storage.FileSystemService;
 import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
+import br.com.ppw.dma.util.FormatString;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -28,7 +29,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
@@ -97,7 +97,6 @@ public class JobService extends MasterService<Long, Job, JobService> {
     public ExcelXlsx lerXlsx(@NotNull MultipartFile file) throws IOException {
         val nomeArquivo = file.getOriginalFilename();
         log.info("Nome do arquivo: '{}'.", nomeArquivo);
-        val localDir = System.getProperty("user.dir") + File.separator;
 
         log.debug("Validando extensão do arquivo.");
         val extensao = nomeArquivo.substring(nomeArquivo.lastIndexOf(".") + 1);
@@ -128,6 +127,30 @@ public class JobService extends MasterService<Long, Job, JobService> {
             .stream()
             .map(Job -> converterScheduleJobEmInfo(Job, planilhaNome, arquivoNome))
             .collect(Collectors.toList());
+    }
+
+    public List<Job> formatJobsParameters(@NonNull List<Job> jobs) {
+        jobs.forEach(job -> {
+            job.setMascaraEntrada(
+                FormatString.dividirValores(job.getMascaraEntrada())
+                    .stream()
+                    .map(FormatString::extrairMascara)
+                    .collect(Collectors.joining(", "))
+            );
+            job.setMascaraLog(
+                FormatString.dividirValores(job.getMascaraLog())
+                    .stream()
+                    .map(FormatString::extrairMascara)
+                    .collect(Collectors.joining(", "))
+            );
+            job.setMascaraSaida(
+                FormatString.dividirValores(job.getMascaraSaida())
+                    .stream()
+                    .map(FormatString::extrairMascara)
+                    .collect(Collectors.joining(", "))
+            );
+        });
+        return jobs;
     }
 
     // TODO: javadoc

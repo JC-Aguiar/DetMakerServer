@@ -107,6 +107,8 @@ public class JobController extends MasterController<Long, Job, JobController> {
             .peek(job -> job.setAtualizadoPor(userEmail))
             .toList();
 
+        entidades = jobService.formatJobsParameters(entidades);
+
         log.info("Persistindo Jobs no banco.");
         var totalSalvos = jobService.save(entidades)
             .stream()

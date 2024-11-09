@@ -95,6 +95,7 @@ public class ConectorSftp {
 
     //TODO: Javadoc
     public SftpFileManager<File> upload(@NonNull String dirRemoto, @NonNull File arquivo) {
+//        dirRemoto = dirRemoto.startsWith("/") ? dirRemoto : "/" + dirRemoto;
         val comando = "sftp put " + dirRemoto;
 //        val comando = dirRemoto;
         Session session = null;
