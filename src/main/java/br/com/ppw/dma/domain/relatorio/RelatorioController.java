@@ -139,8 +139,8 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
     @Transactional
     @PostMapping(value = "review")
     public ResponseEntity<RelatorioHistoricoDTO> salvarRevisao(
-        @RequestBody RelatorioComplementoDTO dto){
-
+        @RequestBody RelatorioComplementoDTO dto)
+    {
         var id = dto.getId();
         var relatorio = relatorioService.salvarRelatorioRevisado(dto);
         return ResponseEntity.ok(new RelatorioHistoricoDTO(relatorio));
@@ -148,7 +148,7 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
 
     //TODO: javadoc
     @GetMapping(value = "review/{id}")
-    public ResponseEntity<?> revisarUmRelatorio(@PathVariable long id) {
+    public ResponseEntity<RelatorioHistoricoDTO> revisarUmRelatorio(@PathVariable long id) {
         val relatorio = relatorioService.findById(id);
         log.info("Relatório encontrado:");
         log.info(relatorio.toString());

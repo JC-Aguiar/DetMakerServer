@@ -17,6 +17,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.GenerationType.*;
 import static lombok.AccessLevel.PRIVATE;
 
 
@@ -32,11 +33,8 @@ import static lombok.AccessLevel.PRIVATE;
 public class ExecQuery implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
-    @SequenceGenerator(
-        name = "SEQ_EXEC_QUERY_ID",
-        sequenceName = "RCVRY.SEQ_EXEC_QUERY_ID",
-        allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_EXEC_QUERY_ID")
+    @SequenceGenerator( name = "SEQ_EXEC_QUERY_ID", allocationSize = 1)
+    @GeneratedValue(strategy = SEQUENCE, generator = "SEQ_EXEC_QUERY_ID")
     Long id;
 
     @Column(name = "TICKET", length = 100, nullable = false)

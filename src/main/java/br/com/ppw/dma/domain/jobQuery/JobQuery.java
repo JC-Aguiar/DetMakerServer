@@ -12,6 +12,7 @@ import org.hibernate.proxy.HibernateProxy;
 import java.util.Objects;
 
 import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.GenerationType.*;
 
 
 @Getter
@@ -23,11 +24,11 @@ import static jakarta.persistence.FetchType.LAZY;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_JOB_QUERY")
 @Table(name = "PPW_JOB_QUERY")
-@SequenceGenerator(name = "SEQ_JOB_QUERY_ID", sequenceName = "RCVRY.SEQ_JOB_QUERY_ID", allocationSize = 1)
 public class JobQuery implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_JOB_QUERY_ID")
+    @SequenceGenerator(name = "SEQ_JOB_QUERY_ID", allocationSize = 1)
+    @GeneratedValue(strategy = SEQUENCE, generator = "SEQ_JOB_QUERY_ID")
     @Comment("Identificador numérico dessa query")
     Long id;
 

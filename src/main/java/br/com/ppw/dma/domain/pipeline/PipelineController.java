@@ -449,8 +449,8 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
     @DeleteMapping(value = "clientId/{clientId}/pipeline/{name}")
     public ResponseEntity<String> delete(
         @PathVariable(name = "clientId") Long clientId,
-        @PathVariable(name = "name") String nome) {
-        //----------------------------------------
+        @PathVariable(name = "name") String nome)
+    {
         var pipeline = pipelineService.getUniqueOne(nome, clientId);
         if (pipeline.isPresent()) {
             pipeline.get().setOcultar(true);

@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.GenerationType.*;
 
 @Getter
 @Setter
@@ -23,11 +24,11 @@ import static jakarta.persistence.FetchType.LAZY;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_MASSA_TABELA")
 @Table(name = "PPW_MASSA_TABELA", uniqueConstraints = {@UniqueConstraint(columnNames = {"TABELA_NOME", "CLIENTE_ID"})})
-@SequenceGenerator(name = "SEQ_MASSA_TABELA_ID", sequenceName = "RCVRY.SEQ_MASSA_TABELA_ID", allocationSize = 1)
 public class MassaTabela implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_MASSA_TABELA_ID")
+    @SequenceGenerator(name = "SEQ_MASSA_TABELA_ID", allocationSize = 1)
+    @GeneratedValue(strategy = SEQUENCE, generator = "SEQ_MASSA_TABELA_ID")
     Long id;
 
     @Column(name = "TABELA_NOME", length = 35)

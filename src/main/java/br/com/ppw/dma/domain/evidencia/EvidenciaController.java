@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -53,20 +54,19 @@ public class EvidenciaController extends MasterController<Long, Evidencia, Evide
     //TODO: javadoc
     @Transactional
     @PostMapping(value = "review")
-    public ResponseEntity<MasterSummary<Long>> salvarRevisao(
-        @RequestBody List<EvidenciaRevisadaDTO> dtos) {
-        //------------------------------------------------------------
+    public ResponseEntity<String> salvarRevisao(
+        @RequestBody List<EvidenciaRevisadaDTO> dtos)
+    {
         val evidenciasId = dtos
             .stream()
             .map(EvidenciaRevisadaDTO::getEvidenciaId)
             .toList();
         log.info("Atualizando campos de revisão para as Evidências ID {}", evidenciasId);
-        val resumo = new MasterSummary<Long>();
         var relatorios = relatorioService.findAllByEvidenciaId(evidenciasId);
         if(relatorios.size() > 1) {
-            evidenciasId.forEach(
-                id -> resumo.fail(id, "As Evidências apontam para Relatórios diferentes."));
-            return new ResponseEntity<>(resumo, HttpStatus.BAD_REQUEST);
+            var mensagemErro = "As Evidências apontam para Relatórios diferentes.";
+            log.warn(mensagemErro);
+            return new ResponseEntity<>(mensagemErro, HttpStatus.BAD_REQUEST);
         }
         //TODO: mover para dentro do Service
         var mensagemErro = "Tipo de resultado '%s' inválido. Os únicos valores permitidos são: "
@@ -74,43 +74,43 @@ public class EvidenciaController extends MasterController<Long, Evidencia, Evide
                 .map(TipoEvidenciaStatus::getStatus)
                 .collect(Collectors.joining(", "));
         var evidencias = evidenciaService.findById(evidenciasId);
-        dtos.forEach(dtoRevisao -> {
+        val erros = new HashSet<String>();
+
+        dtos.forEach(dto -> {
+            var id = dto.evidenciaId;
             try {
                 val evidencia = evidencias
                     .stream()
-                    .filter(ev -> Objects.equals(ev.getId(), dtoRevisao.getEvidenciaId()))
+                    .filter(ev -> Objects.equals(ev.getId(), dto.getEvidenciaId()))
                     .findFirst()
                     .orElse(null);
                 if(evidencia == null) return;
                 if(evidencia.getRevisor() != null && !evidencia.getRevisor().isBlank()) {
-                    resumo.fail(dtoRevisao.evidenciaId, "Evidência já revisada.");
+                    erros.add("Evidência ID " + id + " já revisada.");
                     return;
                 }
-                evidencia.setRevisor(dtoRevisao.getResivor());
-                evidencia.setDataRevisao(dtoRevisao.getDataRevisao());
-                evidencia.setComentario(dtoRevisao.getComentario());
+                evidencia.setRevisor(dto.getResivor());
+                evidencia.setDataRevisao(dto.getDataRevisao());
+                evidencia.setComentario(dto.getComentario());
                 TipoEvidenciaStatus
-                    .identificar(dtoRevisao.getResultado())
+                    .identificar(dto.getResultado())
                     .ifPresentOrElse(
                         evidencia::setStatus,
-                        () -> resumo.fail(
-                            dtoRevisao.evidenciaId,
-                            String.format(mensagemErro, dtoRevisao.getResultado())
-                    ));
-                evidenciaService.save(evidencia);
-                resumo.save(dtoRevisao.evidenciaId);
+                        () -> erros.add("Evidência ID " + id + " com resultado inválido: " + dto.getResultado())
+                    );
             }
             catch(Exception e) {
                 log.warn(e.getMessage());
-                resumo.fail(dtoRevisao.evidenciaId, e.getMessage());
+                erros.add("Evidência ID " + id + " com erro: " + e.getMessage());
             }
         });
-        log.info("Total de Evidências atualizadas com os campos de revisão: {}.", resumo.totalSize());
-        log.info("Sucessos: {}.", resumo.getSaved().size());
-        log.info("Falhas: {}.", resumo.getFailed().size());
-
-        if(resumo.getFailed().isEmpty()) return ResponseEntity.ok(resumo);
-        return new ResponseEntity<>(resumo, HttpStatus.NO_CONTENT);
+        if(!erros.isEmpty()) {
+            erros.forEach(log::warn);
+            return new ResponseEntity<>(String.join("\n", erros), HttpStatus.BAD_REQUEST);
+        }
+        evidenciaService.save(evidencias);
+        log.info("Evidências atualizadas com sucesso.");
+        return ResponseEntity.ok("Evidências atualizadas com sucesso.");
     }
 
 }

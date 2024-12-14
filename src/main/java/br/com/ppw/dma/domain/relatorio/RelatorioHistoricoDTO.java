@@ -1,6 +1,7 @@
 package br.com.ppw.dma.domain.relatorio;
 
 import br.com.ppw.dma.domain.evidencia.EvidenciaInfoDTO;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -35,7 +36,7 @@ public class RelatorioHistoricoDTO {
     final List<EvidenciaInfoDTO> evidencias = new ArrayList<>();
     OffsetDateTime data;
 
-    //TODO: finalizar novo DTO
+
     public RelatorioHistoricoDTO(@NonNull Relatorio relatorio) {
         log.info("Convertendo Relatorio em {}.", RelatorioHistoricoDTO.class.getSimpleName());
         this.id = relatorio.getId();
@@ -60,6 +61,11 @@ public class RelatorioHistoricoDTO {
             .map(ev -> new EvidenciaInfoDTO(ev, cont.getAndIncrement()))
             .forEach(evidencias::add);
         log.info(this.toString());
+    }
+
+    @JsonIgnore
+    public String getIdentificadorProjeto() {
+        return idProjeto + "-" + nomeProjeto;
     }
 
 }

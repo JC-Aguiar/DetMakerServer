@@ -110,6 +110,7 @@ public class ConectorSftp {
             channel = session.openChannel("sftp");
             channel.connect();
             sftpChannel = (ChannelSftp) channel;
+            //TODO: avaliar uma forma de avaliar a extensão do arquivo para mudar o modo de envio entre texto e binário
             sftpChannel.put(arquivo.getAbsolutePath(), dirRemoto);
             newUpload.setSuccess(true);
             log.info("Upload realizado com sucesso.");
@@ -203,7 +204,7 @@ public class ConectorSftp {
                 .stream()
                 .map(k -> "export " + k + "=" + properties.get(k))
                 .collect(Collectors.joining(" && "))
-                .concat(" && ")
+                .concat(properties.size() > 0 ? " && " : "")
                 .concat(comando);
             log.info("ComandoFull: {}", comandoFull);
 
