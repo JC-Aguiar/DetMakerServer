@@ -45,7 +45,7 @@ public class JobInfoDTO implements JobPointer {
     String escalation;
     LocalDate dataAtualizacao;
     String atualizadoPor;
-    //List<QueryInfoDTO> queries = new ArrayList<>();
+    //List<ExecQueryDTO> queries = new ArrayList<>();
 
 
     public static JobInfoDTO converterJob(@NonNull Job job) {
@@ -59,7 +59,7 @@ public class JobInfoDTO implements JobPointer {
         jobDto.setMascaraEntrada(dividirValores(job.getMascaraEntrada()));
         jobDto.setMascaraSaida(dividirValores(job.getMascaraSaida()));
         jobDto.setMascaraLog(dividirValores(job.getMascaraLog()));
-        //jobDto.setQueries(QueryInfoDTO.getFromJob(job));
+        //jobDto.setQueries(ExecQueryDTO.getFromJob(job));
 //        log.info("Conversão realizada com sucesso.");
 //        log.info("{}", jobDto);
         return jobDto;

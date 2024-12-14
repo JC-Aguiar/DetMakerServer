@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface JobRepository extends JpaRepository<Job, JobProps> {
+public interface JobRepository extends JpaRepository<Job, Long> {
 
     @Query(value = "SELECT * FROM PPW_JOB j WHERE j.CLIENTE_ID = :clienteId", nativeQuery = true)
     List<Job> findAllByClienteId(@NonNull Long clienteId);

@@ -42,7 +42,7 @@ public class DetMakerBeans {
      */
     @Bean
     CommandLineRunner init(StorageService storageService, JobRepository jobDao) {
-        log.info("Iniciando rotina de sanitização dos Jobs.");
+//        log.info("Iniciando rotina de sanitização dos Jobs.");
         return (args) -> { };
 //            storageService.deleteAll();
 //            storageService.init();

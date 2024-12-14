@@ -13,7 +13,6 @@ import org.hibernate.proxy.HibernateProxy;
 import java.time.OffsetDateTime;
 import java.util.Objects;
 
-import static br.com.ppw.dma.domain.queue.QueueStatus.AGUARDANDO;
 import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.FetchType.EAGER;
 import static jakarta.persistence.GenerationType.SEQUENCE;
@@ -31,10 +30,7 @@ import static lombok.AccessLevel.PRIVATE;
 public class TaskQueue implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
-    @SequenceGenerator(
-        name = "SEQ_QUEUE_ID",
-        sequenceName = "RCVRY.SEQ_QUEUE_ID",
-        allocationSize = 1)
+    @SequenceGenerator(name = "SEQ_QUEUE_ID", allocationSize = 1)
     @GeneratedValue(strategy = SEQUENCE, generator = "SEQ_QUEUE_ID")
     Long id;
 
@@ -66,7 +62,7 @@ public class TaskQueue implements MasterEntity<Long> {
     @Comment("Data e hora em que a Pipeline foi solicitada")
     OffsetDateTime dataSolicitacao;
 
-    @Column(name = "DATA_EXECUCAO", columnDefinition = "DATE", nullable = false)
+    @Column(name = "DATA_EXECUCAO", columnDefinition = "DATE")
     @Comment("Data e hora em que a Pipeline foi executada")
     OffsetDateTime dataExecucao;
 

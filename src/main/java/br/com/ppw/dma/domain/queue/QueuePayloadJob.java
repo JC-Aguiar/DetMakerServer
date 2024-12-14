@@ -56,6 +56,9 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 	List<QueuePayloadJobCarga> cargasEnvio = new ArrayList<>();
 
 	@Builder.Default
+	List<String> cargasMascara = new ArrayList<>();
+
+	@Builder.Default
 	List<String> logsMascara = new ArrayList<>();
 
 	@Builder.Default
@@ -82,7 +85,7 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 			.map(ExecFile::getMascara)
 			.filter(Objects::nonNull)
 			.toList();
-		remessasMascara = evidencia.getLogs()
+		remessasMascara = evidencia.getRemessas()
 			.stream()
 			.map(ExecFile::getMascara)
 			.filter(Objects::nonNull)
@@ -129,18 +132,25 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 			.stream()
 			.map(QueuePayloadJobCarga::new)
 			.toList();
+		cargasMascara = jobInfo.getMascaraEntrada()
+			.stream()
+			.map(mascara -> Optional.ofNullable(jobInfo.getDiretorioEntrada())
+				.map(dir -> dir.endsWith("/") ? dir : dir+"/")
+				.map(dir -> dir + mascara.trim())
+				.orElseGet(() -> ""))
+			.toList();
 		remessasMascara = jobInfo.getMascaraSaida()
 			.stream()
 			.map(mascara -> Optional.ofNullable(jobInfo.getDiretorioSaida())
 				.map(dir -> dir.endsWith("/") ? dir : dir+"/")
-				.map(dir -> dir + mascara)
+				.map(dir -> dir + mascara.trim())
 				.orElseGet(() -> ""))
 			.toList();
 		logsMascara = jobInfo.getMascaraLog()
 			.stream()
 			.map(mascara -> Optional.ofNullable(jobInfo.getDiretorioLog())
 				.map(dir -> dir.endsWith("/") ? dir : dir+"/")
-				.map(dir -> dir + mascara)
+				.map(dir -> dir + mascara.trim())
 				.orElseGet(() -> ""))
 			.toList();
 		dirCargaEnvio = Optional.ofNullable(jobInfo.getDiretorioEntrada())
@@ -206,10 +216,11 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 	@Override
 	@JsonIgnore
 	public List<String> pathEntrada() {
-		return cargasEnvio.stream()
-			.map(QueuePayloadJobCarga::getNome)
-			.map(cargaNome -> dirCargaEnvio + cargaNome)
-			.toList();
+		return cargasMascara;
+//		return cargasEnvio.stream()
+//			.map(QueuePayloadJobCarga::getNome)
+//			.map(cargaNome -> dirCargaEnvio + cargaNome)
+//			.toList();
 	}
 
 	@Override

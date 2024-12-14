@@ -16,19 +16,21 @@ import java.util.Objects;
 
 import static jakarta.persistence.CascadeType.ALL;
 import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.GenerationType.*;
+import static lombok.AccessLevel.*;
 
 @Getter
 @Setter
 @ToString
 @NoArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@FieldDefaults(level = PRIVATE)
 @Entity(name = "PPW_CLIENTE")
 @Table(name = "PPW_CLIENTE")
-@SequenceGenerator(name = "SEQ_CLIENTE_ID", sequenceName = "RCVRY.SEQ_CLIENTE_ID", allocationSize = 1)
 public class Cliente implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_CLIENTE_ID")
+    @SequenceGenerator(name = "SEQ_CLIENTE_ID", allocationSize = 1)
+    @GeneratedValue(strategy = SEQUENCE, generator = "SEQ_CLIENTE_ID")
     // Identificador numérico do cliente
     Long id;
 

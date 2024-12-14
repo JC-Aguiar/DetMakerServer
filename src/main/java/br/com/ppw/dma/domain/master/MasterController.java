@@ -1,33 +1,35 @@
 package br.com.ppw.dma.domain.master;
 
-import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import org.springframework.aop.framework.AopContext;
 import org.springframework.data.domain.*;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 public abstract class MasterController<ID, ENTITY extends MasterEntity<ID>, THIS extends MasterController> {
 
     @Getter
     private final MasterService service;
-
     private final Type entityClass;
-    public final static ExampleMatcher MATCHER_ALL =
-        ExampleMatcher.matchingAll().withIgnoreNullValues().withIgnoreCase();
-    public final static ExampleMatcher MATCHER_ANY =
-        ExampleMatcher.matchingAny().withIgnoreNullValues().withIgnoreCase();
 
-    // A constructor that will initialize the fields of the class.
+    public final static ExampleMatcher MATCHER_ALL = ExampleMatcher
+        .matchingAll()
+        .withIgnoreNullValues()
+        .withIgnoreCase();
+    public final static ExampleMatcher MATCHER_ANY = ExampleMatcher
+        .matchingAny()
+        .withIgnoreNullValues()
+        .withIgnoreCase();
+
+
     public MasterController(MasterService service) {
         this.service = service;
         final Type[] types = ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments();
@@ -63,5 +65,19 @@ public abstract class MasterController<ID, ENTITY extends MasterEntity<ID>, THIS
     public abstract ResponseEntity<?> parseOne(ENTITY entity);
 
     public abstract ResponseEntity<?> parseAll(Page<ENTITY> entities);
+
+    @Transactional
+    @DeleteMapping("id/{id}")
+    public ResponseEntity<String> delete(@PathVariable(name = "id") ID...id)
+    throws NoSuchMethodException {
+        var entities = (List<ENTITY>) service.findById(Set.of(id));
+        var idsBanco = entities.stream()
+            .map(MasterEntity::getId)
+            .collect(Collectors.toSet());
+        service.delete(entities);
+        return ResponseEntity.ok(
+            "IDs deletados: " + idsBanco + ".\n Total: " + idsBanco.size() + "."
+        );
+    }
 
 }

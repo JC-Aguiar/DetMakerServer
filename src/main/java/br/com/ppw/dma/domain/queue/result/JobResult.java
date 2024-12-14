@@ -29,7 +29,8 @@ public class JobResult extends QueuePayloadJob {
     //SftpTerminalManager terminal;
     final List<ResultadoSql> tabelasPreJob = new ArrayList<>();
     final List<ResultadoSql> tabelasPosJob = new ArrayList<>();
-    final List<SftpFileManager<File>> cargasColetadas = new ArrayList<>();
+    final List<SftpFileManager<File>> cargasEnviadas = new ArrayList<>();
+    final List<SftpFileManager<RemoteFile>> cargasColetadas = new ArrayList<>();
     final List<SftpFileManager<RemoteFile>> logsColetados = new ArrayList<>();
     final List<SftpFileManager<RemoteFile>> remessasColetadas = new ArrayList<>();
     boolean sucesso = false;
@@ -47,6 +48,7 @@ public class JobResult extends QueuePayloadJob {
         setComandoVersao(dados.getComandoVersao());
         setQueriesExec(dados.getQueriesExec());
         setCargasEnvio(dados.getCargasEnvio());
+        setCargasMascara(dados.getCargasMascara());
         setLogsMascara(dados.getLogsMascara());
         setRemessasMascara(dados.getRemessasMascara());
         setDirCargaEnvio(dados.getDirCargaEnvio());
@@ -81,11 +83,11 @@ public class JobResult extends QueuePayloadJob {
         logsColetados.add(arquivo);
     }
 
-    public void addCargas(@NonNull SftpFileManager<File> arquivo) {
+    public void addCargas(@NonNull SftpFileManager<RemoteFile> arquivo) {
         cargasColetadas.add(arquivo);
     }
 
-    public void addCargas(@NonNull List<SftpFileManager<File>> arquivo) {
+    public void addCargas(@NonNull List<SftpFileManager<RemoteFile>> arquivo) {
         cargasColetadas.addAll(arquivo);
     }
 

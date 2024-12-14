@@ -5,11 +5,13 @@ import br.com.ppw.dma.domain.evidencia.Evidencia;
 import br.com.ppw.dma.domain.jobQuery.JobQuery;
 import br.com.ppw.dma.domain.master.MasterEntity;
 import br.com.ppw.dma.domain.pipeline.Pipeline;
+import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.Comment;
 import org.hibernate.proxy.HibernateProxy;
 
 import java.time.OffsetDateTime;
@@ -17,9 +19,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatString.refinarCelula;
 import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.GenerationType.*;
 
 
 @Getter
@@ -31,143 +35,131 @@ import static jakarta.persistence.FetchType.LAZY;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_JOB")
 @Table(name = "PPW_JOB", uniqueConstraints = @UniqueConstraint(columnNames = { "NOME", "CLIENTE_ID" } ))
-@SequenceGenerator(name = "SEQ_JOB_ID", sequenceName = "RCVRY.SEQ_JOB_ID", allocationSize = 1)
 public class Job implements MasterEntity<Long> {
 
     @Id
-//    @Column(name = "ID", unique = true, nullable = false)
     @Column(name = "ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_JOB_ID")
-    // Identificador numérico do job
+    @SequenceGenerator(name = "SEQ_JOB_ID", allocationSize = 1)
+    @GeneratedValue(strategy = SEQUENCE, generator = "SEQ_JOB_ID")
+    @Comment("Identificador numérico do job")
     Long id;
-
-//    @EmbeddedId
-//    // Chave composta do Job
-//    JobProps props;
 
     @ToString.Exclude
     @JsonBackReference
     @ManyToOne(fetch = LAZY)
     @JoinColumns( @JoinColumn(name = "CLIENTE_ID", referencedColumnName = "ID", nullable = false) )
-    // ID do cliente associado a este job
+    @Comment("ID do cliente associado a este job")
     Cliente cliente;
 
     //@Column(name = "NOME", length = 100, nullable = false)
     @Column(name = "NOME", length = 100)
-    // Nome da shell, serviço ou job
+    @Comment("Nome do Job")
     String nome;
 
     @Column(name = "PLANO", length = 50)
-    // Nome da planilha em que o registro pertence
+    @Comment("Nome da planilha em que o registro pertence")
     String plano;
 
     @Column(name = "EXEC_POS_JOB", length = 60)
-    // Indica os IDs dos Jobs do qual se deve executar após conclusão
+    @Comment("Indica os IDs dos Jobs do qual se deve executar após conclusão")
     String executarAposJob;
 
     @Column(name = "GRUPO_CONCOR", length = 25)
-    // Grupo de concorrência
+    @Comment("Grupo de concorrência (?)")
     String grupoConcorrencia;
 
     @Column(name = "FASE", length = 25)
-    // Fase
+    @Comment("Fase (?)")
     String fase;
 
     @Column(name = "DESCRICAO", length = 500)
-    // Descrição do Job
+    @Comment("Descrição do Job")
     String descricao;
 
     @Column(name = "GRUPO_UDA", length = 5)
-    // Grupo (UDAx)
+    @Comment("Grupo (UDAx)")
     String grupoUda;
 
     @Column(name = "PROGRAMA", length = 150)
-    // Programas envolvidos no Job
+    @Comment("Programas envolvidos no Job")
     String programa;
 
     @Column(name = "TABELAS", length = 300)
-    // Tabelas atualizadas pelo Job
+    @Comment("Tabelas atualizadas pelo Job")
     String tabelas;
 
     @Column(name = "SERVIDOR", length = 30)
-    // Servidor
+    @Comment("Servidor")
     String servidor;
 
     @Column(name = "CAMINHO_EXEC", length = 100)
-    // Caminho de execução do Job
+    @Comment("Caminho de execução do Job")
     String caminhoExec;
 
     @Column(name = "PARAMETROS", length = 50)
-    // Máscara dos parâmetros para executar o Job
+    @Comment("Nome dos parâmetros para executar o Job")
     String parametros;
 
     @Column(name = "PARAM_DESCRICAO", length = 500)
-    // Descrição dos parâmetros
+    @Comment("Descrição de cada um dos parâmetros")
     String descricaoParametros;
 
     @Column(name = "ENTRADA_DIR", length = 100)
-    // Caminho de entrada para arquivo de carga
+    @Comment("Caminho do diretório de cargas")
     String diretorioEntrada;
 
     @Column(name = "ENTRADA_MASK", length = 350)
-    // Máscara do arquivo de entrada
+    @Comment("Máscara das cargas consumidas pelo Job")
     String mascaraEntrada;
 
     @Column(name = "SAIDA_DIR", length = 100)
-    // Caminho de saída para arquivos pós-processamento
+    @Comment("Caminho do diretório de remessas")
     String diretorioSaida;
 
     @Column(name = "SAIDA_MASK", length = 150)
-    // Máscara do arquivo de saída
+    @Comment("Máscara das remessas geradas pelo Job")
     String mascaraSaida;
 
     @Column(name = "LOG_DIR", length = 100)
-    // Caminho para os arquivos de log
+    @Comment("Caminho para o diretório dos logs")
     String diretorioLog;
 
     @Column(name = "LOG_MASK", length = 300)
-    // Máscara dos arquivos de log
+    @Comment("Máscara dos arquivos de log gerados pelo Job")
     String mascaraLog;
     
     @Column(name = "TRATAMENTO", length = 25)
-    // Tratamento
+    @Comment("Tratamento (?)")
     String tratamento;
     
     @Column(name = "ESCALATION", length = 25)
-    // Escalation
+    @Comment("Escalation (?)")
     String escalation;
     
     @Column(name = "DT_ATUALIZACAO")
-    // Data da última atualização no Job
+    @Comment("Data da última atualização no Job")
     OffsetDateTime dataAtualizacao;
     
     @Column(name = "ATUALIZADO_POR", length = 50)
-    // Atualizado por
+    @Comment("Autor que fez a última atualização")
     String atualizadoPor;
     
     @Column(name = "ORIGEM", length = 50)
-    // Origem de como esse Job foi criado ('planilha', 'api' ou 'banco')
+    @Comment("Origem de como esse Job foi criado (ex: 'planilha', 'api' ou 'banco')")
     String origem;
 
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "JOB_QUERY")
     @OneToMany(fetch = LAZY, mappedBy = "job")
-    // IDs das configurações de queries relacionadas a este job
+    @Comment("ID das configurações de queries relacionadas ao Job")
     List<JobQuery> queries = new ArrayList<>();
-
-//    @ToString.Exclude
-//    @JsonManagedReference
-//    @Column(name = "EVIDENCIAS")
-//    @OneToMany(fetch = LAZY, mappedBy = "job")
-//    // IDs das evidências relacionadas a este job
-//    List<Evidencia> evidencias = new ArrayList<>();
 
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "PIPELINES")
-    @ManyToMany(fetch = LAZY, mappedBy = "jobs")
-    // IDs das pipelines relacionadas a este job
+    @ManyToMany(fetch = LAZY, mappedBy = "jobs") //TODO: cascade = {CascadeType.PERSIST, CascadeType.MERGE} ?
+    @Comment("IDs das pipelines relacionadas ao Job")
     List<Pipeline> pipelines = new ArrayList<>();
 
 
@@ -178,14 +170,30 @@ public class Job implements MasterEntity<Long> {
      * @return {@link Job} esse mesmo objeto
      */
     public Job refinarCampos() {
-        executarAposJob = refinarCelula(executarAposJob);
-        programa = refinarCelula(programa);
-        tabelas = refinarCelula(tabelas);
-        parametros = refinarCelula(parametros);
-        descricaoParametros = refinarCelula(descricaoParametros);
-        mascaraEntrada = refinarCelula(mascaraEntrada);
-        mascaraSaida = refinarCelula(mascaraSaida);
-        mascaraLog = refinarCelula(mascaraLog);
+        executarAposJob = FormatString.refinarCelula(executarAposJob);
+        programa = FormatString.refinarCelula(programa);
+        tabelas = FormatString.refinarCelula(tabelas);
+        parametros = FormatString.refinarCelula(parametros);
+        descricaoParametros = FormatString.refinarCelula(descricaoParametros);
+
+        mascaraEntrada = FormatString.refinarCelula(mascaraEntrada);
+        mascaraEntrada = FormatString.dividirValores(mascaraEntrada)
+            .stream()
+            .map(FormatString::extrairMascara)
+            .collect(Collectors.joining(", "));
+
+        mascaraSaida = FormatString.refinarCelula(mascaraSaida);
+        mascaraSaida = FormatString.dividirValores(mascaraSaida)
+            .stream()
+            .map(FormatString::extrairMascara)
+            .collect(Collectors.joining(", "));
+
+        mascaraLog = FormatString.refinarCelula(mascaraLog);
+        mascaraLog = FormatString.dividirValores(mascaraLog)
+            .stream()
+            .map(FormatString::extrairMascara)
+            .collect(Collectors.joining(", "));
+
         return this;
     }
 

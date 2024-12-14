@@ -114,7 +114,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     public List<JobInfoDTO> mapExcelToJobInfoDto(
-            @NotNull ExcelXlsx excel, @NotBlank String planilhaNome) {
+        @NotNull ExcelXlsx excel, @NotBlank String planilhaNome) {
         //--------------------------------------------------------
         val arquivoNome = excel.getNomeArquivo();
         log.info("Tentando ler registros da planilha '{}'.", planilhaNome);
@@ -127,30 +127,6 @@ public class JobService extends MasterService<Long, Job, JobService> {
             .stream()
             .map(Job -> converterScheduleJobEmInfo(Job, planilhaNome, arquivoNome))
             .collect(Collectors.toList());
-    }
-
-    public List<Job> formatJobsParameters(@NonNull List<Job> jobs) {
-        jobs.forEach(job -> {
-            job.setMascaraEntrada(
-                FormatString.dividirValores(job.getMascaraEntrada())
-                    .stream()
-                    .map(FormatString::extrairMascara)
-                    .collect(Collectors.joining(", "))
-            );
-            job.setMascaraLog(
-                FormatString.dividirValores(job.getMascaraLog())
-                    .stream()
-                    .map(FormatString::extrairMascara)
-                    .collect(Collectors.joining(", "))
-            );
-            job.setMascaraSaida(
-                FormatString.dividirValores(job.getMascaraSaida())
-                    .stream()
-                    .map(FormatString::extrairMascara)
-                    .collect(Collectors.joining(", "))
-            );
-        });
-        return jobs;
     }
 
     // TODO: javadoc
@@ -215,8 +191,6 @@ public class JobService extends MasterService<Long, Job, JobService> {
         return JobDto;
     }
 
-
-
     //TODO: criar exception própria?
     //TODO: mover para TaskQueue?
     //TODO: javadoc
@@ -262,12 +236,18 @@ public class JobService extends MasterService<Long, Job, JobService> {
         try {
             //Coletas pré-execução
             if(!process.getCargasEnvio().isEmpty() && process.getDirCargaEnvio() != null) {
-                log.info("Enviando os arquivos de carga a serem usadas na execução.");
+                log.info("Enviando os arquivos de carga a serem usados na execução.");
                 process.getCargasEnvio().stream()
                     .filter(carga -> carga.getNome() != null && !carga.getNome().isBlank())
                     .map(fileSystemService::store)
                     .map(carga -> sftp.upload(process.getDirCargaEnvio(), carga))
-                    .forEach(process::addCargas);
+                    .filter(SftpFileManager::isSuccess)
+                    .forEach(carga -> process.getCargasEnviadas().add(carga));
+            }
+            if(!process.getCargasMascara().isEmpty()) {
+                log.info("Coletando os arquivos de carga que serão usados na execução.");
+                process.getCargasMascara().forEach(
+                    path -> process.addCargas(sftp.downloadMaisRecente(path)));
             }
             if(!process.getLogsMascara().isEmpty()) {
                 log.info("Obtendo log mais recente pré-execução.");

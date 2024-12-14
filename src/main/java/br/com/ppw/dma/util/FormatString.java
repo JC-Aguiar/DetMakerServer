@@ -271,10 +271,9 @@ public final class FormatString {
             .replace(", ", ";")
             .concat(";");
 
-        val stream = Stream.of(valorRefinado.split(";"));
-
         //Dividindo texto
-        return stream.filter(texto -> !texto.isEmpty())
+        return Stream.of(valorRefinado.split(";"))
+            .filter(texto -> !texto.isEmpty())
             .toList();
     }
 

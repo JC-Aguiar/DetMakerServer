@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.Comment;
 import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.type.NumericBooleanConverter;
 
@@ -16,6 +17,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.GenerationType.*;
 
 
 @Getter
@@ -24,33 +26,29 @@ import static jakarta.persistence.FetchType.LAZY;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_PIPELINE")
 @Table(name = "PPW_PIPELINE", uniqueConstraints = @UniqueConstraint(columnNames = {"NOME", "CLIENTE_ID"} ))
-@SequenceGenerator(name = "SEQ_PIPELINE_ID", sequenceName = "RCVRY.SEQ_PIPELINE_ID", allocationSize = 1)
 public class Pipeline implements MasterEntity<Long> {
 
 //    @Column(name = "ID", unique = true, nullable = false)
     @Id
     @Column(name = "ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_PIPELINE_ID")
-    // Identificador numérico da pipeline
+    @SequenceGenerator(name = "SEQ_PIPELINE_ID", allocationSize = 1)
+    @GeneratedValue(strategy = SEQUENCE, generator = "SEQ_PIPELINE_ID")
+    @Comment("Identificador numérico da pipeline")
     Long id;
 
-//    @EmbeddedId
-//    // Chave composta da pipeline
-//    PipelineProps props;
-
     @Column(name = "NOME", length = 200)
-    // Nome da pipeline
+    @Comment("Nome da pipeline")
     String nome;
 
     @ToString.Exclude
     @JsonBackReference
     @ManyToOne(fetch = LAZY)
     @JoinColumns( @JoinColumn(name = "CLIENTE_ID", referencedColumnName = "ID") )
-    // ID do Cliente associado a esta Pipeline
+    @Comment("ID do Cliente associado a esta Pipeline")
     Cliente cliente;
 
     @Column(name = "DESCRICAO", length = 500)
-    // Nome da pipeline
+    @Comment("Nome da pipeline")
     String descricao;
 
     @JsonBackReference
@@ -59,11 +57,12 @@ public class Pipeline implements MasterEntity<Long> {
     @JoinTable(name = "PPW_PIPELINE_JOB",
         joinColumns = @JoinColumn(name = "PIPELINE_ID", referencedColumnName = "ID"),
         inverseJoinColumns = @JoinColumn(name = "JOB_ID", referencedColumnName = "ID"))
-    // IDs dos jobs relacionados a essa pipeline
+    @Comment("IDs dos jobs relacionados a essa pipeline")
     List<Job> jobs = new ArrayList<>();
 
     @Convert(converter = NumericBooleanConverter.class)
     @Column(name = "OCULTAR", nullable = false)
+    @Comment("Se A Pipeline foi ou não removida da seleção de opções ativas")
     Boolean ocultar = false;
 
 

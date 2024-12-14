@@ -2,7 +2,6 @@ package br.com.ppw.dma.domain.execFile;
 
 import br.com.ppw.dma.domain.evidencia.Evidencia;
 import br.com.ppw.dma.domain.master.MasterEntity;
-import br.com.ppw.dma.domain.storage.FileSystemService;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
 import br.com.ppw.dma.net.SftpTerminalManager;
@@ -14,7 +13,6 @@ import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.Comment;
 import org.hibernate.proxy.HibernateProxy;
 
-import java.io.File;
 import java.util.Objects;
 
 import static br.com.ppw.dma.domain.execFile.TipoExecFile.*;
@@ -97,38 +95,39 @@ public class ExecFile implements MasterEntity<Long> {
 
     public static ExecFile montarEvidenciaCarga(
         @NonNull Evidencia evidencia,
-        @NonNull SftpFileManager<File> carga) {
+        @NonNull SftpFileManager<RemoteFile> carga) {
         //-----------------------------------------
-        String nome = "";
-        String conteudo = "";
-        if(carga.getFile().isPresent()) {
-            nome = carga.getFile().get().getName();
-            conteudo = FileSystemService.readFile(carga.getFile().get());
-        }
-        return ExecFile.builder()
-            .evidencia(evidencia)
-            .ticket(evidencia.getTicket())
-            .jobNome(evidencia.getJobNome()) //.getNome())
-            .tipo(CARGA)
-            .arquivoNome(nome)
-            .arquivo(conteudo)
-            .inconformidade(carga.getErro())
-            .comando(carga.getComando())
-            .build();
+        return ExecFile.montarEvidencia(evidencia, carga, CARGA);
+//        String nome = "";
+//        String conteudo = "";
+//        if(carga.getFile().isPresent()) {
+//            nome = carga.getFile().get().getName();
+//            conteudo = FileSystemService.readFile(carga.getFile().get());
+//        }
+//        return ExecFile.builder()
+//            .evidencia(evidencia)
+//            .ticket(evidencia.getTicket())
+//            .jobNome(evidencia.getJobNome()) //.getNome())
+//            .tipo(CARGA)
+//            .arquivoNome(nome)
+//            .arquivo(conteudo)
+//            .inconformidade(carga.getErro())
+//            .comando(carga.getComando())
+//            .build();
     }
 
     public static ExecFile montarEvidenciaLog(
         @NonNull Evidencia evidencia,
         @NonNull SftpFileManager<RemoteFile> log) {
         //-----------------------------------------
-        return ExecFile.montarEvidencia(evidencia,log, LOG);
+        return ExecFile.montarEvidencia(evidencia, log, LOG);
     }
 
     public static ExecFile montarEvidenciaRemessa(
         @NonNull Evidencia evidencia,
-        @NonNull SftpFileManager<RemoteFile> carga) {
+        @NonNull SftpFileManager<RemoteFile> remessa) {
         //-----------------------------------------
-        return ExecFile.montarEvidencia(evidencia, carga, REMESSA);
+        return ExecFile.montarEvidencia(evidencia, remessa, REMESSA);
     }
 
     private static ExecFile montarEvidencia(

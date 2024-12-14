@@ -21,6 +21,7 @@ import java.util.Objects;
 
 import static br.com.ppw.dma.util.FormatDate.RELOGIO;
 import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.GenerationType.SEQUENCE;
 
 @Getter
 @Setter
@@ -31,11 +32,11 @@ import static jakarta.persistence.FetchType.LAZY;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_RELATORIO")
 @Table(name = "PPW_RELATORIO")
-@SequenceGenerator(name = "SEQ_RELATORIO_ID", sequenceName = "RCVRY.SEQ_RELATORIO_ID", allocationSize = 1)
 public class Relatorio implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_RELATORIO_ID")
+    @SequenceGenerator(name = "SEQ_RELATORIO_ID", allocationSize = 1)
+    @GeneratedValue(strategy = SEQUENCE, generator = "SEQ_RELATORIO_ID")
     Long id;
 
     @Column(name = "TICKET", length = 100, nullable = false, unique = true)

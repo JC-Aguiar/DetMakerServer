@@ -8,6 +8,7 @@ import lombok.experimental.FieldDefaults;
 
 import static jakarta.persistence.EnumType.STRING;
 import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.GenerationType.*;
 
 @Getter
 @Setter
@@ -19,11 +20,11 @@ import static jakarta.persistence.FetchType.LAZY;
 @Entity(name = "PPW_MASSA_COLUNA")
 @Table(name = "PPW_MASSA_COLUNA",
     uniqueConstraints = @UniqueConstraint(columnNames = {"TABELA_ID", "NOME"} ))
-@SequenceGenerator(name = "SEQ_MASSA_COLUNA_ID", sequenceName = "RCVRY.SEQ_MASSA_COLUNA_ID", allocationSize = 1)
 public class MassaColuna {
 
     @Id @Column(name = "ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_MASSA_COLUNA_ID")
+    @SequenceGenerator(name = "SEQ_MASSA_COLUNA_ID", allocationSize = 1)
+    @GeneratedValue(strategy = SEQUENCE, generator = "SEQ_MASSA_COLUNA_ID")
     Long id;
 
     @ToString.Exclude

@@ -68,7 +68,7 @@ public class DetHtml {
 
     //Valores de Identificação
     public static final String VALOR_ASSINATURA = "Documento gerado automaticamente pela " +
-        "aplicação DET-MAKER " + DetMakerApplication.getAppVersion();
+        "aplicação DET-MAKER " + "(pendente)"; //DetMakerApplication.appVersion;
 
     //Campos de Detalhamento dos Testes
     public static final String CAMPO_DETALHES_PIPELINE = "const detalhesModulos = ";
@@ -136,13 +136,21 @@ public class DetHtml {
         //Preenchendo o script 'listaTestecases'
         val evidenciasDto = dto.relatorio().getEvidencias();
         log.info("Total de Evidências: {}.", evidenciasDto.size());
+        val queriesNome = new ArrayList<String>();
+        var queriesSql = new ArrayList<String>();
         for(val evidenciaDto : evidenciasDto) {
             countEvidencias += 1;
-            evidenciaDto.getTabelasPreJob().forEach(this::atualizarTabelaPreJob);
-            evidenciaDto.getTabelasPosJob().forEach(this::atualizarTabelaPosJob);
+            evidenciaDto.getQueries()
+                .stream()
+                .peek(query -> queriesNome.add(query.getNome()))
+                .peek(query -> queriesSql.add(query.getQuery()))
+                .forEach(query -> {
+                    atualizarTabelaPreJob(query.getTabelaPreJob());
+                    atualizarTabelaPosJob(query.getResumoTabelasPosJob());
+                });
             evidenciaDto.getLogs().forEach(this::atualizarLogsMap);
             evidenciaDto.getCargas().forEach(this::atualizarCargasMap);
-            evidenciaDto.getSaidas().forEach(this::atualizarSaidasMap);
+            evidenciaDto.getRemessas().forEach(this::atualizarSaidasMap);
             val executarApos = (countEvidencias < 2) ?
                 ("") : ("Executar após job " + evidenciasDto.get(countEvidencias-2).getJob());
             val expectativa = evidenciaDto.getComentario();
@@ -159,8 +167,8 @@ public class DetHtml {
                 evidenciaDto.getComandoExec(),                      //parametros
                 evidenciaDto.getRevisor(),                          //revisor
                 evidenciaDto.getDataInicio().format(BRASIL_STYLE),  //data
-                evidenciaDto.getQueries(),                          //queries
-                evidenciaDto.getQueriesNome(),                      //tabelasNome
+                queriesSql,                                         //queries
+                queriesNome,                                        //tabelasNome
                 tabelasPreJobMap.keySet().stream().toList(),        //tabelasPreJob
                 tabelasPosJobMap.keySet().stream().toList(),        //tabelasPosJob
                 logsMap.keySet().stream().toList(),                 //logsConteudo

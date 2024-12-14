@@ -8,6 +8,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import static jakarta.persistence.FetchType.LAZY;
+import static jakarta.persistence.GenerationType.*;
 
 @Getter
 @Setter
@@ -16,11 +17,11 @@ import static jakarta.persistence.FetchType.LAZY;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_AMBIENTE")
 @Table(name = "PPW_AMBIENTE", uniqueConstraints = {@UniqueConstraint(columnNames = {"NOME", "CLIENTE_ID"})})
-@SequenceGenerator(name = "SEQ_AMBIENTE_ID", sequenceName = "RCVRY.SEQ_AMBIENTE_ID", allocationSize = 1)
 public class Ambiente implements MasterEntity<Long> {
 
     @Id @Column(name = "ID")
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "SEQ_AMBIENTE_ID")
+    @SequenceGenerator(name = "SEQ_AMBIENTE_ID", allocationSize = 1)
+    @GeneratedValue(strategy = SEQUENCE, generator = "SEQ_AMBIENTE_ID")
     // Identificador numérico do Ambiente
     Long id;
 

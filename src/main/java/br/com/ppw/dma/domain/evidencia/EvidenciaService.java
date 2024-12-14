@@ -215,7 +215,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
     private Evidencia saveExecCargas(JobResult process, Evidencia evidencia) {
         List<ExecFile> cargas = null;
         try {
-            if(!process.getCargasColetadas().isEmpty())
+            if(!process.getCargasEnviadas().isEmpty())
                 log.info("Criando novos registros ExecFile para cada uma das cargas usadas.");
             cargas = process.getCargasColetadas()
                 .stream()

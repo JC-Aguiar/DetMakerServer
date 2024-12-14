@@ -1,5 +1,6 @@
 package br.com.ppw.dma.domain.pipeline;
 
+import br.com.ppw.dma.domain.job.Job;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.domain.master.MasterService;
 import jakarta.validation.constraints.NotNull;

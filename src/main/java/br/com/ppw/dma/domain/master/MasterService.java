@@ -90,4 +90,11 @@ public abstract class MasterService<ID, ENTITY extends MasterEntity<ID>, THIS ex
         log.info("Deletando entidade {} ID {}.", entityClass.getTypeName(), entity.getId());
         dao.delete(entity);
     }
+
+    @Profile("dev")
+    public void delete(@NonNull Collection<? extends ENTITY> entities) {
+        log.info("Total de entidades a serem deletadas: {}.", entities.size());
+        entities.forEach(entity -> log.info(String.valueOf(entity)));
+        dao.deleteAll(entities);
+    }
 }

@@ -7,10 +7,10 @@ import br.com.ppw.dma.domain.master.*;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineExecDTO;
 import br.com.ppw.dma.domain.queue.QueuePushResponseDTO;
 import br.com.ppw.dma.net.ConectorSftp;
+import br.com.ppw.dma.util.BashSintaxe;
 import br.com.ppw.dma.util.FormatString;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.lalyos.jfiglet.FigletFont;
 import jakarta.persistence.PersistenceException;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -245,16 +245,6 @@ public class BasicTest {
 
         var teste = "proc_fluxo_quebra_acordo_AAAAMMDD_F{NUMEROFASE}_S{NUMEROSUBSET}.log";
         log.info("TESTE: {}", FormatString.abstrairVariavel(teste, "\\{.*?\\}"));
-    }
-
-    @Test
-    public void testeBannerFormatado() throws IOException {
-        String[] banner = FigletFont.convertOneLine("DET-MAKER").split("\n");
-        System.out.println();
-        Arrays.stream(banner)
-            .filter(linha -> !linha.trim().isEmpty())
-            .forEach(System.out::println);
-        System.out.println(":: Det-Maker ::                 (v20240314-DEV)");
     }
 
     @Test
@@ -549,6 +539,14 @@ public class BasicTest {
         );
 
     }
+
+    @Test
+    public void testeExtrairQueriesDeArtefatosShell() throws IOException {
+        var shellPath = "src/test/resources/cy3_shell_quebra_acordo.ksh";
+        var shellFile = Path.of(shellPath).toFile();
+        BashSintaxe.findQueriesInFile(shellFile);
+    }
+
 
     @Test
     public void testeExtrairQueriesMetadadoBancoRemoto() {
