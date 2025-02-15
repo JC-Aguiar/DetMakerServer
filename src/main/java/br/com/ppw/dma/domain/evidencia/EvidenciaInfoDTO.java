@@ -53,17 +53,6 @@ public class EvidenciaInfoDTO {
 
     public EvidenciaInfoDTO(@NonNull Evidencia evidencia, @NonNull Integer ordem) {
         log.info("Convertendo Evidencia Nº{} em {}.", ordem, EvidenciaInfoDTO.class.getSimpleName());
-//        val queries = new ArrayList<String>();
-//        val queriesNome = new ArrayList<String>();
-//        val bancoPreJob = new ArrayList<String>();
-//        val bancoPosJob = new ArrayList<String>();
-//        for(val execQuery : evidencia.getQueries()) {
-//            queries.add(execQuery.getQuery());
-//            queriesNome.add(execQuery.getQueryNome());
-//            bancoPreJob.add(execQuery.getResultadoPreJob());
-//            bancoPosJob.add(execQuery.getResultadoPosJob());
-//            this.queriesInconformidade.add(execQuery.getInconformidade());
-//        }
         this.id = evidencia.getId();
         this.ordem = ordem;
         this.job = evidencia.getJobNome();

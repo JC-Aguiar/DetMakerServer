@@ -83,6 +83,10 @@ public class JobResult extends QueuePayloadJob {
         logsColetados.add(arquivo);
     }
 
+    public void addLogs(@NonNull List<SftpFileManager<RemoteFile>> arquivo) {
+        logsColetados.addAll(arquivo);
+    }
+
     public void addCargas(@NonNull SftpFileManager<RemoteFile> arquivo) {
         cargasColetadas.add(arquivo);
     }

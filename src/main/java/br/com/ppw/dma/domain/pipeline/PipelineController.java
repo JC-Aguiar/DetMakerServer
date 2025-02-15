@@ -384,6 +384,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         val pipeline = Pipeline.parseInfoDto(dto, jobs, cliente);
         pipelineService.persist(pipeline);
 
+        dto.setId(pipeline.getId());
         dto.setJobs(
             jobs.stream().map(Job::getNome).toList()
         );

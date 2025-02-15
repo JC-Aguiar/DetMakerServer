@@ -12,9 +12,7 @@ import br.com.ppw.dma.domain.queue.result.JobResult;
 import br.com.ppw.dma.domain.storage.ExcelXlsx;
 import br.com.ppw.dma.domain.storage.FileSystemService;
 import br.com.ppw.dma.net.ConectorSftp;
-import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
-import br.com.ppw.dma.util.FormatString;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -32,14 +30,15 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import static br.com.ppw.dma.util.FormatDate.RELOGIO;
 import static br.com.ppw.dma.util.FormatString.*;
 import static lombok.AccessLevel.PRIVATE;
 
@@ -199,8 +198,8 @@ public class JobService extends MasterService<Long, Job, JobService> {
     public List<JobResult> executar(
         @NonNull AmbienteAcessoDTO conexaoBanco,
         @NonNull AmbienteAcessoDTO conexaoSftp,
-        @NonNull List<QueuePayloadJob> jobs) {
-
+        @NonNull List<QueuePayloadJob> jobs)
+    {
         log.debug("Configurando conexão do Banco e do SFTP.");
         banco = conexaoBanco;
         sftp = ConectorSftp.conectar(conexaoSftp);
@@ -208,6 +207,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
         //TODO: paliativo. Remover quando obtida uma solução em produção
         switch(sftp.getServer()) {
             case "10.129.226.157" -> ConectorSftp.setVivo1Properties(sftp);
+            case "10.42.252.76" -> ConectorSftp.setVivo2Properties(sftp);
             case "10.129.164.206" -> ConectorSftp.setVivo3Properties(sftp);
         }
         log.info("Iniciando rotina da execução de Jobs");
@@ -231,8 +231,8 @@ public class JobService extends MasterService<Long, Job, JobService> {
 //        val jobInfo = process.getJobInfo();
 //        val jobInput = process.getJobInputs();
 //        var jobInputQueries = jobInput.getQueries();
-        val logsPreJob = new ArrayList<SftpFileManager<RemoteFile>>();
-        val logsPosJob = new ArrayList<SftpFileManager<RemoteFile>>();
+//        val logsPreJob = new ArrayList<SftpFileManager<RemoteFile>>();
+//        val logsPosJob = new ArrayList<SftpFileManager<RemoteFile>>();
         try {
             //Coletas pré-execução
             if(!process.getCargasEnvio().isEmpty() && process.getDirCargaEnvio() != null) {
@@ -247,13 +247,15 @@ public class JobService extends MasterService<Long, Job, JobService> {
             if(!process.getCargasMascara().isEmpty()) {
                 log.info("Coletando os arquivos de carga que serão usados na execução.");
                 process.getCargasMascara().forEach(
-                    path -> process.addCargas(sftp.downloadMaisRecente(path)));
+                    mascara -> process.addCargas(sftp.downloadAll(mascara))
+                );
             }
-            if(!process.getLogsMascara().isEmpty()) {
-                log.info("Obtendo log mais recente pré-execução.");
-                process.getLogsMascara().forEach(
-                    path -> logsPreJob.add(sftp.downloadMaisRecente(path)));
-            }
+//            if(!process.getLogsMascara().isEmpty()) {
+//                log.info("Obtendo log mais recente pré-execução.");
+//                process.getLogsMascara().forEach(
+//                    path -> logsPreJob.add(sftp.downloadMaisRecente(path))
+//                );
+//            }
             if(!process.getQueriesExec().isEmpty()) {
                 log.info("Consultando tabelas pré-execução.");
                 process.addTabelasPreJob(extractTable(process.getQueriesExec()));
@@ -268,6 +270,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
             process.setVersao(sha256);
 
             log.info("Acionando Job remoto.");
+            var dataAgora = LocalDateTime.now(RELOGIO);
             val terminalManager = sftp.comando(process.getComandoExec());
 //            process.setTerminal(terminalManager);
             process.setExitCode(terminalManager.getExitCode());
@@ -277,24 +280,26 @@ public class JobService extends MasterService<Long, Job, JobService> {
             //Coletas pós-execução
             if(!process.getRemessasMascara().isEmpty()) {
                 log.info("Coletando as saídas geradas pela execução.");
-                process.addRemessas(
-                    sftp.downloadMaisRecente(process.getRemessasMascara()));
+                process.getRemessasMascara().forEach(
+                    mascara -> process.addRemessas(sftp.downloadAllRecente(mascara, dataAgora))
+                );
             }
             if(!process.getLogsMascara().isEmpty()) {
                 log.info("Obtendo log mais recente pós-execução.");
                 process.getLogsMascara().forEach(
-                    path -> logsPosJob.add(sftp.downloadMaisRecente(path)));
+                    mascara -> process.addLogs(sftp.downloadAllRecente(mascara, dataAgora))
+                );
             }
             if(!process.getQueriesExec().isEmpty()) {
                 log.info("Consultando tabelas pós-execução.");
                 process.addTabelasPosJob(extractTable(process.getQueriesExec()));
             }
             //Com base nos logs pré/pós: comparar cenários de duplicidade para então adicionar ao JobResult
-            for(int i = 0; i < logsPreJob.size(); i++) {
-                val logPre = logsPreJob.get(i);
-                val logPos = logsPosJob.get(i);
-                process.addLogs(SftpFileManager.compareAntesDepois(logPre, logPos));
-            }
+//            for(int i = 0; i < logsPreJob.size(); i++) {
+//                val logPre = logsPreJob.get(i);
+//                val logPos = logsPosJob.get(i);
+//                process.addLogs(SftpFileManager.compareAntesDepois(logPre, logPos));
+//            }
         }
         //Caso exception no acionamento/monitoramento do DetMaker com o Job
         catch(Exception e) {

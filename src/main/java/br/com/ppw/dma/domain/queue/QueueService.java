@@ -171,14 +171,18 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
         var transactionTemplate = new TransactionTemplate(transactionManager);
         transactionTemplate.execute((status) -> {
             try {
-                var sql =   "SELECT q, a, c " +
-                            "FROM PPW_QUEUE q " +
-                            "JOIN q.ambiente a " +
-                            "JOIN a.cliente c " +
-                            "WHERE q.ticket = :ticket";
+                var sql = """
+                    SELECT 	q.*, a.*, c.*
+                    FROM 	PPW_QUEUE q
+                    JOIN 	PPW_AMBIENTE a
+                    ON 	 	q.AMBIENTE_ID 	= a.ID
+                    JOIN 	PPW_CLIENTE c
+                    ON 		a.CLIENTE_ID 	= c.ID
+                    WHERE 	q.TICKET  		= :ticket
+                    """;
                 log.info("SQL: {}", sql);
 
-                var dados = (Object[]) entityManager.createQuery(sql)
+                var dados = (Object[]) entityManager.createNativeQuery(sql)
                     .setParameter("ticket", ticket)
                     .getResultList()
                     .stream()

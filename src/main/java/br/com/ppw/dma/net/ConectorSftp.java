@@ -4,6 +4,7 @@ import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.exception.FtpHostException;
 import br.com.ppw.dma.exception.OperacaoSftpException;
 import br.com.ppw.dma.util.ExitCodes;
+import br.com.ppw.dma.util.FormatDate;
 import com.jcraft.jsch.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -11,10 +12,14 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 
@@ -267,6 +272,7 @@ public class ConectorSftp {
     //TODO: Javadoc
     public static void setVivo3Properties(@NonNull ConectorSftp sftp) {
         log.info("Adicionando variáveis de ambiente VIVO3.");
+        sftp.properties.clear();
         val properties = new Properties();
         properties.put("ORACLE_HOME", "/u01/app/oracle/product/client12.2");
         properties.put("DETECTION_AGENT_CAP", "cap_dac_override,cap_setfcap");
@@ -303,8 +309,40 @@ public class ConectorSftp {
         sftp.properties.putAll(properties);
     }
 
+    public static void setVivo2Properties(@NonNull ConectorSftp sftp) {
+        log.info("Adicionando variáveis de ambiente VIVO2.");
+        sftp.properties.clear();
+        val properties = new Properties();
+        properties.setProperty("HOSTNAME", "svuxdjob2");
+        properties.setProperty("TERM", "xterm");
+//        properties.setProperty("SSH_CLIENT", "10.238.101.33 56708 22");
+        properties.setProperty("QTDIR", "/usr/lib64/qt-3.3");
+        properties.setProperty("OLDPWD", "/app/rcvry/");
+        properties.setProperty("QTINC", "/usr/lib64/qt-3.3/include");
+        properties.setProperty("SSH_TTY", "/dev/pts/0");
+        properties.setProperty("LD_LIBRARY_PATH", "/oracle/app/11.2.0/client_2/lib:/lib:/usr/lib");
+//        properties.setProperty("LS_COLORS", "rs=0:di=01;34:ln=01;36:mh=00:pi=40;33:so=01;35:do=01;35:bd=40;33;01:cd=40;33;01:or=40;31;01:su=37;41:sg=30;43:ca=30;41:tw=30;42:ow=34;42:st=37;44:ex=01;32:*.tar=01;31:*.tgz=01;31:*.arj=01;31:*.taz=01;31:*.lzh=01;31:*.lzma=01;31:*.tlz=01;31:*.txz=01;31:*.zip=01;31:*.z=01;31:*.Z=01;31:*.dz=01;31:*.gz=01;31:*.lz=01;31:*.xz=01;31:*.bz2=01;31:*.bz=01;31:*.tbz=01;31:*.tbz2=01;31:*.tz=01;31:*.deb=01;31:*.rpm=01;31:*.jar=01;31:*.rar=01;31:*.ace=01;31:*.zoo=01;31:*.cpio=01;31:*.7z=01;31:*.rz=01;31:*.jpg=01;35:*.jpeg=01;35:*.gif=01;35:*.bmp=01;35:*.pbm=01;35:*.pgm=01;35:*.ppm=01;35:*.tga=01;35:*.xbm=01;35:*.xpm=01;35:*.tif=01;35:*.tiff=01;35:*.png=01;35:*.svg=01;35:*.svgz=01;35:*.mng=01;35:*.pcx=01;35:*.mov=01;35:*.mpg=01;35:*.mpeg=01;35:*.m2v=01;35:*.mkv=01;35:*.ogm=01;35:*.mp4=01;35:*.m4v=01;35:*.mp4v=01;35:*.vob=01;35:*.qt=01;35:*.nuv=01;35:*.wmv=01;35:*.asf=01;35:*.rm=01;35:*.rmvb=01;35:*.flc=01;35:*.avi=01;35:*.fli=01;35:*.flv=01;35:*.gl=01;35:*.dl=01;35:*.xcf=01;35:*.xwd=01;35:*.yuv=01;35:*.cgm=01;35:*.emf=01;35:*.axv=01;35:*.anx=01;35:*.ogv=01;35:*.ogx=01;35:*.aac=00;36:*.au=00;36:*.flac=00;36:*.mid=00;36:*.midi=00;36:*.mka=00;36:*.mp3=00;36:*.mpc=00;36:*.ogg=00;36:*.ra=00;36:*.wav=00;36:*.axa=00;36:*.oga=00;36:*.spx=00;36:*.xspf=00;36:");
+        properties.setProperty("ORACLE_SID", "qacyb");
+        properties.setProperty("ORACLE_BASE", "/oracle/app/");
+        properties.setProperty("MAIL", "/var/spool/mail/rcvry");
+        properties.setProperty("PATH", "/oracle/app/11.2.0/client_2/bin:/usr/lib64/qt-3.3/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/sbin:/usr/local/bin:/bin:/usr/bin:/usr/X11R6/bin:/app/rcvry//bin:/app/rcvry//bin");
+        properties.setProperty("PWD", "/app/rcvry/shells");
+        properties.setProperty("LANG", "en_US.UTF-8");
+        properties.setProperty("ORACLE_SID_NODE", "qacyb");
+        properties.setProperty("SSH_ASKPASS", "/usr/libexec/openssh/gnome-ssh-askpass");
+        properties.setProperty("USR_HOME", "/app/rcvry");
+        properties.setProperty("QTLIB", "/usr/lib64/qt-3.3/lib");
+        properties.setProperty("CVS_RSH", "ssh");
+//        properties.setProperty("SSH_CONNECTION", "10.238.101.33 56708 10.42.252.76 22");
+        properties.setProperty("LESSOPEN", "|/usr/bin/lesspipe.sh %s");
+        properties.setProperty("ORACLE_HOME", "/oracle/app/11.2.0/client_2");
+        properties.setProperty("G_BROKEN_FILENAMES", "1");
+        sftp.properties.putAll(properties);
+    }
+
     public static void setVivo1Properties(@NonNull ConectorSftp sftp) {
         log.info("Adicionando variáveis de ambiente VIVO1.");
+        sftp.properties.clear();
         var properties = new Properties();
         var env = "" +
 //            "PATH=.:/usr/lib64/qt-3.3/bin:/usr/local/bin:/bin:/usr/bin:/cyberapp/rcvry/bin:/cyberapp/rcvry/shells:/cyberapp/rcvry:/cyberapp/rcvry/bin:/cyberapp/rcvry/shells:/usr/bin:/usr/bin/X11:/usr/lib:/usr/etc:/usr/etc/sec:/usr/sbin:/usr/include:/lib:/sbin:/etc:/etc/sec:/cyberapp/rcvry/bin:/cyberapp/rcvry/shells:/cyberapp/local:/cyberapp/local/bin:/bin:/opt/oracle/product/11.2.0/client_1/bin:/opt/ansic:/opt/ansic/bin:/usr/ccs/bin:/usr/contrib/bin:/opt/nettladm/bin:/opt/pd/bin:/usr/bin/X11:/usr/contrib/bin/X11:/opt/upgrade/bin:/opt/langtools/bin:/opt/graphics/OpenGL/debugger/bin:/opt/imake/bin:/opt/java/bin\n" +
@@ -355,7 +393,6 @@ public class ConectorSftp {
     //TODO: Javadoc
     public SftpFileManager<RemoteFile> downloadMaisRecente(String arquivoNome) {
         val comandoInput = "ls -t " + arquivoNome + " | head -1";
-        log.info("Comando a ser executado: {}", comandoInput);
         try {
             if(arquivoNome == null || arquivoNome.isEmpty())
                 throw new OperacaoSftpException(comandoInput, "Diretório/arquivo inválido.");
@@ -371,11 +408,74 @@ public class ConectorSftp {
             retorno.setFileMask(arquivoNome);
             return retorno;
         }
-        catch (OperacaoSftpException e) {
+        catch(OperacaoSftpException e) {
             val retorno = new SftpFileManager<RemoteFile>(e.comando, null);
             retorno.setErro(e.getMessage());
             retorno.setFileMask(arquivoNome);
             return retorno;
+        }
+    }
+
+    public List<SftpFileManager<RemoteFile>> downloadAll(String arquivoNome) {
+        val comandoInput = "ls -t " + arquivoNome;
+        try {
+            if(arquivoNome == null || arquivoNome.isEmpty())
+                throw new OperacaoSftpException(comandoInput, "Diretório/arquivo inválido.");
+
+            //Por algum motivo estranho o name dos arquivos retornam concatenados com '\r' e pode causar problemas.
+            val listaArquivos = comando(comandoInput).getConsoleLog()
+                .stream()
+                .map(maisRecente -> maisRecente.replace("\r", ""))
+                .filter(Predicate.not(String::isBlank))
+                .toList();
+            if(listaArquivos.isEmpty())
+                throw new OperacaoSftpException(comandoInput, "Nenhum arquivo encontrado.");
+            log.info("Arquivos:");
+            listaArquivos.forEach(log::info);
+            log.info("Iniciando fluxo de download dos arquivos listados.");
+            return listaArquivos.stream()
+                .peek(log::info)
+                .map(this::download)
+                .peek(retorno -> retorno.setFileMask(arquivoNome))
+                .toList();
+        }
+        catch(OperacaoSftpException e) {
+            val retorno = new SftpFileManager<RemoteFile>(e.comando, null);
+            retorno.setErro(e.getMessage());
+            retorno.setFileMask(arquivoNome);
+            return List.of(retorno);
+        }
+    }
+
+    public List<SftpFileManager<RemoteFile>> downloadAllRecente(String arquivoNome, LocalDateTime data) {
+        var dataString = data.format(FormatDate.BASH_PARAMETER);
+        val comandoInput = String.format("find %s -type f -newermt \"%s\" -print", arquivoNome, dataString);
+        try {
+            if(arquivoNome == null || arquivoNome.isEmpty())
+                throw new OperacaoSftpException(comandoInput, "Diretório/arquivo inválido.");
+
+            //Por algum motivo estranho o name dos arquivos retornam concatenados com '\r' e pode causar problemas.
+            val listaArquivos = comando(comandoInput).getConsoleLog()
+                .stream()
+                .map(maisRecente -> maisRecente.replace("\r", ""))
+                .filter(Predicate.not(String::isBlank))
+                .toList();
+            if(listaArquivos.isEmpty())
+                throw new OperacaoSftpException(comandoInput, "Nenhum arquivo encontrado.");
+            log.info("Arquivos:");
+            listaArquivos.forEach(log::info);
+            log.info("Iniciando fluxo de download dos arquivos listados.");
+            return listaArquivos.stream()
+                .peek(log::info)
+                .map(this::download)
+                .peek(retorno -> retorno.setFileMask(arquivoNome))
+                .toList();
+        }
+        catch(OperacaoSftpException e) {
+            val retorno = new SftpFileManager<RemoteFile>(e.comando, null);
+            retorno.setErro(e.getMessage());
+            retorno.setFileMask(arquivoNome);
+            return List.of(retorno);
         }
     }
     
