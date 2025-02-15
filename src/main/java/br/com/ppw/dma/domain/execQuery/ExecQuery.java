@@ -60,15 +60,17 @@ public class ExecQuery implements MasterEntity<Long> {
     @Comment("Descrição do que a query se propõem a fazer")
     String queryDescricao;
 
-    @Column(name = "QUERY", length = 500, nullable = false)
+    @Column(name = "QUERY", length = 900, nullable = false)
     @Comment("SQL usada na evidência desse queries pós-execução")
     String query;
 
+    @Builder.Default
     @ToString.Exclude
     @Column(name = "RESULTADO_PRE_JOB", columnDefinition = "CLOB") //nullable = false ?
     @Comment("Conteúdo da table extraída")
     String resultadoPreJob = "";
 
+    @Builder.Default
     @ToString.Exclude
     @Column(name = "RESULTADO_POS_JOB", columnDefinition = "CLOB") //nullable = false ?
     @Comment("Conteúdo da table extraída")

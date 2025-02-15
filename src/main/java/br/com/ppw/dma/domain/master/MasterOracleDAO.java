@@ -16,6 +16,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -80,7 +81,7 @@ public class MasterOracleDAO implements AutoCloseable {
         if(tabelas.isEmpty()) return List.of();
 
         var tabelasConsultadas = new ArrayList<DbTable>();
-        var sql = queryForMetadates(tabelas, colunas);
+        var sql = queryForMetadata(tabelas, colunas);
         try(val statement = conn.prepareStatement(sql);
             var resultado = statement.executeQuery()) {
 
@@ -117,24 +118,28 @@ public class MasterOracleDAO implements AutoCloseable {
     }
 
     private static String queryForMetadates(@NonNull Set<String> tabelas) {
-        return queryForMetadates(tabelas, Set.of());
+        return queryForMetadata(tabelas, Set.of());
     }
 
-    private static String queryForMetadates(
+    private static String queryForMetadata(
         @NonNull Set<String> tabelas,
-        @NonNull Set<String> colunas) {
+        @NonNull Set<String> colunas)
+    {
+        Function<String, String> formatName = (name) -> name
+            .replace("'", "")
+            .replace("\"", "");
 
         var tabelasNomes = tabelas.parallelStream()
+            .map(formatName)
             .map(nome -> "'" +nome+ "'")
             .collect(Collectors.joining(", "));
 
         var colunasNomes = colunas.parallelStream()
+            .map(formatName)
             .map(nome -> "'" +nome+ "'")
             .collect(Collectors.joining(", "));
 
-        var sqlAppend = colunas.isEmpty()
-            ? ""
-            : "AND COLUMN_NAME IN (" +colunasNomes+ ") ";
+        var sqlAppend = colunas.isEmpty() ? "" : "AND COLUMN_NAME IN (" +colunasNomes+ ") ";
 
         var sql = "SELECT TABLE_NAME, COLUMN_NAME, DATA_LENGTH, DATA_TYPE, DATA_PRECISION, DATA_SCALE "
                 + "FROM ALL_TAB_COLUMNS "

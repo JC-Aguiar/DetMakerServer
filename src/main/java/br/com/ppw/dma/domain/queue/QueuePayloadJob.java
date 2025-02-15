@@ -80,6 +80,11 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 			.stream()
 			.map(QueuePayloadJobCarga::new)
 			.toList();
+		cargasMascara = evidencia.getCargas()
+			.stream()
+			.map(ExecFile::getMascara)
+			.filter(Objects::nonNull)
+			.toList();
 		logsMascara = evidencia.getLogs()
 			.stream()
 			.map(ExecFile::getMascara)

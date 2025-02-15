@@ -73,6 +73,7 @@ public class JobController extends MasterController<Long, Job, JobController> {
         job.setDataAtualizacao(OffsetDateTime.now());
         job.setAtualizadoPor("DET-MAKER"); //TODO: mudar para nome do usuário
         jobService.save(job);
+        dto.setId(job.getId());
         return ResponseEntity.ok(dto);
     }
 

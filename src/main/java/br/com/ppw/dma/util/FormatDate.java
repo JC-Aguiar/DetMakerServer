@@ -14,7 +14,7 @@ public abstract class FormatDate {
     public static final DateTimeFormatter SQL_INTERNATIONAL_STYLE = DateTimeFormatter.ofPattern("YYYY-MM-dd");
     public static final DateTimeFormatter SQL_BRASIL_STYLE = DateTimeFormatter.ofPattern("dd-MM-YYYY");
     public static final DateTimeFormatter SQL_EUA_STYLE = DateTimeFormatter.ofPattern("MM-dd-YYYY");
-
+    public static final DateTimeFormatter BASH_PARAMETER = DateTimeFormatter.ofPattern("YYYY-MM-dd HH:mm");
 
     public static String formalStyle() {
         return LocalDateTime.now(RELOGIO).format(FORMAL_STYLE);

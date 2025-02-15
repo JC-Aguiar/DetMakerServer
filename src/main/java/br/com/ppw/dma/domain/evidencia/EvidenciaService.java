@@ -117,7 +117,10 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             evidencia.setDataRevisao(OffsetDateTime.now(RELOGIO));
             evidencia.setStatus(TipoEvidenciaStatus.REPROVADO);
             evidencia.setComentario("O Job obteve algum tipo de erro " +
-                "e seu resultado foi definido automaticamente");
+                "e seu resultado foi definido automaticamente para " +
+                TipoEvidenciaStatus.REPROVADO.status
+            );
+            save(evidencia);
             return EvidenciaResult.ok(evidencia);  //TODO: melhorar
         }
         catch(PersistenceException e) {

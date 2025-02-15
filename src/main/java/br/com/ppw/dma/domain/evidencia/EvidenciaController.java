@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -76,6 +77,7 @@ public class EvidenciaController extends MasterController<Long, Evidencia, Evide
         var evidencias = evidenciaService.findById(evidenciasId);
         val erros = new HashSet<String>();
 
+        var dataHoje = OffsetDateTime.now();
         dtos.forEach(dto -> {
             var id = dto.evidenciaId;
             try {
@@ -90,7 +92,7 @@ public class EvidenciaController extends MasterController<Long, Evidencia, Evide
                     return;
                 }
                 evidencia.setRevisor(dto.getResivor());
-                evidencia.setDataRevisao(dto.getDataRevisao());
+                evidencia.setDataRevisao(dataHoje);
                 evidencia.setComentario(dto.getComentario());
                 TipoEvidenciaStatus
                     .identificar(dto.getResultado())
