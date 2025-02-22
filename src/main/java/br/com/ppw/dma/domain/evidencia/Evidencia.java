@@ -56,13 +56,6 @@ public class Evidencia implements MasterEntity<Long> {
     @Comment("Ordem em que o este job foi executado pela pipeline")
     Integer ordem;
 
-    //TODO: Trocar relacionamento direto com entidade Job para apenas apontamento ao nome do Job
-//    @ToString.Exclude
-//    @JsonBackReference
-//    @ManyToOne(fetch = LAZY)
-//    @JoinColumns(@JoinColumn(name = "JOB_ID", referencedColumnName = "ID"))
-//    Job job;
-
     @Column(name = "JOB_NOME", length = 100, nullable = false)
     @Comment("Nome do Job executado que gerou esta evidência")
     String jobNome;
@@ -70,10 +63,6 @@ public class Evidencia implements MasterEntity<Long> {
     @Column(name = "JOB_DESCRICAO", length = 500)
     @Comment("Descrição explicando o que faz o Job")
     String jobDescricao;
-
-//    @Column(name = "PARAMETROS", length = 200)
-//    @Comment("Parâmetros usados na execução do Job")
-//    String parametros;
 
     @Column(name = "COMANDO_EXEC", length = 300, nullable = false)
     @Comment("Comando de execução do Job")

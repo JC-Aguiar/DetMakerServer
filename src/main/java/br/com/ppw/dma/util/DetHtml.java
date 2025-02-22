@@ -1,6 +1,5 @@
 package br.com.ppw.dma.util;
 
-import br.com.ppw.dma.DetMakerApplication;
 import br.com.ppw.dma.domain.evidencia.EvidenciaInfoDTO;
 import br.com.ppw.dma.domain.execFile.AnexoInfoDTO;
 import br.com.ppw.dma.domain.relatorio.DetDTO;

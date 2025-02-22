@@ -15,7 +15,8 @@ public record AnexoInfoDTO(
     @NonNull String tipo,
     @NonNull String mascara,
     @ToString.Exclude String conteudo,
-    String inconformidade) {
+    String inconformidade)
+{
 
     //TODO: javadoc
     public static AnexoInfoDTO converterExecFile(@NonNull ExecFile execFile) {
