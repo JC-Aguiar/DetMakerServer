@@ -13,6 +13,7 @@ import br.com.ppw.dma.domain.storage.ExcelXlsx;
 import br.com.ppw.dma.domain.storage.FileSystemService;
 import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.net.SftpFileManager;
+import br.com.ppware.api.TipoColuna;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -131,9 +132,12 @@ public class JobService extends MasterService<Long, Job, JobService> {
     // TODO: javadoc
     //TODO: mover para escopo do JobSchedulePOJO como um construtor alternativo
     private JobInfoDTO converterScheduleJobEmInfo(
-        @NotNull JobSchedulePOJO jobPojo, @NotBlank String planilhaNome, @NotBlank String arquivoNome) {
-        //---------------------------------------------------------------------------------------------
-        val registro = "Job [" +jobPojo.getId()+ "] " +jobPojo.getNome();
+        @NotNull JobSchedulePOJO jobPojo,
+        @NotBlank String planilhaNome,
+        @NotBlank String arquivoNome)
+    {
+        val registro = "Job " +jobPojo.getNome()+ "[" +jobPojo.getId()+ "] ";
+
         log.info("{}: Validando os campos possuem conteúdo de fato ou apenas indicadores vazios.", registro);
         val tabelas = valorVazio(jobPojo.getTabelas().replace("RCVRY.", ""));
         val parametroNome = valorVazio(jobPojo.getParametros());
@@ -166,17 +170,47 @@ public class JobService extends MasterService<Long, Job, JobService> {
         log.info("{}: Gerando JobInfoDTO.", registro);
         val JobDto = new ModelMapper().map(jobPojo, JobInfoDTO.class);
         JobDto.setId(null);
-        JobDto.setDiretorioEntrada(diretorioEntrada);
-        JobDto.setDiretorioSaida(diretorioSaida);
-        JobDto.setDiretorioLog(diretorioLog);
+
+        var size = Math.min(listaParametrosNome.size(), listaParametrosDescricao.size());
+        for(var i = 0; i < size; i++) {
+            JobDto.getParametros().add(
+                JobParamDTO.builder()
+                    .tipo(TipoColuna.UNSET.name())
+                    .nome(listaParametrosNome.get(i))
+                    .descricao(listaParametrosDescricao.get(i))
+                    .build()
+            );
+        }
+        listaMascarasEntrada.stream()
+            .map(mask -> JobResourceDTO.builder()
+                .tipo(JobResourceType.CARGA.name())
+                .diretorio(diretorioEntrada)
+                .mascara(mask)
+                .acesso(JobResourceAccessType.FTP.name())
+                .build())
+            .forEach(dto -> JobDto.getMascaraEntrada().add(dto));
+
+        listaMascarasLog.stream()
+            .map(mask -> JobResourceDTO.builder()
+                .tipo(JobResourceType.LOG.name())
+                .diretorio(diretorioLog)
+                .mascara(mask)
+                .acesso(JobResourceAccessType.FTP.name())
+                .build())
+            .forEach(dto -> JobDto.getMascaraLog().add(dto));
+
+        listaMascarasSaida.stream()
+            .map(mask -> JobResourceDTO.builder()
+                .tipo(JobResourceType.REMESSA.name())
+                .diretorio(diretorioSaida)
+                .mascara(mask)
+                .acesso(JobResourceAccessType.FTP.name())
+                .build())
+            .forEach(dto -> JobDto.getMascaraSaida().add(dto));
+
         JobDto.setExecutarAposJob(listaExecPosJob);
         JobDto.setPrograma(listaPrograma);
         JobDto.setTabelas(listaTabelas);
-        JobDto.setParametros(listaParametrosNome);
-        JobDto.setDescricaoParametros(listaParametrosDescricao);
-        JobDto.setMascaraEntrada(listaMascarasEntrada);
-        JobDto.setMascaraSaida(listaMascarasSaida);
-        JobDto.setMascaraLog(listaMascarasLog);
         try {
             log.info("{}: Tentando converter 'Data de Atualização' da planilha para o DTO.", registro);
             val data = refinarCelula(jobPojo.getDataAtualizacao());
