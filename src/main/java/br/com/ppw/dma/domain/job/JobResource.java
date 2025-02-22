@@ -40,6 +40,10 @@ public class JobResource {
     @Comment("O tipo desse recurso, no qual o Job consome ou produz ao ser executado")
     JobResourceType tipo;
 
+    @Column(name = "DIRETORIO", length = 150, nullable = false)
+    @Comment("Diretório do recurso")
+    String diretorio;
+
     @Column(name = "MASCARA", length = 150, nullable = false)
     @Comment("Máscara do recurso")
     String mascara;

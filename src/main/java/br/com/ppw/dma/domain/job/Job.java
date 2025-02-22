@@ -12,17 +12,15 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.Comment;
 import org.hibernate.annotations.Where;
-import org.hibernate.proxy.HibernateProxy;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.SEQUENCE;
-import static lombok.AccessLevel.*;
+import static lombok.AccessLevel.PRIVATE;
 
 
 @Getter
@@ -95,19 +93,6 @@ public class Job implements MasterEntity<Long> {
     @Comment("Caminho de execução do Job")
     String caminhoExec;
 
-    @Column(name = "PARAMETROS", length = 50)
-    @Comment("Nome dos parâmetros para executar o Job")
-    String parametros;
-
-    @Column(name = "PARAM_DESCRICAO", length = 500)
-    @Comment("Descrição de cada um dos parâmetros")
-    String descricaoParametros;
-
-    @Column(name = "ENTRADA_DIR", length = 100)
-    @Comment("Caminho do diretório de cargas")
-    String diretorioEntrada;
-
-    //
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "JOB_PARAMETERS")
@@ -138,28 +123,7 @@ public class Job implements MasterEntity<Long> {
     @Where(clause = "tipo = 'remessa'")
     @Comment("ID das máscaras de remessa produzidas pelo Job")
     List<JobResource> mascarasRemessa = new ArrayList<>();
-    //
 
-    @Column(name = "ENTRADA_MASK", length = 350)
-    @Comment("Máscara das cargas consumidas pelo Job")
-    String mascaraEntrada;
-
-    @Column(name = "SAIDA_DIR", length = 100)
-    @Comment("Caminho do diretório de remessas")
-    String diretorioSaida;
-
-    @Column(name = "SAIDA_MASK", length = 150)
-    @Comment("Máscara das remessas geradas pelo Job")
-    String mascaraSaida;
-
-    @Column(name = "LOG_DIR", length = 100)
-    @Comment("Caminho para o diretório dos logs")
-    String diretorioLog;
-
-    @Column(name = "LOG_MASK", length = 300)
-    @Comment("Máscara dos arquivos de log gerados pelo Job")
-    String mascaraLog;
-    
     @Column(name = "TRATAMENTO", length = 25)
     @Comment("Tratamento (?)")
     String tratamento;
@@ -205,27 +169,19 @@ public class Job implements MasterEntity<Long> {
         executarAposJob = FormatString.refinarCelula(executarAposJob);
         programa = FormatString.refinarCelula(programa);
         tabelas = FormatString.refinarCelula(tabelas);
-        parametros = FormatString.refinarCelula(parametros);
-        descricaoParametros = FormatString.refinarCelula(descricaoParametros);
-
-        mascaraEntrada = FormatString.refinarCelula(mascaraEntrada);
-        mascaraEntrada = FormatString.dividirValores(mascaraEntrada)
-            .stream()
-            .map(FormatString::extrairMascara)
-            .collect(Collectors.joining(", "));
-
-        mascaraSaida = FormatString.refinarCelula(mascaraSaida);
-        mascaraSaida = FormatString.dividirValores(mascaraSaida)
-            .stream()
-            .map(FormatString::extrairMascara)
-            .collect(Collectors.joining(", "));
-
-        mascaraLog = FormatString.refinarCelula(mascaraLog);
-        mascaraLog = FormatString.dividirValores(mascaraLog)
-            .stream()
-            .map(FormatString::extrairMascara)
-            .collect(Collectors.joining(", "));
-
+        listaParametros.forEach(param -> {
+            param.setNome(FormatString.refinarCelula(param.getNome()));
+            param.setDescricao(FormatString.refinarCelula(param.getDescricao()));
+        });
+        mascarasCarga.forEach(c ->
+            c.setMascara(FormatString.extrairMascara(c.getMascara()))
+        );
+        mascarasLog.forEach(l ->
+            l.setMascara(FormatString.extrairMascara(l.getMascara()))
+        );
+        mascarasRemessa.forEach(r ->
+            r.setMascara(FormatString.extrairMascara(r.getMascara()))
+        );
         return this;
     }
 
@@ -234,11 +190,11 @@ public class Job implements MasterEntity<Long> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Job job = (Job) o;
-        return Objects.equals(getId(), job.getId()) && Objects.equals(getCliente(), job.getCliente()) && Objects.equals(getNome(), job.getNome()) && Objects.equals(getPlano(), job.getPlano()) && Objects.equals(getExecutarAposJob(), job.getExecutarAposJob()) && Objects.equals(getGrupoConcorrencia(), job.getGrupoConcorrencia()) && Objects.equals(getFase(), job.getFase()) && Objects.equals(getDescricao(), job.getDescricao()) && Objects.equals(getGrupoUda(), job.getGrupoUda()) && Objects.equals(getPrograma(), job.getPrograma()) && Objects.equals(getTabelas(), job.getTabelas()) && Objects.equals(getServidor(), job.getServidor()) && Objects.equals(getCaminhoExec(), job.getCaminhoExec()) && Objects.equals(getParametros(), job.getParametros()) && Objects.equals(getDescricaoParametros(), job.getDescricaoParametros()) && Objects.equals(getDiretorioEntrada(), job.getDiretorioEntrada()) && Objects.equals(getListaParametros(), job.getListaParametros()) && Objects.equals(getMascarasCarga(), job.getMascarasCarga()) && Objects.equals(getMascarasLog(), job.getMascarasLog()) && Objects.equals(getMascarasRemessa(), job.getMascarasRemessa()) && Objects.equals(getMascaraEntrada(), job.getMascaraEntrada()) && Objects.equals(getDiretorioSaida(), job.getDiretorioSaida()) && Objects.equals(getMascaraSaida(), job.getMascaraSaida()) && Objects.equals(getDiretorioLog(), job.getDiretorioLog()) && Objects.equals(getMascaraLog(), job.getMascaraLog()) && Objects.equals(getTratamento(), job.getTratamento()) && Objects.equals(getEscalation(), job.getEscalation()) && Objects.equals(getDataAtualizacao(), job.getDataAtualizacao()) && Objects.equals(getAtualizadoPor(), job.getAtualizadoPor()) && Objects.equals(getOrigem(), job.getOrigem()) && Objects.equals(getQueries(), job.getQueries()) && Objects.equals(getPipelines(), job.getPipelines());
+        return Objects.equals(getId(), job.getId()) && Objects.equals(getCliente(), job.getCliente()) && Objects.equals(getNome(), job.getNome()) && Objects.equals(getPlano(), job.getPlano()) && Objects.equals(getExecutarAposJob(), job.getExecutarAposJob()) && Objects.equals(getGrupoConcorrencia(), job.getGrupoConcorrencia()) && Objects.equals(getFase(), job.getFase()) && Objects.equals(getDescricao(), job.getDescricao()) && Objects.equals(getGrupoUda(), job.getGrupoUda()) && Objects.equals(getPrograma(), job.getPrograma()) && Objects.equals(getTabelas(), job.getTabelas()) && Objects.equals(getServidor(), job.getServidor()) && Objects.equals(getCaminhoExec(), job.getCaminhoExec()) && Objects.equals(getListaParametros(), job.getListaParametros()) && Objects.equals(getMascarasCarga(), job.getMascarasCarga()) && Objects.equals(getMascarasLog(), job.getMascarasLog()) && Objects.equals(getMascarasRemessa(), job.getMascarasRemessa()) && Objects.equals(getTratamento(), job.getTratamento()) && Objects.equals(getEscalation(), job.getEscalation()) && Objects.equals(getDataAtualizacao(), job.getDataAtualizacao()) && Objects.equals(getAtualizadoPor(), job.getAtualizadoPor()) && Objects.equals(getOrigem(), job.getOrigem()) && Objects.equals(getQueries(), job.getQueries()) && Objects.equals(getPipelines(), job.getPipelines());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getId(), getCliente(), getNome(), getPlano(), getExecutarAposJob(), getGrupoConcorrencia(), getFase(), getDescricao(), getGrupoUda(), getPrograma(), getTabelas(), getServidor(), getCaminhoExec(), getParametros(), getDescricaoParametros(), getDiretorioEntrada(), getListaParametros(), getMascarasCarga(), getMascarasLog(), getMascarasRemessa(), getMascaraEntrada(), getDiretorioSaida(), getMascaraSaida(), getDiretorioLog(), getMascaraLog(), getTratamento(), getEscalation(), getDataAtualizacao(), getAtualizadoPor(), getOrigem(), getQueries(), getPipelines());
+        return Objects.hash(getId(), getCliente(), getNome(), getPlano(), getExecutarAposJob(), getGrupoConcorrencia(), getFase(), getDescricao(), getGrupoUda(), getPrograma(), getTabelas(), getServidor(), getCaminhoExec(), getListaParametros(), getMascarasCarga(), getMascarasLog(), getMascarasRemessa(), getTratamento(), getEscalation(), getDataAtualizacao(), getAtualizadoPor(), getOrigem(), getQueries(), getPipelines());
     }
 }

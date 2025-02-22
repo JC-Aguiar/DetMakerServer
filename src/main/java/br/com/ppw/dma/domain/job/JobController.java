@@ -3,16 +3,12 @@ package br.com.ppw.dma.domain.job;
 import br.com.ppw.dma.domain.cliente.ClienteService;
 import br.com.ppw.dma.domain.master.MasterController;
 import br.com.ppw.dma.domain.pipeline.PipelineService;
-import br.com.ppware.api.TipoColuna;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
@@ -25,7 +21,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatDate.RELOGIO;
-import static br.com.ppw.dma.util.FormatString.valorVazio;
 
 @Slf4j
 @RestController
@@ -88,20 +83,52 @@ public class JobController extends MasterController<Long, Job, JobController> {
     }
 
     @PostMapping("cliente/{clienteId}")
-    public ResponseEntity<JobInfoDTO> save(
+    @Transactional
+    public ResponseEntity<JobInfoDTO> saveNew(
         @PathVariable("clienteId") Long clienteId,
         @RequestBody JobInfoDTO dto)
     {
-        dto.setDiretorioEntrada(valorVazio(dto.getDiretorioEntrada()));
-        dto.setDiretorioSaida(valorVazio(dto.getDiretorioSaida()));
-        dto.setDiretorioLog(valorVazio(dto.getDiretorioLog()));
-
         var cliente = clienteService.findById(clienteId);
+
+        log.info("Mapeando parâmetros do Job para {}.", JobParameter.class.getSimpleName());
+        var jobParam = dto.getParametros()
+            .stream()
+            .map(param -> mapper.map(param, JobParameter.class))
+            .toList();
+        jobParameterRepository.saveAll(jobParam);
+        log.info(jobParam.toString());
+
+        log.info("Mapeando recursos consumidos/gerados pelo Job para {}.", JobResource.class.getSimpleName());
+        var jobCarga = dto.getMascaraEntrada()
+            .stream()
+            .map(param -> mapper.map(param, JobResource.class))
+            .toList();
+        var jobLog = dto.getMascaraLog()
+            .stream()
+            .map(param -> mapper.map(param, JobResource.class))
+            .toList();
+        var jobRemessa = dto.getMascaraSaida()
+            .stream()
+            .map(param -> mapper.map(param, JobResource.class))
+            .toList();
+        var allJobResouces = new ArrayList<>(jobCarga);
+        allJobResouces.addAll(jobLog);
+        allJobResouces.addAll(jobRemessa);
+        jobResourceRepository.saveAll(allJobResouces).forEach(
+            resource -> log.info(resource.toString())
+        );
+        log.info("Mapeando campos gerais do Job.");
         var job = mapper.map(dto, Job.class).refinarCampos();
         job.setCliente(cliente);
         job.setDataAtualizacao(OffsetDateTime.now());
         job.setAtualizadoPor("DET-MAKER"); //TODO: mudar para nome do usuário
+        job.setListaParametros(jobParam);
+        job.setMascarasCarga(jobCarga);
+        job.setMascarasLog(jobLog);
+        job.setMascarasLog(jobLog);
         jobService.save(job);
+        log.info(job.toString());
+
         dto.setId(job.getId());
         return ResponseEntity.ok(dto);
     }

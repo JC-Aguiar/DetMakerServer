@@ -4,6 +4,7 @@ import br.com.ppw.dma.domain.evidencia.Evidencia;
 import br.com.ppw.dma.domain.execFile.ExecFile;
 import br.com.ppw.dma.domain.job.Job;
 import br.com.ppw.dma.domain.job.JobInfoDTO;
+import br.com.ppw.dma.domain.job.JobResourceDTO;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineJobInputDTO;
 import br.com.ppw.dma.domain.storage.JobPointer;
 import br.com.ppw.dma.util.FormatString;
@@ -139,24 +140,15 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 			.toList();
 		cargasMascara = jobInfo.getMascaraEntrada()
 			.stream()
-			.map(mascara -> Optional.ofNullable(jobInfo.getDiretorioEntrada())
-				.map(dir -> dir.endsWith("/") ? dir : dir+"/")
-				.map(dir -> dir + mascara.trim())
-				.orElseGet(() -> ""))
+			.map(JobResourceDTO::getMascara)
 			.toList();
 		remessasMascara = jobInfo.getMascaraSaida()
 			.stream()
-			.map(mascara -> Optional.ofNullable(jobInfo.getDiretorioSaida())
-				.map(dir -> dir.endsWith("/") ? dir : dir+"/")
-				.map(dir -> dir + mascara.trim())
-				.orElseGet(() -> ""))
+			.map(JobResourceDTO::getAbsolutePath)
 			.toList();
 		logsMascara = jobInfo.getMascaraLog()
 			.stream()
-			.map(mascara -> Optional.ofNullable(jobInfo.getDiretorioLog())
-				.map(dir -> dir.endsWith("/") ? dir : dir+"/")
-				.map(dir -> dir + mascara.trim())
-				.orElseGet(() -> ""))
+			.map(JobResourceDTO::getAbsolutePath)
 			.toList();
 		dirCargaEnvio = Optional.ofNullable(jobInfo.getDiretorioEntrada())
 			.map(dir -> dir.endsWith("/") ? dir : dir+"/")
