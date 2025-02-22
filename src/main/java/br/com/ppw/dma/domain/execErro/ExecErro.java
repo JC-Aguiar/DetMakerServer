@@ -1,7 +1,7 @@
 //package br.com.ppw.dma.domain.execErro;
 //
 //import br.com.ppw.dma.domain.evidencia.Evidencia;
-//import br.com.ppw.dma.domain.execFile.TipoExecFile;
+//import br.com.ppw.dma.domain.job.JobResourceType;
 //import br.com.ppw.dma.domain.master.MasterEntity;
 //import br.com.ppw.dma.domain.relatorio.Relatorio;
 //import br.com.ppw.dma.domain.storage.FileSystemService;
@@ -19,7 +19,7 @@
 //import java.io.File;
 //import java.util.Objects;
 //
-//import static br.com.ppw.dma.domain.execFile.TipoExecFile.*;
+//import static br.com.ppw.dma.domain.job.JobResourceType.*;
 //import static jakarta.persistence.FetchType.LAZY;
 //import static jakarta.persistence.GenerationType.SEQUENCE;
 //import static lombok.AccessLevel.PRIVATE;
@@ -128,7 +128,7 @@
 //    private static ExecErro montarEvidencia(
 //        Evidencia evidencia,
 //        SftpFileManager<RemoteFile> fileManager,
-//        TipoExecFile tipo) {
+//        JobResourceType tipo) {
 //        //-----------------------------------
 //        String nome = "";
 //        String conteudo = "";

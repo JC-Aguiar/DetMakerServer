@@ -1,6 +1,7 @@
 package br.com.ppw.dma.domain.execFile;
 
 import br.com.ppw.dma.domain.evidencia.Evidencia;
+import br.com.ppw.dma.domain.job.JobResourceType;
 import br.com.ppw.dma.domain.master.MasterEntity;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
@@ -15,7 +16,7 @@ import org.hibernate.proxy.HibernateProxy;
 
 import java.util.Objects;
 
-import static br.com.ppw.dma.domain.execFile.TipoExecFile.*;
+import static br.com.ppw.dma.domain.job.JobResourceType.*;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.SEQUENCE;
 import static lombok.AccessLevel.PRIVATE;
@@ -60,9 +61,10 @@ public class ExecFile implements MasterEntity<Long> {
     @Comment("Comando executado pelo Job para obter o arquivo")
     String mascara;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "TIPO", length = 10, nullable = false)
     @Comment("Indica se o arquivo é do tipo 'carga', 'remessa' ou 'log'")
-    TipoExecFile tipo;
+    JobResourceType tipo;
 
     @Column(name = "ARQUIVO_NOME", length = 200, nullable = true)
     @Comment("Nome do arquivo")
@@ -133,7 +135,7 @@ public class ExecFile implements MasterEntity<Long> {
     private static ExecFile montarEvidencia(
         Evidencia evidencia,
         SftpFileManager<RemoteFile> fileManager,
-        TipoExecFile tipo) {
+        JobResourceType tipo) {
         //-----------------------------------
         String nome = "";
         String conteudo = "";

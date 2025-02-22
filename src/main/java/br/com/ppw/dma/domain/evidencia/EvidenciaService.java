@@ -12,9 +12,10 @@ import br.com.ppw.dma.domain.queue.result.PipelineResult;
 import br.com.ppw.dma.domain.relatorio.Relatorio;
 import br.com.ppw.dma.domain.relatorio.RelatorioService;
 import br.com.ppw.dma.domain.relatorio.TiposDeTeste;
-import com.google.gson.Gson;
 import jakarta.persistence.PersistenceException;
+import lombok.AccessLevel;
 import lombok.NonNull;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,35 +29,32 @@ import java.util.function.Function;
 
 import static br.com.ppw.dma.util.FormatDate.RELOGIO;
 
+//TODO: javadoc
 @Service
 @Slf4j
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaService> {
 
-    private final EvidenciaRepository evidenciaDao;
-    private final ExecFileService execFileService;
-    private final ExecQueryService execQueryService;
-    private final RelatorioService relatorioService;
-    private final Gson gson;
+    EvidenciaRepository evidenciaDao;
+    ExecFileService execFileService;
+    ExecQueryService execQueryService;
+    RelatorioService relatorioService;
+
 
     @Autowired
     public EvidenciaService(
         EvidenciaRepository evidenciaDao,
         ExecFileService execFileService,
         ExecQueryService execQueryService,
-        RelatorioService relatorioService,
-        Gson gson) {
-        //---------------------------------------
+        RelatorioService relatorioService)
+    {
         super(evidenciaDao);
         this.evidenciaDao = evidenciaDao;
         this.execFileService = execFileService;
         this.execQueryService = execQueryService;
         this.relatorioService = relatorioService;
-        this.gson = gson;
     }
 
-
-    //TODO: javadoc
-//    @Transactional(noRollbackFor = Throwable.class)
     public PipelineResult gerarEvidencia(@NonNull PipelineResult pipelineResult) {
         var jobsResult = pipelineResult.getResultadoJobs();
 
@@ -88,7 +86,6 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
     }
 
     //TODO: javadoc
-//    @Transactional(noRollbackFor = Throwable.class)
     public EvidenciaResult gerarEvidencia(@NonNull Relatorio relatorio, @NonNull JobResult process) {
         log.info("Gerando Evidência para {}.", process.getContexto());
         Function<String, String> criarMensagemErro = (erro) -> String.format(
@@ -235,26 +232,5 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         }
         return evidencia;
     }
-
-//    public File parseBlobToFile(@NonNull Blob blob, @NotBlank String filePath){
-//        try(InputStream inputStream = blob.getBinaryStream()) {
-//            log.info("Lendo os dados do Blob como uma String.");
-//            byte[] bytes = inputStream.readAllBytes();
-//            val jsonString = new String(bytes, StandardCharsets.UTF_8);
-//
-//            log.info("Salvando o Json em um arquivo no diretório: '{}'.", filePath);
-//            try(val outputStream = new FileOutputStream(filePath)) {
-//                val gson = new Gson();
-//                val json = gson.toJson(jsonString);
-//                outputStream.write(json.getBytes(StandardCharsets.UTF_8));
-//                log.info("Arquivo salvo com sucesso.");
-//            }
-//        }
-//        catch(Exception e) {
-//            log.warn("Falha ao tentar interpretar Blob: {}", e.getMessage());
-//        }
-//        return new File(filePath);
-//    }
-
 
 }

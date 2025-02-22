@@ -69,9 +69,8 @@ public class Pipeline implements MasterEntity<Long> {
     public static Pipeline parseInfoDto(
         @NonNull PipelineInfoDTO dto,
         @NonNull List<Job> jobs,
-        @NonNull Cliente cliente) {
-        //------------------------------------------------------------------
-//        val props = new PipelineProps(dto.getNome(), cliente);
+        @NonNull Cliente cliente)
+    {
         val pipeline = new Pipeline();
         pipeline.setNome(dto.getNome());
         pipeline.setCliente(cliente);
