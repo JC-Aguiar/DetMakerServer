@@ -11,14 +11,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.time.OffsetDateTime;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static br.com.ppw.dma.util.FormatDate.RELOGIO;
@@ -68,11 +67,24 @@ public class JobController extends MasterController<Long, Job, JobController> {
         dto.setDiretorioLog(valorVazio(dto.getDiretorioLog()));
 
         var cliente = clienteService.findById(clienteId);
-        var job = mapper.map(dto, Job.class).refinarCampos();
+        var job = Optional.ofNullable(dto.getId())
+            .map(id -> {
+                var entidade = jobService.findById(id);
+                mapper.map(dto, entidade);
+                entidade.setParametros(String.join(", ", dto.getParametros()));
+                entidade.setDescricaoParametros(String.join(", ", dto.getDescricaoParametros()));
+                entidade.setMascaraEntrada(String.join(", ", dto.getMascaraEntrada()));
+                entidade.setMascaraLog(String.join(", ", dto.getMascaraLog()));
+                entidade.setMascaraSaida(String.join(", ", dto.getMascaraSaida()));
+                return entidade;
+            })
+            .orElseGet(() -> mapper.map(dto, Job.class));
         job.setCliente(cliente);
         job.setDataAtualizacao(OffsetDateTime.now());
         job.setAtualizadoPor("DET-MAKER"); //TODO: mudar para nome do usuário
+        job.refinarCampos();
         jobService.save(job);
+
         dto.setId(job.getId());
         return ResponseEntity.ok(dto);
     }
@@ -165,6 +177,27 @@ public class JobController extends MasterController<Long, Job, JobController> {
                 .body("Não foi possível salvar nenhum dos jobs enviados.");
         }
         return ResponseEntity.ok(mensagem);
+    }
+
+
+    @PatchMapping
+    public ResponseEntity<JobInfoDTO> getAll(@Validated @RequestBody JobInfoDTO dto) {
+        log.info("Consultando no banco Job [ID {}].", dto.getId());
+        var job = Optional.ofNullable(dto.getId())
+            .map(jobService::findById)
+            .orElseThrow(() -> new NoSuchElementException("ID " +dto.getId()+ " não encontrado."));
+
+        log.info("Job encontrado:");
+        log.info(job.toString());
+
+        log.info("Atualizando novos campos.");
+        mapper.map(dto, job);
+        log.info(job.toString());
+
+        log.info("Salvando Job atualizado.");
+        jobService.save(job);
+
+        return ResponseEntity.ok(dto);
     }
 
     @Override
