@@ -394,13 +394,49 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
     }
 
     @PostMapping(value = "update")
-    public ResponseEntity<String> update(@RequestBody PipelineInfoDTO pipeline) {
-        if(getAndUpdate(pipeline).isPresent())
-            return ResponseEntity.ok("Pipeline atualizada");
+    public ResponseEntity<String> update(@RequestBody PipelineInfoDTO dto) {
+        val pipeline = pipelineService.getUniqueOne(dto.getNome(), dto.getClienteId())
+            .orElseThrow(() -> {
+                var mensagem = String.format("Pipeline %s não encontrada no banco para Cliente ID %d",
+                    dto.getNome(),
+                    dto.getClienteId());
+                return new NoSuchElementException(mensagem);
+            });
+        val cliente = pipeline.getCliente();
+        log.info("Comparando Pipelines.");
+        log.info("Pipelines Usuário: {}", dto);
+        log.info("Pipelines Banco: {}", pipeline);
+        val precisaAtualizarDescricao = pipeline.precisaAtualizarDescricao(dto.getDescricao());
+        val precisaAtualizarJobs = pipeline.precisaAtualizarJobs(dto.getJobs());
 
-        val mensagem = String.format("Pipeline %s não encontrada no banco para Cliente ID %d",
-            pipeline.getNome(), pipeline.getClienteId());
-        throw new NoSuchElementException(mensagem);
+        if(!precisaAtualizarDescricao && !precisaAtualizarJobs) {
+            log.info("A Pipeline consta já conforme o solicitado. Sem atualizações.");
+            return ResponseEntity.ok("Pipeline não precisa ser atualizada");
+        }
+        log.info("A Pipeline precisa ser atualizada.");
+        if(precisaAtualizarDescricao) {
+            pipeline.setDescricao(dto.getDescricao());
+        }
+        if(precisaAtualizarJobs) {
+            var jobs = jobService.findByClienteAndNome(cliente, dto.getJobs());
+
+            log.info("Ordenando os Jobs da Pipeline conforme solicitado:");
+            log.info(String.join(", ", dto.getJobs()));
+            pipeline.getJobs().clear();
+            for(var jobNome : dto.getJobs()) {
+                jobs.stream()
+                    .filter(job -> job.getNome().equals(jobNome))
+                    .findFirst()
+                    .ifPresent(job -> {
+                        log.info("Adicionando Job {} [{}].", job.getNome(), job.getId());
+                        pipeline.getJobs().add(job);
+                    });
+            }
+            log.info("Resultado da ordenação dos Jobs na Pipeline:");
+            log.info(pipeline.toString());
+        }
+        pipelineService.persist(pipeline);
+        return ResponseEntity.ok("Pipeline atualizada");
     }
 
 //    public Pipeline createNewPipeline(@NonNull PipelineExecDTO execDTO) {
@@ -424,28 +460,6 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
 //        return pipelineService.persist(pipeline);
 //    }
 
-    public Optional<Pipeline> getAndUpdate(@NonNull PipelineInfoDTO dto) {
-        val pipeline = pipelineService.getUniqueOne(dto.getNome(), dto.getClienteId());
-        if(pipeline.isEmpty()) return pipeline;
-
-        val pipelineBanco = pipeline.get();
-        val cliente = pipelineBanco.getCliente();
-        log.info("Comparando Pipelines.");
-        log.info("Pipelines Usuário: {}", dto);
-        log.info("Pipelines Banco: {}", pipelineBanco);
-        val atualizarDescricao = pipelineBanco.atualizarDescricao(dto.getDescricao());
-        val atualizarJobs = pipelineBanco.atualizarJobs(dto.getJobs());
-
-        if(atualizarDescricao || atualizarJobs) {
-            log.info("A Pipeline precisa ser atualizada.");
-            if(atualizarDescricao)
-                pipelineBanco.setDescricao(dto.getDescricao());
-            if(atualizarJobs)
-                pipelineBanco.setJobs(jobService.findByClienteAndNome(cliente, dto.getJobs()));
-            pipelineService.persist(pipelineBanco);
-        }
-        return pipeline;
-    }
 
     @DeleteMapping(value = "clientId/{clientId}/pipeline/{name}")
     public ResponseEntity<String> delete(

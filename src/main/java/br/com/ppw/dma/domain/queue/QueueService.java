@@ -172,25 +172,20 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
         transactionTemplate.execute((status) -> {
             try {
                 var sql = """
-                    SELECT 	q.*, a.*, c.*
+                    SELECT 	q.*
                     FROM 	PPW_QUEUE q
-                    JOIN 	PPW_AMBIENTE a
-                    ON 	 	q.AMBIENTE_ID 	= a.ID
-                    JOIN 	PPW_CLIENTE c
-                    ON 		a.CLIENTE_ID 	= c.ID
                     WHERE 	q.TICKET  		= :ticket
                     """;
                 log.info("SQL: {}", sql);
 
-                var dados = (Object[]) entityManager.createNativeQuery(sql)
+                var taskQueue = (TaskQueue) entityManager.createNativeQuery(sql, TaskQueue.class)
                     .setParameter("ticket", ticket)
                     .getResultList()
                     .stream()
                     .findFirst()
                     .orElseThrow(); //TODO: mudar para exception própria
-                var taskQueue = (TaskQueue) dados[0];
-                var ambiente = (Ambiente) dados[1];
-                var cliente = (Cliente) dados[2];
+                var ambiente = (Ambiente) taskQueue.getAmbiente();
+                var cliente = (Cliente) ambiente.getCliente();
                 log.info(taskQueue.toString());
                 log.info(ambiente.toString());
                 log.info(cliente.toString());

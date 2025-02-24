@@ -80,7 +80,7 @@ public class Pipeline implements MasterEntity<Long> {
         return pipeline;
     }
 
-    public boolean atualizarDescricao(String descricao) {
+    public boolean precisaAtualizarDescricao(String descricao) {
         if(this.descricao == null)
             return descricao == null;
         if(descricao == null)
@@ -88,7 +88,7 @@ public class Pipeline implements MasterEntity<Long> {
         return !this.descricao.trim().equals(descricao.trim());
     }
 
-    public boolean atualizarJobs(@NonNull List<String> jobs) {
+    public boolean precisaAtualizarJobs(@NonNull List<String> jobs) {
         val thisJobs = this.jobs.stream()
             .map(Job::getNome)
             .collect(Collectors.joining(", "));
