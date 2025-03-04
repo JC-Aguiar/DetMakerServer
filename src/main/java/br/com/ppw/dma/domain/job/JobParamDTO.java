@@ -3,6 +3,7 @@ package br.com.ppw.dma.domain.job;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
+import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.Length;
 
@@ -10,7 +11,7 @@ import java.util.Optional;
 
 @Data
 @Slf4j
-@Builder
+@SuperBuilder
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)

@@ -54,11 +54,11 @@ public class ExecFile implements MasterEntity<Long> {
     String jobNome;
 
     @Column(name = "COMANDO", length = 200, nullable = false)
-    @Comment("Comando executado pelo Job para obter o arquivo")
+    @Comment("Comando executado pelo Job para obter/salvar o arquivo")
     String comando;
 
     @Column(name = "MASCARA", length = 200)
-    @Comment("Comando executado pelo Job para obter o arquivo")
+    @Comment("Mascara do arquivo para obter/salvar")
     String mascara;
 
     @Enumerated(EnumType.STRING)

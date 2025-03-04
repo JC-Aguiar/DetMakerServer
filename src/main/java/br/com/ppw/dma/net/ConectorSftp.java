@@ -12,9 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
@@ -448,7 +446,7 @@ public class ConectorSftp {
     }
 
     public List<SftpFileManager<RemoteFile>> downloadAllRecente(String arquivoNome, LocalDateTime data) {
-        var dataString = data.format(FormatDate.BASH_PARAMETER);
+        var dataString = data.format(FormatDate.BASH_PARAMETER_STYLE);
         val comandoInput = String.format("find %s -type f -newermt \"%s\" -print", arquivoNome, dataString);
         try {
             if(arquivoNome == null || arquivoNome.isEmpty())

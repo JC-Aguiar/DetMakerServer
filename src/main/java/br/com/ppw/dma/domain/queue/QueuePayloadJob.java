@@ -50,9 +50,6 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 	@Builder.Default
 	List<QueuePayloadQuery> queriesExec = new ArrayList<>();
 
-	@Nullable
-	String dirCargaEnvio;
-
 	@Builder.Default
 	List<QueuePayloadJobCarga> cargasEnvio = new ArrayList<>();
 
@@ -76,7 +73,6 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 			.stream()
 			.map(QueuePayloadQuery::new)
 			.toList();
-		dirCargaEnvio = evidencia.getDirCarga();
 		cargasEnvio = evidencia.getCargas()
 			.stream()
 			.map(QueuePayloadJobCarga::new)
@@ -100,24 +96,14 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 
 	//TODO: mover a definição dos comandos de execução e versão para entidade Job
 	public QueuePayloadJob(@NonNull JobInfoDTO jobInfo, @NotNull PipelineJobInputDTO jobInputs) {
-		var paramJob = jobInfo.getParametros();
-		var paramInputs = jobInputs.getArgumentos().split(" ");
+		var paramInputs = jobInputs.getArgumentos();
 		var variaveis = jobInputs.getVariaveis();
 
-		//Mapeando parâmetros. Chave = índice. Valor = valor declarado na variável (se houver).
-		var parametrosPreenchidos = paramJob.stream().collect(
-			Collectors.toMap(
-				paramJob::indexOf,
-				param -> variaveis.getOrDefault(param, "")
-		));
-		//Atualiza mapa dos parâmetros para cada parâmetro declarado diretamente no JobInput
-		for(var i = 0; i < paramInputs.length; i++) {
-			if(i < parametrosPreenchidos.size() && !paramInputs[i].isBlank())
-				parametrosPreenchidos.put(i, paramInputs[i]);
-		}
-		jobInputs.setArgumentos(
-			String.join(" ", parametrosPreenchidos.values())
-		);
+		//Aplicando as variáveis nos parâmetros
+		paramInputs.forEach(paramInput -> {
+			var novoParam = FormatString.substituirVariaveis(paramInput.getValor(), variaveis);
+			paramInput.setValor(novoParam);
+		});
 		//Aplicando as variáveis nas queries
 		jobInputs.getQueries().forEach(queryInput -> {
 			var novaSql = FormatString.substituirVariaveis(queryInput.getSql(), variaveis);
@@ -150,9 +136,6 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 			.stream()
 			.map(JobResourceDTO::getAbsolutePath)
 			.toList();
-		dirCargaEnvio = Optional.ofNullable(jobInfo.getDiretorioEntrada())
-			.map(dir -> dir.endsWith("/") ? dir : dir+"/")
-			.orElseGet(() -> "");
 	}
 
 
