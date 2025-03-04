@@ -7,12 +7,14 @@ import br.com.ppw.dma.domain.master.MasterOracleDAO;
 import br.com.ppw.dma.domain.master.MasterService;
 import br.com.ppw.dma.domain.master.SqlSintaxe;
 import br.com.ppw.dma.domain.queue.QueuePayloadJob;
+import br.com.ppw.dma.domain.queue.QueuePayloadJobCarga;
 import br.com.ppw.dma.domain.queue.QueuePayloadQuery;
 import br.com.ppw.dma.domain.queue.result.JobResult;
 import br.com.ppw.dma.domain.storage.ExcelXlsx;
 import br.com.ppw.dma.domain.storage.FileSystemService;
 import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.net.SftpFileManager;
+import br.com.ppw.dma.util.FormatDate;
 import br.com.ppware.api.TipoColuna;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.constraints.NotBlank;
@@ -33,7 +35,6 @@ import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -53,14 +54,11 @@ public class JobService extends MasterService<Long, Job, JobService> {
     @Getter ConectorSftp sftp;
     @Getter AmbienteAcessoDTO banco;
 
-    public static final DateTimeFormatter CONVERSOR_DATA_SCHEDULE = DateTimeFormatter
-        .ofPattern("dd/MM/yyyy");
-
 
     @Autowired
     public JobService(JobRepository dao, FileSystemService fileSystemService) {
         super(dao);
-        this.dao = dao; //TODO: precisa mesmo?
+        this.dao = dao;
         this.fileSystemService = fileSystemService;
     }
 
@@ -214,7 +212,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
         try {
             log.info("{}: Tentando converter 'Data de Atualização' da planilha para o DTO.", registro);
             val data = refinarCelula(jobPojo.getDataAtualizacao());
-            JobDto.setDataAtualizacao(LocalDate.parse(data, CONVERSOR_DATA_SCHEDULE));
+            JobDto.setDataAtualizacao(LocalDate.parse(data, FormatDate.BRASIL_SIMPLE_STYLE));
             log.info("{}: Conversão realizada com sucesso.", registro);
         }
         catch(Exception e) {
@@ -262,19 +260,16 @@ public class JobService extends MasterService<Long, Job, JobService> {
 
     //TODO: javadoc
     private void executar(@NonNull JobResult process) {
-//        val jobInfo = process.getJobInfo();
-//        val jobInput = process.getJobInputs();
-//        var jobInputQueries = jobInput.getQueries();
-//        val logsPreJob = new ArrayList<SftpFileManager<RemoteFile>>();
-//        val logsPosJob = new ArrayList<SftpFileManager<RemoteFile>>();
         try {
             //Coletas pré-execução
-            if(!process.getCargasEnvio().isEmpty() && process.getDirCargaEnvio() != null) {
+            if(!process.getCargasEnvio().isEmpty()) {
                 log.info("Enviando os arquivos de carga a serem usados na execução.");
                 process.getCargasEnvio().stream()
-                    .filter(carga -> carga.getNome() != null && !carga.getNome().isBlank())
-                    .map(fileSystemService::store)
-                    .map(carga -> sftp.upload(process.getDirCargaEnvio(), carga))
+                    .filter(QueuePayloadJobCarga::validName)
+                    .map(carga -> {
+                        var file = fileSystemService.store(carga);
+                        return sftp.upload(carga.getDiretorio(), file);
+                    })
                     .filter(SftpFileManager::isSuccess)
                     .forEach(carga -> process.getCargasEnviadas().add(carga));
             }

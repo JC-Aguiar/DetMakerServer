@@ -42,7 +42,7 @@ public class JobParameter {
     @Enumerated(EnumType.STRING)
     @Column(name = "TIPO", length = 9, nullable = false)
     @Comment("Tipo do valor do parâmetro")
-    TipoColuna tipo;
+    JobParameterType tipo;
 
     @Column(name = "FORMATO", length = 30)
     @Comment("Se o valor possui um padrão, preencher aqui apenas com o formato em si (datas no padrão Java)")

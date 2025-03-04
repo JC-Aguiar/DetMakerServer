@@ -12,7 +12,6 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.Comment;
 import org.hibernate.annotations.Where;
-import org.hibernate.proxy.HibernateProxy;
 import org.hibernate.type.NumericBooleanConverter;
 
 import java.time.OffsetDateTime;
@@ -53,7 +52,7 @@ public class Evidencia implements MasterEntity<Long> {
     String ticket;
 
     @Column(name = "ORDEM", nullable = false)
-    @Comment("Ordem em que o este job foi executado pela pipeline")
+    @Comment("Ordem em que o este Job foi executado pela Pipeline")
     Integer ordem;
 
     @Column(name = "JOB_NOME", length = 100, nullable = false)
@@ -69,6 +68,7 @@ public class Evidencia implements MasterEntity<Long> {
     String comandoExec;
 
     @Column(name = "VERSAO", length = 65)
+    @Comment("Versão do Job quando executado")
     String versao;
 
     @Column(name = "COMANDO_VERSAO", length = 200)
@@ -80,10 +80,6 @@ public class Evidencia implements MasterEntity<Long> {
     @Column(name = "QUERY_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     List<ExecQuery> queries = new ArrayList<>();
-
-    @Column(name = "DIR_CARGA", length = 100)
-    @Comment("Caso o Job consuma cargas, aqui é o apontamento para o diretório em que serão enviadas")
-    String dirCarga;
 
     @ToString.Exclude
     @JsonManagedReference
@@ -154,7 +150,6 @@ public class Evidencia implements MasterEntity<Long> {
         this.comandoExec = jobResult.getComandoExec();
         this.versao = jobResult.getVersao();
         this.comandoVersao = jobResult.getComandoVersao();
-        this.dirCarga = jobResult.getDirCargaEnvio();
         this.exitCode = jobResult.getExitCode();
         this.mensagemErro = jobResult.getErroFatal();
         this.sucesso = jobResult.isSucesso();
@@ -173,22 +168,15 @@ public class Evidencia implements MasterEntity<Long> {
     }
 
     @Override
-    public final boolean equals(Object o) {
-        if(this == o) return true;
-        if(o == null) return false;
-        Class<?> oEffectiveClass = o instanceof HibernateProxy
-            ? ((HibernateProxy) o).getHibernateLazyInitializer().getPersistentClass()
-            : o.getClass();
-        Class<?> thisEffectiveClass = this instanceof HibernateProxy
-            ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass()
-            : this.getClass();
-        if(thisEffectiveClass != oEffectiveClass) return false;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
         Evidencia evidencia = (Evidencia) o;
-        return getId() != null && Objects.equals(getId(), evidencia.getId());
+        return Objects.equals(getId(), evidencia.getId()) && Objects.equals(getRelatorio(), evidencia.getRelatorio()) && Objects.equals(getTicket(), evidencia.getTicket()) && Objects.equals(getOrdem(), evidencia.getOrdem()) && Objects.equals(getJobNome(), evidencia.getJobNome()) && Objects.equals(getJobDescricao(), evidencia.getJobDescricao()) && Objects.equals(getComandoExec(), evidencia.getComandoExec()) && Objects.equals(getVersao(), evidencia.getVersao()) && Objects.equals(getComandoVersao(), evidencia.getComandoVersao()) && Objects.equals(getQueries(), evidencia.getQueries()) && Objects.equals(getCargas(), evidencia.getCargas()) && Objects.equals(getLogs(), evidencia.getLogs()) && Objects.equals(getRemessas(), evidencia.getRemessas()) && Objects.equals(getExitCode(), evidencia.getExitCode()) && Objects.equals(getMensagemErro(), evidencia.getMensagemErro()) && Objects.equals(getSucesso(), evidencia.getSucesso()) && Objects.equals(getDataInicio(), evidencia.getDataInicio()) && Objects.equals(getDataFim(), evidencia.getDataFim()) && Objects.equals(getRevisor(), evidencia.getRevisor()) && Objects.equals(getDataRevisao(), evidencia.getDataRevisao()) && Objects.equals(getRequisitos(), evidencia.getRequisitos()) && Objects.equals(getComentario(), evidencia.getComentario()) && getStatus() == evidencia.getStatus() && getEscopo() == evidencia.getEscopo();
     }
 
     @Override
-    public final int hashCode() {
-        return getClass().hashCode();
+    public int hashCode() {
+        return Objects.hash(getId(), getRelatorio(), getTicket(), getOrdem(), getJobNome(), getJobDescricao(), getComandoExec(), getVersao(), getComandoVersao(), getQueries(), getCargas(), getLogs(), getRemessas(), getExitCode(), getMensagemErro(), getSucesso(), getDataInicio(), getDataFim(), getRevisor(), getDataRevisao(), getRequisitos(), getComentario(), getStatus(), getEscopo());
     }
 }
