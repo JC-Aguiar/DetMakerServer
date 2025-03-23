@@ -6,6 +6,7 @@ import br.com.ppw.dma.domain.pipeline.execution.PipelineJobCargaDTO;
 import br.com.ppw.dma.domain.queue.QueuePayloadJobCarga;
 import br.com.ppw.dma.exception.StorageException;
 import br.com.ppw.dma.exception.StorageFileNotFoundException;
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ import java.util.stream.Stream;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 @Slf4j
+@Getter
 @Service
 @ToString
 public class FileSystemService implements StorageService {

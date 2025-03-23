@@ -1,5 +1,6 @@
 package br.com.ppw.dma.domain.ambiente;
 
+import br.com.ppware.git_delivery.domain.SftpProps;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -19,6 +20,14 @@ public class AmbienteAcessoDTO {
     @ToString.Exclude
     String senha;
 
+
+    public SftpProps sftp() {
+        return SftpProps.builder()
+            .host(conexao)
+            .user(usuario)
+            .password(senha)
+            .build();
+    }
 
     public static AmbienteAcessoDTO banco(@NonNull Ambiente ambiente) {
         return new AmbienteAcessoDTO(

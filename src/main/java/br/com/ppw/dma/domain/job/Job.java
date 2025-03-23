@@ -53,41 +53,13 @@ public class Job implements MasterEntity<Long> {
     @Comment("Nome do Job")
     String nome;
 
-    @Column(name = "PLANO", length = 50)
-    @Comment("Nome da planilha em que o registro pertence")
-    String plano;
-
-    @Column(name = "EXEC_POS_JOB", length = 60)
-    @Comment("Indica os IDs dos Jobs do qual se deve executar após conclusão")
-    String executarAposJob;
-
-    @Column(name = "GRUPO_CONCOR", length = 25)
-    @Comment("Grupo de concorrência (?)")
-    String grupoConcorrencia;
-
-    @Column(name = "FASE", length = 25)
-    @Comment("Fase (?)")
-    String fase;
-
     @Column(name = "DESCRICAO", length = 500)
     @Comment("Descrição do Job")
     String descricao;
 
-    @Column(name = "GRUPO_UDA", length = 5)
-    @Comment("Grupo (UDAx)")
-    String grupoUda;
-
     @Column(name = "PROGRAMA", length = 150)
     @Comment("Programas envolvidos no Job")
     String programa;
-
-    @Column(name = "TABELAS", length = 300)
-    @Comment("Tabelas atualizadas pelo Job")
-    String tabelas;
-
-    @Column(name = "SERVIDOR", length = 30)
-    @Comment("Servidor")
-    String servidor;
 
     @Column(name = "CAMINHO_EXEC", length = 100)
     @Comment("Caminho de execução do Job")
@@ -124,14 +96,6 @@ public class Job implements MasterEntity<Long> {
     @Comment("ID das máscaras de remessa produzidas pelo Job")
     List<JobResource> mascarasRemessa = new ArrayList<>();
 
-    @Column(name = "TRATAMENTO", length = 25)
-    @Comment("Tratamento (?)")
-    String tratamento;
-    
-    @Column(name = "ESCALATION", length = 25)
-    @Comment("Escalation (?)")
-    String escalation;
-    
     @Column(name = "DT_ATUALIZACAO")
     @Comment("Data da última atualização no Job")
     OffsetDateTime dataAtualizacao;
@@ -166,9 +130,6 @@ public class Job implements MasterEntity<Long> {
      * @return {@link Job} esse mesmo objeto
      */
     public Job refinarCampos() {
-        executarAposJob = FormatString.refinarCelula(executarAposJob);
-        programa = FormatString.refinarCelula(programa);
-        tabelas = FormatString.refinarCelula(tabelas);
         listaParametros.forEach(param -> {
             param.setNome(FormatString.refinarCelula(param.getNome()));
             param.setDescricao(FormatString.refinarCelula(param.getDescricao()));
@@ -190,11 +151,11 @@ public class Job implements MasterEntity<Long> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Job job = (Job) o;
-        return Objects.equals(getId(), job.getId()) && Objects.equals(getCliente(), job.getCliente()) && Objects.equals(getNome(), job.getNome()) && Objects.equals(getPlano(), job.getPlano()) && Objects.equals(getExecutarAposJob(), job.getExecutarAposJob()) && Objects.equals(getGrupoConcorrencia(), job.getGrupoConcorrencia()) && Objects.equals(getFase(), job.getFase()) && Objects.equals(getDescricao(), job.getDescricao()) && Objects.equals(getGrupoUda(), job.getGrupoUda()) && Objects.equals(getPrograma(), job.getPrograma()) && Objects.equals(getTabelas(), job.getTabelas()) && Objects.equals(getServidor(), job.getServidor()) && Objects.equals(getCaminhoExec(), job.getCaminhoExec()) && Objects.equals(getListaParametros(), job.getListaParametros()) && Objects.equals(getMascarasCarga(), job.getMascarasCarga()) && Objects.equals(getMascarasLog(), job.getMascarasLog()) && Objects.equals(getMascarasRemessa(), job.getMascarasRemessa()) && Objects.equals(getTratamento(), job.getTratamento()) && Objects.equals(getEscalation(), job.getEscalation()) && Objects.equals(getDataAtualizacao(), job.getDataAtualizacao()) && Objects.equals(getAtualizadoPor(), job.getAtualizadoPor()) && Objects.equals(getOrigem(), job.getOrigem()) && Objects.equals(getQueries(), job.getQueries()) && Objects.equals(getPipelines(), job.getPipelines());
+        return Objects.equals(getId(), job.getId()) && Objects.equals(getCliente(), job.getCliente()) && Objects.equals(getNome(), job.getNome()) && Objects.equals(getDescricao(), job.getDescricao()) && Objects.equals(getPrograma(), job.getPrograma()) && Objects.equals(getCaminhoExec(), job.getCaminhoExec()) && Objects.equals(getListaParametros(), job.getListaParametros()) && Objects.equals(getMascarasCarga(), job.getMascarasCarga()) && Objects.equals(getMascarasLog(), job.getMascarasLog()) && Objects.equals(getMascarasRemessa(), job.getMascarasRemessa()) && Objects.equals(getDataAtualizacao(), job.getDataAtualizacao()) && Objects.equals(getAtualizadoPor(), job.getAtualizadoPor()) && Objects.equals(getOrigem(), job.getOrigem()) && Objects.equals(getQueries(), job.getQueries()) && Objects.equals(getPipelines(), job.getPipelines());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getId(), getCliente(), getNome(), getPlano(), getExecutarAposJob(), getGrupoConcorrencia(), getFase(), getDescricao(), getGrupoUda(), getPrograma(), getTabelas(), getServidor(), getCaminhoExec(), getListaParametros(), getMascarasCarga(), getMascarasLog(), getMascarasRemessa(), getTratamento(), getEscalation(), getDataAtualizacao(), getAtualizadoPor(), getOrigem(), getQueries(), getPipelines());
+        return Objects.hash(getId(), getCliente(), getNome(), getDescricao(), getPrograma(), getCaminhoExec(), getListaParametros(), getMascarasCarga(), getMascarasLog(), getMascarasRemessa(), getDataAtualizacao(), getAtualizadoPor(), getOrigem(), getQueries(), getPipelines());
     }
 }

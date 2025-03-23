@@ -8,12 +8,14 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import static jakarta.persistence.FetchType.LAZY;
-import static jakarta.persistence.GenerationType.*;
+import static jakarta.persistence.GenerationType.SEQUENCE;
 
 @Getter
 @Setter
 @ToString
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Entity(name = "PPW_AMBIENTE")
 @Table(name = "PPW_AMBIENTE", uniqueConstraints = {@UniqueConstraint(columnNames = {"NOME", "CLIENTE_ID"})})

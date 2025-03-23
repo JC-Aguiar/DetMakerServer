@@ -19,7 +19,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class JobResult extends QueuePayloadJob {
+public class JobProcess extends QueuePayloadJob {
 
 //    Job job;
     String ticket;
@@ -40,7 +40,7 @@ public class JobResult extends QueuePayloadJob {
     String erroFatal;
 
 
-    public JobResult(@NonNull QueuePayloadJob dados) {
+    public JobProcess(@NonNull QueuePayloadJob dados) {
         setNome(dados.getNome());
         setDescricao(dados.getDescricao());
         setOrdem(dados.getOrdem());
