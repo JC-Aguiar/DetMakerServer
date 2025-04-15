@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static jakarta.persistence.FetchType.LAZY;
-import static jakarta.persistence.GenerationType.*;
+import static jakarta.persistence.GenerationType.SEQUENCE;
 
 @Getter
 @Setter
@@ -54,7 +54,7 @@ public class MassaTabela implements MasterEntity<Long> {
         this.nome = dto.getNome();
         this.colunas = dto.getColunas()
             .parallelStream()
-            .map(MassaColuna::new)
+            .map(MassaColunaDTO::paraEntidade)
             .peek(col -> col.setTabelaId(this))
             .toList();
         this.usaPessoa = dto.getUsaPessoa();

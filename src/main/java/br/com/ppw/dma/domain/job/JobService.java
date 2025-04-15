@@ -9,7 +9,7 @@ import br.com.ppw.dma.domain.master.SqlSintaxe;
 import br.com.ppw.dma.domain.queue.QueuePayloadJob;
 import br.com.ppw.dma.domain.queue.QueuePayloadJobCarga;
 import br.com.ppw.dma.domain.queue.QueuePayloadQuery;
-import br.com.ppw.dma.domain.queue.result.JobResult;
+import br.com.ppw.dma.domain.queue.result.JobProcess;
 import br.com.ppw.dma.domain.storage.ExcelXlsx;
 import br.com.ppw.dma.domain.storage.FileSystemService;
 import br.com.ppw.dma.net.ConectorSftp;
@@ -19,24 +19,27 @@ import br.com.ppware.api.TipoColuna;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
-import java.util.List;
-import java.util.NoSuchElementException;
+import java.util.*;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -49,16 +52,29 @@ import static lombok.AccessLevel.PRIVATE;
 @FieldDefaults(level = PRIVATE)
 public class JobService extends MasterService<Long, Job, JobService> {
 
+    final ModelMapper mapper;
+    final ModelMapper mapperFlex;
     final JobRepository dao;
+    final JobParameterRepository jobParameterRepository;
+    final JobResourceRepository jobResourceRepository;
     final FileSystemService fileSystemService;
-    @Getter ConectorSftp sftp;
-    @Getter AmbienteAcessoDTO banco;
 
 
     @Autowired
-    public JobService(JobRepository dao, FileSystemService fileSystemService) {
+    public JobService(
+        @Qualifier("Basic") ModelMapper mapper,
+        @Qualifier("Flex") ModelMapper mapperFlex,
+        JobRepository dao,
+        JobParameterRepository jobParameterRepository,
+        JobResourceRepository jobResourceRepository,
+        FileSystemService fileSystemService)
+    {
         super(dao);
+        this.mapper = mapper;
+        this.mapperFlex = mapperFlex;
         this.dao = dao;
+        this.jobParameterRepository = jobParameterRepository;
+        this.jobResourceRepository = jobResourceRepository;
         this.fileSystemService = fileSystemService;
     }
 
@@ -71,25 +87,83 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     public List<Job> findAllByCliente(@NonNull Long clienteId) {
-        val result = dao.findAllByClienteId(clienteId);
-        if(result.isEmpty()) throw new NoSuchElementException();
-        return result;
+        var ids = dao.findIdAndNomeByClienteId(clienteId)
+            .stream()
+            .map(JobReferenceProjection::getId)
+            .collect(Collectors.toSet());
+        if(ids.isEmpty()) throw new NoSuchElementException();
+        return getJobsFullyFetched(ids);
     }
 
-    public List<Job> persistAll(List<Job> jobs) {
-        return jobs.stream()
-            .map(this::persist)
-            .collect(Collectors.toList());
+    public Job getJobFullyFetched(Long id) {
+        var futureJob = dao.asyncOneById(id);
+        var futureParams = jobParameterRepository.asyncAllByJobId(id);
+        var futureResources = jobResourceRepository.asyncAllByJobId(id);
+        CompletableFuture.allOf(futureJob, futureParams, futureResources).join();
+
+        try {
+            var job = futureJob.get().orElseThrow();
+            var parameters = futureParams.get();
+            var resources = futureResources.get();
+            var cargas = new ArrayList<JobResource>();
+            var logs = new ArrayList<JobResource>();
+            var remessas = new ArrayList<JobResource>();
+
+            resources.forEach(resource -> {
+                switch(resource.getTipo()) {
+                    case CARGA -> cargas.add(resource);
+                    case LOG -> logs.add(resource);
+                    case REMESSA -> remessas.add(resource);
+                }
+            });
+            job.setParametros(parameters);
+            job.setCargas(cargas);
+            job.setLogs(logs);
+            job.setRemessas(remessas);
+            return job;
+        }
+        catch (InterruptedException | CancellationException | ExecutionException e) {
+            throw new RuntimeException("Erro ao consultar e mesclar dados dos Jobs assincronamente.", e);
+        }
     }
 
-    @Transactional
-    public Job persist(@NotNull Job job) {
-        log.info("Persistindo Job no banco:");
-        log.info(job.toString());
-        job = dao.save(job);
+    public List<Job> getJobsFullyFetched(Set<Long> ids) {
+        var futureJobs = dao.asyncAllById(ids);
+        var futureParams = jobParameterRepository.asyncAllByJobId(ids);
+        var futureResources = jobResourceRepository.asyncAllByJobId(ids);
+        CompletableFuture.allOf(futureJobs, futureParams, futureResources).join();
 
-        log.info("Job ID {} gravado com sucesso.", job.getId());
-        return job;
+        try {
+            // Agrupar JobParameters e JobResources por Job
+            var jobs = futureJobs.get();
+            var parametersByJobId = futureParams.get().stream()
+                .collect(Collectors.groupingBy(param -> param.getJob().getId()));
+            var resourcesByJobId = futureResources.get().stream()
+                .collect(Collectors.groupingBy(resource -> resource.getJob().getId()));
+
+            // Mapeando
+            jobs.forEach(job -> {
+                var params = parametersByJobId.getOrDefault(job.getId(), new ArrayList<>());
+                var cargas = new ArrayList<JobResource>();
+                var logs = new ArrayList<JobResource>();
+                var remessas = new ArrayList<JobResource>();
+                resourcesByJobId.getOrDefault(job.getId(), new ArrayList<>()).forEach(resource -> {
+                    switch(resource.getTipo()) {
+                        case CARGA -> cargas.add(resource);
+                        case LOG -> logs.add(resource);
+                        case REMESSA -> remessas.add(resource);
+                    }
+                });
+                job.setParametros(params);
+                job.setCargas(cargas);
+                job.setLogs(logs);
+                job.setRemessas(remessas);
+            });
+            return jobs;
+        }
+        catch (InterruptedException | CancellationException | ExecutionException e) {
+            throw new RuntimeException("Erro ao consultar e mesclar dados dos Jobs assincronamente.", e);
+        }
     }
 
     public ExcelXlsx lerXlsx(@NotNull MultipartFile file) throws IOException {
@@ -148,8 +222,6 @@ public class JobService extends MasterService<Long, Job, JobService> {
         val mascaraLog = valorVazio(jobPojo.getMascaraLog());
 
         log.info("{}: Detectando se há separadores no texto para dividi-los em listas.", registro);
-        val listaExecPosJob = dividirValores(jobPojo.getExecutarAposJob());
-        val listaPrograma = dividirValores(jobPojo.getPrograma());
         val listaTabelas = dividirValores(tabelas);
         val listaParametrosNome = dividirValores(parametroNome);
         val listaParametrosDescricao = dividirValores(parametroDescricao);
@@ -182,33 +254,27 @@ public class JobService extends MasterService<Long, Job, JobService> {
         listaMascarasEntrada.stream()
             .map(mask -> JobResourceDTO.builder()
                 .tipo(JobResourceType.CARGA.name())
-                .diretorio(diretorioEntrada)
-                .mascara(mask)
-                .acesso(JobResourceAccessType.FTP.name())
+                .endereco(Path.of(diretorioEntrada, mask).toAbsolutePath().toString())
+                .protocolo(JobResourceProtocolType.FTP.name())
                 .build())
             .forEach(dto -> JobDto.getMascaraEntrada().add(dto));
 
         listaMascarasLog.stream()
             .map(mask -> JobResourceDTO.builder()
                 .tipo(JobResourceType.LOG.name())
-                .diretorio(diretorioLog)
-                .mascara(mask)
-                .acesso(JobResourceAccessType.FTP.name())
+                .endereco(Path.of(diretorioEntrada, mask).toAbsolutePath().toString())
+                .protocolo(JobResourceProtocolType.FTP.name())
                 .build())
             .forEach(dto -> JobDto.getMascaraLog().add(dto));
 
         listaMascarasSaida.stream()
             .map(mask -> JobResourceDTO.builder()
                 .tipo(JobResourceType.REMESSA.name())
-                .diretorio(diretorioSaida)
-                .mascara(mask)
-                .acesso(JobResourceAccessType.FTP.name())
+                .endereco(Path.of(diretorioEntrada, mask).toAbsolutePath().toString())
+                .protocolo(JobResourceProtocolType.FTP.name())
                 .build())
             .forEach(dto -> JobDto.getMascaraSaida().add(dto));
 
-        JobDto.setExecutarAposJob(listaExecPosJob);
-        JobDto.setPrograma(listaPrograma);
-        JobDto.setTabelas(listaTabelas);
         try {
             log.info("{}: Tentando converter 'Data de Atualização' da planilha para o DTO.", registro);
             val data = refinarCelula(jobPojo.getDataAtualizacao());
@@ -227,44 +293,44 @@ public class JobService extends MasterService<Long, Job, JobService> {
     //TODO: javadoc
 //    public List<Evidencia> executarJob(@NonNull QueuePayload preparation) {
     @Transactional(noRollbackFor = Throwable.class)
-    public List<JobResult> executar(
+    public List<JobProcess> executar(
         @NonNull AmbienteAcessoDTO conexaoBanco,
         @NonNull AmbienteAcessoDTO conexaoSftp,
         @NonNull List<QueuePayloadJob> jobs)
     {
-        log.debug("Configurando conexão do Banco e do SFTP.");
-        banco = conexaoBanco;
-        sftp = ConectorSftp.conectar(conexaoSftp);
-
-        //TODO: paliativo. Remover quando obtida uma solução em produção
-        switch(sftp.getServer()) {
-            case "${DETMAKER_HOST_1}" -> ConectorSftp.setVivo1Properties(sftp);
-            case "${DETMAKER_HOST_2}" -> ConectorSftp.setVivo2Properties(sftp);
-            case "${DETMAKER_HOST_3}" -> ConectorSftp.setVivo3Properties(sftp);
-        }
         log.info("Iniciando rotina da execução de Jobs");
-        val sucessos = new AtomicInteger();
         val jobProcesses = jobs.stream()
-            .map(JobResult::new)
-            .peek(this::executar)
-            .peek(process -> sucessos.addAndGet(process.isSucesso() ? 1 : 0))
+            .map(job -> new JobProcess(conexaoBanco, conexaoSftp, job))
+            .map(this::executar)
             .toList();
+        val sucessos = jobProcesses.stream().filter(JobProcess::isSucesso).count();
         log.info("Total de Jobs com sucesso: {}/{}.", sucessos, jobProcesses.size());
-
-        log.debug("Desconfigurando conexão do Banco e do SFTP.");
-        sftp = null;
-        banco = null;
-//        return evidenciaController.gerarEvidencias(jobProcesses);
         return jobProcesses;
     }
 
     //TODO: javadoc
-    private void executar(@NonNull JobResult process) {
+    private JobProcess executar(JobProcess process) {
         try {
+            var cargasEnvio = process.getCargasEnvio();
+            var cargasConsulta = process.getCargasMascara();
+            var queriesConsulta = process.getQueriesExec();
+            var logsConsulta = process.getLogsMascara();
+            var remessasConsulta = process.getRemessasMascara();
+            var conexaoBanco = process.getConexaoBanco();
+
+            log.debug("Configurando conexão do Banco e do SFTP.");
+            var sftp = ConectorSftp.conectar(process.getConexaoSftp());
+
+            //TODO: paliativo. Remover quando obtida uma solução em produção
+            switch(sftp.getServer()) {
+                case "${DETMAKER_HOST_1}" -> ConectorSftp.setVivo1Properties(sftp);
+                case "${DETMAKER_HOST_2}" -> ConectorSftp.setVivo2Properties(sftp);
+                case "${DETMAKER_HOST_3}" -> ConectorSftp.setVivo3Properties(sftp);
+            }
             //Coletas pré-execução
-            if(!process.getCargasEnvio().isEmpty()) {
+            if(!cargasEnvio.isEmpty()) {
                 log.info("Enviando os arquivos de carga a serem usados na execução.");
-                process.getCargasEnvio().stream()
+                cargasEnvio.stream()
                     .filter(QueuePayloadJobCarga::validName)
                     .map(carga -> {
                         var file = fileSystemService.store(carga);
@@ -273,21 +339,17 @@ public class JobService extends MasterService<Long, Job, JobService> {
                     .filter(SftpFileManager::isSuccess)
                     .forEach(carga -> process.getCargasEnviadas().add(carga));
             }
-            if(!process.getCargasMascara().isEmpty()) {
+            if(!cargasConsulta.isEmpty()) {
                 log.info("Coletando os arquivos de carga que serão usados na execução.");
-                process.getCargasMascara().forEach(
-                    mascara -> process.addCargas(sftp.downloadAll(mascara))
-                );
+                cargasConsulta.forEach(mascara -> process.addCargas(
+                    sftp.downloadAll(mascara)
+                ));
             }
-//            if(!process.getLogsMascara().isEmpty()) {
-//                log.info("Obtendo log mais recente pré-execução.");
-//                process.getLogsMascara().forEach(
-//                    path -> logsPreJob.add(sftp.downloadMaisRecente(path))
-//                );
-//            }
-            if(!process.getQueriesExec().isEmpty()) {
+            if(!queriesConsulta.isEmpty()) {
                 log.info("Consultando tabelas pré-execução.");
-                process.addTabelasPreJob(extractTable(process.getQueriesExec()));
+                process.addTabelasPreJob(
+                    extractTable(conexaoBanco, queriesConsulta)
+                );
             }
             //Execução
             log.info("Obtendo o sha256 do Job.");
@@ -307,28 +369,24 @@ public class JobService extends MasterService<Long, Job, JobService> {
             log.info("Job acionado com sucesso.");
 
             //Coletas pós-execução
-            if(!process.getRemessasMascara().isEmpty()) {
+            if(!remessasConsulta.isEmpty()) {
                 log.info("Coletando as saídas geradas pela execução.");
-                process.getRemessasMascara().forEach(
-                    mascara -> process.addRemessas(sftp.downloadAllRecente(mascara, dataAgora))
-                );
+                remessasConsulta.forEach(mascara -> process.addRemessas(
+                    sftp.downloadAllRecente(mascara, dataAgora)
+                ));
             }
-            if(!process.getLogsMascara().isEmpty()) {
+            if(!logsConsulta.isEmpty()) {
                 log.info("Obtendo log mais recente pós-execução.");
-                process.getLogsMascara().forEach(
-                    mascara -> process.addLogs(sftp.downloadAllRecente(mascara, dataAgora))
+                logsConsulta.forEach(mascara -> process.addLogs(
+                    sftp.downloadAllRecente(mascara, dataAgora)
+                ));
+            }
+            if(!queriesConsulta.isEmpty()) {
+                log.info("Consultando tabelas pós-execução.");
+                process.addTabelasPosJob(
+                    extractTable(conexaoBanco, queriesConsulta)
                 );
             }
-            if(!process.getQueriesExec().isEmpty()) {
-                log.info("Consultando tabelas pós-execução.");
-                process.addTabelasPosJob(extractTable(process.getQueriesExec()));
-            }
-            //Com base nos logs pré/pós: comparar cenários de duplicidade para então adicionar ao JobResult
-//            for(int i = 0; i < logsPreJob.size(); i++) {
-//                val logPre = logsPreJob.get(i);
-//                val logPos = logsPosJob.get(i);
-//                process.addLogs(SftpFileManager.compareAntesDepois(logPre, logPos));
-//            }
         }
         //Caso exception no acionamento/monitoramento do DetMaker com o Job
         catch(Exception e) {
@@ -339,20 +397,19 @@ public class JobService extends MasterService<Long, Job, JobService> {
                 e.getMessage());
             process.setErroFatal(e.getMessage());
         }
-        finally {
-            process.setDataFim(OffsetDateTime.now());
-        }
+        process.setDataFim(OffsetDateTime.now());
+        return process;
     }
 
     //TODO: javadoc
-    public List<ResultadoSql> extractTable(List<QueuePayloadQuery> jobQuery) {
+    public List<ResultadoSql> extractTable(AmbienteAcessoDTO conexaoBanco, List<QueuePayloadQuery> jobQuery) {
         var sucessos = new AtomicInteger(0);
         val extracoes = jobQuery.stream().map(query -> {
             val resultado = new ResultadoSql(
                 query.getNome(),
                 query.getDescricao(),
                 query.getQuery());
-            try(val masterDao = new MasterOracleDAO(banco)) {
+            try(val masterDao = new MasterOracleDAO(conexaoBanco)) {
                 var extracao = masterDao.collectData(query.getQuery());
                 resultado.addResultado(extracao);
                 sucessos.getAndIncrement();
@@ -373,5 +430,13 @@ public class JobService extends MasterService<Long, Job, JobService> {
         log.info("Total de queries executadas com sucesso: {}/{}.", sucessos, extracoes.size());
         return extracoes;
     }
+
+    /**
+     * Converte os dados enviados pelo usuário num novo {@link Job}. Este processo também persistirá
+     * os respectivos dados referentes ao {@link JobParameter} (parâmetros) e {@link JobResource} {carga/log/remessa}.
+     * @param cliente {@link Cliente}
+     * @param dtos {@link Collection} de {@link JobInfoDTO}
+     * @return {@link Job} salvo no banco.
+     */
 
 }

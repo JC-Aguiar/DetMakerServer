@@ -59,6 +59,14 @@ public class MassaColunaDTO implements MassaColunaInfo {
 //		this.escala = info.scale();
 	}
 
+	public MassaColuna paraEntidade() {
+		return MassaColuna.builder()
+			.nome(getNome())
+			.formato(getFormato())
+			.opcao(getOpcao())
+			.build();
+	}
+
 	/**
 	 * Atualiza seus metadados com base numa extração de banco, desde que os nomes das column sejam iguais.
 	 * Recomendamos que esse método não seja chamado externamente e sim pelo

@@ -2,10 +2,15 @@ package br.com.ppw.dma.domain.job;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.Length;
+
+import java.nio.file.Path;
+
+import static br.com.ppw.dma.domain.job.JobResourceProtocolType.FTP;
 
 @Data
 @Slf4j
@@ -16,41 +21,43 @@ import org.hibernate.validator.constraints.Length;
 public class JobResourceDTO {
 
     @NotNull
-    @Length(max = 9)
+    @Size(min = 1, max = 9)
     String tipo;
 
     @NotNull
-    @Length(max = 150)
-    String diretorio;
+    @Size(min = 1, max = 255)
+    String endereco;
 
-    @NotNull
-    @Length(max = 150)
-    String mascara;
-
-    @Length(max = 350)
+    @Length(min = 1, max = 350)
     String descricao;
 
     @NotNull
-    @Length(max = 9)
-    String acesso;
+    @Size(min = 1, max = 9)
+    String protocolo;
 
 
-    public static JobResourceDTO converterEntidade(@NonNull JobResource resource) {
-        return JobResourceDTO.builder()
-            .tipo(resource.getTipo().name())
-            .diretorio(resource.getDiretorio())
-            .mascara(resource.getMascara())
-            .descricao(resource.getDescricao())
-            .acesso(resource.getAcesso().name())
+    public JobResourceDTO(@NonNull JobResource resource) {
+        this.tipo = (resource.getTipo().name());
+        this.endereco = (resource.getEndereco());
+        this.descricao = (resource.getDescricao());
+        this.protocolo = (resource.getProtocolo().name());
+    }
+
+    public JobResource converterParaEntidade() {
+        return JobResource.builder()
+            .tipo(JobResourceType.identificar(tipo).orElse(null))
+            .endereco(endereco)
+            .descricao(descricao)
+            .protocolo(JobResourceProtocolType.identificar(protocolo).orElse(null))
             .build();
-
     }
 
     @JsonIgnore
     public String getAbsolutePath() {
-        if(!diretorio.endsWith("/"))
-            return diretorio + "/" + mascara;
-        return diretorio + mascara;
+        return JobResourceProtocolType.identificar(protocolo)
+            .filter(type -> type == FTP)
+            .map(type -> Path.of(endereco).toAbsolutePath().toString())
+            .orElse(endereco);
     }
 
 }

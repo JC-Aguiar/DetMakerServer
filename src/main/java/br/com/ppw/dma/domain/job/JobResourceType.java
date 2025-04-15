@@ -8,21 +8,15 @@ import java.util.stream.Stream;
 @Getter
 public enum JobResourceType {
 
-    CARGA("carga"),
-    REMESSA("remessa"),
-    LOG("log");
+    CARGA,
+    REMESSA,
+    LOG;
 
-    public final String tipo;
-
-
-    JobResourceType(String tipo) {
-        this.tipo = tipo;
-    }
 
     public static Optional<JobResourceType> identificar(String texto) {
         if(texto == null) return Optional.empty();
         return Stream.of(JobResourceType.values())
-            .filter(tipo -> tipo.tipo.equalsIgnoreCase(texto))
+            .filter(tipo -> tipo.name().equalsIgnoreCase(texto))
             .findFirst();
     }
 }

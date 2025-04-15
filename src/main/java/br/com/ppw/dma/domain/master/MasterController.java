@@ -1,7 +1,8 @@
 package br.com.ppw.dma.domain.master;
 
+import lombok.AccessLevel;
 import lombok.Getter;
-import org.springframework.aop.framework.AopContext;
+import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,11 +15,11 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public abstract class MasterController<ID, ENTITY extends MasterEntity<ID>, THIS extends MasterController> {
 
-    @Getter
-    private final MasterService service;
-    private final Type entityClass;
+    @Getter MasterService service;
+    Type entityClass;
 
     public final static ExampleMatcher MATCHER_ALL = ExampleMatcher
         .matchingAll()
@@ -36,20 +37,11 @@ public abstract class MasterController<ID, ENTITY extends MasterEntity<ID>, THIS
         this.entityClass = types[1];
     }
 
-    /**
-     * The proxy is a static method that returns a reference to the current proxy
-     *
-     * @return The MasterController object.
-     */
-    public final THIS proxy() {
-        return (THIS) AopContext.currentProxy();
-    }
-
     @GetMapping("id/{id}")
     public ResponseEntity<?> getOne(@PathVariable(name = "id") ID id)
     throws NoSuchMethodException {
         final ENTITY entitie = (ENTITY) service.findById(id);
-        return proxy().parseOne(entitie);
+        return parseOne(entitie);
     }
 
     @GetMapping
@@ -59,7 +51,7 @@ public abstract class MasterController<ID, ENTITY extends MasterEntity<ID>, THIS
     throws NoSuchMethodException {
         final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("id").ascending());
         final Page<ENTITY> entities = service.findAll(pageConfig);
-        return proxy().parseAll(entities);
+        return parseAll(entities);
     }
 
     public abstract ResponseEntity<?> parseOne(ENTITY entity);

@@ -22,10 +22,20 @@ import static lombok.AccessLevel.PRIVATE;
 @FieldDefaults(level = PRIVATE)
 public class QueuePayload {
 
-	@NotBlank String pipelineNome;
-	@NotBlank String pipelineDescricao;
-	@NotEmpty List<QueuePayloadJob> jobs = new ArrayList<>();
-	@Builder.Default List<QueuePayloadQuery> queriesPrePipeline = new ArrayList<>();
-	@Builder.Default List<QueuePayloadQuery> queriesPosPipeline = new ArrayList<>();
+	@NotBlank
+	String pipelineNome;
+
+	@NotBlank
+	String pipelineDescricao;
+
+	@NotEmpty
+	@Builder.Default
+	List<QueuePayloadJob> jobs = new ArrayList<>();
+
+	@Builder.Default
+	List<QueuePayloadQuery> queriesPrePipeline = new ArrayList<>();
+
+	@Builder.Default
+	List<QueuePayloadQuery> queriesPosPipeline = new ArrayList<>();
 
 }

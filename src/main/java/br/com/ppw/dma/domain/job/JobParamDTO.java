@@ -1,11 +1,11 @@
 package br.com.ppw.dma.domain.job;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import lombok.experimental.SuperBuilder;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.validator.constraints.Length;
 
 import java.util.Optional;
 
@@ -18,31 +18,39 @@ import java.util.Optional;
 public class JobParamDTO {
 
     @NotNull
-    @Length(max = 9)
+    @Size(min = 1, max = 9)
     String tipo;
 
-    @Length(max = 30)
+    @Size(min = 1, max = 30)
     String formato;
 
     @NotNull
-    @Length(max = 30)
+    @Size(min = 1, max = 30)
     String nome;
 
-    @Length(max = 350)
+    @Size(min = 1, max = 350)
     String descricao;
 
-    Boolean opcional;
+    @Builder.Default
+    Boolean opcional = false;
 
 
-    public static JobParamDTO converterEntidade(@NonNull JobParameter param) {
-        return JobParamDTO.builder()
-            .tipo(param.getTipo().name())
-            .formato(param.getFormato())
-            .nome(param.getNome())
-            .descricao(param.getDescricao())
-            .opcional(param.getOpcional())
+    public JobParamDTO(@NonNull JobParameter param) {
+        this.tipo = (param.getTipo().name());
+        this.formato = (param.getFormato());
+        this.nome = (param.getNome());
+        this.descricao = (param.getDescricao());
+        this.opcional = (param.getOpcional());
+    }
+
+    public JobParameter converterParaEntidade() {
+        return JobParameter.builder()
+            .tipo(JobParameterType.identify(tipo).orElse(null))
+            .formato(formato)
+            .nome(nome)
+            .descricao(descricao)
+            .opcional(opcional)
             .build();
-
     }
 
     public boolean getOpcional() {

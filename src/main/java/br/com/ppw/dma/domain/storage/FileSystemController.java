@@ -52,7 +52,7 @@ public class FileSystemController {
                 summary.fail(file.getOriginalFilename(), e.getMessage());
             }
         }
-        return MasterSummary.toResponseEntity(summary);
+        return summary.toResponseEntity();
     }
 
     @ExceptionHandler(StorageFileNotFoundException.class)

@@ -1,5 +1,6 @@
 package br.com.ppw.dma.domain.job;
 
+import br.com.ppw.dma.domain.master.MasterEntity;
 import br.com.ppware.api.TipoColuna;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
@@ -23,12 +24,12 @@ import static lombok.AccessLevel.PRIVATE;
 @FieldDefaults(level = PRIVATE)
 @Entity(name = "PPW_JOB_PARAMETER")
 @Table(name = "PPW_JOB_PARAMETER", uniqueConstraints = @UniqueConstraint(columnNames = { "NOME", "JOB_ID" } ))
-public class JobParameter {
+public class JobParameter implements MasterEntity<Long> {
 
     @Id
     @Column(name = "ID")
-    @SequenceGenerator(name = "SEQ_JOB_ID", allocationSize = 1)
-    @GeneratedValue(strategy = SEQUENCE, generator = "SEQ_JOB_ID")
+    @SequenceGenerator(name = "SEQ_JOB_PARAMETER_ID", allocationSize = 1)
+    @GeneratedValue(strategy = SEQUENCE, generator = "SEQ_JOB_PARAMETER_ID")
     @Comment("Identificador numérico do parâmetro")
     Long id;
 
@@ -47,6 +48,10 @@ public class JobParameter {
     @Column(name = "FORMATO", length = 30)
     @Comment("Se o valor possui um padrão, preencher aqui apenas com o formato em si (datas no padrão Java)")
     String formato;
+
+    @Column(name = "NOME", length = 30)
+    @Comment("Nome do parâmetro")
+    String comando;
 
     @Column(name = "NOME", length = 30, nullable = false)
     @Comment("Nome do parâmetro")

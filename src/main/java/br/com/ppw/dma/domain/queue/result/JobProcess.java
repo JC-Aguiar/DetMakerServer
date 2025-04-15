@@ -19,11 +19,12 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class JobResult extends QueuePayloadJob {
+public class JobProcess extends QueuePayloadJob {
 
 //    Job job;
     String ticket;
-    AmbienteAcessoDTO banco;
+    AmbienteAcessoDTO conexaoBanco;
+    AmbienteAcessoDTO conexaoSftp;
     String versao;
     //@ToString.Exclude
     //SftpTerminalManager terminal;
@@ -40,7 +41,13 @@ public class JobResult extends QueuePayloadJob {
     String erroFatal;
 
 
-    public JobResult(@NonNull QueuePayloadJob dados) {
+    public JobProcess(
+        @NonNull AmbienteAcessoDTO conexaoBanco,
+        @NonNull AmbienteAcessoDTO conexaoSftp,
+        @NonNull QueuePayloadJob dados)
+    {
+        setConexaoBanco(conexaoBanco);
+        setConexaoSftp(conexaoSftp);
         setNome(dados.getNome());
         setDescricao(dados.getDescricao());
         setOrdem(dados.getOrdem());

@@ -33,7 +33,7 @@ public record AnexoInfoDTO(
             .mascara(
                 Optional.ofNullable(execFile.getMascara())
                 .orElse(""))
-            .tipo(execFile.getTipo().tipo)
+            .tipo(execFile.getTipo().name())
             .build();
     }
 

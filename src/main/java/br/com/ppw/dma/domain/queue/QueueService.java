@@ -74,8 +74,8 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
         RelatorioService relatorioService,
         AmbienteService ambienteService,
         EntityManager entityManager,
-        PlatformTransactionManager transactionManager) {
-
+        PlatformTransactionManager transactionManager)
+    {
         super(queueDao);
         this.objectMapper = objectMapper;
         this.queueDao = queueDao;
@@ -93,8 +93,8 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
 
     public Long countByStatusInAmbiente(
         @NonNull Ambiente ambiente,
-        @NonNull QueueStatus status) {
-
+        @NonNull QueueStatus status)
+    {
         return queueDao.countByStatusInAmbiente(ambiente, status.name());
     }
 
@@ -226,25 +226,13 @@ public class QueueService extends MasterService<Long, TaskQueue, QueueService> {
     private PipelineResult runQueue(
         @NonNull TaskQueue itemFila,
         @NonNull Ambiente ambiente,
-        @NonNull Cliente cliente) {
-
+        @NonNull Cliente cliente)
+    {
         var ticket = itemFila.getTicket();
         var payload = itemFila.getPayloadObj();
         var usuario = itemFila.getUsuario();
-        //Por problemas de sessão, os objetos abaixo precisaram ser coletados/montados manualmente
-//        var ambiente = ambienteService.findById(
-//            itemFila.getAmbiente().getId());
-//        var cliente  = clienteService.findByAmbienteId(
-//            itemFila.getAmbiente().getId());
-        var banco = new AmbienteAcessoDTO(
-            ambiente.getConexaoBanco(),
-            ambiente.getUsuarioBanco(),
-            ambiente.getSenhaBanco());
-        var sftp = new AmbienteAcessoDTO(
-            ambiente.getConexaoSftp(),
-            ambiente.getUsuarioSftp(),
-            ambiente.getSenhaSftp());
-
+        var banco = ambiente.acessoBanco();
+        var sftp = ambiente.acessoFtp();
         var pipelineResult = PipelineResult.builder()
             .ambiente(ambiente)
             .pipelineNome(payload.getPipelineNome())

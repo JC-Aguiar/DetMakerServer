@@ -5,6 +5,7 @@ import br.com.ppw.dma.domain.storage.StorageService;
 import br.com.ppw.dma.util.FormatString;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.modelmapper.convention.MatchingStrategies;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,9 +31,30 @@ public class DetMakerBeans {
         return new StandardServletMultipartResolver();
     }
 
-    @Bean
+    /**
+     * Gera um bean de {@link ModelMapper} feito para conversões restritivas.
+     * Ideal para gerar uma nova classe do zero com base numa (outra) classe já preenchida.
+     * @return {@link ModelMapper}.
+     */
+    @Bean("Basic")
     public ModelMapper modelMapper() {
-        return new ModelMapper();
+        var mapper = new ModelMapper();
+        mapper.getConfiguration().setSkipNullEnabled(true);
+        return mapper;
+    }
+
+    /**
+     * Gera um bean de {@link ModelMapper} feito para conversões flexíveis.
+     * Ideal para atualizar uma classe já existente com base numa (outra) classe também
+     * já preenchida.
+     * @return {@link ModelMapper}.
+     */
+    @Bean("Flex")
+    public ModelMapper flexModelMapper() {
+        var mapper = new ModelMapper();
+        mapper.getConfiguration().setMatchingStrategy(MatchingStrategies.LOOSE);
+        mapper.getConfiguration().setSkipNullEnabled(true);
+        return mapper;
     }
 
     /**

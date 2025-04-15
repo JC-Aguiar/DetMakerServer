@@ -1,7 +1,10 @@
 package br.com.ppw.dma.domain.master;
 
 import br.com.ppw.dma.exception.SummaryErrorWithNoMessage;
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
@@ -10,7 +13,6 @@ import java.util.function.Function;
 
 @Data
 @NoArgsConstructor
-@EqualsAndHashCode
 public class MasterSummary<T> {
 
     //TODO: Alterar no front
@@ -39,11 +41,36 @@ public class MasterSummary<T> {
     }
 
     //TODO: javadoc
+    public static <R, T> MasterSummary<T> startsPositive(
+        Collection<R> collection,
+        Function<R, T> parseToInitialRecords)
+    {
+        var summary = new MasterSummary<T>();
+        collection
+            .stream()
+            .map(parseToInitialRecords)
+            .forEach(summary.saved::add);
+        return summary;
+    }
+
+    //TODO: javadoc
     public static <T> MasterSummary<T> startsNegative(Collection<T> initialRecords) {
         var summary = new MasterSummary<T>();
-//        summary.failed.addAll(initialRecords);
         initialRecords.forEach(
             record -> summary.failed.put(record, "Não processado ainda."));
+        return summary;
+    }
+
+    //TODO: javadoc
+    public static <R, T> MasterSummary<T> startsNegative(
+        Collection<R> collection,
+        Function<R, T> parseToInitialRecords)
+    {
+        var summary = new MasterSummary<T>();
+        collection
+            .stream()
+            .map(parseToInitialRecords)
+            .forEach(record -> summary.failed.put(record, "Não processado ainda."));
         return summary;
     }
 
@@ -93,10 +120,8 @@ public class MasterSummary<T> {
         return SummaryStatus.PARCIAL;
     }
 
-    public static <T> ResponseEntity<MasterSummary<T>> toResponseEntity(
-        @NonNull MasterSummary<T> summary) {
-        //----------------------------------------------------------------
-        return ResponseEntity.status(summary.getStatus().httpStatus).body(summary);
+    public ResponseEntity<MasterSummary<T>> toResponseEntity() {
+        return ResponseEntity.status(getStatus().httpStatus).body(this);
     }
 
 }
