@@ -3,7 +3,7 @@ package br.com.ppw.dma.domain.evidencia;
 import br.com.ppw.dma.domain.execFile.ExecFile;
 import br.com.ppw.dma.domain.execQuery.ExecQuery;
 import br.com.ppw.dma.domain.master.MasterEntity;
-import br.com.ppw.dma.domain.queue.result.JobResult;
+import br.com.ppw.dma.domain.task.result.JobResult;
 import br.com.ppw.dma.domain.relatorio.Relatorio;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;

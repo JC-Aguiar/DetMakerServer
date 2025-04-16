@@ -3,7 +3,7 @@ package br.com.ppw.dma.domain.storage;
 import br.com.ppw.dma.config.StorageProperties;
 import br.com.ppw.dma.domain.execFile.ExecFile;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineJobCargaDTO;
-import br.com.ppw.dma.domain.queue.QueuePayloadJobCarga;
+import br.com.ppw.dma.domain.task.TaskPayloadJobCarga;
 import br.com.ppw.dma.exception.StorageException;
 import br.com.ppw.dma.exception.StorageFileNotFoundException;
 import lombok.NonNull;
@@ -94,7 +94,7 @@ public class FileSystemService implements StorageService {
         }
     }
 
-    public File store(QueuePayloadJobCarga file) {
+    public File store(TaskPayloadJobCarga file) {
         try {
             if(file.getConteudo().isEmpty()) throw new StorageException("O arquivo enviado está vazio!");
 

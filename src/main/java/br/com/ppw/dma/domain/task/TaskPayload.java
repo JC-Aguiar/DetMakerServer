@@ -1,4 +1,4 @@
-package br.com.ppw.dma.domain.queue;
+package br.com.ppw.dma.domain.task;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -20,12 +20,12 @@ import static lombok.AccessLevel.PRIVATE;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = PRIVATE)
-public class QueuePayload {
+public class TaskPayload {
 
 	@NotBlank String pipelineNome;
 	@NotBlank String pipelineDescricao;
-	@NotEmpty List<QueuePayloadJob> jobs = new ArrayList<>();
-	@Builder.Default List<QueuePayloadQuery> queriesPrePipeline = new ArrayList<>();
-	@Builder.Default List<QueuePayloadQuery> queriesPosPipeline = new ArrayList<>();
+	@NotEmpty List<TaskPayloadJob> jobs = new ArrayList<>();
+	@Builder.Default List<TaskPayloadQuery> queriesPrePipeline = new ArrayList<>();
+	@Builder.Default List<TaskPayloadQuery> queriesPosPipeline = new ArrayList<>();
 
 }

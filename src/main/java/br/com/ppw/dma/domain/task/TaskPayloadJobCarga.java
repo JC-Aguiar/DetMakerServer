@@ -1,4 +1,4 @@
-package br.com.ppw.dma.domain.queue;
+package br.com.ppw.dma.domain.task;
 
 import br.com.ppw.dma.domain.execFile.ExecFile;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineJobCargaDTO;
@@ -10,7 +10,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @NoArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class QueuePayloadJobCarga {
+public class TaskPayloadJobCarga {
 
     String nome;
 
@@ -20,13 +20,13 @@ public class QueuePayloadJobCarga {
     String tipo;
 
 
-    public QueuePayloadJobCarga(@NonNull ExecFile file) {
+    public TaskPayloadJobCarga(@NonNull ExecFile file) {
         nome = file.getArquivoNome();
         conteudo = file.getArquivo();
         tipo = "tmp";
     }
 
-    public QueuePayloadJobCarga(@NonNull PipelineJobCargaDTO dto) {
+    public TaskPayloadJobCarga(@NonNull PipelineJobCargaDTO dto) {
         nome = dto.getNome();
         conteudo = dto.getConteudo();
         tipo = dto.getTipo();

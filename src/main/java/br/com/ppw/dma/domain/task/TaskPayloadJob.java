@@ -1,4 +1,4 @@
-package br.com.ppw.dma.domain.queue;
+package br.com.ppw.dma.domain.task;
 
 import br.com.ppw.dma.domain.evidencia.Evidencia;
 import br.com.ppw.dma.domain.execFile.ExecFile;
@@ -29,7 +29,7 @@ import static lombok.AccessLevel.PRIVATE;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = PRIVATE)
-public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
+public class TaskPayloadJob implements JobPointer {//implements JobExecuter {
 
 	@NotBlank
 	String nome;
@@ -47,13 +47,13 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 	String comandoVersao;
 
 	@Builder.Default
-	List<QueuePayloadQuery> queriesExec = new ArrayList<>();
+	List<TaskPayloadQuery> queriesExec = new ArrayList<>();
 
 	@Nullable
 	String dirCargaEnvio;
 
 	@Builder.Default
-	List<QueuePayloadJobCarga> cargasEnvio = new ArrayList<>();
+	List<TaskPayloadJobCarga> cargasEnvio = new ArrayList<>();
 
 	@Builder.Default
 	List<String> cargasMascara = new ArrayList<>();
@@ -65,7 +65,7 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 	List<String> remessasMascara = new ArrayList<>();
 
 
-	public QueuePayloadJob(@NonNull Evidencia evidencia) {
+	public TaskPayloadJob(@NonNull Evidencia evidencia) {
 		nome = evidencia.getJobNome();
 		descricao = evidencia.getJobDescricao();
 		ordem = evidencia.getOrdem();
@@ -73,12 +73,12 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 		comandoVersao = evidencia.getComandoVersao();
 		queriesExec = evidencia.getQueries()
 			.stream()
-			.map(QueuePayloadQuery::new)
+			.map(TaskPayloadQuery::new)
 			.toList();
 		dirCargaEnvio = evidencia.getDirCarga();
 		cargasEnvio = evidencia.getCargas()
 			.stream()
-			.map(QueuePayloadJobCarga::new)
+			.map(TaskPayloadJobCarga::new)
 			.toList();
 		cargasMascara = evidencia.getCargas()
 			.stream()
@@ -98,7 +98,7 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 	}
 
 	//TODO: mover a definição dos comandos de execução e versão para entidade Job
-	public QueuePayloadJob(@NonNull JobInfoDTO jobInfo, @NotNull PipelineJobInputDTO jobInputs) {
+	public TaskPayloadJob(@NonNull JobInfoDTO jobInfo, @NotNull PipelineJobInputDTO jobInputs) {
 		var paramJob = jobInfo.getParametros();
 		var paramInputs = jobInputs.getArgumentos().split(" ");
 		var variaveis = jobInputs.getVariaveis();
@@ -131,11 +131,11 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 		comandoExec = String.format("ksh %s %s", jobInfo.pathToJob(), jobInputs.getArgumentos());
 		queriesExec = jobInputs.getQueries()
 			.stream()
-			.map(QueuePayloadQuery::DML)
+			.map(TaskPayloadQuery::DML)
 			.toList();
 		cargasEnvio = jobInputs.getCargas()
 			.stream()
-			.map(QueuePayloadJobCarga::new)
+			.map(TaskPayloadJobCarga::new)
 			.toList();
 		cargasMascara = jobInfo.getMascaraEntrada()
 			.stream()
@@ -169,35 +169,35 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 	 * ({@link PipelineJobInputDTO}).
 	 * @param infoDtos {@link Collection} {@link JobInfoDTO}
 	 * @param inputDtos {@link Collection} {@link PipelineJobInputDTO}
-	 * @return {@link Collection} {@link QueuePayloadJob} contendo a unificação
+	 * @return {@link Collection} {@link TaskPayloadJob} contendo a unificação
 	 */
-	public static List<QueuePayloadJob> matchAndMerge(
+	public static List<TaskPayloadJob> matchAndMerge(
 		@NonNull Collection<JobInfoDTO> infoDtos,
 		@NonNull Collection<PipelineJobInputDTO> inputDtos) {
 
 		log.info("Agrupando Jobs x Inputs.");
 		return infoDtos.stream()
-			.map(job -> QueuePayloadJob.matchAndMerge(job, inputDtos))
+			.map(job -> TaskPayloadJob.matchAndMerge(job, inputDtos))
 			.filter(Optional::isPresent)
 			.map(Optional::get)
 			.toList();
 	}
 
 	/**
-	 * Método de unificação usado no {@link QueuePayloadJob#matchAndMerge(Collection, Collection)}.
+	 * Método de unificação usado no {@link TaskPayloadJob#matchAndMerge(Collection, Collection)}.
 	 * @param infoDto {@link JobInfoDTO}
 	 * @param execDtos {@link PipelineJobInputDTO}
-	 * @return {@link Optional} {@link QueuePayloadJob} contendo ou não a unificação
-	 * @see QueuePayloadJob#matchAndMerge(Collection, Collection)
+	 * @return {@link Optional} {@link TaskPayloadJob} contendo ou não a unificação
+	 * @see TaskPayloadJob#matchAndMerge(Collection, Collection)
 	 */
-	public static Optional<QueuePayloadJob> matchAndMerge(
+	public static Optional<TaskPayloadJob> matchAndMerge(
 		@NonNull JobInfoDTO infoDto,
 		@NonNull Collection<PipelineJobInputDTO> execDtos) {
 
 		return execDtos.stream()
 			.filter(dto -> infoDto.getId().equals(dto.getId()))
 			.findFirst()
-			.map(dto -> new QueuePayloadJob(infoDto, dto));
+			.map(dto -> new TaskPayloadJob(infoDto, dto));
 	}
 
 	@Override
@@ -223,7 +223,7 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 	public List<String> pathEntrada() {
 		return cargasMascara;
 //		return cargasEnvio.stream()
-//			.map(QueuePayloadJobCarga::getNome)
+//			.map(TaskPayloadJobCarga::getNome)
 //			.map(cargaNome -> dirCargaEnvio + cargaNome)
 //			.toList();
 	}
@@ -232,7 +232,7 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 	@JsonIgnore
 	public List<String> getAllTabelas() {
 		return queriesExec.stream()
-			.map(QueuePayloadQuery::getQuery)
+			.map(TaskPayloadQuery::getQuery)
 			.toList();
 	}
 
