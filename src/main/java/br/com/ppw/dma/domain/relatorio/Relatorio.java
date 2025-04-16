@@ -3,7 +3,7 @@ package br.com.ppw.dma.domain.relatorio;
 import br.com.ppw.dma.domain.ambiente.Ambiente;
 import br.com.ppw.dma.domain.evidencia.Evidencia;
 import br.com.ppw.dma.domain.master.MasterEntity;
-import br.com.ppw.dma.domain.queue.result.PipelineResult;
+import br.com.ppw.dma.domain.task.result.PipelineResult;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;

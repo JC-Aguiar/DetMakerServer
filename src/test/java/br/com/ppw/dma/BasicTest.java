@@ -5,7 +5,7 @@ import br.com.ppw.dma.domain.job.JobService;
 import br.com.ppw.dma.domain.jobQuery.ResultadoSql;
 import br.com.ppw.dma.domain.master.*;
 import br.com.ppw.dma.domain.pipeline.execution.PipelineExecDTO;
-import br.com.ppw.dma.domain.queue.QueuePushResponseDTO;
+import br.com.ppw.dma.domain.task.TaskPushResponseDTO;
 import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.util.BashSintaxe;
 import br.com.ppw.dma.util.FormatString;
@@ -108,7 +108,7 @@ public class BasicTest {
     @Test
     public void testandoQueues() throws Exception {
         // Fila de eventos
-        var fila = new ConcurrentLinkedQueue<QueuePushResponseDTO>();
+        var fila = new ConcurrentLinkedQueue<TaskPushResponseDTO>();
         var filaProcessador = Executors.newSingleThreadExecutor();
         var registros = 20;
 
@@ -134,7 +134,11 @@ public class BasicTest {
         log.info("Inserindo {} registro(s) de uma vez só.", registros);
         var index = new AtomicInteger(0);
         Stream.generate(index::incrementAndGet).limit(registros).forEach(nada -> {
-            var itemFila = new QueuePushResponseDTO(1, index.get());
+            var itemFila = TaskPushResponseDTO.builder()
+                .ambienteId(1)
+                .queueSize(index.get())
+                .ticket(UUID.randomUUID().toString())
+                .build();
             fila.offer(itemFila);
         });
         log.info("Inserções finalizadas.");

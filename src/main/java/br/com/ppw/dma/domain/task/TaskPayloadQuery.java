@@ -1,4 +1,4 @@
-package br.com.ppw.dma.domain.queue;
+package br.com.ppw.dma.domain.task;
 
 import br.com.ppw.dma.domain.execQuery.ExecQuery;
 import br.com.ppw.dma.domain.jobQuery.JobQuery;
@@ -18,7 +18,7 @@ import static lombok.AccessLevel.PRIVATE;
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = PRIVATE)
-public class QueuePayloadQuery {
+public class TaskPayloadQuery {
 
 	@NotBlank String nome;
 	@NotBlank String descricao;
@@ -26,54 +26,54 @@ public class QueuePayloadQuery {
 	@Nullable SqlSintaxe.QueryMethod method; //TODO: remover?
 
 
-	public QueuePayloadQuery(@NonNull ExecQuery execQuery) {
+	public TaskPayloadQuery(@NonNull ExecQuery execQuery) {
 		nome = execQuery.getQueryNome();
 		descricao = execQuery.getQueryDescricao();
 		query = execQuery.getQuery();
 		method = null;
 	}
 
-	public QueuePayloadQuery(@NonNull JobQuery jobQuery) {
+	public TaskPayloadQuery(@NonNull JobQuery jobQuery) {
 		nome = jobQuery.getNome();
 		descricao = jobQuery.getDescricao();
 		query = jobQuery.getSql();
 		method = null;
 	}
 
-	public static QueuePayloadQuery DML(
+	public static TaskPayloadQuery DML(
 		@NonNull String nome,
 		@NonNull String descricao,
 		@NonNull String query) {
 
-		return new QueuePayloadQuery(
+		return new TaskPayloadQuery(
 			nome,
 			descricao,
 			query,
 			SqlSintaxe.QueryMethod.DML);
 	}
 
-	public static QueuePayloadQuery DQL(
+	public static TaskPayloadQuery DQL(
 		@NonNull String nome,
 		@NonNull String descricao,
 		@NonNull String query) {
 
-		return new QueuePayloadQuery(
+		return new TaskPayloadQuery(
 			nome,
 			descricao,
 			query,
 			SqlSintaxe.QueryMethod.DQL);
 	}
 
-	public static QueuePayloadQuery DML(@NonNull PipelineQueryInputDTO dto) {
-		return new QueuePayloadQuery(
+	public static TaskPayloadQuery DML(@NonNull PipelineQueryInputDTO dto) {
+		return new TaskPayloadQuery(
 			dto.getNome().orElse("Anônima"),
 			dto.getDescricao().orElse(""),
 			dto.getSql(),
 			SqlSintaxe.QueryMethod.DML);
 	}
 
-	public static QueuePayloadQuery DQL(@NonNull PipelineQueryInputDTO dto) {
-		return new QueuePayloadQuery(
+	public static TaskPayloadQuery DQL(@NonNull PipelineQueryInputDTO dto) {
+		return new TaskPayloadQuery(
 			dto.getNome().orElse("Anônima"),
 			dto.getDescricao().orElse(""),
 			dto.getSql(),

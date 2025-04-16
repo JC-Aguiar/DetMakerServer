@@ -1,4 +1,4 @@
-package br.com.ppw.dma.domain.queue;
+package br.com.ppw.dma.domain.task;
 
 import lombok.Builder;
 import lombok.NonNull;
@@ -6,21 +6,21 @@ import lombok.NonNull;
 import java.time.OffsetDateTime;
 
 @Builder
-public record FilaResumoDTO(
+public record TaskInfoDTO(
 
-    long id,
+//    long id,
     String ticket,
     String nomePipeline,
     String autor,
-    QueueStatus status,
+    TaskStatus status,
     OffsetDateTime data) {
 
 
-    public static FilaResumoDTO converterEntidade(@NonNull TaskQueue queue) {
-        return FilaResumoDTO.builder()
-            .id(queue.getId())
+    public static TaskInfoDTO converterEntidade(@NonNull RemoteTask queue) {
+        return TaskInfoDTO.builder()
+//            .id(queue.getId())
             .ticket(queue.getTicket())
-            .nomePipeline(queue.getPipeline())
+            .nomePipeline(queue.getPipelineNome())
             .autor(queue.getUsuario())
             .data(queue.getDataSolicitacao())
             .status(queue.getStatus())

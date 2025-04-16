@@ -3,10 +3,10 @@ package br.com.ppw.dma.domain.relatorio;
 import br.com.ppw.dma.domain.ambiente.AmbienteService;
 import br.com.ppw.dma.domain.job.JobService;
 import br.com.ppw.dma.domain.master.MasterController;
-import br.com.ppw.dma.domain.queue.QueuePayload;
-import br.com.ppw.dma.domain.queue.QueuePayloadJob;
-import br.com.ppw.dma.domain.queue.QueuePushResponseDTO;
-import br.com.ppw.dma.domain.queue.QueueService;
+import br.com.ppw.dma.domain.task.TaskPayload;
+import br.com.ppw.dma.domain.task.TaskPayloadJob;
+import br.com.ppw.dma.domain.task.TaskPushResponseDTO;
+import br.com.ppw.dma.domain.task.TaskService;
 import br.com.ppw.dma.domain.storage.FileSystemService;
 import br.com.ppw.dma.domain.user.UserInfoDTO;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
@@ -41,7 +41,7 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
     private ResourceLoader resourceLoader;
     private RelatorioService relatorioService;
     private AmbienteService ambienteService;
-    private QueueService queueService;
+    private TaskService taskService;
     private JobService jobService;
     private FileSystemService fileSystemService;
 
@@ -49,14 +49,14 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
     public RelatorioController(
         RelatorioService relatorioService,
         AmbienteService ambienteService,
-        QueueService queueService,
+        TaskService taskService,
         JobService jobService,
         FileSystemService fileSystemService){
         //--------------------------------------------------
         super(relatorioService);
         this.relatorioService = relatorioService;
         this.ambienteService = ambienteService;
-        this.queueService = queueService;
+        this.taskService = taskService;
         this.jobService = jobService;
         this.fileSystemService = fileSystemService;
     }
@@ -187,23 +187,23 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
     //  Se funcionar, o timeout do front precisa ser atualizado com base na quantidade de espera na fila
     @Transactional
     @GetMapping(value = "rerun/{id}")
-    public ResponseEntity<QueuePushResponseDTO> runAgain(@PathVariable long id)
+    public ResponseEntity<TaskPushResponseDTO> runAgain(@PathVariable long id)
     throws JsonProcessingException, DuplicatedRecordException {
         val relatorio = relatorioService.findById(id);
         val ambiente = relatorio.getAmbiente();
-        val usuario = relatorio.getUsuario();
+        val usuario = relatorio.getUsuario();   //TODO: alterar para usuário logado
         val jobs = relatorio.getEvidencias()
             .stream()
-            .map(QueuePayloadJob::new)
+            .map(TaskPayloadJob::new)
             .toList();
-        var solicitacao = QueuePayload.builder()
+        var solicitacao = TaskPayload.builder()
             .pipelineNome(relatorio.getPipelineNome())
             .pipelineDescricao(relatorio.getPipelineDescricao())
             .jobs(jobs)
             .build();
 
         //TODO: o usuário deve ser o que fez a nova solicitação!
-        var queueResponse = queueService.pushQueue(ambiente, usuario, solicitacao);
+        var queueResponse = taskService.pushTaskToQueue(ambiente, usuario, solicitacao);
         if(queueResponse.getQueueSize() > 0)
             return ResponseEntity.unprocessableEntity().body(queueResponse);
         return ResponseEntity.ok(queueResponse);

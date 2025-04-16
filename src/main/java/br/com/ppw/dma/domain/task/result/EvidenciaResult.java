@@ -1,4 +1,4 @@
-package br.com.ppw.dma.domain.queue.result;
+package br.com.ppw.dma.domain.task.result;
 
 import br.com.ppw.dma.domain.evidencia.Evidencia;
 import lombok.NonNull;

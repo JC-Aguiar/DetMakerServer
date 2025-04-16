@@ -6,9 +6,9 @@ import br.com.ppw.dma.domain.jobQuery.ResultadoSql;
 import br.com.ppw.dma.domain.master.MasterOracleDAO;
 import br.com.ppw.dma.domain.master.MasterService;
 import br.com.ppw.dma.domain.master.SqlSintaxe;
-import br.com.ppw.dma.domain.queue.QueuePayloadJob;
-import br.com.ppw.dma.domain.queue.QueuePayloadQuery;
-import br.com.ppw.dma.domain.queue.result.JobResult;
+import br.com.ppw.dma.domain.task.TaskPayloadJob;
+import br.com.ppw.dma.domain.task.TaskPayloadQuery;
+import br.com.ppw.dma.domain.task.result.JobResult;
 import br.com.ppw.dma.domain.storage.ExcelXlsx;
 import br.com.ppw.dma.domain.storage.FileSystemService;
 import br.com.ppw.dma.net.ConectorSftp;
@@ -191,14 +191,14 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: criar exception própria?
-    //TODO: mover para TaskQueue?
+    //TODO: mover para RemoteTask?
     //TODO: javadoc
-//    public List<Evidencia> executarJob(@NonNull QueuePayload preparation) {
+//    public List<Evidencia> executarJob(@NonNull TaskPayload preparation) {
     @Transactional(noRollbackFor = Throwable.class)
     public List<JobResult> executar(
         @NonNull AmbienteAcessoDTO conexaoBanco,
         @NonNull AmbienteAcessoDTO conexaoSftp,
-        @NonNull List<QueuePayloadJob> jobs)
+        @NonNull List<TaskPayloadJob> jobs)
     {
         log.debug("Configurando conexão do Banco e do SFTP.");
         banco = conexaoBanco;
@@ -316,7 +316,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: javadoc
-    public List<ResultadoSql> extractTable(List<QueuePayloadQuery> jobQuery) {
+    public List<ResultadoSql> extractTable(List<TaskPayloadQuery> jobQuery) {
         var sucessos = new AtomicInteger(0);
         val extracoes = jobQuery.stream().map(query -> {
             val resultado = new ResultadoSql(

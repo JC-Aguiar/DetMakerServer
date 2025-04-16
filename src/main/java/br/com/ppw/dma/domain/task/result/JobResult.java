@@ -1,8 +1,8 @@
-package br.com.ppw.dma.domain.queue.result;
+package br.com.ppw.dma.domain.task.result;
 
 import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.domain.jobQuery.ResultadoSql;
-import br.com.ppw.dma.domain.queue.QueuePayloadJob;
+import br.com.ppw.dma.domain.task.TaskPayloadJob;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
 import lombok.*;
@@ -19,7 +19,7 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class JobResult extends QueuePayloadJob {
+public class JobResult extends TaskPayloadJob {
 
 //    Job job;
     String ticket;
@@ -40,7 +40,7 @@ public class JobResult extends QueuePayloadJob {
     String erroFatal;
 
 
-    public JobResult(@NonNull QueuePayloadJob dados) {
+    public JobResult(@NonNull TaskPayloadJob dados) {
         setNome(dados.getNome());
         setDescricao(dados.getDescricao());
         setOrdem(dados.getOrdem());
