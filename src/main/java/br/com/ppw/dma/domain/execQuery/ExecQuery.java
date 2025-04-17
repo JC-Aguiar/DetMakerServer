@@ -76,6 +76,7 @@ public class ExecQuery implements MasterEntity<Long> {
     @Comment("Conteúdo da table extraída")
     String resultadoPosJob = "";
 
+    @Builder.Default
     @Column(name = "INCONFORMIDADE", columnDefinition = "VARCHAR2(200)")
     @Comment("Mensagem do erro, caso tenha ocorrido algum")
     String inconformidade = "";

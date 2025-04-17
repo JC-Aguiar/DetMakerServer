@@ -61,7 +61,7 @@ public class ExcelXlsx {
                     JobSchedulePOJO registro = new JobSchedulePOJO();
 
                     for(Cell celula : linha) {
-                        celula.setCellType(CellType.STRING);
+                        celula.setCellType(CellType.STRING); //TODO: mudar para setCellFormula
                         val colIndex = celula.getColumnIndex();
                         val valor = celula.getStringCellValue();
                         //Comece a contar a quantidade de column ao identificar a célula "ID"

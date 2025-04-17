@@ -3,8 +3,8 @@ package br.com.ppw.dma.domain.evidencia;
 import br.com.ppw.dma.domain.execFile.ExecFile;
 import br.com.ppw.dma.domain.execQuery.ExecQuery;
 import br.com.ppw.dma.domain.master.MasterEntity;
-import br.com.ppw.dma.domain.task.result.JobResult;
 import br.com.ppw.dma.domain.relatorio.Relatorio;
+import br.com.ppw.dma.domain.task.result.JobProcess;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -86,6 +86,7 @@ public class Evidencia implements MasterEntity<Long> {
     @Comment("Comando para obter a versão do Job")
     String comandoVersao;
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "QUERY_ID") //TODO: não está tendo mapeamento bidirecional
@@ -96,23 +97,23 @@ public class Evidencia implements MasterEntity<Long> {
     @Comment("Caso o Job consuma cargas, aqui é o apontamento para o diretório em que serão enviadas")
     String dirCarga;
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "CARGAS_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     @Where(clause = "tipo = 'carga'")
     List<ExecFile> cargas = new ArrayList<>();
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "LOG_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     @Where(clause = "tipo = 'log'")
     List<ExecFile> logs = new ArrayList<>();
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "REMESSA_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     @Where(clause = "tipo = 'remessa'")
     List<ExecFile> remessas = new ArrayList<>();
@@ -157,20 +158,20 @@ public class Evidencia implements MasterEntity<Long> {
     EvidenciaEscopo escopo;
 
 
-    public Evidencia(@NonNull JobResult jobResult) {
-        this.ticket = jobResult.getTicket();
-        this.ordem = jobResult.getOrdem();
-        this.jobNome = jobResult.getNome();
-        this.jobDescricao = jobResult.getDescricao();
-        this.comandoExec = jobResult.getComandoExec();
-        this.versao = jobResult.getVersao();
-        this.comandoVersao = jobResult.getComandoVersao();
-        this.dirCarga = jobResult.getDirCargaEnvio();
-        this.exitCode = jobResult.getExitCode();
-        this.mensagemErro = jobResult.getErroFatal();
-        this.sucesso = jobResult.isSucesso();
-        this.dataInicio = jobResult.getDataInicio();
-        this.dataFim = jobResult.getDataFim();
+    public Evidencia(@NonNull JobProcess jobProcess) {
+        this.ticket = jobProcess.getTicket();
+        this.ordem = jobProcess.getOrdem();
+        this.jobNome = jobProcess.getNome();
+        this.jobDescricao = jobProcess.getDescricao();
+        this.comandoExec = jobProcess.getComandoExec();
+        this.versao = jobProcess.getVersao();
+        this.comandoVersao = jobProcess.getComandoVersao();
+        this.dirCarga = jobProcess.getDirCargaEnvio();
+        this.exitCode = jobProcess.getExitCode();
+        this.mensagemErro = jobProcess.getErroFatal();
+        this.sucesso = jobProcess.isSucesso();
+        this.dataInicio = jobProcess.getDataInicio();
+        this.dataFim = jobProcess.getDataFim();
         this.escopo = EvidenciaEscopo.PIPELINE_JOB; //TODO: atualizar
     }
 

@@ -194,30 +194,28 @@ public class TaskService {
             log.info(task.toString());
 
             var transaction = new TransactionTemplate(transactionManager);
-            transaction.execute(status -> {
-                var checkpoint = status.createSavepoint();
-                try {
-                    executeTaskPipeline(task);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                    status.rollbackToSavepoint(checkpoint);
-                }
-                return null;
-            });
+            try {
+                var payload = objectMapper.readValue(task.getPayload(), TaskPayload.class);
+                transaction.execute(status -> {
+                    executeTaskPipeline(task, payload);
+                    return null;
+                });
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
             log.info("Deletando Task '{}' após execução.", task.getTicket());
             task.setStatus(FINALIZANDO);
-            removeTask(task).ifPresent(taskRef::set);
+            removeTask(task).ifPresent(taskRef::set); //TODO: REVISAR!!!!!!!!!!!!!!!
             log.info("TASK '{}' - AMBIENTE ID {} --- END", ticket, ambienteId);
         }
     }
 
     @Transactional
-    private PipelineResult executeTaskPipeline(@NonNull RemoteTask task) throws JsonProcessingException {
+    private PipelineResult executeTaskPipeline(@NonNull RemoteTask task, @NonNull TaskPayload payload) {
         var ticket = task.getTicket();
         var usuario = task.getUsuario();
         var ambienteId = task.getAmbienteId();
-        var payload = objectMapper.readValue(task.getPayload(), TaskPayload.class);
 
         var ambiente  = ambienteService.findById(ambienteId);
         var cliente = ambiente.getCliente();

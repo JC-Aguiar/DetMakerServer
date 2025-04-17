@@ -34,12 +34,14 @@ public class MassaTabela implements MasterEntity<Long> {
     @Column(name = "TABELA_NOME", length = 35)
     String nome;
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "COLUNAS_ID")
     @OneToMany(fetch = LAZY, mappedBy = "tabelaId")
     List<MassaColuna> colunas = new ArrayList<>();
 
+    @Builder.Default
     @Convert(converter = NumericBooleanConverter.class)
     Boolean usaPessoa = false;
 

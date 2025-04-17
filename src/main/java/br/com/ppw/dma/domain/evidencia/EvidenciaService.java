@@ -7,7 +7,7 @@ import br.com.ppw.dma.domain.execQuery.ExecQueryService;
 import br.com.ppw.dma.domain.master.MasterService;
 import br.com.ppw.dma.domain.master.SqlSintaxe;
 import br.com.ppw.dma.domain.task.result.EvidenciaResult;
-import br.com.ppw.dma.domain.task.result.JobResult;
+import br.com.ppw.dma.domain.task.result.JobProcess;
 import br.com.ppw.dma.domain.task.result.PipelineResult;
 import br.com.ppw.dma.domain.relatorio.Relatorio;
 import br.com.ppw.dma.domain.relatorio.RelatorioService;
@@ -76,20 +76,20 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             .sucesso(!pipelineResult.isErro())
             .erroFatal(pipelineResult.getMensagemErro())
             .build();
-        relatorioService.save(relatorio);
 
         log.info("Iniciando geração de Evidências para {} registro(s).", jobsResult.size());
         var evidencias = jobsResult.stream()
             .map(job -> gerarEvidencia(relatorio, job))
             .toList();
         pipelineResult.addEvidenciaResult(evidencias);
-//        relatorioService.buildAndPersist(pipelineResult);
+
+        relatorioService.save(relatorio);
         return pipelineResult;
     }
 
     //TODO: javadoc
 //    @Transactional(noRollbackFor = Throwable.class)
-    public EvidenciaResult gerarEvidencia(@NonNull Relatorio relatorio, @NonNull JobResult process) {
+    public EvidenciaResult gerarEvidencia(@NonNull Relatorio relatorio, @NonNull JobProcess process) {
         log.info("Gerando Evidência para {}.", process.getContexto());
         Function<String, String> criarMensagemErro = (erro) -> String.format(
             "Erro na criação da Evidência para o %s: %s",
@@ -98,9 +98,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
 
         try {
             var evidencia = new Evidencia(process);
-            evidencia.setRelatorio(relatorio);
-            save(evidencia);
-            evidenciaDao.flush();
+            relatorio.getEvidencias().add(evidencia);
             log.info(evidencia.toString());
 
             //TODO: Precisa melhorar esse processo. Criar uma tabela relacionada só de erros
@@ -110,9 +108,11 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             saveExecCargas(process, evidencia);
             saveExecLogs(process, evidencia);
             builExecRemessas(process, evidencia);
-            if(evidencia.getMensagemErro() == null || evidencia.getMensagemErro().isEmpty())
-                return EvidenciaResult.ok(evidencia);  //TODO: melhorar
 
+            if(evidencia.getMensagemErro() == null || evidencia.getMensagemErro().isEmpty()) {
+                save(evidencia);
+                return EvidenciaResult.ok(evidencia);  //TODO: melhorar
+            }
             evidencia.setRevisor("Det-Maker");
             evidencia.setDataRevisao(OffsetDateTime.now(RELOGIO));
             evidencia.setStatus(TipoEvidenciaStatus.REPROVADO);
@@ -151,7 +151,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         }
     }
 
-    private Evidencia builExecRemessas(JobResult process, Evidencia evidencia) {
+    private Evidencia builExecRemessas(JobProcess process, Evidencia evidencia) {
         try {
             if(!process.getRemessasColetadas().isEmpty())
                 log.info("Criando novos registros ExecFile para cada uma das saídas produzidas.");
@@ -171,7 +171,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         return evidencia;
     }
 
-    private Evidencia saveExecLogs(JobResult process, Evidencia evidencia) {
+    private Evidencia saveExecLogs(JobProcess process, Evidencia evidencia) {
         try {
             if(!process.getLogsColetados().isEmpty())
                 log.info("Criando novos registros ExecFile para cada um dos logs obtidos.");
@@ -191,7 +191,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         return evidencia;
     }
 
-    private Evidencia saveExecQueries(JobResult process, Evidencia evidencia) {
+    private Evidencia saveExecQueries(JobProcess process, Evidencia evidencia) {
         try {
             val execQueries = new ArrayList<ExecQuery>();
             if(process.possuiTabelas())
@@ -201,8 +201,9 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
                 val tabelaPre = process.getTabelasPreJob().get(i);
                 val tabelaPos = process.getTabelasPosJob().get(i);
                 if(!tabelaPre.getQuery().equals(tabelaPos.getQuery())) continue;
-                val query = ExecQuery.montarEvidencia(evidencia, tabelaPre, tabelaPos);
-                execQueries.add(execQueryService.save(query));
+
+                val execQuery = ExecQuery.montarEvidencia(evidencia, tabelaPre, tabelaPos);
+                execQueries.add(execQueryService.save(execQuery));
             }
             evidencia.setQueries(execQueries);
         }
@@ -215,7 +216,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
         return evidencia;
     }
 
-    private Evidencia saveExecCargas(JobResult process, Evidencia evidencia) {
+    private Evidencia saveExecCargas(JobProcess process, Evidencia evidencia) {
         List<ExecFile> cargas = null;
         try {
             if(!process.getCargasEnviadas().isEmpty())

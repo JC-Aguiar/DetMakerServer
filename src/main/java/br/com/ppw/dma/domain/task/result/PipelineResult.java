@@ -37,7 +37,7 @@ public class PipelineResult {
     String mensagemErro = "";
 
     @Builder.Default
-    final List<JobResult> resultadoJobs = new ArrayList<>();
+    final List<JobProcess> resultadoJobs = new ArrayList<>();
 
     @Builder.Default
     final List<EvidenciaResult> resultadoEvidencias = new ArrayList<>();
@@ -46,7 +46,7 @@ public class PipelineResult {
     boolean erro = false;
 
 
-    public List<JobResult> getResultadoJobs() {
+    public List<JobProcess> getResultadoJobs() {
         return List.copyOf(resultadoJobs);
     }
 
@@ -54,14 +54,14 @@ public class PipelineResult {
         return List.copyOf(resultadoEvidencias);
     }
 
-    public void addJobResult(@NonNull JobResult jobResult) {
-        jobResult.setTicket(this.ticket);
-        this.resultadoJobs.add(jobResult);
+    public void addJobResult(@NonNull JobProcess jobProcess) {
+        jobProcess.setTicket(this.ticket);
+        this.resultadoJobs.add(jobProcess);
     }
 
-    public void addJobResult(@NonNull Collection<JobResult> jobResults) {
-        jobResults.forEach(job -> job.setTicket(this.ticket));
-        this.resultadoJobs.addAll(jobResults);
+    public void addJobResult(@NonNull Collection<JobProcess> jobProcesses) {
+        jobProcesses.forEach(job -> job.setTicket(this.ticket));
+        this.resultadoJobs.addAll(jobProcesses);
     }
 
     public void addEvidenciaResult(@NonNull EvidenciaResult evidenciaResult) {

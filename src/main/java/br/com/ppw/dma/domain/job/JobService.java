@@ -6,17 +6,16 @@ import br.com.ppw.dma.domain.jobQuery.ResultadoSql;
 import br.com.ppw.dma.domain.master.MasterOracleDAO;
 import br.com.ppw.dma.domain.master.MasterService;
 import br.com.ppw.dma.domain.master.SqlSintaxe;
-import br.com.ppw.dma.domain.task.TaskPayloadJob;
-import br.com.ppw.dma.domain.task.TaskPayloadQuery;
-import br.com.ppw.dma.domain.task.result.JobResult;
 import br.com.ppw.dma.domain.storage.ExcelXlsx;
 import br.com.ppw.dma.domain.storage.FileSystemService;
+import br.com.ppw.dma.domain.task.TaskPayloadJob;
+import br.com.ppw.dma.domain.task.TaskPayloadQuery;
+import br.com.ppw.dma.domain.task.result.JobProcess;
 import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.net.SftpFileManager;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
@@ -49,8 +48,6 @@ public class JobService extends MasterService<Long, Job, JobService> {
 
     final JobRepository dao;
     final FileSystemService fileSystemService;
-    @Getter ConectorSftp sftp;
-    @Getter AmbienteAcessoDTO banco;
 
     public static final DateTimeFormatter CONVERSOR_DATA_SCHEDULE = DateTimeFormatter
         .ofPattern("dd/MM/yyyy");
@@ -59,13 +56,15 @@ public class JobService extends MasterService<Long, Job, JobService> {
     @Autowired
     public JobService(JobRepository dao, FileSystemService fileSystemService) {
         super(dao);
-        this.dao = dao; //TODO: precisa mesmo?
+        this.dao = dao;
         this.fileSystemService = fileSystemService;
     }
 
     public List<Job> findByClienteAndNome(@NonNull Cliente cliente, @NonNull List<String> nomes) {
         log.info("Procurando Jobs do Cliente '{}' para os seguintes nomes: {}.",
-            cliente.getNome(), String.join(", ", nomes));
+            cliente.getNome(),
+            String.join(", ", nomes)
+        );
         val jobs = dao.findByClienteAndNomeIn(cliente, nomes);
         log.info("Total de Jobs encontrados: {}", jobs.size());
         return jobs;
@@ -133,7 +132,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
     private JobInfoDTO converterScheduleJobEmInfo(
         @NotNull JobSchedulePOJO jobPojo, @NotBlank String planilhaNome, @NotBlank String arquivoNome) {
         //---------------------------------------------------------------------------------------------
-        val registro = "Job [" +jobPojo.getId()+ "] " +jobPojo.getNome();
+        val registro = "Job '%s' [%d] ".formatted(jobPojo.getNome(), jobPojo.getId());
         log.info("{}: Validando os campos possuem conteúdo de fato ou apenas indicadores vazios.", registro);
         val tabelas = valorVazio(jobPojo.getTabelas().replace("RCVRY.", ""));
         val parametroNome = valorVazio(jobPojo.getParametros());
@@ -195,14 +194,14 @@ public class JobService extends MasterService<Long, Job, JobService> {
     //TODO: javadoc
 //    public List<Evidencia> executarJob(@NonNull TaskPayload preparation) {
     @Transactional(noRollbackFor = Throwable.class)
-    public List<JobResult> executar(
+    public List<JobProcess> executar(
         @NonNull AmbienteAcessoDTO conexaoBanco,
         @NonNull AmbienteAcessoDTO conexaoSftp,
         @NonNull List<TaskPayloadJob> jobs)
     {
         log.debug("Configurando conexão do Banco e do SFTP.");
-        banco = conexaoBanco;
-        sftp = ConectorSftp.conectar(conexaoSftp);
+        val banco = conexaoBanco;
+        val sftp = ConectorSftp.conectar(conexaoSftp);
 
         //TODO: paliativo. Remover quando obtida uma solução em produção
         switch(sftp.getServer()) {
@@ -213,26 +212,21 @@ public class JobService extends MasterService<Long, Job, JobService> {
         log.info("Iniciando rotina da execução de Jobs");
         val sucessos = new AtomicInteger();
         val jobProcesses = jobs.stream()
-            .map(JobResult::new)
-            .peek(this::executar)
-            .peek(process -> sucessos.addAndGet(process.isSucesso() ? 1 : 0))
+            .map(job -> {
+                var process = new JobProcess(job, banco, sftp);
+                executar(process);
+                sucessos.addAndGet(process.isSucesso() ? 1 : 0);
+                return process;
+            })
             .toList();
         log.info("Total de Jobs com sucesso: {}/{}.", sucessos, jobProcesses.size());
-
-        log.debug("Desconfigurando conexão do Banco e do SFTP.");
-        sftp = null;
-        banco = null;
-//        return evidenciaController.gerarEvidencias(jobProcesses);
         return jobProcesses;
     }
 
     //TODO: javadoc
-    private void executar(@NonNull JobResult process) {
-//        val jobInfo = process.getJobInfo();
-//        val jobInput = process.getJobInputs();
-//        var jobInputQueries = jobInput.getQueries();
-//        val logsPreJob = new ArrayList<SftpFileManager<RemoteFile>>();
-//        val logsPosJob = new ArrayList<SftpFileManager<RemoteFile>>();
+    private void executar(@NonNull JobProcess process) {
+        val banco = process.getBanco();
+        val sftp = process.getSftp();
         try {
             //Coletas pré-execução
             if(!process.getCargasEnvio().isEmpty() && process.getDirCargaEnvio() != null) {
@@ -250,15 +244,11 @@ public class JobService extends MasterService<Long, Job, JobService> {
                     mascara -> process.addCargas(sftp.downloadAll(mascara))
                 );
             }
-//            if(!process.getLogsMascara().isEmpty()) {
-//                log.info("Obtendo log mais recente pré-execução.");
-//                process.getLogsMascara().forEach(
-//                    path -> logsPreJob.add(sftp.downloadMaisRecente(path))
-//                );
-//            }
             if(!process.getQueriesExec().isEmpty()) {
                 log.info("Consultando tabelas pré-execução.");
-                process.addTabelasPreJob(extractTable(process.getQueriesExec()));
+                process.addTabelasPreJob(
+                    extractTable(banco, process.getQueriesExec())
+                );
             }
             //Execução
             log.info("Obtendo o sha256 do Job.");
@@ -292,14 +282,10 @@ public class JobService extends MasterService<Long, Job, JobService> {
             }
             if(!process.getQueriesExec().isEmpty()) {
                 log.info("Consultando tabelas pós-execução.");
-                process.addTabelasPosJob(extractTable(process.getQueriesExec()));
+                process.addTabelasPosJob(
+                    extractTable(banco, process.getQueriesExec())
+                );
             }
-            //Com base nos logs pré/pós: comparar cenários de duplicidade para então adicionar ao JobResult
-//            for(int i = 0; i < logsPreJob.size(); i++) {
-//                val logPre = logsPreJob.get(i);
-//                val logPos = logsPosJob.get(i);
-//                process.addLogs(SftpFileManager.compareAntesDepois(logPre, logPos));
-//            }
         }
         //Caso exception no acionamento/monitoramento do DetMaker com o Job
         catch(Exception e) {
@@ -316,7 +302,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
     }
 
     //TODO: javadoc
-    public List<ResultadoSql> extractTable(List<TaskPayloadQuery> jobQuery) {
+    public List<ResultadoSql> extractTable(AmbienteAcessoDTO banco, List<TaskPayloadQuery> jobQuery) {
         var sucessos = new AtomicInteger(0);
         val extracoes = jobQuery.stream().map(query -> {
             val resultado = new ResultadoSql(
