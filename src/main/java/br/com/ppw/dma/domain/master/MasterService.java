@@ -17,7 +17,6 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -54,19 +53,22 @@ public abstract class MasterService<ID, ENTITY extends MasterEntity<ID>, THIS ex
     }
 
     public ENTITY save(@NonNull ENTITY entity) throws DuplicatedRecordException {
+        log.info("Salvando {}.", entityClass.getTypeName());
+        log.info(String.valueOf(entity));
         try {
-            return dao.save(entity);
+            entity = dao.save(entity);
+            log.info("ID gerado: [{}]", entity.getId());
+            return entity;
         }
         catch(ConstraintViolationException e) {
             throw new DuplicatedRecordException();
         }
     }
 
+    //TODO: melhorar
     // A method that returns an entity by id.
     public ENTITY findById(@NonNull ID id) {
-        return Optional
-            .ofNullable(dao.getById(id))
-            .orElseThrow();
+        return dao.findById(id).orElseThrow();
     }
 
     // A method that returns an entity by id.

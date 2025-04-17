@@ -148,6 +148,7 @@ public class Job implements MasterEntity<Long> {
     @Comment("Origem de como esse Job foi criado (ex: 'planilha', 'api' ou 'banco')")
     String origem;
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "JOB_QUERY")
@@ -155,6 +156,7 @@ public class Job implements MasterEntity<Long> {
     @Comment("ID das configurações de queries relacionadas ao Job")
     List<JobQuery> queries = new ArrayList<>();
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "PIPELINES")

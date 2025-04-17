@@ -120,18 +120,6 @@
 			<artifactId>modelmapper</artifactId>
 			<version>3.0.0</version>
 		</dependency>
-		<!-- OpenCSV -->
-		<dependency>
-			<groupId>com.opencsv</groupId>
-			<artifactId>opencsv</artifactId>
-			<version>5.5.2</version>
-		</dependency>
-		<!-- FileUpload TODO: confirmar se necessário -->
-		<dependency>
-			<groupId>commons-fileupload</groupId>
-			<artifactId>commons-fileupload</artifactId>
-			<version>1.4</version>
-		</dependency>
 		<!-- Gson -->
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
@@ -145,19 +133,13 @@
 			<version>4.13.1</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- SSHJ -->
-		<dependency>
-			<groupId>com.hierynomus</groupId>
-			<artifactId>sshj</artifactId>
-			<version>0.35.0</version>
-		</dependency>
 		<!-- JSCH (SFTP) -->
 		<dependency>
 			<groupId>com.jcraft</groupId>
 			<artifactId>jsch</artifactId>
 			<version>0.1.55</version>
 		</dependency>
-		<!-- Apache POI (Excel) -->
+		<!-- Apache POI (Word, Excel...) -->
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi</artifactId>
@@ -167,11 +149,6 @@
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi-ooxml</artifactId>
 			<version>5.2.3</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>2.11.0</version>
 		</dependency>
 		<!-- Oracle Drive -->
 		<dependency>

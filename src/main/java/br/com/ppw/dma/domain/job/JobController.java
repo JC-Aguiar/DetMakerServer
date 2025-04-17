@@ -205,7 +205,7 @@ public class JobController extends MasterController<Long, Job, JobController> {
     @DeleteMapping("id/{id}")
     public ResponseEntity<String> delete(@PathVariable(name = "id") Long...id)
     throws NoSuchMethodException {
-        log.info("Identificando Jobs dos IDs: {}", id);
+        log.info("Identificando Jobs dos IDs: {}", Arrays.deepToString(id));
         var jobs = jobService.findById(Set.of(id));
         var idsBanco = jobs.stream()
             .peek(job -> log.info(job.toString()))

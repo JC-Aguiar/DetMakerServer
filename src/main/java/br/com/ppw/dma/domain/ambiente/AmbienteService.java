@@ -45,9 +45,7 @@ public class AmbienteService {
 
     // A method that returns an entity by id.
     public Ambiente findById(@NonNull Long id) {
-        val record = Optional
-            .ofNullable(dao.getById(id))
-            .orElseThrow();
+        val record = dao.findById(id).orElseThrow();
         log.info("Registro encontrado no banco para ID {}:", id);
         log.info(record.toString());
         return record;

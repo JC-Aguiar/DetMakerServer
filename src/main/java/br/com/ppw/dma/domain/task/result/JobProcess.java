@@ -3,6 +3,7 @@ package br.com.ppw.dma.domain.task.result;
 import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.domain.jobQuery.ResultadoSql;
 import br.com.ppw.dma.domain.task.TaskPayloadJob;
+import br.com.ppw.dma.net.ConectorSftp;
 import br.com.ppw.dma.net.RemoteFile;
 import br.com.ppw.dma.net.SftpFileManager;
 import lombok.*;
@@ -19,11 +20,15 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class JobResult extends TaskPayloadJob {
+public class JobProcess extends TaskPayloadJob {
+
+
+    //TODO: adicionar validação de campos obrigatórios.
 
 //    Job job;
     String ticket;
     AmbienteAcessoDTO banco;
+    ConectorSftp sftp;
     String versao;
     //@ToString.Exclude
     //SftpTerminalManager terminal;
@@ -40,7 +45,9 @@ public class JobResult extends TaskPayloadJob {
     String erroFatal;
 
 
-    public JobResult(@NonNull TaskPayloadJob dados) {
+    public JobProcess(@NonNull TaskPayloadJob dados, @NonNull AmbienteAcessoDTO banco, @NonNull ConectorSftp sftp) {
+        setBanco(banco);
+        setSftp(sftp);
         setNome(dados.getNome());
         setDescricao(dados.getDescricao());
         setOrdem(dados.getOrdem());

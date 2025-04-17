@@ -26,14 +26,6 @@ public class EvidenciaInfoDTO {
     String job;
     String jobDescricao;
     String comandoExec;
-//    List<String> queriesNome = new ArrayList<>();
-//    @ToString.Exclude List<String> tabelasPreJob = new ArrayList<>();
-//    @ToString.Exclude List<String> tabelasPosJob = new ArrayList<>();
-//    List<String> queriesInconformidade = new ArrayList<>();
-    @ToString.Exclude List<ExecQueryDTO> queries = new ArrayList<>();
-    @ToString.Exclude List<AnexoInfoDTO> cargas = new ArrayList<>();
-    @ToString.Exclude List<AnexoInfoDTO> logs = new ArrayList<>();
-    @ToString.Exclude List<AnexoInfoDTO> remessas = new ArrayList<>();
     Integer exitCode;
     String sha256;
     String erroFatal;
@@ -45,6 +37,19 @@ public class EvidenciaInfoDTO {
     String requisitos;
     String comentario;
     String resultado;
+
+    @Builder.Default  @ToString.Exclude
+    List<ExecQueryDTO> queries = new ArrayList<>();
+
+    @Builder.Default  @ToString.Exclude
+    List<AnexoInfoDTO> cargas = new ArrayList<>();
+
+    @Builder.Default @ToString.Exclude
+    List<AnexoInfoDTO> logs = new ArrayList<>();
+
+    @Builder.Default @ToString.Exclude
+    List<AnexoInfoDTO> remessas = new ArrayList<>();
+
 
 
     public EvidenciaInfoDTO(@NonNull Evidencia evidencia) {
