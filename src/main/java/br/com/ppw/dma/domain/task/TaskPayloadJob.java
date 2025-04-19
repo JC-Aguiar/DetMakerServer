@@ -127,8 +127,8 @@ public class TaskPayloadJob implements JobPointer {//implements JobExecuter {
 		nome = jobInfo.getNome();
 		descricao = jobInfo.getDescricao();
 		ordem = jobInputs.getOrdem();
-		comandoVersao = String.format("sha256sum %s | cut -d ' ' -f1", jobInfo.pathToJob());
-		comandoExec = String.format("ksh %s %s", jobInfo.pathToJob(), jobInputs.getArgumentos());
+		comandoVersao = "sha256sum %s | cut -d ' ' -f1".formatted(jobInfo.pathToJob());
+		comandoExec = "ksh %s %s".formatted(jobInfo.pathToJob(), jobInputs.getArgumentos());
 		queriesExec = jobInputs.getQueries()
 			.stream()
 			.map(TaskPayloadQuery::DML)

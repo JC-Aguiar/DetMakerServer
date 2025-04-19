@@ -2,10 +2,13 @@ package br.com.ppw.dma;
 
 import br.com.ppw.dma.domain.ambiente.Ambiente;
 import br.com.ppw.dma.domain.ambiente.AmbienteRepository;
+import br.com.ppw.dma.domain.cliente.ClienteRepository;
 import br.com.ppw.dma.domain.task.TaskPayload;
 import br.com.ppw.dma.domain.task.TaskPayloadJob;
+import br.com.ppw.dma.domain.task.TaskPayloadQuery;
 import br.com.ppw.dma.domain.task.TaskService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
 import lombok.Builder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -46,6 +49,7 @@ class TaskControllerTest {
     Map<Ambiente, List<TaskPayload>> allTasks = new ConcurrentHashMap<>();
 
     @Autowired AmbienteRepository ambienteRepository;
+    @Autowired ClienteRepository clienteRepository;
     @Autowired TaskService taskService;
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
@@ -55,7 +59,9 @@ class TaskControllerTest {
     public void generateTasks() {
         log.info("----------------------------------------------------------------------------");
         log.info("Iniciando preparo das massas para os testes.");
-        ambientes.addAll(ambienteRepository.findAll());
+        var clientes = clienteRepository.findAllByNomeContaining("VIVO");
+        ambientes.addAll(ambienteRepository.findAllByClienteIn(clientes));
+
         log.info("Total e Ambientes na base: [{}]", ambientes.size());
         if(ambientes.isEmpty())
             throw new RuntimeException("Nenhum ambiente disponível para gerar os testes.");
@@ -63,11 +69,11 @@ class TaskControllerTest {
         var totalTasksPerAmbiente = random.nextInt(10) + 1;
         log.info("Total de Tasks a serem geradas por Ambiente: [{}]", totalTasksPerAmbiente);
         ambientes.stream()
-            .map(ambiente -> Map.entry(
-                ambiente,
-                generateTaskPayload(totalTasksPerAmbiente)
-            ))
+            .map(ambiente -> generateTaskPayload(ambiente, totalTasksPerAmbiente))
             .forEach(entry -> allTasks.put(entry.getKey(), entry.getValue()));
+
+        var totalJobs = allTasks.values().stream().mapToLong(List::size).sum();
+        log.info("Total de Jobs criados: [{}]", totalJobs);
 
         log.info("Massas geradas:");
         allTasks.forEach((ambiente, tasks) -> tasks.forEach(
@@ -76,28 +82,49 @@ class TaskControllerTest {
         log.info("----------------------------------------------------------------------------");
     }
 
-    private List<TaskPayload> generateTaskPayload(int amount) {
+    private Map.Entry<Ambiente, List<TaskPayload>> generateTaskPayload(Ambiente ambiente, int amount) {
         var count = new AtomicInteger(0);
-        return Stream.generate(count::getAndIncrement)
+        var tasks = Stream.generate(count::getAndIncrement)
             .limit(amount)
             .map(index -> TaskPayload.builder()
-                .pipelineNome("Teste " + index)
+                .pipelineNome("Ambiente ID %d - Teste %d".formatted(ambiente.getId(), index))
                 .pipelineDescricao(TaskControllerTest.class.getSimpleName())
-                .jobs(generateTasksPayloadJob(random.nextInt(5) + 1))
+                .jobs(generateTasksPayloadJob(ambiente, random.nextInt(5) + 1))
+                .build())
+            .collect(Collectors.toList());
+        return Map.entry(ambiente, tasks);
+    }
+
+    public List<TaskPayloadJob> generateTasksPayloadJob(Ambiente ambiente, int amount) {
+        var count = new AtomicInteger(0);
+        var ifxdateShellPath = switch(ambiente.getNome()) {
+            case "VIVO1" -> "/cyberapp/rcvry/shells/vivo_ifxdate_inicia.ksh";
+            case "VIVO3" -> "/app/rcvry/shells/cy3_shell_ifxdate_inicia.ksh";
+            default -> "/app/rcvry/shells/*ifxdate_inicia.ksh";
+        };
+        return Stream.generate(count::getAndIncrement)
+            .limit(amount)
+            .map(index -> TaskPayloadJob.builder()
+                .nome("Shell Início Ifxdate [%d]".formatted(index))
+                .descricao("Altera a data do Ciclo Diário. Avaliar start de time = 08:00hs + termina da diaria anterior. Deve ser disparado logo após a finalização do ciclo anterior (pela manhã)")
+                .ordem(index)
+                .comandoExec("ksh %s %s".formatted(
+                    ifxdateShellPath,
+                    atualIfxdate.plusDays(index).format(ifxdateFormatter)))
+                .comandoVersao("sha256sum %s | cut -d ' ' -f1".formatted(ifxdateShellPath))
+                .queriesExec(generateTaskPayloadQuery(1))
                 .build())
             .collect(Collectors.toList());
     }
 
-    public List<TaskPayloadJob> generateTasksPayloadJob(int amount) {
+    private List<TaskPayloadQuery> generateTaskPayloadQuery(int amount) {
         var count = new AtomicInteger(0);
         return Stream.generate(count::getAndIncrement)
             .limit(amount)
-            .map(index -> TaskPayloadJob.builder()
-                .nome("cy3_shell_ifxdate_inicia.ksh")
-                .descricao("Altera a data do Ciclo Diário. Avaliar start de time = 08:00hs + termina da diaria anterior. Deve ser disparado logo após a finalização do ciclo anterior (pela manhã)")
-                .ordem(index)
-                .comandoExec("ksh /app/rcvry/shells/cy3_shell_ifxdate_inicia.ksh " + atualIfxdate.plusDays(index).format(ifxdateFormatter))
-                .comandoVersao("sha256sum /app/rcvry/shells/cy3_shell_ifxdate_inicia.ksh")
+            .map(index -> TaskPayloadQuery.builder()
+                .nome("Histórico de Eventos Semanal")
+                .descricao("Coleta quais eventos Kafka foram processados pelo Cyber nos últimos 7 dias")
+                .query("SELECT * FROM RCVRY.EVENTOS_WEB ew WHERE TRUNC(EVDTPROC) >= TRUNC(SYSDATE-7) ORDER BY EVID DESC")
                 .build())
             .collect(Collectors.toList());
     }
@@ -106,6 +133,7 @@ class TaskControllerTest {
     void testAddNewTasksInSequencialOrder() {
         log.info("Testando adicionar todas as Tasks em ordem sequencial.");
 
+        var allTickets = new ArrayList<String>();
         allTasks.forEach((ambiente, tasks) -> {
             var requestTaskCount = new AtomicInteger(0);
             tasks.forEach(task -> {
@@ -124,8 +152,12 @@ class TaskControllerTest {
                         .andExpect(jsonPath("$.ambienteId").value(id))
                         .andExpect(jsonPath("$.queueSize").value(index))
                         .andExpect(jsonPath("$.ticket").exists())
-                        .andExpect(jsonPath("$.status").value(expectedStatus.name()));
-
+                        .andExpect(jsonPath("$.status").value(expectedStatus.name()))
+                        .andDo(result -> {
+                            var responseJson = result.getResponse().getContentAsString();
+                            var ticket = JsonPath.<String>read(responseJson, "$.ticket");
+                            allTickets.add(ticket);
+                        });
                     requestTaskCount.incrementAndGet();
                     log.info("Requisição Task[{}] para Ambiente ID {} validada com sucesso.", index, id);
                 }
@@ -134,6 +166,9 @@ class TaskControllerTest {
                 }
             });
         });
+        log.info("Tickets obtidos:");
+        allTickets.forEach(log::info);
+
         log.info("Coletando relatório de todos os Ambientes.");
         allTasks.forEach((ambiente, tasks) -> SummarizedTasksTestProps.builder()
             .controllerTes(this)

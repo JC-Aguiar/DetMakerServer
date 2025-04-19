@@ -400,7 +400,7 @@ public class BasicTest {
 
     private Properties lerProperties() throws IOException {
         //src/main/resources/db-config.properties
-        try (InputStream input = new FileInputStream("src/main/resources/db-config.properties")) {
+        try (InputStream input = new FileInputStream("src/test/resources/db-config.properties")) {
             Properties properties = new Properties();
             properties.load(input);
             return properties;

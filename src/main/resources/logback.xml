@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
+
     <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
     <import class="ch.qos.logback.classic.encoder.PatternLayoutEncoder"/>
     <import class="ch.qos.logback.core.ConsoleAppender"/>
 
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-<!--        <layout class="br.com.ppw.dma.config.CustomLog" />-->
         <encoder class="br.com.ppw.dma.config.CustomLog">
             <pattern>%date{yyyy/MM/dd HH:mm:ss} - %thread - %class{0}%n%method</pattern>
         </encoder>
@@ -17,11 +17,27 @@
         </encoder>
     </appender>
 
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/det-maker.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>logs/det-maker-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>    <!-- Retenção de tamanho do arquivo de log em uso -->
+            <maxHistory>30</maxHistory>         <!-- Retenção, em dias, dos logs anteriores -->
+            <totalSizeCap>10GB</totalSizeCap>   <!-- Retenção, em peso, dos logs anteriores -->
+        </rollingPolicy>
+        <encoder class="br.com.ppw.dma.config.CustomLog">
+            <pattern>%date{yyyy/MM/dd HH:mm:ss} - %thread - %class{0}%n%method</pattern>
+        </encoder>
+    </appender>
+
     <logger name="br.com.ppw.dma.config.ConsoleLogAspect" level="info" additivity="false">
         <appender-ref ref="CUSTOM" />
+        <appender-ref ref="FILE" />
     </logger>
 
     <root level="info">
         <appender-ref ref="CONSOLE" />
+        <appender-ref ref="FILE" />
     </root>
+
 </configuration>

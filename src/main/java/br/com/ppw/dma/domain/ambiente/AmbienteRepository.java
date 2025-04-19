@@ -10,10 +10,12 @@ import java.util.List;
 @Repository
 public interface AmbienteRepository extends JpaRepository<Ambiente, Long> {
 
-    Ambiente findAllByNome(@NotNull String nome);
+    Ambiente findAllByNome(String nome);
 
     List<Ambiente> findAllByCliente(@NotNull Cliente cliente);
 
-    boolean existsByNome(@NotNull String nome);
+    List<Ambiente> findAllByClienteIn(@NotNull List<Cliente> cliente);
+
+    boolean existsByNome(String nome);
 
 }

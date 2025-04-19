@@ -41,11 +41,9 @@ public class ClienteService {
     }
 
     // A method that returns an Cliente by id.
-    public Cliente findByAmbienteId(Long id) {
-        var record = Optional
-            .ofNullable(dao.findByAmbienteId(id))
-            .orElseThrow();
-        log.info("Cliente encontrado para Ambiente ID {}:", id);
+    public Cliente findByClienteId(Long id) {
+        var record = Optional.ofNullable(dao.findByAmbienteId(id)).orElseThrow();
+        log.info("Cliente encontrado para Cliente ID {}:", id);
         log.info(record.toString());
         return record;
     }
@@ -61,26 +59,26 @@ public class ClienteService {
 
     @Transactional
     public Cliente persist(@NotNull Cliente cliente) {
-        log.info("Persistindo Ambiente no banco:");
+        log.info("Persistindo Cliente no banco:");
         log.info(cliente.toString());
 
         cliente = dao.save(cliente);
-        log.info("Ambiente ID {} gravado com sucesso.", cliente.getId());
+        log.info("Cliente ID {} gravado com sucesso.", cliente.getId());
         return cliente;
     }
 
-    public Optional<Cliente> getByName(@NotNull String nome) {
-        log.info("Consultando pela Ambiente '{}'.", nome);
-        val pipeline = Optional.ofNullable(dao.findAllByNome(nome));
-        if(pipeline.isPresent())
-            log.info("Ambiente '{}' obtida com sucesso.", nome);
+    public List<Cliente> getByName(@NotNull String nome) {
+        log.info("Consultando pela Cliente '{}'.", nome);
+        val clientes = dao.findAllByNomeContaining(nome);
+        if(!clientes.isEmpty())
+            log.info("Total de Clientes encontrados: [{}]", clientes.size());
         else
-            log.info("Ambiente '{}' não encontrada.", nome);
-        return pipeline;
+            log.info("Cliente '{}' não encontrado.", nome);
+        return clientes;
     }
 
     public boolean checkByName(@NotNull String nome) {
-        log.info("Validando se a Ambiente '{}' existe no banco.", nome);
+        log.info("Validando se a Cliente '{}' existe no banco.", nome);
         val resutlado = dao.existsByNome(nome);
         log.info("Resultado: {}.", resutlado);
         return resutlado;

@@ -314,7 +314,7 @@ public class ConectorSftp {
         sftp.properties.clear();
         val properties = new Properties();
         properties.setProperty("HOSTNAME", "svuxdjob2");
-        properties.setProperty("TERM", "xterm");
+//        properties.setProperty("TERM", "xterm");
 //        properties.setProperty("SSH_CLIENT", "10.238.101.33 56708 22");
         properties.setProperty("QTDIR", "/usr/lib64/qt-3.3");
         properties.setProperty("OLDPWD", "/app/rcvry/");
