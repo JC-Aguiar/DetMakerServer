@@ -1,33 +1,23 @@
 package br.com.ppw.dma.domain.relatorio;
 
 import br.com.ppw.dma.domain.ambiente.AmbienteService;
-import br.com.ppw.dma.domain.job.JobService;
 import br.com.ppw.dma.domain.master.MasterController;
 import br.com.ppw.dma.domain.task.TaskPayload;
 import br.com.ppw.dma.domain.task.TaskPayloadJob;
 import br.com.ppw.dma.domain.task.TaskPushResponseDTO;
 import br.com.ppw.dma.domain.task.TaskService;
-import br.com.ppw.dma.domain.storage.FileSystemService;
-import br.com.ppw.dma.domain.user.UserInfoDTO;
 import br.com.ppw.dma.exception.DuplicatedRecordException;
-import br.com.ppw.dma.util.DetHtml;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import lombok.NonNull;
+import lombok.AccessLevel;
+import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.domain.*;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -35,30 +25,24 @@ import java.util.Optional;
 @Slf4j
 @RestController
 @RequestMapping("relatorio")
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class RelatorioController extends MasterController<Long, Relatorio, RelatorioController> {
 
-    @Autowired
-    private ResourceLoader resourceLoader;
-    private RelatorioService relatorioService;
-    private AmbienteService ambienteService;
-    private TaskService taskService;
-    private JobService jobService;
-    private FileSystemService fileSystemService;
+    RelatorioService relatorioService;
+    AmbienteService ambienteService;
+    TaskService taskService;
+
 
     @Autowired
     public RelatorioController(
         RelatorioService relatorioService,
         AmbienteService ambienteService,
-        TaskService taskService,
-        JobService jobService,
-        FileSystemService fileSystemService){
-        //--------------------------------------------------
+        TaskService taskService)
+    {
         super(relatorioService);
         this.relatorioService = relatorioService;
         this.ambienteService = ambienteService;
         this.taskService = taskService;
-        this.jobService = jobService;
-        this.fileSystemService = fileSystemService;
     }
 
     @Override
@@ -114,8 +98,6 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
             dataExec = LocalDate.parse(dataExecString.get());
 
         var ambiente = ambienteService.findById(ambienteId);
-//        var pipeline = new Pipeline();
-//        pipeline.setNome(nomePipeline.orElse(null));
         var relatorioBusca = Relatorio.builder()
             .ticket(ticket.orElse(null))
             .idProjeto(idProjeto.orElse(null))
@@ -124,7 +106,6 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
             .usuario(autor.orElse(null))
             .ambiente(ambiente)
             .data(dataExec)
-//            .pipeline(pipeline)
             .pipelineNome(nomePipeline.orElse(null))
             .build();
         Example<Relatorio> exemplo = Example.of(relatorioBusca, MATCHER_ALL);
@@ -158,37 +139,10 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
     }
 
     //TODO: javadoc
-    @GetMapping(value = "det/{id}")
-    public ResponseEntity<?> obterDet(
-        @PathVariable long id,
-        @RequestParam(name = "user", required = true) String user,
-        @RequestParam(name = "email", required = true) String email)
-    throws IOException, URISyntaxException {
-        val relatorio = relatorioService.findById(id);
-        log.info("Relatório encontrado:");
-        log.info(relatorio.toString());
-
-        //Validando se o Relatório está pronto para gerar documento DET
-        if(!relatorio.podeGerarDet()) {
-            return ResponseEntity.badRequest()
-                .body("O Relatório ID " + id + " não está totalmente revisado para gerar DET");
-        }
-        //TODO: o usuário tem que ser quem fez a solicitação de execução da pipleine/relatório
-        val detUser = new UserInfoDTO();
-        detUser.setNome(user);
-        detUser.setEmail(email);
-        detUser.setPapel("DEV");
-        detUser.setEmpresa("PPW");
-        return retornarNovoDet(DetDTO.from(relatorio, List.of(detUser)));
-    }
-
-    //TODO: javadoc
-    //TODO: aplicar @Synchronized e testar.
-    //  Se funcionar, o timeout do front precisa ser atualizado com base na quantidade de espera na fila
     @Transactional
     @GetMapping(value = "rerun/{id}")
     public ResponseEntity<TaskPushResponseDTO> runAgain(@PathVariable long id)
-    throws JsonProcessingException, DuplicatedRecordException {
+        throws JsonProcessingException, DuplicatedRecordException {
         val relatorio = relatorioService.findById(id);
         val ambiente = relatorio.getAmbiente();
         val usuario = relatorio.getUsuario();   //TODO: alterar para usuário logado
@@ -209,20 +163,46 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
         return ResponseEntity.ok(queueResponse);
     }
 
-    private ResponseEntity<Resource> retornarNovoDet(@NonNull DetDTO pipelineRelatorio)
-    throws IOException, URISyntaxException {
-        //log.debug("Criando objeto Resource para arquivo no caminho '{}'.", det.getAbsolutePath());
-        val det = new DetHtml(resourceLoader, pipelineRelatorio);
-        final Resource fileResource = new ByteArrayResource(det.getDocumento());
+    //TODO: master o endpoint "det/{id}" comentado abaixo?
+//    @GetMapping(value = "det/{id}")
+//    public ResponseEntity<?> obterDet(
+//        @PathVariable long id,
+//        @RequestParam(name = "user", required = true) String user,
+//        @RequestParam(name = "email", required = true) String email)
+//    throws IOException, URISyntaxException {
+//        val relatorio = relatorioService.findById(id);
+//        log.info("Relatório encontrado:");
+//        log.info(relatorio.toString());
+//
+//        //Validando se o Relatório está pronto para gerar documento DET
+//        if(!relatorio.podeGerarDet()) {
+//            return ResponseEntity.badRequest()
+//                .body("O Relatório ID " + id + " não está totalmente revisado para gerar DET");
+//        }
+//        //TODO: o usuário tem que ser quem fez a solicitação de execução da pipleine/relatório
+//        val detUser = new UserInfoDTO();
+//        detUser.setNome(user);
+//        detUser.setEmail(email);
+//        detUser.setPapel("DEV");
+//        detUser.setEmpresa("PPW");
+//        return  retornarNovoDet(DetDTO.from(relatorio, List.of(detUser)));
+//    }
 
-        log.debug("Configurando cabeçalho da resposta: 'attachment/{}'.", det.getDocumentoNome());
-        val headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        headers.setContentDispositionFormData("attachment", det.getDocumentoNome());
+//    private ResponseEntity<Resource> retornarNovoDet(@NonNull DetDTO pipelineRelatorio)
+//    throws IOException, URISyntaxException {
+//        //log.debug("Criando objeto Resource para arquivo no caminho '{}'.", det.getAbsolutePath());
+//        val det = new DetHtml(resourceLoader, pipelineRelatorio);
+//        final Resource fileResource = new ByteArrayResource(det.getDocumento());
+//
+//        log.debug("Configurando cabeçalho da resposta: 'attachment/{}'.", det.getDocumentoNome());
+//        val headers = new HttpHeaders();
+//        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+//        headers.setContentDispositionFormData("attachment", det.getDocumentoNome());
+//
+//        // Retorna a resposta com o arquivo
+//        return ResponseEntity.ok()
+//            .headers(headers)
+//            .body(fileResource);
+//    }
 
-        // Retorna a resposta com o arquivo
-        return ResponseEntity.ok()
-            .headers(headers)
-            .body(fileResource);
-    }
 }

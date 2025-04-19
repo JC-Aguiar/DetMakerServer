@@ -40,6 +40,7 @@ import static br.com.ppw.dma.domain.task.TaskStatus.*;
 import static br.com.ppw.dma.util.FormatDate.RELOGIO;
 import static java.util.stream.Collectors.toSet;
 
+//TODO: javadoc todos os métodos da classe
 @Slf4j
 @Service
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -88,11 +89,11 @@ public class TaskService {
         @NonNull TaskPayload payload)
     throws JsonProcessingException {
         var ambienteId = ambiente.getId();
-        var clienteNome = ambiente.getCliente().getNome();
-
         var totalTasksForAmbiente = countTasksByAmbiente(ambienteId);
         var isNewTaskNextToRun = totalTasksForAmbiente < 1;
         var newTaskStatus = (isNewTaskNextToRun ? EXECUTANDO : AGUARDANDO);
+
+        //TODO: validar se a nova Task já consta em memória nos último 30 segundos (mesma Pipeline e mesmo Usuário)
 
         var task = RemoteTask.builder()
             .ambienteId(ambienteId)
@@ -146,6 +147,7 @@ public class TaskService {
     @Profile("test")
     public void waitForAllTasksCompletion() {
         while(!allTasks.isEmpty()) { }
+        executor.submitCompletable(() -> log.info("Todas as Tasks finalizaram.")).join();
     }
 
     public List<RemoteTask> getTasksByAmbiente(Long ambienteId) {
@@ -206,7 +208,7 @@ public class TaskService {
             }
             log.info("Deletando Task '{}' após execução.", task.getTicket());
             task.setStatus(FINALIZANDO);
-            removeTask(task).ifPresent(taskRef::set); //TODO: REVISAR!!!!!!!!!!!!!!!
+            taskRef.set(removeTask(task).orElse(null)); //TODO: REVISAR!!!!!!!!!!!!!!!
             log.info("TASK '{}' - AMBIENTE ID {} --- END", ticket, ambienteId);
         }
     }
@@ -231,21 +233,23 @@ public class TaskService {
             .build();
 
         try {
-            var queriesAntes = payload.getQueriesPrePipeline()
-                .stream()
-                .map(TaskPayloadQuery::getQuery)
-                .collect(toSet());
-            ambienteService.runQuery(queriesAntes, banco);
-
+            if(!payload.getQueriesPrePipeline().isEmpty()) {
+                var queriesAntes = payload.getQueriesPrePipeline()
+                    .stream()
+                    .map(TaskPayloadQuery::getQuery)
+                    .collect(toSet());
+                ambienteService.runQuery(queriesAntes, banco);
+            }
             var jobsResult = jobService.executar(banco, sftp, payload.getJobs());
             pipelineResult.addJobResult(jobsResult);
 
-            var queriesDepois = payload.getQueriesPosPipeline()
-                .stream()
-                .map(TaskPayloadQuery::getQuery)
-                .collect(toSet());
-            ambienteService.runQuery(queriesDepois, ambiente.acessoBanco());
-
+            if(!payload.getQueriesPosPipeline().isEmpty()) {
+                var queriesDepois = payload.getQueriesPosPipeline()
+                    .stream()
+                    .map(TaskPayloadQuery::getQuery)
+                    .collect(toSet());
+                ambienteService.runQuery(queriesDepois, ambiente.acessoBanco());
+            }
             //Return the same instance
             pipelineResult = evidenciaService.gerarEvidencia(pipelineResult);
         }

@@ -210,6 +210,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
             case "10.129.164.206" -> ConectorSftp.setVivo3Properties(sftp);
         }
         log.info("Iniciando rotina da execução de Jobs");
+        log.info("Total de Jobs a executar: {}", jobs.size());
         val sucessos = new AtomicInteger();
         val jobProcesses = jobs.stream()
             .map(job -> {
@@ -219,14 +220,16 @@ public class JobService extends MasterService<Long, Job, JobService> {
                 return process;
             })
             .toList();
-        log.info("Total de Jobs com sucesso: {}/{}.", sucessos, jobProcesses.size());
+        log.info("Total de Jobs executados com sucesso: {}/{}", sucessos, jobProcesses.size());
         return jobProcesses;
     }
 
     //TODO: javadoc
+    //TODO: esse método não deveria estar aqui ou o parâmetro de entrada
     private void executar(@NonNull JobProcess process) {
         val banco = process.getBanco();
         val sftp = process.getSftp();
+        log.info("Executando Job[{}]: '{}'", process.getOrdem(), process.getNome());
         try {
             //Coletas pré-execução
             if(!process.getCargasEnvio().isEmpty() && process.getDirCargaEnvio() != null) {
@@ -265,7 +268,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
 //            process.setTerminal(terminalManager);
             process.setExitCode(terminalManager.getExitCode());
             process.setSucesso(true);
-            log.info("Job acionado com sucesso.");
+            log.info("Job remoto acionado.");
 
             //Coletas pós-execução
             if(!process.getRemessasMascara().isEmpty()) {
@@ -296,9 +299,8 @@ public class JobService extends MasterService<Long, Job, JobService> {
                 e.getMessage());
             process.setErroFatal(e.getMessage());
         }
-        finally {
-            process.setDataFim(OffsetDateTime.now());
-        }
+        process.setDataFim(OffsetDateTime.now());
+        log.info("Finalizado Job[{}]: '{}'", process.getOrdem(), process.getNome());
     }
 
     //TODO: javadoc
