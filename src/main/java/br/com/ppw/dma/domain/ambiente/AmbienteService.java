@@ -110,8 +110,8 @@ public class AmbienteService {
     public Optional<DbTable> getMetadatasFromTables(
         @NonNull String tabela,
         @NonNull Set<String> campos,
-        @NonNull Ambiente ambiente) {
-
+        @NonNull Ambiente ambiente)
+    {
         return getMetadatasFromTables(tabela, campos, ambiente.acessoBanco());
     }
 
@@ -119,8 +119,8 @@ public class AmbienteService {
     public Optional<DbTable> getMetadatasFromTables(
         @NonNull String tabela,
         @NonNull Set<String> campos,
-        @NonNull AmbienteAcessoDTO ambiente) {
-
+        @NonNull AmbienteAcessoDTO ambiente)
+    {
         try(val masterDao = new MasterOracleDAO(ambiente)) {
             var result = masterDao.extractInfoFromTables(Set.of(tabela), campos);
             var hasContent = !result.isEmpty();
@@ -136,8 +136,8 @@ public class AmbienteService {
     public List<DbTable> getMetadatasFromTables(
         @NonNull Set<String> tabelas,
         @NonNull Set<String> colunas,
-        @NonNull Ambiente ambiente) {
-
+        @NonNull Ambiente ambiente)
+    {
         return getMetadatasFromTables(tabelas, colunas, ambiente.acessoBanco());
     }
 
@@ -145,8 +145,8 @@ public class AmbienteService {
     public List<DbTable> getMetadatasFromTables(
         @NonNull Set<String> tabelas,
         @NonNull Set<String> colunas,
-        @NonNull AmbienteAcessoDTO ambiente) {
-
+        @NonNull AmbienteAcessoDTO ambiente)
+    {
         try(val masterDao = new MasterOracleDAO(ambiente)) {
             return masterDao.extractInfoFromTables(tabelas, colunas);
         }
@@ -164,10 +164,7 @@ public class AmbienteService {
      * @see AmbienteService#getMetadatasFromQueries(Set, AmbienteAcessoDTO)
      * @see AmbienteService#getMetadatasFromTables(Set, Set, AmbienteAcessoDTO)
      */
-    public List<DbTable> getMetadatasFromQueries(
-        @NonNull Set<String> queries,
-        @NonNull Ambiente ambiente) {
-
+    public List<DbTable> getMetadatasFromQueries(@NonNull Set<String> queries, @NonNull Ambiente ambiente) {
         return getMetadatasFromQueries(queries, ambiente.acessoBanco());
     }
 
@@ -179,10 +176,7 @@ public class AmbienteService {
      * @return {@link Set} {@link DbTable} das tabelas obtidas e suas respectivas column ({@link DbColumn})
      * @see AmbienteService#getMetadatasFromTables(Set, Set, AmbienteAcessoDTO)
      */
-    public List<DbTable> getMetadatasFromQueries(
-        @NonNull Set<String> queries,
-        @NonNull AmbienteAcessoDTO ambiente) {
-
+    public List<DbTable> getMetadatasFromQueries(@NonNull Set<String> queries, @NonNull AmbienteAcessoDTO ambiente) {
         log.info("Queries a coletar metadados:");
         var tables = new HashSet<String>();
         var columns = new HashSet<String>();
@@ -201,10 +195,7 @@ public class AmbienteService {
     }
 
     //Valida e executa (com ROWNUM = 1 e sem commit) qualquer tipo de query
-    public void validadeQuerySQL(
-            @NonNull Set<String> queries,
-            @NonNull Ambiente ambiente) {
-
+    public void validadeQuerySQL(@NonNull Set<String> queries, @NonNull Ambiente ambiente) {
         try(val masterDao = new MasterOracleDAO(ambiente)) {
             queries.parallelStream().forEach(query -> {
                 try {
@@ -221,18 +212,12 @@ public class AmbienteService {
     }
 
     //Valida e executa (com ROWNUM = 1) queries DQL (de consulta)
-    public void validadeQueryDQL(
-        @NonNull Set<String> queries,
-        @NonNull Ambiente ambiente) {
-
+    public void validadeQueryDQL(@NonNull Set<String> queries, @NonNull Ambiente ambiente)  {
         validadeQueryDQL(queries, ambiente.acessoBanco());
     }
 
     //Valida e executa (com ROWNUM = 1) queries DQL (de consulta)
-    public void validadeQueryDQL(
-        @NonNull Set<String> queries,
-        @NonNull AmbienteAcessoDTO ambiente) {
-
+    public void validadeQueryDQL(@NonNull Set<String> queries, @NonNull AmbienteAcessoDTO ambiente) {
         try(val masterDao = new MasterOracleDAO(ambiente)) {
             queries.parallelStream().forEach(query -> {
                 try {
@@ -249,18 +234,12 @@ public class AmbienteService {
     }
 
     //Valida e executa (com ROWNUM = 1 e sem commit) queries DML (de registro)
-    public void validadeQueryDML(
-        @NonNull Set<String> queries,
-        @NonNull Ambiente ambiente) {
-
+    public void validadeQueryDML(@NonNull Set<String> queries, @NonNull Ambiente ambiente) {
         validadeQueryDML(queries, ambiente.acessoBanco());
     }
 
     //Valida e executa (com ROWNUM = 1 e sem commit) queries DQL (de registro)
-    public void validadeQueryDML(
-        @NonNull Set<String> queries,
-        @NonNull AmbienteAcessoDTO ambiente) {
-
+    public void validadeQueryDML(@NonNull Set<String> queries, @NonNull AmbienteAcessoDTO ambiente) {
         try(val masterDao = new MasterOracleDAO(ambiente)) {
             queries.parallelStream().forEach(query -> {
                 try {
@@ -277,17 +256,13 @@ public class AmbienteService {
     }
 
     //Executa query
-    public void runQuery(
-        @NonNull Set<String> queries,
-        @NonNull AmbienteAcessoDTO ambiente) {
-
+    public void runQuery(@NonNull Set<String> queries, @NonNull AmbienteAcessoDTO ambiente) {
         try(val masterDao = new MasterOracleDAO(ambiente)) {
             queries.parallelStream().forEach(query -> {
                 try {
                     masterDao.runSQL(query);
                 }
                 catch(SQLException | PersistenceException e) {
-//                    throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
                     log.error(SqlSintaxe.getExceptionMainCause(e));
                 }
             });
