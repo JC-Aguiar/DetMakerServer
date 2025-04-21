@@ -15,28 +15,6 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @EnableWebSecurity
 public class WebSecurityConfig {
 
-//    @Autowired
-//    private AuthenticationService authService;
-
-//    @Autowired
-//    private AuthenticationController authProvider;
-
-//    @Autowired
-//    private JwtAuthenticationService jwtAuthService;
-
-    //PROFILES PER URL
-//    public static final Map<String, String> PROTECTED_DOMAINS = new HashMap<>();
-//    {{
-//        put("adm", "/adm/**");
-//        put("profile", "/profile/**");
-//    }};
-
-    //URLS OPEN TO REQUEST
-//    private static final List<String> SUPPORTED_ORIGINS = new ArrayList<>() {{
-//        add("http://localhost:3000/**");
-//    }};
-
-    //SERVER SECURITY CONFIGURATION
     @Bean
     public SecurityFilterChain configure(HttpSecurity http, JwtAuthenticationFilter jwtAuthFilter)
     throws Exception {
@@ -54,20 +32,6 @@ public class WebSecurityConfig {
         //    .passwordManagement(manager -> manager.changePasswordPage("/password"));
         return http.build();
     }
-
-
-    //AUTHENTICATION LOGIC
-//    @Bean
-//    public void configure(AuthenticationManagerBuilder auth) throws Exception {
-//        final BCryptPasswordEncoder crypt = new BCryptPasswordEncoder();
-//        auth.userDetailsService(authService).passwordEncoder(crypt)
-//            .and().authenticationProvider(authProvider);
-//    }
-//
-//    @Bean
-//    protected AuthenticationManager authenticationManager() throws Exception {
-//        return super.authenticationManagerBean();
-//    }
 
     //CORS AUTHORIZATION
     @Bean
