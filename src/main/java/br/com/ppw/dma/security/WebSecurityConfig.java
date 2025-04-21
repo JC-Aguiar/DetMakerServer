@@ -7,13 +7,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
@@ -40,19 +36,18 @@ public class WebSecurityConfig {
 //        add("http://localhost:3000/**");
 //    }};
 
-
     //SERVER SECURITY CONFIGURATION
     @Bean
-    public SecurityFilterChain configure(HttpSecurity http) throws Exception {
-        //val jwtAuthFilter = new JwtAuthenticationFilter(jwtAuthService);
-        http.authorizeHttpRequests(auth -> auth.anyRequest().permitAll())
+    public SecurityFilterChain configure(HttpSecurity http, JwtAuthenticationFilter jwtAuthFilter)
+    throws Exception {
+        http.authorizeHttpRequests(auth -> auth.anyRequest().authenticated())
             .csrf().disable()
             .cors().disable()
             .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            .and()
+//            .oauth2Login()
 //            .and()
-//            .addFilterBefore(jwtAuthFilter, RequestIdFilter.class)
-//            .addFilterBefore(new RequestIdFilter(), UsernamePasswordAuthenticationFilter.class);
-            ;
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         //Defining defaults: unauthorised page + change password page
         //http.exceptionHandling().accessDeniedPage("/error/denied").and()
