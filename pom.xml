@@ -118,12 +118,18 @@
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
-		<!-- JJWT -->
+		<!-- Mapeador de Caminhos XML -->
 		<dependency>
-			<groupId>io.jsonwebtoken</groupId>
-			<artifactId>jjwt</artifactId>
-			<version>0.9.1</version>
+			<groupId>com.fasterxml.jackson.dataformat</groupId>
+			<artifactId>jackson-dataformat-xml</artifactId>
+			<version>2.14.3</version> <!-- Verifique a versão mais recente -->
 		</dependency>
+		<!-- JJWT -->
+<!--		<dependency>-->
+<!--			<groupId>io.jsonwebtoken</groupId>-->
+<!--			<artifactId>jjwt</artifactId>-->
+<!--			<version>0.9.1</version>-->
+<!--		</dependency>-->
 		<!-- ModelMapper (conversor) -->
 		<dependency>
 			<groupId>org.modelmapper</groupId>

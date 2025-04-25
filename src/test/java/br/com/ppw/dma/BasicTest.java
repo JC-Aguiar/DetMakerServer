@@ -47,7 +47,6 @@ import static br.com.ppw.dma.util.FormatString.dividirValores;
 @Slf4j
 public class BasicTest {
 
-
 //    @Test
 //    public void testandoQueues2() throws Exception {
 //        var threadPoolTaskScheduler = new ThreadPoolTaskScheduler();
