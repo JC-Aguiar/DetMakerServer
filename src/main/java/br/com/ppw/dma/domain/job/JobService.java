@@ -32,6 +32,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -213,6 +214,7 @@ public class JobService extends MasterService<Long, Job, JobService> {
         log.info("Total de Jobs a executar: {}", jobs.size());
         val sucessos = new AtomicInteger();
         val jobProcesses = jobs.stream()
+            .sorted(Comparator.comparing(TaskPayloadJob::getOrdem))
             .map(job -> {
                 var process = new JobProcess(job, banco, sftp);
                 executar(process);

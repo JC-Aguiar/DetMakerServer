@@ -20,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.time.LocalDate;
 import java.time.Month;
@@ -147,7 +148,7 @@ class TaskControllerTest {
                     mockMvc.perform(post("/task/ambiente/{ambienteId}", id)
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(json))
-                        .andExpect(status().isOk())
+                        .andExpect(MockMvcResultMatchers.status().isOk())
                         .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                         .andExpect(jsonPath("$.ambienteId").value(id))
                         .andExpect(jsonPath("$.queueSize").value(index))
@@ -237,7 +238,7 @@ class TaskControllerTest {
 //                .content(taskJson))
 //            .andExpect(status().isBadRequest())
 //            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-//            .andExpect(jsonPath("$.error").exists());
+//            .andExpect(jsonPath("$.fatalError").exists());
 //    }
 
 //    @Test
@@ -255,6 +256,6 @@ class TaskControllerTest {
 //                .content(taskJson))
 //            .andExpect(status().isNotFound())
 //            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-//            .andExpect(jsonPath("$.error").value("Ambiente not found"));
+//            .andExpect(jsonPath("$.fatalError").value("Ambiente not found"));
 //    }
 }
