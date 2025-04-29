@@ -37,12 +37,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static br.com.ppw.dma.domain.master.SqlSintaxe.getExceptionMainCause;
 import static br.com.ppw.dma.domain.master.SqlSintaxe.isSafeSelect;
 import static br.com.ppw.dma.util.FormatString.dividirValores;
+import static java.util.stream.Collectors.*;
 
 @Slf4j
 public class BasicTest {
@@ -371,13 +371,13 @@ public class BasicTest {
             Path.of(dir, "cy3_shell_kafka_producer017_20230831_180958.log").toFile(),
             Path.of(dir, "EVENTOS_PRODUCER_017_20230831_180958.log").toFile()
         );
-        val logAntesString = logsAntes.stream().map(File::getName).collect(Collectors.joining(", "));
+        val logAntesString = logsAntes.stream().map(File::getName).collect(joining(", "));
 
         val logsDepois = List.of(
             Path.of(dir, "cy3_shell_kafka_producer_TESTE_20231020_094354.log").toFile(),
             Path.of(dir, "EVENTOS_PRODUCER_TESTE_20230831_180958.log").toFile()
         );
-        val logDepoisString = logsDepois.stream().map(File::getName).collect(Collectors.joining(", "));
+        val logDepoisString = logsDepois.stream().map(File::getName).collect(joining(", "));
 
         log.info("logsAntes: '{}'", logAntesString);
         log.info("logsDepois: '{}'", logDepoisString);
@@ -385,16 +385,30 @@ public class BasicTest {
     }
 
     @Test
-    public void testandoLerProperties() throws IOException, SQLException {
-        final Properties properties = lerProperties();
-        properties.forEach((k, v) -> log.info("{}: {}", k, v));
-        val url = properties.get("db.url").toString();
-        val username = properties.get("db.username").toString();
-        val password = properties.get("db.password").toString();
+    public void testandoLerProperties() throws SQLException {
+        var properties = Stream.of(
+            "DETMAKER_CONNECTION",
+            "DETMAKER_USUARIO",
+            "DETMAKER_PASSWORD",
+            "DETMAKER_SCHEMA"
+        ).map(props -> Optional.ofNullable(System.getProperty(props))
+            .or(() -> Optional.ofNullable(System.getenv(props)))
+            .map(valor -> Map.entry(props, valor))
+            .orElseThrow()
+        ).collect(toMap(
+            Map.Entry::getKey,
+            Map.Entry::getValue
+        ));
+        properties.forEach((chave, valor) -> log.info("{}: {}", chave, valor));
+
+        val url = "jdbc:oracle:thin:@//" + properties.get("DETMAKER_CONNECTION");
+        val username = properties.get("DETMAKER_USUARIO");
+        val password = properties.get("DETMAKER_PASSWORD");
 
         log.info("Testando conexão.");
-        val conn = DriverManager.getConnection(url, username, password);
-        log.info("Conexão realizada com erro.");
+        try(val conn = DriverManager.getConnection(url, username, password)) {
+            log.info("Conexão realizada com erro.");
+        }
     }
 
     private Properties lerProperties() throws IOException {
@@ -611,7 +625,7 @@ public class BasicTest {
             Assertions.assertTrue(
                 tablesDb.parallelStream()
                     .map(DbTable::tabela)
-                    .collect(Collectors.toSet())
+                    .collect(toSet())
                     .containsAll(tabelasEsperadas),
                 "Existe table pendente após coleta dos metadados");
 
@@ -619,7 +633,7 @@ public class BasicTest {
                 tablesDb.parallelStream()
                     .map(DbTable::getColumnsNames)
                     .flatMap(Set::parallelStream)
-                    .collect(Collectors.toSet())
+                    .collect(toSet())
                     .containsAll(colunasEsperadas),
                 "Existe coluna pendente após coleta dos metadados"
             );
@@ -628,11 +642,11 @@ public class BasicTest {
                 tablesDb.parallelStream()
                     .map(DbTable::getColumnsNames)
                     .flatMap(Set::parallelStream)
-                    .collect(Collectors.toSet())
+                    .collect(toSet())
                     .containsAll(
                         filtrosEsperados.parallelStream()
                             .map(QueryFilter::column)
-                            .collect(Collectors.toSet())
+                            .collect(toSet())
                     ),
                 "Existe coluna pendente após coleta dos metadados"
             );
@@ -659,34 +673,6 @@ public class BasicTest {
 
         var novaSql = FormatString.substituirVariaveis(sql, "?");
         log.info("total: {}", novaSql);
-    }
-
-    @Test
-    public void testeGetMavenProps() {
-        try {
-            //val jar = "C:\\Users\\joao.aguiar\\Workspace\\AGUIAR\\Det-Maker-Api\\target\\det-maker-api-v1.12.Beta.jar";
-            val path = "C:\\Users\\joao.aguiar\\Workspace\\AGUIAR\\Det-Maker-Api\\target";
-            val jarName = "det-maker-.*\\.jar";
-            log.info("Path: {}", path);
-            log.info("JarName: {}", jarName);
-
-            val files = Optional.ofNullable(
-                new File(path).listFiles((dir, name) -> name.matches(jarName)))
-                .orElseThrow();
-            val jar = Arrays.stream(files)
-                .findFirst()
-                .orElseThrow();
-
-            JarFile jarFile = new JarFile(jar);
-            Manifest manifest = jarFile.getManifest();
-            Attributes attributes = manifest.getMainAttributes();
-            String version = attributes.getValue("Implementation-Version");
-            log.info("Versão da aplicação: {}", version);
-            jarFile.close();
-        }
-        catch(Exception e) {
-            e.printStackTrace();
-        }
     }
 
     @Test

@@ -1,24 +1,17 @@
 package br.com.ppw.dma.config;
 
-import br.com.ppw.dma.domain.job.JobRepository;
-import br.com.ppw.dma.domain.storage.StorageService;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
-import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.web.multipart.support.StandardServletMultipartResolver;
 
 import java.util.concurrent.ThreadPoolExecutor;
 
 @Slf4j
-@EnableAsync
 @Configuration
-@EnableAspectJAutoProxy
-public class DetMakerBeans {
+public class CommonBeans {
 
 //    @Bean(name = "multipartResolver")
 //    public CommonsMultipartResolver multipartResolver() {
@@ -37,18 +30,18 @@ public class DetMakerBeans {
         return new ModelMapper();
     }
 
-    /**
-     * Operações automáticas a serem executadas após inicialização do Spring
-     * @param storageService {@link StorageService} gerenciado pelo Spring
-     * @return {@link CommandLineRunner} gerenciado pelo Spring
-     */
-    @Bean
-    CommandLineRunner init(StorageService storageService, JobRepository jobDao) {
-//        log.info("Iniciando rotina de sanitização dos Jobs.");
-        return (args) -> { };
-//            storageService.deleteAll();
-//            storageService.init();
-    }
+//    /**
+//     * Operações automáticas a serem executadas após inicialização do Spring
+//     * @param storageService {@link StorageService} gerenciado pelo Spring
+//     * @return {@link CommandLineRunner} gerenciado pelo Spring
+//     */
+//    @Bean
+//    CommandLineRunner init(StorageService storageService, JobRepository jobDao) {
+////        log.info("Iniciando rotina de sanitização dos Jobs.");
+//        return (args) -> { };
+////            storageService.deleteAll();
+////            storageService.init();
+//    }
 
     @Bean
     public ThreadPoolTaskExecutor setTaskExecutorDosExecucoesDePipelines() {

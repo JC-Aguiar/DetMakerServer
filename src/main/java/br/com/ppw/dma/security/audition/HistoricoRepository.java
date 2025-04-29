@@ -14,7 +14,8 @@ public interface HistoricoRepository extends JpaRepository<Historico, Long> {
     SELECT  MIN(DATA) AT TIME ZONE 'UTC' 
     FROM    PPW_HISTORICO 
     WHERE   USUARIO = :usuario
+    OR      IP      = :ip
     """)
-    Optional<OffsetDateTime> findMinDataByUsuario(String usuario);
+    Optional<OffsetDateTime> findMinDataByUsuario(String usuario, String ip);
 
 }
