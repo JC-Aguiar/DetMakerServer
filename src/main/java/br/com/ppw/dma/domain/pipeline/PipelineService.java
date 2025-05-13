@@ -28,6 +28,7 @@ public class PipelineService extends MasterService<Long, Pipeline, PipelineServi
         this.dao = dao;
     }
 
+    @Transactional(readOnly = true)
     public List<Pipeline> findAllByCliente(@NonNull Long clienteId) {
         val result = dao.findAllByClienteId(clienteId);
         if(result.isEmpty()) throw new NoSuchElementException();
@@ -44,6 +45,7 @@ public class PipelineService extends MasterService<Long, Pipeline, PipelineServi
         return pipeline;
     }
 
+    @Transactional(readOnly = true)
     public Optional<Pipeline> getUniqueOne(@NotNull String nome, @NotNull Long clienteId) {
         log.info("Consultando Pipeline '{}', Cliente ID {}.", nome, clienteId);
         val pipeline = Optional.ofNullable(dao.findByNomeAndCliente(nome, clienteId));

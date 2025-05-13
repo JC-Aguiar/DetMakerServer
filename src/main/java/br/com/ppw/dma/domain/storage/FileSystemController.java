@@ -8,10 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 @Slf4j
 @RestController
@@ -39,25 +43,41 @@ public class FileSystemController {
             .body(file);
     }
 
+    //TODO: mover validações para camada de serviço
     @PostMapping()
     public ResponseEntity<MasterSummary<String>> upload(@RequestParam("files") List<MultipartFile> files) {
         val summary = new MasterSummary<String>();
-        for(val file : files) {
-            try {
-                storageService.store(file);
-                summary.save(file.getOriginalFilename());
-            }
-            catch(Exception e) {
-                log.error(e.getMessage());
-                summary.fail(file.getOriginalFilename(), e.getMessage());
-            }
-        }
+        files.forEach(file -> Optional.ofNullable(file.getOriginalFilename())
+            .map(StringUtils::cleanPath)
+            .filter(name -> !name.contains(".."))
+            .filter(name -> Objects.equals(file.getContentType(), "text/plain"))
+            .filter(this::isValidExtension)
+            .ifPresentOrElse(
+                name -> {
+                    try {
+                        storageService.store(file);
+                        summary.save(name);
+                    }
+                    catch(Exception e) {
+                        log.error(e.getMessage());
+                        summary.fail(name, e.getMessage());
+                    }
+                },
+                () -> summary.fail(file.getOriginalFilename(), "Nome/tipo de arquivo inválido.")
+        ));
         return MasterSummary.toResponseEntity(summary);
     }
 
     @ExceptionHandler(StorageFileNotFoundException.class)
     public ResponseEntity<?> handleStorageFileNotFound(StorageFileNotFoundException exc) {
         return ResponseEntity.notFound().build();
+    }
+
+    private boolean isValidExtension(String fileName) {
+        var lowerCaseFileName = fileName.toLowerCase();
+        return lowerCaseFileName.endsWith(".txt") ||
+            lowerCaseFileName.endsWith(".log") ||
+            lowerCaseFileName.endsWith(".gpg");
     }
 
 }

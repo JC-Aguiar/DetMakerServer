@@ -2,17 +2,19 @@ package br.com.ppw.dma.security;
 
 
 import com.nimbusds.jwt.JWTParser;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
@@ -20,20 +22,29 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.HashMap;
 import java.util.Optional;
+import java.util.function.Function;
 
+@Slf4j
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig {
 
     @Bean
-    public SecurityFilterChain configure(HttpSecurity http, AuthenticationFilter jwtAuthFilter)
+    public SecurityFilterChain configure(
+        HttpSecurity http,
+        AuthenticationFilter jwtAuthFilter,
+        JwtDecoder jwtDecoder,
+        JwtMultiConverter jwtConverter)
     throws Exception {
         http.authorizeHttpRequests(registry -> registry.anyRequest().authenticated())
             .csrf(AbstractHttpConfigurer::disable)
             .cors(AbstractHttpConfigurer::disable)
             .sessionManagement(sessionManager ->  sessionManager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .oauth2Login(Customizer.withDefaults())
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterAfter(jwtAuthFilter, BearerTokenAuthenticationFilter.class)
+            .oauth2ResourceServer(config -> config.jwt(
+                jwt -> jwt.decoder(jwtDecoder)
+                    .jwtAuthenticationConverter(jwtConverter)
+            ));
         //    .exceptionHandling().accessDeniedPage("/error/denied")
         //    .and()
         //    .passwordManagement(manager -> manager.changePasswordPage("/password"));
@@ -48,22 +59,31 @@ public class WebSecurityConfig {
      */
     @Bean
     public JwtDecoder jwtDecoder(
-        @Value("${spring.security.app.jwt.issuer-uri}") String appIssuer,
-        @Value("${spring.security.app.jwt.jwk-set-uri}") String appJwksUri,
-        @Value("${spring.security.oauth2.client.provider.google.issuer}") String googleIssuer,
-        @Value("${spring.security.oauth2.client.provider.google.jwk-set-uri}") String googleJwksUri)
-//        @Value("${spring.security.microsoft.jwt.issuer}") String microsoftIssuer,
-//        @Value("${spring.security.microsoft.jwt.jwks-uri}") String microsoftJwksUri)
+        @Value("${ppware.oauth2.authentication.server}") String ppwOauth2Server)
     {
+        var appJwksUri = ppwOauth2Server + "/oauth2/jwks";
+        var googleJwksUri = "https://www.googleapis.com/oauth2/v3/certs";
         var decoders = new HashMap<String, JwtDecoder>();
-        decoders.put(appIssuer, NimbusJwtDecoder.withJwkSetUri(appJwksUri).build());
-        decoders.put(googleIssuer, NimbusJwtDecoder.withJwkSetUri(googleJwksUri).build());
-//        decoders.put(microsoftIssuer, NimbusJwtDecoder.withJwkSetUri(microsoftJwksUri).build());
+        Function<String, NimbusJwtDecoder> generateDecode = url -> NimbusJwtDecoder
+            .withJwkSetUri(url)
+            .jwsAlgorithm(SignatureAlgorithm.RS256)
+            .build();
+
+        decoders.put(
+            ppwOauth2Server,
+            generateDecode.apply(appJwksUri));
+        decoders.put(
+            "https://accounts.google.com",
+            generateDecode.apply(googleJwksUri));
+
         return token -> {
+            log.info("Iniciando validação de JWT.");
             try {
                 var jwt = JWTParser.parse(token);
                 var jwtClaimsSet = jwt.getJWTClaimsSet();
                 var jwtIssuer = jwtClaimsSet.getIssuer();
+                log.info("Issuer do JWT: '{}'", jwtIssuer);
+
                 var registeredDecoder = decoders.get(jwtIssuer);
                 return Optional.ofNullable(registeredDecoder)
                     .map(decoder -> decoder.decode(token))

@@ -12,13 +12,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
 @SpringBootApplication
-@EnableAsync
-@EnableWebMvc
-@EnableCaching
-@EnableScheduling
-@EnableJpaRepositories
-@EnableConfigurationProperties(StorageProperties.class)
-@EnableAspectJAutoProxy(exposeProxy = true, proxyTargetClass = true)
 public class DetMakerStandalone {
 
 	public static void main(String[] args) {

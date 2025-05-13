@@ -34,7 +34,7 @@ public class Cliente implements MasterEntity<Long> {
     // Identificador numérico do cliente
     Long id;
 
-    @Column(name = "NOME", length = 50, unique = true)
+    @Column(name = "NOME", length = 50, unique = true, nullable = false)
     // Nome do cliente
     String nome;
 
@@ -64,6 +64,20 @@ public class Cliente implements MasterEntity<Long> {
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "cliente")
     // IDs das Pipelines relacionadas a este Cliente
     List<Pipeline> pipelines = new ArrayList<>();
+
+//    @Column(name = "OAUTH_ID") //unique = true, nullable = false)
+//    private String oauthId;
+//
+//    @Column(name = "OAUTH_SECRET") //nullable = false)
+//    private String oauthSecret;
+//
+//    @Convert(converter = StringListConverter.class)
+//    @Column(name = "OAUTH_METODOS") //nullable = false)
+//    private List<String> oauthMetodosAutenticacao;
+//
+//    @Convert(converter = StringListConverter.class)
+//    @Column(name = "OAUTH_CONCESSOES") //nullable = false)
+//    private List<String> oauthConcessoes;
 
 
     public Cliente(@NonNull ClienteNovoDTO dto) {
