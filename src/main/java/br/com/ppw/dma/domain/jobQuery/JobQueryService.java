@@ -48,19 +48,19 @@ public class JobQueryService extends MasterService<Long, JobQuery, JobQueryServi
                 log.info("Queries possui variáveis. Extraindo tabelas e column da query.");
                 var extraction = SqlSintaxe.analyse(query);
                 var mapVariables = masterDao.extractInfoFromTables(extraction)
-                    .parallelStream()
+                    .stream()
                     .map(DbTable::colunas)
-                    .flatMap(Set::parallelStream)
+                    .flatMap(Set::stream)
                     .map(DbColumn::variablesWithRandomValues)
                     .map(Map::entrySet)
-                    .flatMap(Set::parallelStream)
+                    .flatMap(Set::stream)
                     .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue
                     ));
                 query = FormatString.substituirVariaveis(query, mapVariables);
             }
-            masterDao.runDQL(query);
+            masterDao.testDQL(query);
         }
     }
 

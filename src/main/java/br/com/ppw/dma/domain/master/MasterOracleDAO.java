@@ -154,7 +154,7 @@ public class MasterOracleDAO implements AutoCloseable {
     public List<Map<String, Object>> collectData(@NonNull String sql)
     throws SQLException {
         log.info("SQL: {}", sql);
-        validadeDQL(sql);
+        validadeSintaxeDQL(sql);
         val extracao = new ArrayList<Map<String, Object>>();
         try(val statement = conn.createStatement()) {
             log.info("Executando query.");
@@ -192,11 +192,12 @@ public class MasterOracleDAO implements AutoCloseable {
     }
 
     //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
-    public void runDQL(@NonNull String sql) throws SQLGrammarException, SQLException {
+    public void testDQL(@NonNull String sql) throws SQLGrammarException, SQLException {
         log.info("SQL: {}", sql);
-        validadeDQL(sql);
+        validadeSintaxeDQL(sql);
         log.info("Testando query.");
         try(val statement = conn.createStatement()) {
+            conn.setAutoCommit(false);
             statement.setMaxRows(1);
             statement.executeQuery(sql);
             log.info("Query aprovada.");
@@ -204,9 +205,9 @@ public class MasterOracleDAO implements AutoCloseable {
     }
 
     //TODO: javadoc (explicar que tem um throw RuntimeException ou talvez criar um throw próprio para tal)
-    public void runDML(@NonNull String sql) throws SQLGrammarException, SQLException {
+    public void testDML(@NonNull String sql) throws SQLGrammarException, SQLException {
         log.info("SQL: {}", sql);
-        validadeDML(sql);
+        validadeSintaxeDML(sql);
         log.info("Testando query.");
         try(val statement = conn.createStatement()) {
             conn.setAutoCommit(false);
@@ -215,45 +216,10 @@ public class MasterOracleDAO implements AutoCloseable {
             log.info("Query aprovada.");
         }
     }
-    
-    //TODO: javadoc
-//    public void createValidateQuery(@NonNull String sql, @NonNull List<ConfigQueryVar> queryVars)
-//    throws SQLGrammarException, SQLException {
-//        sql = FormatString.substituirVariaveis(sql, "?");
-//        checkSqlGrammar(sql);
-//        try(val statement = conn.prepareStatement(sql)) {
-//            log.info("Inserindo registros aleatórios e validando tabelas e column da query.");
-//            for(var queryVar : queryVars) {
-//                var index = queryVar.getIndex();
-//                //TODO: gerar valor aleatório STRING
-//                var valor = queryVar.gerarValorAleatorio();
-//                var array = queryVar.getArray();
-//                if(array) {
-//                    var type = queryVar.getTipo();
-//                    var valorArray = conn.createArrayOf(type.name(), new Object[] {valor, valor});
-//                    statement.setArray(index, valorArray);
-//                    continue;
-//                }
-//                switch(valor) {
-//                    case(BigDecimal number) -> statement.setBigDecimal(index, number);
-//                    case(Float number) -> statement.setFloat(index, number);
-//                    case(String string) -> statement.setString(index, string);
-//                    case(OffsetDateTime date) -> statement.setTimestamp(
-//                        index, Timestamp.from(date.toInstant())
-//                    );
-//                    default -> throw new RuntimeException("Sem foi possível gerar massa"); //TODO: usar mesma exceção própria do TipoColuna
-//                }
-//            };
-//            log.info("Testando executar query (ROWNUM = 1).");
-//            statement.setMaxRows(1);
-//            statement.executeQuery(sql);
-//            log.info("Query aprovada.");
-//        }
-//    }
 
     //TODO: criar exception própria?
     //TODO: javadoc
-    private void validadeDQL(@NonNull String sql) {
+    private void validadeSintaxeDQL(@NonNull String sql) {
         log.info("Validando se a query é um DQL.");
         if(!SqlSintaxe.isSafeSelect(sql))
             throw new RuntimeException("A queries informada não é um comando DQL.");
@@ -262,7 +228,7 @@ public class MasterOracleDAO implements AutoCloseable {
 
     //TODO: criar exception própria?
     //TODO: javadoc
-    private void validadeDML(@NonNull String sql) {
+    private void validadeSintaxeDML(@NonNull String sql) {
         log.info("Validando se a query é um DML.");
         if(!SqlSintaxe.isSafeInsert(sql) && !SqlSintaxe.isSafeDelete(sql))
             throw new RuntimeException("A queries informada não é um comando DML.");

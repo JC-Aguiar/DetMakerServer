@@ -6,9 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -17,6 +19,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.XXssProtectionHeaderWriter;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -44,10 +47,13 @@ public class WebSecurityConfig {
             .oauth2ResourceServer(config -> config.jwt(
                 jwt -> jwt.decoder(jwtDecoder)
                     .jwtAuthenticationConverter(jwtConverter)
-            ));
-        //    .exceptionHandling().accessDeniedPage("/error/denied")
-        //    .and()
-        //    .passwordManagement(manager -> manager.changePasswordPage("/password"));
+            ))
+            .headers(headers -> headers
+                .xssProtection(xss -> xss.headerValue(XXssProtectionHeaderWriter.HeaderValue.ENABLED)) // Adiciona X-XSS-Protection: 1; mode=block
+                .contentSecurityPolicy(csp -> csp.policyDirectives("script-src 'self'; object-src 'none';")) // CSP restritivo
+                .frameOptions(HeadersConfigurer.FrameOptionsConfig::deny) // Impede clickjacking
+            )
+        ;
         return http.build();
     }
 
