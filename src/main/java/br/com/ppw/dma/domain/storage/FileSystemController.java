@@ -33,13 +33,19 @@ public class FileSystemController {
     @GetMapping("/files/{filename:.+}")
     @ResponseBody
     public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
-        Resource file = storageService.loadAsResource(filename);
-        if(file == null)
+        var sanitizedFilename = StringUtils.cleanPath(filename);
+        if(sanitizedFilename.contains("..") || sanitizedFilename.contains("\r") || sanitizedFilename.contains("\n")) {
+            throw new IllegalArgumentException("Nome de arquivo inválido.");
+        }
+        Resource file = storageService.loadAsResource(sanitizedFilename);
+        if(file == null || file.getFilename() == null) {
             return ResponseEntity.notFound().build();
-
-        val headerValues = "attachment; filename=\"" + file.getFilename() + "\"";
+        }
+        var headerValue = "attachment; filename=\"%s\"".formatted(
+            sanitizedFilename.replace("\"", "\\\"")
+        );;
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, headerValues)
+            .header(HttpHeaders.CONTENT_DISPOSITION, headerValue)
             .body(file);
     }
 

@@ -6,7 +6,6 @@ import br.com.ppw.dma.domain.ambiente.AmbienteInfoDTO;
 import br.com.ppw.dma.domain.ambiente.AmbienteService;
 import br.com.ppw.dma.net.ConectorSftp;
 import jakarta.validation.Valid;
-import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,8 +28,6 @@ public class ClienteController {
 
     private final AmbienteService ambienteService;
 
-    @Getter
-    private ConectorSftp sftp;
 
     public ClienteController(
         @Autowired ClienteService clienteService,
@@ -90,7 +87,7 @@ public class ClienteController {
             .findFirst()
             .orElseThrow();
 
-        sftp = ConectorSftp.conectar(AmbienteAcessoDTO.ftp(ambiente));
+        var sftp = ConectorSftp.conectar(AmbienteAcessoDTO.ftp(ambiente));
 
         //TODO: paliativo. Remover e aprimorar o código
         switch(ambiente.getConexaoSftp()) {
@@ -103,7 +100,6 @@ public class ClienteController {
         var mensagem = String.format("Exit-Code: %d.\n%s",
             terminal.getExitCode(), String.join("\n", terminal.getConsoleLog()));
 
-        sftp = null;
         return ResponseEntity.ok(mensagem);
     }
 

@@ -44,7 +44,7 @@ public class ExcelXlsx {
         this.nomeArquivo = nomeArquivo;
         log.info("Abrindo e lendo arquivo {}.", this.nomeArquivo);
 
-        try(val workbook = new XSSFWorkbook(arquivo.getInputStream())) {
+        try(val input = arquivo.getInputStream(); val workbook = new XSSFWorkbook(input)) {
             log.info("Workbook = '{}'", workbook);
             log.info("Iterando planilhas disponíveis.");
             workbook.forEach(planilha -> {

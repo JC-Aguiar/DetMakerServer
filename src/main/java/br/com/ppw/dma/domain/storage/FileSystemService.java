@@ -15,6 +15,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.*;
@@ -143,7 +144,15 @@ public class FileSystemService implements StorageService {
 
     @Override
     public Path load(String filename) {
-        return pathLocation.resolve(filename);
+        if(filename == null || filename.isBlank()) {
+            throw new IllegalArgumentException("Nome de arquivo inválido: nulo ou vazio");
+        }
+        // Sanitiza o nome do arquivo para remover caracteres perigosos
+        var sanitizedFilename = StringUtils.cleanPath(filename);
+        if(sanitizedFilename.contains("..")) {
+            throw new IllegalArgumentException("Nome de arquivo inválido: " + sanitizedFilename);
+        }
+        return pathLocation.resolve(sanitizedFilename);
     }
 
     @Override

@@ -221,7 +221,7 @@ public class AmbienteService {
         try(val masterDao = new MasterOracleDAO(ambiente)) {
             queries.parallelStream().forEach(query -> {
                 try {
-                    masterDao.runDQL(query);
+                    masterDao.testDQL(query);
                 }
                 catch(SQLException | PersistenceException e) {
                     throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
@@ -243,7 +243,7 @@ public class AmbienteService {
         try(val masterDao = new MasterOracleDAO(ambiente)) {
             queries.parallelStream().forEach(query -> {
                 try {
-                    masterDao.runDML(query);
+                    masterDao.testDML(query);
                 }
                 catch(SQLException | PersistenceException e) {
                     throw new RuntimeException(SqlSintaxe.getExceptionMainCause(e));
