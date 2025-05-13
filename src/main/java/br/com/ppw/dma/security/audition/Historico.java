@@ -41,7 +41,7 @@ public class Historico implements MasterEntity<Long> {
     @Comment("Método da requisição")
     String metodo;
 
-    @Column(name = "IP", nullable = false, length = 10)
+    @Column(name = "IP", nullable = false, length = 50)
     @Comment("Ip de quem fez a requisição")
     String ip;
 
