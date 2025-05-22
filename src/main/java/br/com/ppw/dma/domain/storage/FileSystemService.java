@@ -41,7 +41,7 @@ public class FileSystemService implements StorageService {
             properties.getLocation());
         if(!this.pathLocation.toFile().exists()) {
             if(!this.pathLocation.toFile().mkdir())
-                throw new RuntimeException("Não foi possível criar diretório do DetMaker: " + pathLocation);
+                throw new StorageException("Não foi possível criar diretório do DetMaker: " + pathLocation);
         }
         log.info("Diretório do DetMaker: '{}'.", this.pathLocation.toAbsolutePath());
     }
@@ -49,10 +49,9 @@ public class FileSystemService implements StorageService {
     @Override
     public File store(MultipartFile file) {
         try {
-            if(file.isEmpty()) throw new StorageException("O arquivo enviado está vazio!");
+            if(file.isEmpty()) throw new IllegalArgumentException("O arquivo enviado está vazio!");
 
             Path destinationFile = doFilePath(file.getOriginalFilename());
-            validade(destinationFile);
             try(InputStream inputStream = file.getInputStream()) {
                 return save(inputStream, destinationFile);
             }
@@ -64,10 +63,9 @@ public class FileSystemService implements StorageService {
 
     public File store(PipelineJobCargaDTO file) {
         try {
-            if(file.getConteudo().isEmpty()) throw new StorageException("O arquivo enviado está vazio!");
+            if(file.getConteudo().isEmpty()) throw new IllegalArgumentException("O arquivo enviado está vazio!");
 
             Path destinationFile = doFilePath(file.getNome());
-            validade(destinationFile);
             val conteudoBytes = file.getConteudo().getBytes();
             try(InputStream inputStream = new ByteArrayInputStream(conteudoBytes)) {
                 return save(inputStream, destinationFile);
@@ -84,7 +82,6 @@ public class FileSystemService implements StorageService {
                 throw new StorageException("O conteúdo do ExecFile ID " +file.getId()+ " está vazio!");
 
             Path destinationFile = doFilePath(file.getArquivoNome());
-            validade(destinationFile);
             val conteudoBytes = file.getArquivo().getBytes();
             try(InputStream inputStream = new ByteArrayInputStream(conteudoBytes)) {
                 return save(inputStream, destinationFile);
@@ -97,10 +94,9 @@ public class FileSystemService implements StorageService {
 
     public File store(TaskPayloadJobCarga file) {
         try {
-            if(file.getConteudo().isEmpty()) throw new StorageException("O arquivo enviado está vazio!");
+            if(file.getConteudo().isEmpty()) throw new IllegalArgumentException("O arquivo enviado está vazio!");
 
             Path destinationFile = doFilePath(file.getNome());
-            validade(destinationFile);
             val conteudoBytes = file.getConteudo().getBytes();
             try(InputStream inputStream = new ByteArrayInputStream(conteudoBytes)) {
                 return save(inputStream, destinationFile);
@@ -118,14 +114,10 @@ public class FileSystemService implements StorageService {
             .toAbsolutePath();
     }
 
-    //Validação de segurança
-    private void validade(Path destinationFile) {
-        if (!destinationFile.getParent().equals(this.pathLocation.toAbsolutePath())) {
-            throw new StorageException("Não é permitido salvar arquivos fora do diretório configurado!");
-        }
-    }
-
     private File save(InputStream inputStream, Path destinationFile) throws IOException {
+        if(!destinationFile.getParent().equals(this.pathLocation.toAbsolutePath())) {
+            throw new IllegalArgumentException("Não é permitido salvar arquivos fora do diretório configurado!");
+        }
         Files.copy(inputStream, destinationFile, REPLACE_EXISTING);
         return destinationFile.toFile();
     }
@@ -147,11 +139,7 @@ public class FileSystemService implements StorageService {
         if(filename == null || filename.isBlank()) {
             throw new IllegalArgumentException("Nome de arquivo inválido: nulo ou vazio");
         }
-        // Sanitiza o nome do arquivo para remover caracteres perigosos
-        var sanitizedFilename = StringUtils.cleanPath(filename);
-        if(sanitizedFilename.contains("..")) {
-            throw new IllegalArgumentException("Nome de arquivo inválido: " + sanitizedFilename);
-        }
+        var sanitizedFilename = sanitizeFilename(filename);
         return pathLocation.resolve(sanitizedFilename);
     }
 
@@ -205,6 +193,17 @@ public class FileSystemService implements StorageService {
             throw new RuntimeException(e.getMessage());
         }
         return arquivoString.toString();
+    }
+
+    public static String sanitizeFilename(String filename) {
+        var sanitizedFilename = StringUtils.cleanPath(filename);
+        var isInvalidPath = sanitizedFilename == null
+            || sanitizedFilename.contains("..")
+            || sanitizedFilename.contains("\r")
+            || sanitizedFilename.contains("\n")
+            || !sanitizedFilename.matches("[a-zA-Z0-9_.-]+");
+        if (!isInvalidPath) throw new IllegalArgumentException("Nome de arquivo inválido.");
+        return sanitizedFilename;
     }
 
 }
