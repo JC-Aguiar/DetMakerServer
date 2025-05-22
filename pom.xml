@@ -110,56 +110,50 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
-		<!-- Spring Boot Starter AOP -->
+		<!-- ÚTIL: Spring Boot Starter AOP -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-aop</artifactId>
 			<version>2.6.3</version>
 		</dependency>
-		<!-- Nimbus JOSE+JWT para validação manual de JWT -->
-<!--		<dependency>-->
-<!--			<groupId>com.nimbusds</groupId>-->
-<!--			<artifactId>nimbus-jose-jwt</artifactId>-->
-<!--			<version>9.31</version>-->
-<!--		</dependency>-->
-		<!-- Lombok -->
+		<!-- ÚTIL: Lombok -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
 		</dependency>
-		<!-- Mapeador de Caminhos XML -->
+		<!-- Mapeador de Caminhos XML --> <!-- TODO: ainda necessário? -->
 		<dependency>
 			<groupId>com.fasterxml.jackson.dataformat</groupId>
 			<artifactId>jackson-dataformat-xml</artifactId>
-			<version>2.14.3</version> <!-- Verifique a versão mais recente -->
+			<version>2.14.3</version>
 		</dependency>
-		<!-- ModelMapper (conversor) -->
+		<!-- ÚTIL: ModelMapper, conversor de entidades -->
 		<dependency>
 			<groupId>org.modelmapper</groupId>
 			<artifactId>modelmapper</artifactId>
 			<version>3.0.0</version>
 		</dependency>
-		<!-- Gson -->
+		<!-- Gson --> <!-- TODO: ainda necessário? -->
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
 			<artifactId>gson</artifactId>
 			<version>2.9.0</version>
 		</dependency>
-		<!-- J-Unit  -->
+		<!-- TESTE: J-Unit  -->
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 			<version>4.13.1</version>
 			<scope>test</scope>
 		</dependency>
-		<!-- JSCH (SFTP) -->
+		<!-- CORE: JSCH (SFTP) -->
 		<dependency>
 			<groupId>com.jcraft</groupId>
 			<artifactId>jsch</artifactId>
 			<version>0.1.55</version>
 		</dependency>
-		<!-- Apache POI (Word, Excel...) -->
+		<!-- FEATURE: Apache POI (Word, Excel...) -->
 		<dependency>
 			<groupId>org.apache.poi</groupId>
 			<artifactId>poi</artifactId>
@@ -170,18 +164,24 @@
 			<artifactId>poi-ooxml</artifactId>
 			<version>5.2.3</version>
 		</dependency>
-		<!-- Oracle Drive -->
+		<!-- BANCO: Oracle Drive -->
 		<dependency>
 			<groupId>com.oracle.database.jdbc</groupId>
 			<artifactId>ojdbc8</artifactId>
 			<version>21.8.0.0</version>
 			<scope>runtime</scope>
 		</dependency>
-		<!-- Gerador de Massa -->
+		<!-- CORE: Gerador de Massa -->
 		<dependency>
 			<groupId>br.com.aguiar</groupId>
 			<artifactId>GeradorAleatorio</artifactId>
 			<version>v2.1</version>
+		</dependency>
+		<!-- SEGURANÇA: OWASP Java Encoder  -->
+		<dependency>
+			<groupId>org.owasp.encoder</groupId>
+			<artifactId>encoder</artifactId>
+			<version>1.2.3</version>
 		</dependency>
 	</dependencies>
 

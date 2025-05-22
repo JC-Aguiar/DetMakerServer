@@ -28,9 +28,11 @@ import jakarta.validation.ValidationException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.owasp.encoder.Encode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -466,6 +468,7 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         @PathVariable(name = "clientId") Long clientId,
         @PathVariable(name = "name") String nome)
     {
+        //TODO: nome.matches("[a-zA-Z0-9_-]+") ...?
         var pipeline = pipelineService.getUniqueOne(nome, clientId);
         if (pipeline.isPresent()) {
             pipeline.get().setOcultar(true);
@@ -474,9 +477,12 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         else {
             return ResponseEntity
                 .status(HttpStatus.NOT_ACCEPTABLE)
-                .body("Pipeline '" + nome + "' não encontrada.");
+                .contentType(MediaType.TEXT_PLAIN)
+                .body("Pipeline '" + Encode.forHtml(nome) + "' não encontrada.");
         }
-        return ResponseEntity.ok("Pipeline '" + nome + "' deletada com sucesso.");
+        return ResponseEntity.ok()
+            .contentType(MediaType.TEXT_PLAIN)
+            .body("Pipeline '" + Encode.forHtml(nome) + "' deletada com sucesso.");
     }
 
 }

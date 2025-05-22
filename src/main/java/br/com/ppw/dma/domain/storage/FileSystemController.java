@@ -4,9 +4,11 @@ import br.com.ppw.dma.exception.StorageFileNotFoundException;
 import br.com.ppw.dma.domain.master.MasterSummary;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.owasp.encoder.Encode;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -22,30 +24,33 @@ import java.util.function.Predicate;
 @RequestMapping("storage")
 public class FileSystemController {
 
-    private final StorageService storageService;
-
+    private final FileSystemService storageService;
 
     @Autowired
-    public FileSystemController(StorageService storageService) {
+    public FileSystemController(FileSystemService storageService) {
         this.storageService = storageService;
     }
+
 
     @GetMapping("/files/{filename:.+}")
     @ResponseBody
     public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
-        var sanitizedFilename = StringUtils.cleanPath(filename);
-        if(sanitizedFilename.contains("..") || sanitizedFilename.contains("\r") || sanitizedFilename.contains("\n")) {
-            throw new IllegalArgumentException("Nome de arquivo inválido.");
-        }
+        var sanitizedFilename = FileSystemService.sanitizeFilename(filename);
+
         Resource file = storageService.loadAsResource(sanitizedFilename);
-        if(file == null || file.getFilename() == null) {
+        if(file == null || file.getFilename() == null || !file.exists()) {
             return ResponseEntity.notFound().build();
         }
-        var headerValue = "attachment; filename=\"%s\"".formatted(
-            sanitizedFilename.replace("\"", "\\\"")
-        );;
+        // Escapar o nome do arquivo para cabeçalhos HTTP
+        var headerFilename = sanitizedFilename.replaceAll("[^a-zA-Z0-9_.-]", "_");
+        var headerContentDisposition = "attachment; filename=\"%s\"".formatted(headerFilename);
+
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, headerValue)
+            .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            .header(HttpHeaders.CONTENT_DISPOSITION, headerContentDisposition)
+            .header(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate")
+            .header(HttpHeaders.PRAGMA, "no-cache")
+            .header(HttpHeaders.EXPIRES, "0")
             .body(file);
     }
 
@@ -54,8 +59,7 @@ public class FileSystemController {
     public ResponseEntity<MasterSummary<String>> upload(@RequestParam("files") List<MultipartFile> files) {
         val summary = new MasterSummary<String>();
         files.forEach(file -> Optional.ofNullable(file.getOriginalFilename())
-            .map(StringUtils::cleanPath)
-            .filter(name -> !name.contains(".."))
+            .map(FileSystemService::sanitizeFilename)
             .filter(name -> Objects.equals(file.getContentType(), "text/plain"))
             .filter(this::isValidExtension)
             .ifPresentOrElse(

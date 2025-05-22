@@ -76,6 +76,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             .sucesso(!pipelineResult.isErro())
             .erroFatal(pipelineResult.getMensagemErro())
             .build();
+        relatorioService.save(relatorio);
 
         log.info("Iniciando geração de Evidências para {} registro(s).", jobsResult.size());
         var evidencias = jobsResult.stream()
@@ -98,7 +99,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
 
         try {
             var evidencia = new Evidencia(process);
-            relatorio.getEvidencias().add(evidencia);
+            evidencia.setRelatorio(relatorio);
             log.info(evidencia.toString());
 
             //TODO: Precisa melhorar esse processo. Criar uma tabela relacionada só de erros
