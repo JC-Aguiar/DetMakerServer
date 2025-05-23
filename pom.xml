@@ -175,7 +175,8 @@
 		<dependency>
 			<groupId>br.com.aguiar</groupId>
 			<artifactId>GeradorAleatorio</artifactId>
-			<version>v2.1</version>
+<!--			<version>v2.1</version>-->
+			<version>v1.3-RC0</version>
 		</dependency>
 		<!-- SEGURANÇA: OWASP Java Encoder  -->
 		<dependency>
