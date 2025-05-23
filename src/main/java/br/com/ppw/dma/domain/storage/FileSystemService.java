@@ -109,7 +109,7 @@ public class FileSystemService implements StorageService {
 
     private Path doFilePath(String name) {
         return this.pathLocation
-            .resolve(Paths.get(name))
+            .resolve(Paths.get(sanitizeFilename(name)))
             .normalize()
             .toAbsolutePath();
     }
