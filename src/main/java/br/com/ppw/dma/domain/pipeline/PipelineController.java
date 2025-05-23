@@ -329,54 +329,6 @@ public class PipelineController extends MasterController<Long, Pipeline, Pipelin
         return ResponseEntity.ok(queueResponse);
     }
 
-    public ResponseEntity<RelatorioHistoricoDTO> run(@NonNull TaskPayload preparation) {
-//        var resumoMassasGeradas = new MasterSummary<MassaPreparada>();
-//        try {
-//            if(preparation.massas() != null && preparation.massas().size() > 0) {
-//                resumoMassasGeradas = massaService.newInserts(
-//                    AmbienteAcessoDTO.banco(preparation.ambiente()),
-//                    preparation.massas()
-//                );
-//            }
-//            if(resumoMassasGeradas.getStatus() != SummaryStatus.SUCESSO) {
-//                var mensagem = new StringBuilder("Erro na geração das Massas.\n");
-//                resumoMassasGeradas.getFailed().forEach(
-//                    (obj, erro) -> mensagem
-//                        .append(obj.getTabela())
-//                        .append(": ")
-//                        .append(erro)
-//                        .append("\n")
-//                );
-//                throw new RuntimeException(mensagem.toString());
-//            }
-
-        //DESENVOLVIMENTO:
-//        log.info(preparation.toString());
-        return ResponseEntity.ok(null);
-
-        //PRODUÇÃO:
-//            val jobsProcessados = jobService.executar(
-//                preparation.ambiente().acessoBanco(),
-//                preparation.ambiente().acessoFtp(),
-//                preparation.jobs()
-//            );
-//            val evidencias = evidenciaService.gerarEvidencia(jobsProcessados);
-//            val relatorio = relatorioService.buildAndPersist(preparation, evidencias);
-//            val relatorioHistorico = new RelatorioHistoricoDTO(relatorio);
-//            return ResponseEntity.ok(relatorioHistorico);
-
-
-
-//        }
-//        finally {
-//            log.info("Deletando Massas salvas");
-//           massaService.delete(
-//               preparation.ambiente(),
-//               resumoMassasGeradas.getSaved()
-//           );
-//        }
-    }
-
     @PostMapping(value = "new")
     public ResponseEntity<?> createNew(@RequestBody PipelineInfoDTO dto)
     throws DuplicatedRecordException {

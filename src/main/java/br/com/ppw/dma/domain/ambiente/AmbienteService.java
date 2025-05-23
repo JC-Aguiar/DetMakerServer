@@ -25,15 +25,6 @@ public class AmbienteService {
 
     @Autowired private AmbienteRepository dao;
 
-    /**
-     * The proxy is a static method that returns a singleton instance of the service
-     *
-     * @return The proxy object.
-     */
-    protected final AmbienteService proxy() {
-        return (AmbienteService) AopContext.currentProxy();
-    }
-
     public Optional<Ambiente> addOne(@NotNull Ambiente entity) throws DuplicatedRecordException {
         try {
             return Optional.of(dao.save(entity));
@@ -51,20 +42,17 @@ public class AmbienteService {
         return record;
     }
 
-    // A proxy method that calls `pageCheck` method.
     public List<Ambiente> findAll() {
         return dao.findAll();
     }
 
-    // A method that validates the page.
     public Page<Ambiente> pageCheck(@NonNull Page<Ambiente> page) {
         page.stream().map(Objects::nonNull).findFirst().orElseThrow();
         return page;
     }
 
-    // A proxy method that calls `pageCheck` method.
     public Page<Ambiente> findAll(@NonNull Pageable pageable) {
-        return proxy().pageCheck(dao.findAll(pageable));
+        return pageCheck(dao.findAll(pageable));
     }
 
     public List<Ambiente> findAllById(List<Long> ids) {
