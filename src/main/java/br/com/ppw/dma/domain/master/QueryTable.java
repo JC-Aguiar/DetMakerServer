@@ -23,7 +23,7 @@ public record QueryTable(
 	}
 
 	public Set<String> getColumnsNames() {
-		return columns().parallelStream()
+		return columns().stream()
 			.map(QueryFilter::column)
 			.collect(Collectors.toSet());
 	}

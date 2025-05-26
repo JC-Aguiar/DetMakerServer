@@ -76,7 +76,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             .sucesso(!pipelineResult.isErro())
             .erroFatal(pipelineResult.getMensagemErro())
             .build();
-        relatorioService.save(relatorio);
+//        relatorioService.save(relatorio);
 
         log.info("Iniciando geração de Evidências para {} registro(s).", jobsResult.size());
         var evidencias = jobsResult.stream()

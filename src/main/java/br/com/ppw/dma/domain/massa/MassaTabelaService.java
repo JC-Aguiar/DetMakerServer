@@ -179,15 +179,15 @@ public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTa
         log.info("Gerando Massas solicitadas.");
         var tabelas = new HashSet<String>();
         var colunas = new HashSet<String>();
-        tabelasDto.parallelStream().forEach(dto -> {
+        tabelasDto.stream().forEach(dto -> {
            tabelas.add(dto.getNome());
             dto.getColunas()
-                .parallelStream()
+                .stream()
                 .map(MassaColunaDTO::getNome)
                 .forEach(colunas::add);
         });
         ambienteService.getMetadatasFromTables(tabelas, colunas, banco).forEach(
-            tabelaDb -> tabelasDto.parallelStream().forEach(dto -> dto.atualizar(tabelaDb))
+            tabelaDb -> tabelasDto.stream().forEach(dto -> dto.atualizar(tabelaDb))
         );
         //TODO: o formato de data deveria estar em Ambiente.bancoDataFormato ou Global.bancoDataFormato.
         return GeradorDeMassa.mapearMassa(FormatDate.BRASIL_STYLE, tabelasDto);
@@ -201,7 +201,7 @@ public class MassaTabelaService extends MasterService<Long, MassaTabela, MassaTa
         log.info("Obtendo e validando as massas {} do cliente '{}'.", massasNome, cliente.getNome());
         var massas = findByClienteIdAndNomes(cliente.getId(), massasNome);
         var massasPendentes = massasNome
-            .parallelStream()
+            .stream()
             .filter(nome ->  massas.stream().noneMatch(massa -> massa.getNome().equals(nome)))
             .toList();
         if(massasPendentes.isEmpty()) return massas;

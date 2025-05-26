@@ -18,7 +18,7 @@ public record QueryExtraction(
 
 	public Set<String> getAllColumnNames() {
 		var allColumns = new HashSet<>(columns);
-		filters.parallelStream()
+		filters.stream()
 			.map(QueryFilter::column)
 			.forEach(allColumns::add);
 		return allColumns;

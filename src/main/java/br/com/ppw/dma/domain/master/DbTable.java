@@ -14,7 +14,7 @@ public record DbTable(
 	@NonNull Set<DbColumn> colunas) {
 
 	public Set<String> getColumnsNames() {
-		return colunas.parallelStream()
+		return colunas.stream()
 			.map(DbColumn::name)
 			.collect(Collectors.toSet());
 	}
