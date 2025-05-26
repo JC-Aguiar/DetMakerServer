@@ -545,13 +545,13 @@ public class BasicTest {
         Assertions.assertTrue(colunasEsperadas.containsAll(columns), "Existe coluna a mais");
 
         Assertions.assertTrue(
-            filters.parallelStream().allMatch(
-                filter -> filtrosEsperados.parallelStream().anyMatch(esperado -> esperado.equals(filter))),
+            filters.stream().allMatch(
+                filter -> filtrosEsperados.stream().anyMatch(esperado -> esperado.equals(filter))),
             "Existe filtro pendente"
         );
         Assertions.assertTrue(
-            filtrosEsperados.parallelStream().allMatch(
-                esperado -> filters.parallelStream().anyMatch(filter -> filter.equals(esperado))),
+            filtrosEsperados.stream().allMatch(
+                esperado -> filters.stream().anyMatch(filter -> filter.equals(esperado))),
             "Existe filtro a mais"
         );
 
@@ -615,7 +615,7 @@ public class BasicTest {
             "rcvry"
         );
         try(val masterDao = new MasterOracleDAO(ambiente)) {
-            filters.parallelStream()
+            filters.stream()
                 .map(QueryFilter::column)
                 .forEach(columns::add);
             var tablesDb = masterDao.extractInfoFromTables(tables, columns);
@@ -623,28 +623,28 @@ public class BasicTest {
             tablesDb.stream().forEach(table -> log.info(table.toString()));
 
             Assertions.assertTrue(
-                tablesDb.parallelStream()
+                tablesDb.stream()
                     .map(DbTable::tabela)
                     .collect(toSet())
                     .containsAll(tabelasEsperadas),
                 "Existe table pendente após coleta dos metadados");
 
             Assertions.assertTrue(
-                tablesDb.parallelStream()
+                tablesDb.stream()
                     .map(DbTable::getColumnsNames)
-                    .flatMap(Set::parallelStream)
+                    .flatMap(Set::stream)
                     .collect(toSet())
                     .containsAll(colunasEsperadas),
                 "Existe coluna pendente após coleta dos metadados"
             );
 
             Assertions.assertTrue(
-                tablesDb.parallelStream()
+                tablesDb.stream()
                     .map(DbTable::getColumnsNames)
-                    .flatMap(Set::parallelStream)
+                    .flatMap(Set::stream)
                     .collect(toSet())
                     .containsAll(
-                        filtrosEsperados.parallelStream()
+                        filtrosEsperados.stream()
                             .map(QueryFilter::column)
                             .collect(toSet())
                     ),

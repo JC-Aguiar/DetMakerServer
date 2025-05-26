@@ -23,7 +23,7 @@ implements ColunaDataInfo {
 	}
 
 	public Map<String, String> variablesWithRandomValues() {
-		return variables().parallelStream().collect(Collectors.toMap(
+		return variables().stream().collect(Collectors.toMap(
 			QueryVariable::name,
 			variable -> metadata.type().valorAleatorio(this)
 		));
@@ -51,8 +51,8 @@ implements ColunaDataInfo {
 			var sameVariablesSize = this.variables().size() == other.variables().size();
 			var sameMetadata = Objects.equals(this.metadata, other.metadata);
 			if(!sameName || !sameVariablesSize || !sameMetadata) return false;
-			return this.variables.parallelStream().allMatch(
-				myVar -> other.variables.parallelStream().anyMatch(myVar::equals)
+			return this.variables.stream().allMatch(
+				myVar -> other.variables.stream().anyMatch(myVar::equals)
 			);
 		}
 		return false;

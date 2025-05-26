@@ -4,10 +4,3 @@ include:
   - project: 'atendimento1/build-automatizado'
     ref: master
     file: '/.gitlab-ci-maven-jar-17.yml'
-
-#  - project: 'atendimento1/atendimento1/vivo3/entregas'
-#    ref: master
-#    file: '/templates/.gitlab-ci-cliente.yml'
-#  - project: 'atendimento1/atendimento1/outros'
-#    ref: master
-#    file: '/templates/.gitlab-ci-maven-jar.yml'

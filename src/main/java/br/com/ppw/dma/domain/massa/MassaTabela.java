@@ -55,7 +55,7 @@ public class MassaTabela implements MasterEntity<Long> {
     public MassaTabela(@NonNull MassaTabelaDTO dto) {
         this.nome = dto.getNome();
         this.colunas = dto.getColunas()
-            .parallelStream()
+            .stream()
             .map(MassaColuna::new)
             .peek(col -> col.setTabelaId(this))
             .toList();
@@ -66,7 +66,7 @@ public class MassaTabela implements MasterEntity<Long> {
         return new MassaTabelaDTO(this);
 //        var dto = new MassaTabelaDTO(this.name);
 //        this.column
-//            .parallelStream()
+//            .stream()
 //            .map(MassaColuna::toDto)
 //            .forEach(dto::addColuna);
 //        dto.setUsaPessoa(this.usaPessoa);

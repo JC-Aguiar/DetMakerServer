@@ -82,13 +82,13 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
 //        log.info("Nenhuma alteração será de fato persistida no banco!");
         var ambiente = ambienteService.findById(ambienteId);
         var massa = service.updateMetadataAndMockValues(ambiente.acessoBanco(), List.of(dto));
-        if(massa.parallelStream().anyMatch(MassaPreparada::isErros)) {
+        if(massa.stream().anyMatch(MassaPreparada::isErros)) {
             log.warn("Massa possui erros!");
             throw new RuntimeException(
                 "Existem campos não mapeados com sucesso: " + massa
-                    .parallelStream()
+                    .stream()
                     .map(MassaPreparada::getColunasErro)
-                    .flatMap(erros -> erros.keySet().parallelStream())
+                    .flatMap(erros -> erros.keySet().stream())
                     .collect(Collectors.joining(", "))
             );
         }

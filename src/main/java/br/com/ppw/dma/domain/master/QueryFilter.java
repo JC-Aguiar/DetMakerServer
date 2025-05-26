@@ -12,8 +12,8 @@ public record QueryFilter(@NonNull String column, @NonNull Set<QueryVariable> va
 			var sameName = this.column.equals(other.column);
 			var sameVariablesSize = this.variables.size() == other.variables.size();
 			if(!sameName || !sameVariablesSize) return false;
-			return this.variables.parallelStream().allMatch(
-				myVar -> other.variables.parallelStream().anyMatch(myVar::equals)
+			return this.variables.stream().allMatch(
+				myVar -> other.variables.stream().anyMatch(myVar::equals)
 			);
 		}
 		return false;

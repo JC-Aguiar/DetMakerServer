@@ -35,14 +35,14 @@ public class MassaTabelaDTO implements MassaTabelaInfo {
 	public MassaTabelaDTO(@NonNull MassaTabela entidade) {
 		this.nome = entidade.getNome();
 		this.colunas = entidade.getColunas()
-			.parallelStream()
+			.stream()
 			.map(MassaColunaDTO::new)
 			.toList();
 		this.usaPessoa = entidade.getUsaPessoa();
 //
 //		this.name = entidade.getNome();
 //		this.column = entidade.getColunas()
-//			.parallelStream()
+//			.stream()
 //			.map(MassaColunaDTO::new);
 //		this.opcao = entidade.getOpcao();
 //		this.tamanho = info.length();
@@ -57,8 +57,8 @@ public class MassaTabelaDTO implements MassaTabelaInfo {
 	 */
 	public boolean atualizar(@NonNull DbTable tabelaBanco) {
 		if(!nome.equalsIgnoreCase(tabelaBanco.tabela())) return false;
-		return tabelaBanco.colunas().parallelStream().allMatch(
-			colunaDb -> this.colunas.parallelStream().anyMatch(
+		return tabelaBanco.colunas().stream().allMatch(
+			colunaDb -> this.colunas.stream().anyMatch(
 				col -> col.atualizar(colunaDb)
 			)
 		);

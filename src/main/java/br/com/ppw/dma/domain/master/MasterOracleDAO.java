@@ -56,7 +56,7 @@ public class MasterOracleDAO implements AutoCloseable {
         var tables = extraction.tables();
         var columns = extraction.columns();
         extraction.filters()
-            .parallelStream()
+            .stream()
             .map(QueryFilter::column)
             .forEach(columns::add);
 
@@ -64,11 +64,11 @@ public class MasterOracleDAO implements AutoCloseable {
         var dbInfo = extractInfoFromTables(tables, columns);
 
         log.info("Vinculando variáveis das queries no resultado do banco.");
-        extraction.filters().parallelStream().forEach(
+        extraction.filters().forEach(
             queryFilter -> dbInfo
-                .parallelStream()
+                .stream()
                 .map(DbTable::colunas)
-                .flatMap(Set::parallelStream)
+                .flatMap(Set::stream)
                 .forEach(dbCol -> dbCol.addVariable(queryFilter))
         );
         return dbInfo;
@@ -100,7 +100,7 @@ public class MasterOracleDAO implements AutoCloseable {
                     .variables(new HashSet<>())
                     .build();
 
-                tabelasConsultadas.parallelStream()
+                tabelasConsultadas.stream()
                     .filter(t -> t.tabela().equalsIgnoreCase(nomeTabela))
                     .findFirst()
                     .ifPresentOrElse(
@@ -129,12 +129,12 @@ public class MasterOracleDAO implements AutoCloseable {
             .replace("'", "")
             .replace("\"", "");
 
-        var tabelasNomes = tabelas.parallelStream()
+        var tabelasNomes = tabelas.stream()
             .map(formatName)
             .map(nome -> "'" +nome+ "'")
             .collect(Collectors.joining(", "));
 
-        var colunasNomes = colunas.parallelStream()
+        var colunasNomes = colunas.stream()
             .map(formatName)
             .map(nome -> "'" +nome+ "'")
             .collect(Collectors.joining(", "));

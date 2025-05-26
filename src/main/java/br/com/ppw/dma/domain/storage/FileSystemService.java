@@ -196,13 +196,17 @@ public class FileSystemService implements StorageService {
     }
 
     public static String sanitizeFilename(String filename) {
+        if (filename == null || filename.isBlank())
+            throw new IllegalArgumentException("Nome de arquivo inválido: nulo ou vazio.");
+
         var sanitizedFilename = StringUtils.cleanPath(filename);
         var isInvalidPath = sanitizedFilename == null
             || sanitizedFilename.contains("..")
             || sanitizedFilename.contains("\r")
             || sanitizedFilename.contains("\n")
             || !sanitizedFilename.matches("[a-zA-Z0-9_.-]+");
-        if (!isInvalidPath) throw new IllegalArgumentException("Nome de arquivo inválido.");
+        if (isInvalidPath) throw new IllegalArgumentException("Nome de arquivo inválido.");
+
         return sanitizedFilename;
     }
 

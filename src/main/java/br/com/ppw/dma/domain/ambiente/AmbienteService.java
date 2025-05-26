@@ -175,7 +175,7 @@ public class AmbienteService {
             .forEach(extraction -> {
                 tables.addAll(extraction.tables());
                 extraction.filters()
-                    .parallelStream()
+                    .stream()
                     .map(QueryFilter::column)
                     .forEach(columns::add);
             });
@@ -185,7 +185,7 @@ public class AmbienteService {
     //Valida e executa (com ROWNUM = 1 e sem commit) qualquer tipo de query
     public void validadeQuerySQL(@NonNull Set<String> queries, @NonNull Ambiente ambiente) {
         try(val masterDao = new MasterOracleDAO(ambiente)) {
-            queries.parallelStream().forEach(query -> {
+            queries.stream().forEach(query -> {
                 try {
                     masterDao.runSQL(query);
                 }
@@ -207,7 +207,7 @@ public class AmbienteService {
     //Valida e executa (com ROWNUM = 1) queries DQL (de consulta)
     public void validadeQueryDQL(@NonNull Set<String> queries, @NonNull AmbienteAcessoDTO ambiente) {
         try(val masterDao = new MasterOracleDAO(ambiente)) {
-            queries.parallelStream().forEach(query -> {
+            queries.stream().forEach(query -> {
                 try {
                     masterDao.testDQL(query);
                 }
@@ -229,7 +229,7 @@ public class AmbienteService {
     //Valida e executa (com ROWNUM = 1 e sem commit) queries DQL (de registro)
     public void validadeQueryDML(@NonNull Set<String> queries, @NonNull AmbienteAcessoDTO ambiente) {
         try(val masterDao = new MasterOracleDAO(ambiente)) {
-            queries.parallelStream().forEach(query -> {
+            queries.stream().forEach(query -> {
                 try {
                     masterDao.testDML(query);
                 }
@@ -246,7 +246,7 @@ public class AmbienteService {
     //Executa query
     public void runQuery(@NonNull Set<String> queries, @NonNull AmbienteAcessoDTO ambiente) {
         try(val masterDao = new MasterOracleDAO(ambiente)) {
-            queries.parallelStream().forEach(query -> {
+            queries.stream().forEach(query -> {
                 try {
                     masterDao.runSQL(query);
                 }
