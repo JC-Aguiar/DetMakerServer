@@ -64,7 +64,7 @@ public class Ambiente implements MasterEntity<Long> {
     Cliente cliente; //TODO: precisa ser não-nulo
 
 
-    public Ambiente(@NonNull AmbienteInfoDTO dto, @NonNull Cliente cliente) {
+    public Ambiente(@NonNull NewAmbienteDTO dto, @NonNull Cliente cliente) {
         this.nome = dto.getNome();
         this.conexaoSftp = dto.getFtp().getConexao();
         this.usuarioSftp = dto.getFtp().getUsuario();

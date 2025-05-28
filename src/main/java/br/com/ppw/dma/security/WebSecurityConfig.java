@@ -46,6 +46,7 @@ public class WebSecurityConfig {
         http.authorizeHttpRequests(registry -> registry
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/csp-report").permitAll()
+                .requestMatchers("/props").permitAll()
                 .anyRequest().authenticated()
             )
             .csrf(AbstractHttpConfigurer::disable)
