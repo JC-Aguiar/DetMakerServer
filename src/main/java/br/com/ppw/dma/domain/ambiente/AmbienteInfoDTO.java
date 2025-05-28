@@ -1,6 +1,5 @@
 package br.com.ppw.dma.domain.ambiente;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.Data;
@@ -13,14 +12,11 @@ import lombok.experimental.FieldDefaults;
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class AmbienteInfoDTO {
 
-    @NotNull Long id;
-    @NotNull String nome;
+    Long id;
+    String nome;
     AmbienteAcessoDTO banco;
     AmbienteAcessoDTO ftp;
 
-    public AmbienteInfoDTO(@NotBlank String nome) {
-        this.nome = nome;
-    }
 
     public AmbienteInfoDTO(@NonNull Ambiente ambiente) {
         this.id = ambiente.getId();

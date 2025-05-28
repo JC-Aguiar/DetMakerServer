@@ -1,6 +1,7 @@
 package br.com.ppw.dma.domain.cliente;
 
 import br.com.ppw.dma.domain.ambiente.AmbienteInfoDTO;
+import br.com.ppw.dma.domain.ambiente.NewAmbienteDTO;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;

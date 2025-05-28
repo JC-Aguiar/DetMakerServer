@@ -1,9 +1,6 @@
 package br.com.ppw.dma.domain.cliente;
 
-import br.com.ppw.dma.domain.ambiente.Ambiente;
-import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
-import br.com.ppw.dma.domain.ambiente.AmbienteInfoDTO;
-import br.com.ppw.dma.domain.ambiente.AmbienteService;
+import br.com.ppw.dma.domain.ambiente.*;
 import br.com.ppw.dma.net.ConectorSftp;
 import jakarta.validation.Valid;
 import lombok.NonNull;
@@ -31,31 +28,25 @@ public class ClienteController {
 
     public ClienteController(
         @Autowired ClienteService clienteService,
-        @Autowired AmbienteService ambienteService) {
-        //--------------------------------------------
+        @Autowired AmbienteService ambienteService)
+    {
         this.clienteService = clienteService;
         this.ambienteService = ambienteService;
     }
 
-    @GetMapping(value = "ping")
-    public ResponseEntity<String> ping() {
-        return ResponseEntity.ok("pong");
-    }
-
     @GetMapping
     public ResponseEntity<List<ClienteInfoDTO>> get() {
-        //--------------------------------------------------------------
         //final Pageable pageConfig = PageRequest.of(page, itens, Sort.by("id").ascending());
         final List<ClienteInfoDTO> clientesDto = clienteService
             .findAll()
             .stream()
-            .map(clt -> {
+            .map(cliente -> {
                 final List<AmbienteInfoDTO> ambientesDto = ambienteService
-                    .findAllFromCliente(clt)
+                    .findAllFromCliente(cliente)
                     .stream()
                     .map(AmbienteInfoDTO::new)
                     .toList();
-                return new ClienteInfoDTO(clt, ambientesDto);
+                return new ClienteInfoDTO(cliente, ambientesDto);
             })
             .toList();
         return ResponseEntity.ok(clientesDto);
@@ -64,13 +55,12 @@ public class ClienteController {
     @PostMapping("{clientId}/new/ambiente")
     public ResponseEntity<AmbienteInfoDTO> novoAmbiente(
         @PathVariable(name = "clientId") Long clientId,
-        @Valid @RequestBody AmbienteInfoDTO dto) {
-        //-----------------------------------------
-        dto.setId(null);
+        @Valid @RequestBody NewAmbienteDTO dto)
+    {
         var cliente = clienteService.findById(clientId);
         var novoAmbiente = ambienteService.persist(new Ambiente(dto, cliente));
-        dto.setId(novoAmbiente.getId());
-        return ResponseEntity.ok(dto);
+        var result = new AmbienteInfoDTO(novoAmbiente);
+        return ResponseEntity.ok(result);
     }
 
     //TODO: REMOVER
@@ -78,8 +68,8 @@ public class ClienteController {
     public ResponseEntity<String> testarComando(
         @PathVariable() Long clientId,
         @PathVariable() String ambienteNome,
-        @NonNull @RequestBody String comando) {
-        //-----------------------------------------
+        @NonNull @RequestBody String comando)
+    {
         var ambiente = clienteService.findById(clientId)
             .getAmbientes()
             .stream()
@@ -112,8 +102,6 @@ public class ClienteController {
         }
         return sb.toString();
     }
-
-
 
     @PostMapping()
     public ResponseEntity<ClienteInfoDTO> novoCliente(@Valid @RequestBody ClienteNovoDTO dto) {
