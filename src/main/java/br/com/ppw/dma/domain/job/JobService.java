@@ -35,6 +35,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -61,8 +62,13 @@ public class JobService extends MasterService<Long, Job, JobService> {
         this.fileSystemService = fileSystemService;
     }
 
+    public Optional<Job> findByClienteAndNome(@NonNull Cliente cliente, String nome) {
+        log.info("Procurando no Cliente {} pelo Job {}.", cliente.getNome(), nome);
+        return dao.findByClienteAndNome(cliente, nome);
+    }
+
     public List<Job> findByClienteAndNome(@NonNull Cliente cliente, @NonNull List<String> nomes) {
-        log.info("Procurando Jobs do Cliente '{}' para os seguintes nomes: {}.",
+        log.info("Procurando no Cliente {} para os Jobs: {}.",
             cliente.getNome(),
             String.join(", ", nomes)
         );
@@ -75,12 +81,6 @@ public class JobService extends MasterService<Long, Job, JobService> {
         val result = dao.findAllByClienteId(clienteId);
         if(result.isEmpty()) throw new NoSuchElementException();
         return result;
-    }
-
-    public List<Job> persistAll(List<Job> jobs) {
-        return jobs.stream()
-            .map(this::persist)
-            .collect(Collectors.toList());
     }
 
     @Transactional

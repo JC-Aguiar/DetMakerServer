@@ -10,6 +10,8 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -58,35 +60,48 @@ public class JobController extends MasterController<Long, Job, JobController> {
     }
 
     @PostMapping("cliente/{clienteId}")
-    public ResponseEntity<JobInfoDTO> save(
+    public ResponseEntity<JobInfoDTO> create(
+        @AuthenticationPrincipal Jwt jwt,
         @PathVariable("clienteId") Long clienteId,
-        @RequestBody JobInfoDTO dto)
+        @RequestBody NewJobDTO newJobDTO)
+    {
+        var cliente = clienteService.findById(clienteId);
+        var job = new Job();
+        job.setNome(newJobDTO.getNome());
+        job.setCliente(cliente);
+        job.setDataAtualizacao(OffsetDateTime.now());
+        job.setAtualizadoPor(jwt.getSubject());
+        jobService.save(job);
+        var returnJobDto = JobInfoDTO.converterJob(job);
+        return ResponseEntity.ok(returnJobDto);
+    }
+
+    @PutMapping("cliente/{clienteId}")
+    public ResponseEntity<JobInfoDTO> update(
+        @AuthenticationPrincipal Jwt jwt,
+        @PathVariable("clienteId") Long clienteId,
+        @RequestBody UpdateJobDTO dto)
     {
         dto.setDiretorioEntrada(valorVazio(dto.getDiretorioEntrada()));
         dto.setDiretorioSaida(valorVazio(dto.getDiretorioSaida()));
         dto.setDiretorioLog(valorVazio(dto.getDiretorioLog()));
 
         var cliente = clienteService.findById(clienteId);
-        var job = Optional.ofNullable(dto.getId())
-            .map(id -> {
-                var entidade = jobService.findById(id);
-                mapper.map(dto, entidade);
-                entidade.setParametros(String.join(", ", dto.getParametros()));
-                entidade.setDescricaoParametros(String.join(", ", dto.getDescricaoParametros()));
-                entidade.setMascaraEntrada(String.join(", ", dto.getMascaraEntrada()));
-                entidade.setMascaraLog(String.join(", ", dto.getMascaraLog()));
-                entidade.setMascaraSaida(String.join(", ", dto.getMascaraSaida()));
-                return entidade;
-            })
-            .orElseGet(() -> mapper.map(dto, Job.class));
-        job.setCliente(cliente);
+        var job = jobService.findByClienteAndNome(cliente, dto.getNome())
+            .orElseThrow(() -> new NoSuchElementException("Job não encontrado na base para realizar atualização."));
+
+        job.setParametros(String.join(", ", dto.getParametros()));
+        job.setDescricaoParametros(String.join(", ", dto.getDescricaoParametros()));
+        job.setMascaraEntrada(String.join(", ", dto.getMascaraEntrada()));
+        job.setMascaraLog(String.join(", ", dto.getMascaraLog()));
+        job.setMascaraSaida(String.join(", ", dto.getMascaraSaida()));
         job.setDataAtualizacao(OffsetDateTime.now());
-        job.setAtualizadoPor("DET-MAKER"); //TODO: mudar para nome do usuário
+        job.setAtualizadoPor(jwt.getSubject());
         job.refinarCampos();
         jobService.save(job);
 
-        dto.setId(job.getId());
-        return ResponseEntity.ok(dto);
+        var responseJobDto = JobInfoDTO.converterJob(job);
+        return ResponseEntity.ok(responseJobDto);
     }
 
     @Override
@@ -109,13 +124,14 @@ public class JobController extends MasterController<Long, Job, JobController> {
     //TODO: javadoc
     //TODO: criar novo controlar para ter essa responsabilidade?
     @Transactional
-    @PostMapping(value = "read/xlsx/planilha/{planilhaNome}/cliente/{clienteId}/usuario/{userEmail}")
+    @PostMapping(value = "read/xlsx/planilha/{planilhaNome}/cliente/{clienteId}")
     public ResponseEntity<String> readXlsx(
+        @AuthenticationPrincipal Jwt jwt,
         @PathVariable() String planilhaNome,
         @PathVariable() Long clienteId,
-        @PathVariable() String userEmail,
         @RequestParam("file") final MultipartFile file)
     throws IOException {
+        val userEmail = jwt.getSubject();
         val cliente = clienteService.findById(clienteId);
         log.info("Lendo arquivo Excel (formato xlsx) para Cliente '{}'.", cliente.getNome());
         val excelX = jobService.lerXlsx(file);
@@ -148,8 +164,8 @@ public class JobController extends MasterController<Long, Job, JobController> {
     @PostMapping(value = "save/all/cliente/{clienteId}")
     public ResponseEntity<?> saveJobs(
         @PathVariable() Long clienteId,
-        @NonNull @RequestBody List<JobInfoDTO> jobsDto) {
-        //----------------------------------------------------
+        @NonNull @RequestBody List<JobInfoDTO> jobsDto)
+    {
         if(jobsDto.isEmpty()) {
             return ResponseEntity.badRequest().body("A lista de Jobs enviada está vazia.");
         }

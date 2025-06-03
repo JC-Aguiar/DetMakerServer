@@ -33,11 +33,12 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
     private AmbienteService ambienteService;
 
 
+    @Autowired
     public MassaTabelaController(
-        @Autowired MassaTabelaService service,
-        @Autowired ClienteService clienteService,
-        @Autowired AmbienteService ambienteService) {
-        //--------------------------------------------
+        MassaTabelaService service,
+        ClienteService clienteService,
+        AmbienteService ambienteService)
+    {
         super(service);
         this.service = service;
         this.clienteService = clienteService;
@@ -76,8 +77,8 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
     @PostMapping("ambiente/{ambienteId}/test")
     public ResponseEntity<List<MassaPreparada>> teste(
         @PathVariable("ambienteId") Long ambienteId,
-        @RequestBody MassaTabelaDTO dto) {
-        //-----------------------------------------------
+        @RequestBody MassaTabelaDTO dto)
+    {
         log.info("Validando mapeamentos de massa no ambiente ID {}.", ambienteId);
 //        log.info("Nenhuma alteração será de fato persistida no banco!");
         var ambiente = ambienteService.findById(ambienteId);
@@ -111,8 +112,8 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
     @PostMapping("cliente/{clienteId}")
     public ResponseEntity<String> save(
         @PathVariable("clienteId") Long clienteId,
-        @Valid @RequestBody MassaTabelaDTO dto) {
-        //-----------------------------------------------
+        @Valid @RequestBody MassaTabelaDTO dto)
+    {
         log.info("Salvando novo mapeamento de massa '{}' para cliente ID {}.", dto.getNome(), clienteId);
         var cliente = clienteService.findById(clienteId);
         service.save(cliente, dto);
@@ -131,8 +132,8 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
 //    public ResponseEntity<MasterSummary<String>> generate(
     public ResponseEntity<MasterSummary<MassaPreparada>> generate(
         @PathVariable("ambienteId") Long ambienteId,
-        @Valid @RequestBody MassaTabelaDTO...dtos) {
-        //-----------------------------------------------
+        @Valid @RequestBody MassaTabelaDTO...dtos)
+    {
         log.info("Iniciando geração de massa para {} table(s).", dtos.length);
         val ambiente = ambienteService.findById(ambienteId);
         val ambienteBanco = AmbienteAcessoDTO.banco(ambiente);
@@ -154,8 +155,8 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
 //    public ResponseEntity<MasterSummary<String>> generate(
     public ResponseEntity<MasterSummary<MassaPreparada>> generate(
         @PathVariable("ambienteId") Long ambienteId,
-        @PathVariable("ids") Long...massaId) {
-        //-----------------------------------------------
+        @PathVariable("ids") Long...massaId)
+    {
         log.info("Iniciando geração de massa para {} table(s).", massaId.length);;
         var massa = Arrays.stream(massaId)
             .map(service::findById)

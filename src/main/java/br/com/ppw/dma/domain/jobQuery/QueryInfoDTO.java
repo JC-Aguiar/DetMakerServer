@@ -13,21 +13,20 @@ import java.util.Optional;
 
 import static lombok.AccessLevel.*;
 
-@Valid
 @Data
 @NoArgsConstructor
 @FieldDefaults(level = PRIVATE)
 public class QueryInfoDTO {
 
-    Optional<@Min(0) Long> id = Optional.empty();
-    @NotNull @Min(0) Long jobId;
-    @NotBlank String nome;
-    String descricao = "";
-    @NotBlank String sql;
+    Long id;
+    Long jobId;
+    String nome;
+    String descricao;
+    String sql;
 
 
     public QueryInfoDTO(JobQuery jobQuery) {
-        this.id = Optional.of(jobQuery.getId());
+        this.id = jobQuery.getId();
         this.jobId = jobQuery.getJob().getId();
         atualizar(jobQuery);
     }
@@ -36,13 +35,6 @@ public class QueryInfoDTO {
         this.nome = (jobQuery.getNome());
         this.descricao = (jobQuery.getDescricao());
         this.sql = (jobQuery.getSql());
-    }
-
-    public static List<QueryInfoDTO> getFromJob(@NonNull Job job) {
-        return job.getQueries()
-            .stream()
-            .map(QueryInfoDTO::new)
-            .toList();
     }
 
 }

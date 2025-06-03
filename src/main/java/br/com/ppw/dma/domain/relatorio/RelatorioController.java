@@ -122,7 +122,6 @@ public class RelatorioController extends MasterController<Long, Relatorio, Relat
     public ResponseEntity<RelatorioHistoricoDTO> salvarRevisao(
         @RequestBody RelatorioComplementoDTO dto)
     {
-        var id = dto.getId();
         var relatorio = relatorioService.salvarRelatorioRevisado(dto);
         return ResponseEntity.ok(new RelatorioHistoricoDTO(relatorio));
     }

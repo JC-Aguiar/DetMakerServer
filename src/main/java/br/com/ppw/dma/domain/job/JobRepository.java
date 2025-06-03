@@ -7,12 +7,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface JobRepository extends JpaRepository<Job, Long> {
 
     @Query(value = "SELECT * FROM PPW_JOB j WHERE j.CLIENTE_ID = :clienteId", nativeQuery = true)
     List<Job> findAllByClienteId(@NonNull Long clienteId);
+
+    Optional<Job> findByClienteAndNome(@NonNull Cliente cliente, String nome);
 
     List<Job> findByClienteAndNomeIn(@NonNull Cliente cliente, @NonNull List<String> nomes);
 
