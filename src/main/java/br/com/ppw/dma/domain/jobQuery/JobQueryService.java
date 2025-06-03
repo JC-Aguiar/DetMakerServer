@@ -65,31 +65,21 @@ public class JobQueryService extends MasterService<Long, JobQuery, JobQueryServi
     }
 
     /**
-     * Cria ou atualiza uma entidade {@link JobQuery} com base numa query informada.
+     * Cria uma nova entidade {@link JobQuery}.
      * @param job {@link Job} a ser relacionado a entidade dessa configuração de query
-     * @param query {@link QueryInfoDTO}
-     * @return entidade {@link JobQuery}
-     * @throws DuplicatedRecordException em caso de duplicidade no banco
+     * @param dto {@link NewQueryDTO}
      */
-    public JobQuery criarAtualizar(@NonNull Job job, @NonNull QueryInfoDTO query)
-    throws DuplicatedRecordException {
-        if(query.getId().isPresent()) {
-            var id = query.getId().get();
-            log.info("Atualizando Query ID {} (Job ID {}).", id, job.getId());
-            var configQuery = findById(id);
-            configQuery.atualizar(query);
-            configQuery.setJob(job);
-            save(configQuery);
-            log.info("JobQuery atualizada com sucesso: ID {}.", configQuery.getId());
-            return configQuery;
-        }
-        log.info("Criando nova Query (Job ID {}).", job.getId());
-        var configQuery = new JobQuery(query);
-        configQuery.setJob(job);
-        save(configQuery);
-        log.info("JobQuery gerada com sucesso: ID {}.", configQuery.getId());
-        return configQuery;
+    public JobQuery create(@NonNull Job job, @NonNull NewQueryDTO dto) {
+        log.info("Criando nova Query para Job '{}' [ID {}].", job.getNome(), job.getId());
+        var configQuery = JobQuery.builder()
+            .job(job)
+            .nome(dto.getNome())
+            .descricao(dto.getDescricao())
+            .sql(dto.getSql())
+            .build();
+        return save(configQuery);
     }
+
 
 
 }

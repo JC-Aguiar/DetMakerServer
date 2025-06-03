@@ -53,16 +53,6 @@ public class JobQuery implements MasterEntity<Long> {
     String sql;
 
 
-    public JobQuery(@NonNull QueryInfoDTO dto) {
-        atualizar(dto);
-    }
-
-    public void atualizar(@NonNull QueryInfoDTO dto) {
-        this.nome = dto.getNome();
-        this.descricao = dto.getDescricao();
-        this.sql = dto.getSql();
-    }
-
     @Override
     public final boolean equals(Object o) {
         if(this == o) return true;

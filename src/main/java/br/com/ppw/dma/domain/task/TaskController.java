@@ -10,6 +10,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -34,11 +36,12 @@ public class TaskController {
 
     @PostMapping("ambiente/{ambienteId}")
     public ResponseEntity<TaskPushResponseDTO> addNewTask(
+        @AuthenticationPrincipal Jwt jwt,
         @PathVariable(name = "ambienteId") Long ambienteId,
         @Valid @RequestBody TaskPayload taskPayload)
     throws JsonProcessingException {
         var ambiente = ambienteService.findById(ambienteId);
-        var usuario = "DET-MAKER"; //TODO: ajustar com nome do usuário que fez requisição
+        var usuario = jwt.getSubject();
         var dto = taskService.pushTaskToQueue(ambiente, usuario, taskPayload);
         return ResponseEntity.ok(dto);
     }

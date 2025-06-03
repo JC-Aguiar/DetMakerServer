@@ -17,6 +17,7 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -33,6 +34,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -67,8 +69,8 @@ public class TaskService {
         JobService jobService,
         EvidenciaService evidenciaService,
         AmbienteService ambienteService,
-        PlatformTransactionManager transactionManager,
-        ThreadPoolTaskExecutor executor)
+        PlatformTransactionManager transactionManager)
+//        @Qualifier("multiAmbienteTaskExecutor") ThreadPoolTaskExecutor executor)
     {
         this.entityManager = entityManager;
         this.objectMapper = objectMapper;
@@ -76,10 +78,26 @@ public class TaskService {
         this.evidenciaService = evidenciaService;
         this.ambienteService = ambienteService;
         this.transactionManager = transactionManager;
-        this.executor = executor;
+        this.executor = setTaskExecutorDosExecucoesDePipelines();
 
         this.entityManager.setFlushMode(FlushModeType.COMMIT);
         //TODO: processar próximos registros pendentes?
+    }
+
+    public ThreadPoolTaskExecutor setTaskExecutorDosExecucoesDePipelines() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(0);  // Mínimo número de threads na pool (principais)
+        executor.setMaxPoolSize(Integer.MAX_VALUE);  // Máximo número de threads na pool
+        executor.setAllowCoreThreadTimeOut(false);
+        executor.setQueueCapacity(0);  // Capacidade da fila de tarefas por thread
+        executor.setKeepAliveSeconds(60);  // Mantenha threads ociosos por 60 segundos
+        executor.setThreadNamePrefix("Task-Ambiente-"); // Nome da thread
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());  // Política de rejeição. Aqui, se o pool estiver cheio a tarefa roda na thread do chamador
+        executor.setDaemon(true); // Se as threads devem ser interrompidas se o App fechar
+        executor.setWaitForTasksToCompleteOnShutdown(true); // Aguarda tarefas no shutdown
+        executor.setAwaitTerminationSeconds(30); // Segundos de espera ap´so receber shutdown
+        executor.initialize(); // Iniciazar
+        return executor;
     }
 
     @Transactional(noRollbackFor = Throwable.class)

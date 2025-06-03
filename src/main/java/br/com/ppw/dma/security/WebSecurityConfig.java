@@ -39,7 +39,7 @@ public class WebSecurityConfig {
     public SecurityFilterChain configure(
         HttpSecurity http,
         UrlBasedCorsConfigurationSource corsConfig,
-        AuthenticationFilter jwtAuthFilter,
+//        AuthenticationFilter jwtAuthFilter,
         JwtDecoder jwtDecoder,
         JwtMultiConverter jwtConverter)
     throws Exception {
@@ -52,7 +52,7 @@ public class WebSecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfig))
             .sessionManagement(sessionManager ->  sessionManager.sessionCreationPolicy(STATELESS))
-            .addFilterAfter(jwtAuthFilter, BearerTokenAuthenticationFilter.class)
+//            .addFilterAfter(jwtAuthFilter, BearerTokenAuthenticationFilter.class)
             .oauth2ResourceServer(config -> config.jwt(
                 jwt -> jwt.decoder(jwtDecoder)
                     .jwtAuthenticationConverter(jwtConverter)

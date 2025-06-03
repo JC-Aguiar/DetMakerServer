@@ -2,10 +2,10 @@ package br.com.ppw.dma.domain.jobQuery;
 
 import br.com.ppw.dma.domain.ambiente.AmbienteAcessoDTO;
 import br.com.ppw.dma.domain.ambiente.AmbienteService;
-import br.com.ppw.dma.exception.DuplicatedRecordException;
 import br.com.ppw.dma.domain.job.JobService;
 import br.com.ppw.dma.domain.master.MasterController;
 import br.com.ppw.dma.domain.master.SqlSintaxe;
+import br.com.ppw.dma.exception.DuplicatedRecordException;
 import jakarta.persistence.PersistenceException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -118,25 +118,50 @@ public class JobQueryController extends MasterController<Long, JobQuery, JobQuer
 //        return ResponseEntity.ok(variaveis);
 //    }
 
-    //TODO: sincronizar com front !!!
     /**
-     * Cria ou atualiza uma entidade {@link JobQuery} para determinado cliente.
-     * @param ambienteId {@link Long} obtido no path da uri
-     * @param dto {@link QueryInfoDTO}
+     * Cria uma entidade {@link JobQuery}.
+     * @param ambienteId {@link Long} obtido no path da uri.
+     * @param jobId {@link Long} obtido no path da uri.
+     * @param dto {@link NewQueryDTO} enviado pelo usuário.
      * @return {@link ResponseEntity} da mesma {@link QueryInfoDTO} enviada, so que atualizada com o banco.
      * @throws DuplicatedRecordException em caso de duplicidade no banco.
      */
-    @PostMapping(value = "ambiente/{ambienteId}")
-    public ResponseEntity<QueryInfoDTO> criarAtualizarQuery(
+    @PostMapping(value = "ambiente/{ambienteId}/job/{jobId}")
+    public ResponseEntity<QueryInfoDTO> create(
         @PathVariable Long ambienteId,
-        @Valid @RequestBody QueryInfoDTO dto)
-    throws DuplicatedRecordException, SQLException {
-
-        val ambiente = ambienteService.findById(ambienteId);
-        var banco = AmbienteAcessoDTO.banco(ambiente);
-        var job = jobService.findById(dto.getJobId());
+        @PathVariable Long jobId,
+        @Valid @RequestBody NewQueryDTO dto)
+    throws SQLException {
+        val banco = ambienteService.findById(ambienteId).acessoBanco();
         queryService.validadeQuery(dto.getSql(), banco);
-        var configQuery = queryService.criarAtualizar(job, dto);
+        var job = jobService.findById(jobId);
+        var configQuery = queryService.create(job, dto);
+        return ResponseEntity.ok(new QueryInfoDTO(configQuery));
+    }
+
+    /**
+     * Atualiza uma entidade {@link JobQuery}.
+     * @param ambienteId {@link Long} obtido no path da uri.
+     * @param queryId {@link Long} obtido no path da uri.
+     * @param dto {@link QueryInfoDTO} enviado pelo usuário.
+     * @return {@link ResponseEntity} da mesma {@link QueryInfoDTO} enviada, so que atualizada com o banco.
+     * @throws DuplicatedRecordException em caso de duplicidade no banco.
+     */
+    @PutMapping(value = "{queryId}/ambiente/{ambienteId}")
+    public ResponseEntity<QueryInfoDTO> update(
+        @PathVariable Long queryId,
+        @PathVariable Long ambienteId,
+        @Valid @RequestBody NewQueryDTO dto)
+    throws SQLException {
+        val banco = ambienteService.findById(ambienteId).acessoBanco();
+        queryService.validadeQuery(dto.getSql(), banco);
+
+        var configQuery = queryService.findById(queryId);
+        configQuery.setNome(dto.getNome());
+        configQuery.setDescricao(dto.getDescricao());
+        configQuery.setSql(dto.getSql());
+        queryService.save(configQuery);
+
         return ResponseEntity.ok(new QueryInfoDTO(configQuery));
     }
 
