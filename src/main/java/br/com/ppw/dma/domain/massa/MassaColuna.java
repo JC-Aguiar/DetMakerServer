@@ -56,20 +56,5 @@ public class MassaColuna {
     String opcao;
 
 
-    public MassaColuna(@NonNull MassaColunaDTO dto) {
-        this.nome = dto.getNome();
-//        this.tamanho = dto.getTamanho();
-//        this.escala = dto.getEscala();
-//        this.precisao = dto.getPrecisao();
-        this.formato = dto.getFormato();
-        this.opcao = dto.getOpcao();
-    }
 
-    public MassaColunaDTO toDto() {
-        return new MassaColunaDTO(this);
-    }
-
-//    public MassaColunaDTO toDto(@NonNull DbColumnMetadata info) {
-//        return new MassaColunaDTO(this, info);
-//    }
 }

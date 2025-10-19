@@ -64,9 +64,7 @@ public abstract class MasterService<ID, ENTITY extends MasterEntity<ID>, THIS ex
 
     // A method that returns an entity by id.
     public ENTITY findById(@NonNull ID id) {
-        return Optional
-            .ofNullable(dao.getById(id))
-            .orElseThrow();
+        return dao.findById(id).orElseThrow();
     }
 
     // A method that returns an entity by id.

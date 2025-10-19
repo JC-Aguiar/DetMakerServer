@@ -138,7 +138,7 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
         val ambienteBanco = AmbienteAcessoDTO.banco(ambiente);
         var resultadoDosInserts = service.newInserts(ambienteBanco, dtos);
 //        return ResponseEntity.ok(service.parseSummary(resultadoDosInserts));
-        return MasterSummary.toResponseEntity(resultadoDosInserts);
+        return resultadoDosInserts.toResponseEntity();
     }
 
     /**
@@ -164,7 +164,7 @@ public class MassaTabelaController extends MasterController<Long, MassaTabela, M
         val ambiente = ambienteService.findById(ambienteId);
         val ambienteBanco = AmbienteAcessoDTO.banco(ambiente);
         var resultadoDosInserts = service.newInserts(ambienteBanco, massa);
-        return MasterSummary.toResponseEntity(resultadoDosInserts);
+        return resultadoDosInserts.toResponseEntity();
 //        return ResponseEntity.ok(service.parseSummary(resultadoDosInserts));
     }
 

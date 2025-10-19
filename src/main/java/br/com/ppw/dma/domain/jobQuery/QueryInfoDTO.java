@@ -1,6 +1,7 @@
 package br.com.ppw.dma.domain.jobQuery;
 
 import br.com.ppw.dma.domain.job.Job;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -20,10 +21,18 @@ import static lombok.AccessLevel.*;
 public class QueryInfoDTO {
 
     Optional<@Min(0) Long> id = Optional.empty();
-    @NotNull @Min(0) Long jobId;
-    @NotBlank String nome;
+
+    @NotNull @Min(0)
+    Long jobId;
+
+    @NotBlank
+    String nome;
+
     String descricao = "";
-    @NotBlank String sql;
+
+    @NotBlank
+    @ToString.Exclude
+    String sql;
 
 
     public QueryInfoDTO(JobQuery jobQuery) {
@@ -43,6 +52,14 @@ public class QueryInfoDTO {
             .stream()
             .map(QueryInfoDTO::new)
             .toList();
+    }
+
+    @JsonIgnore
+    @ToString.Include(name = "sql")
+    public String logginSqlFormat() {
+        return "[%d bytes, %d length]".formatted(
+            sql.getBytes().length,
+            sql.toCharArray().length);
     }
 
 }

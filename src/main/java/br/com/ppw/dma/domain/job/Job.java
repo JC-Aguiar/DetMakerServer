@@ -11,6 +11,8 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.Comment;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.Where;
 
 import java.time.OffsetDateTime;
@@ -18,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import static jakarta.persistence.FetchType.EAGER;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.SEQUENCE;
 import static lombok.AccessLevel.PRIVATE;
@@ -48,8 +51,7 @@ public class Job implements MasterEntity<Long> {
     @Comment("ID do cliente associado a este job")
     Cliente cliente;
 
-    //@Column(name = "NOME", length = 100, nullable = false)
-    @Column(name = "NOME", length = 100)
+    @Column(name = "NOME", length = 100, nullable = false)
     @Comment("Nome do Job")
     String nome;
 
@@ -57,44 +59,51 @@ public class Job implements MasterEntity<Long> {
     @Comment("Descrição do Job")
     String descricao;
 
-    @Column(name = "PROGRAMA", length = 150)
-    @Comment("Programas envolvidos no Job")
-    String programa;
-
     @Column(name = "CAMINHO_EXEC", length = 100)
     @Comment("Caminho de execução do Job")
     String caminhoExec;
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "JOB_PARAMETERS")
-    @OneToMany(fetch = LAZY, mappedBy = "job")
+    @OneToMany(fetch = LAZY, mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id ASC")
     @Comment("ID dos parâmetros relacionadas ao Job")
-    List<JobParameter> listaParametros = new ArrayList<>();
+    List<JobParameter> parametros = new ArrayList<>();
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "JOB_CARGAS")
-    @OneToMany(fetch = LAZY, mappedBy = "job")
-    @Where(clause = "tipo = 'carga'")
+    @OneToMany(fetch = LAZY, mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Where(clause = "tipo = 'CARGA'")
+    @OrderBy("id ASC")
     @Comment("ID das máscaras de carga consumidas pelo Job")
-    List<JobResource> mascarasCarga = new ArrayList<>();
+    List<JobResource> cargas = new ArrayList<>();
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "JOB_LOGS")
-    @OneToMany(fetch = LAZY, mappedBy = "job")
-    @Where(clause = "tipo = 'log'")
+    @OneToMany(fetch = LAZY, mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Where(clause = "tipo = 'LOG'")
+    @OrderBy("id ASC")
     @Comment("ID das máscaras de log produzidas pelo Job")
-    List<JobResource> mascarasLog = new ArrayList<>();
+    List<JobResource> logs = new ArrayList<>();
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
-    @Column(name = "JOB_REMESSAS")
-    @OneToMany(fetch = LAZY, mappedBy = "job")
-    @Where(clause = "tipo = 'remessa'")
+    @OneToMany(fetch = LAZY, mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Where(clause = "tipo = 'REMESSA'")
+    @OrderBy("id ASC")
     @Comment("ID das máscaras de remessa produzidas pelo Job")
-    List<JobResource> mascarasRemessa = new ArrayList<>();
+    List<JobResource> remessas = new ArrayList<>();
+
+    @Builder.Default
+    @ToString.Exclude
+    @JsonManagedReference
+    @OneToMany(fetch = LAZY, mappedBy = "job", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Comment("ID das configurações de queries relacionadas ao Job")
+    List<JobQuery> queries = new ArrayList<>();
 
     @Column(name = "DT_ATUALIZACAO")
     @Comment("Data da última atualização no Job")
@@ -108,6 +117,7 @@ public class Job implements MasterEntity<Long> {
     @Comment("Origem de como esse Job foi criado (ex: 'planilha', 'api' ou 'banco')")
     String origem;
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "JOB_QUERY")
@@ -130,20 +140,44 @@ public class Job implements MasterEntity<Long> {
      * @return {@link Job} esse mesmo objeto
      */
     public Job refinarCampos() {
-        listaParametros.forEach(param -> {
+        parametros.forEach(param -> {
             param.setNome(FormatString.refinarCelula(param.getNome()));
             param.setDescricao(FormatString.refinarCelula(param.getDescricao()));
         });
-        mascarasCarga.forEach(c ->
-            c.setMascara(FormatString.extrairMascara(c.getMascara()))
-        );
-        mascarasLog.forEach(l ->
-            l.setMascara(FormatString.extrairMascara(l.getMascara()))
-        );
-        mascarasRemessa.forEach(r ->
-            r.setMascara(FormatString.extrairMascara(r.getMascara()))
-        );
+        cargas.forEach(c -> c.setEndereco(
+            FormatString.extrairMascara(c.getEndereco())
+        ));
+        logs.forEach(l -> l.setEndereco(
+            FormatString.extrairMascara(l.getEndereco())
+        ));
+        remessas.forEach(r -> r.setEndereco(
+            FormatString.extrairMascara(r.getEndereco())
+        ));
         return this;
+    }
+
+    public void setParametros(List<JobParameter> parametros) {
+        if(parametros == null) return;
+        this.parametros = parametros;
+        this.parametros.forEach(param -> param.setJob(this));
+    }
+
+    public void setCargas(List<JobResource> cargas) {
+        if(cargas == null) return;
+        this.cargas = cargas;
+        this.cargas.forEach(carga -> carga.setJob(this));
+    }
+
+    public void setLogs(List<JobResource> logs) {
+        if(logs == null) return;
+        this.logs = logs;
+        this.logs.forEach(log -> log.setJob(this));
+    }
+
+    public void setRemessas(List<JobResource> remessas) {
+        if(remessas == null) return;
+        this.remessas = remessas;
+        this.remessas.forEach(remessa -> remessa.setJob(this));
     }
 
     @Override
@@ -151,11 +185,11 @@ public class Job implements MasterEntity<Long> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Job job = (Job) o;
-        return Objects.equals(getId(), job.getId()) && Objects.equals(getCliente(), job.getCliente()) && Objects.equals(getNome(), job.getNome()) && Objects.equals(getDescricao(), job.getDescricao()) && Objects.equals(getPrograma(), job.getPrograma()) && Objects.equals(getCaminhoExec(), job.getCaminhoExec()) && Objects.equals(getListaParametros(), job.getListaParametros()) && Objects.equals(getMascarasCarga(), job.getMascarasCarga()) && Objects.equals(getMascarasLog(), job.getMascarasLog()) && Objects.equals(getMascarasRemessa(), job.getMascarasRemessa()) && Objects.equals(getDataAtualizacao(), job.getDataAtualizacao()) && Objects.equals(getAtualizadoPor(), job.getAtualizadoPor()) && Objects.equals(getOrigem(), job.getOrigem()) && Objects.equals(getQueries(), job.getQueries()) && Objects.equals(getPipelines(), job.getPipelines());
+        return Objects.equals(getId(), job.getId()) && Objects.equals(getCliente(), job.getCliente()) && Objects.equals(getNome(), job.getNome()) && Objects.equals(getPlano(), job.getPlano()) && Objects.equals(getExecutarAposJob(), job.getExecutarAposJob()) && Objects.equals(getGrupoConcorrencia(), job.getGrupoConcorrencia()) && Objects.equals(getFase(), job.getFase()) && Objects.equals(getDescricao(), job.getDescricao()) && Objects.equals(getGrupoUda(), job.getGrupoUda()) && Objects.equals(getPrograma(), job.getPrograma()) && Objects.equals(getTabelas(), job.getTabelas()) && Objects.equals(getServidor(), job.getServidor()) && Objects.equals(getCaminhoExec(), job.getCaminhoExec()) && Objects.equals(getParametros(), job.getParametros()) && Objects.equals(getCargas(), job.getCargas()) && Objects.equals(getLogs(), job.getLogs()) && Objects.equals(getRemessas(), job.getRemessas()) && Objects.equals(getQueries(), job.getQueries()) && Objects.equals(getTratamento(), job.getTratamento()) && Objects.equals(getEscalation(), job.getEscalation()) && Objects.equals(getDataAtualizacao(), job.getDataAtualizacao()) && Objects.equals(getAtualizadoPor(), job.getAtualizadoPor()) && Objects.equals(getOrigem(), job.getOrigem()) && Objects.equals(getPipelines(), job.getPipelines());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getId(), getCliente(), getNome(), getDescricao(), getPrograma(), getCaminhoExec(), getListaParametros(), getMascarasCarga(), getMascarasLog(), getMascarasRemessa(), getDataAtualizacao(), getAtualizadoPor(), getOrigem(), getQueries(), getPipelines());
+        return Objects.hash(getId(), getCliente(), getNome(), getPlano(), getExecutarAposJob(), getGrupoConcorrencia(), getFase(), getDescricao(), getGrupoUda(), getPrograma(), getTabelas(), getServidor(), getCaminhoExec(), getParametros(), getCargas(), getLogs(), getRemessas(), getQueries(), getTratamento(), getEscalation(), getDataAtualizacao(), getAtualizadoPor(), getOrigem(), getPipelines());
     }
 }

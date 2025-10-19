@@ -47,6 +47,7 @@ public class JobQuery implements MasterEntity<Long> {
     @Comment("Informações sobre como preencher a SQL")
     String descricao;
 
+    @ToString.Exclude
     @Column(name = "SQL", length = 900, nullable = false)
     @Comment("SQL usada na evidência desse queries pré e pós-execução. "
         + "Exemplo: SELECT * FROM EVENTOS_WEB WHERE EVACCT IN (${contratos})")
@@ -61,6 +62,13 @@ public class JobQuery implements MasterEntity<Long> {
         this.nome = dto.getNome();
         this.descricao = dto.getDescricao();
         this.sql = dto.getSql();
+    }
+
+    @ToString.Include(name = "sql")
+    public String logginSqlFormat() {
+        return "[%d bytes, %d length]".formatted(
+            sql.getBytes().length,
+            sql.toCharArray().length);
     }
 
     @Override

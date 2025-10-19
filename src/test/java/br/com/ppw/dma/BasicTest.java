@@ -359,29 +359,6 @@ public class BasicTest {
     }
 
     @Test
-    public void testarJobService_ComparacaoDeLogsMaisRecentes() {
-        log.info("Teste na comparação dos logs mais recentes.");
-        val dir = "temp/cy3_shell_kafka_producer017";
-        val service = new JobService(null, null);
-
-        val logsAntes = List.of(
-            Path.of(dir, "cy3_shell_kafka_producer017_20230831_180958.log").toFile(),
-            Path.of(dir, "EVENTOS_PRODUCER_017_20230831_180958.log").toFile()
-        );
-        val logAntesString = logsAntes.stream().map(File::getName).collect(Collectors.joining(", "));
-
-        val logsDepois = List.of(
-            Path.of(dir, "cy3_shell_kafka_producer_TESTE_20231020_094354.log").toFile(),
-            Path.of(dir, "EVENTOS_PRODUCER_TESTE_20230831_180958.log").toFile()
-        );
-        val logDepoisString = logsDepois.stream().map(File::getName).collect(Collectors.joining(", "));
-
-        log.info("logsAntes: '{}'", logAntesString);
-        log.info("logsDepois: '{}'", logDepoisString);
-        log.info("Comparando logs para anexar como evidência.");
-    }
-
-    @Test
     public void testandoLerProperties() throws IOException, SQLException {
         final Properties properties = lerProperties();
         properties.forEach((k, v) -> log.info("{}: {}", k, v));
@@ -395,7 +372,6 @@ public class BasicTest {
     }
 
     private Properties lerProperties() throws IOException {
-        //src/main/resources/db-config.properties
         try (InputStream input = new FileInputStream("src/main/resources/db-config.properties")) {
             Properties properties = new Properties();
             properties.load(input);

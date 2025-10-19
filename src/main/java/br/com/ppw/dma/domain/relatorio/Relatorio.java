@@ -102,6 +102,7 @@ public class Relatorio implements MasterEntity<Long> {
     // ID do ambiente que executou esse relatório
     Ambiente ambiente;
 
+    //TODO: remover e aplicar TRUNC() nas consultas
     @Column(name = "DATA", columnDefinition = "DATE", nullable = false, updatable = false)
     @Comment("Data abreviada para consultas")
     LocalDate data;

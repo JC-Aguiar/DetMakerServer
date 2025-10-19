@@ -63,7 +63,7 @@ public class ExecFile implements MasterEntity<Long> {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "TIPO", length = 10, nullable = false)
-    @Comment("Indica se o arquivo é do tipo 'carga', 'remessa' ou 'log'")
+    @Comment("Indica se o arquivo é do tipo 'CARGA', 'REMESSA' ou 'LOG'")
     JobResourceType tipo;
 
     @Column(name = "ARQUIVO_NOME", length = 200, nullable = true)

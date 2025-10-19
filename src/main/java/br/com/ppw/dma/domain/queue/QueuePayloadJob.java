@@ -19,7 +19,6 @@ import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static lombok.AccessLevel.PRIVATE;
 
@@ -126,7 +125,7 @@ public class QueuePayloadJob implements JobPointer {//implements JobExecuter {
 			.toList();
 		cargasMascara = jobInfo.getMascaraEntrada()
 			.stream()
-			.map(JobResourceDTO::getMascara)
+			.map(JobResourceDTO::getEndereco)
 			.toList();
 		remessasMascara = jobInfo.getMascaraSaida()
 			.stream()

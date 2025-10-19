@@ -75,31 +75,35 @@ public class Evidencia implements MasterEntity<Long> {
     @Comment("Comando para obter a versão do Job")
     String comandoVersao;
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "QUERY_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
     List<ExecQuery> queries = new ArrayList<>();
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "CARGAS_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    @Where(clause = "tipo = 'carga'")
+    @Where(clause = "tipo = 'CARGA'")
     List<ExecFile> cargas = new ArrayList<>();
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "LOG_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    @Where(clause = "tipo = 'log'")
+    @Where(clause = "tipo = 'LOG'")
     List<ExecFile> logs = new ArrayList<>();
 
+    @Builder.Default
     @ToString.Exclude
     @JsonManagedReference
     @Column(name = "REMESSA_ID") //TODO: não está tendo mapeamento bidirecional
     @OneToMany(fetch = LAZY, cascade = ALL, mappedBy = "evidencia")
-    @Where(clause = "tipo = 'remessa'")
+    @Where(clause = "tipo = 'REMESSA'")
     List<ExecFile> remessas = new ArrayList<>();
 
     @Column(name = "EXIT_CODE", columnDefinition = "NUMBER(3)")

@@ -70,7 +70,7 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
             .usuario(pipelineResult.getUsuario())
             .dataCompleta(dataHora)
             .data(dataHora.toLocalDate())
-            .testeTipo(TiposDeTeste.UNITARIO)
+            .testeTipo(TiposDeTeste.INTEGRADO)
             .sucesso(!pipelineResult.isErro())
             .erroFatal(pipelineResult.getMensagemErro())
             .build();
@@ -88,10 +88,8 @@ public class EvidenciaService extends MasterService<Long, Evidencia, EvidenciaSe
     //TODO: javadoc
     public EvidenciaResult gerarEvidencia(@NonNull Relatorio relatorio, @NonNull JobProcess process) {
         log.info("Gerando Evidência para {}.", process.getContexto());
-        Function<String, String> criarMensagemErro = (erro) -> String.format(
-            "Erro na criação da Evidência para o %s: %s",
-            process.getContexto(),
-            erro);
+        Function<String, String> criarMensagemErro = erro -> "Erro na criação da Evidência para o %s: %s"
+            .formatted(process.getContexto(), erro);
 
         try {
             var evidencia = new Evidencia(process);
