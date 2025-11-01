@@ -1,0 +1,35 @@
+name: Gitleaks Scan
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - gitLeak
+  pull_request:
+    branches:
+      - main
+      - master
+      - gitLeak
+
+jobs:
+  gitleaks:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Checkout do código
+      - name: Checkout code
+        uses: actions/checkout@v4
+        # Fetch de histórico profundo (incluindo commits antigos)
+        with:
+          fetch-depth: 0 
+
+      # 2. Executa o GitLeaks Scan
+      - name: Run Gitleaks
+        # Usa a Action oficial do GitLeaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          # TOKEN é necessário para acessar o histórico do repositório
+          # O GitHub fornece o GITHUB_TOKEN automaticamente
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Opcional: Para usar um scanner mais restrito em PRs:
+          # GITLEAKS_EXCLUDE_COMMITS: true
