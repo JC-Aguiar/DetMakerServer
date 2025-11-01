@@ -22,8 +22,12 @@ jobs:
         # Fetch de histórico profundo (incluindo commits antigos)
         with:
           fetch-depth: 0 
+          
+      # 2. Forçar o download completo de todo o histórico
+      - name: Force fetch all history for Gitleaks
+        run: git fetch --unshallow || true
 
-      # 2. Executa o GitLeaks Scan
+      # 3. Executa o GitLeaks Scan
       - name: Run Gitleaks
         # Usa a Action oficial do GitLeaks
         uses: gitleaks/gitleaks-action@v2
